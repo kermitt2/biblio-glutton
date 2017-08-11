@@ -1,0 +1,50 @@
+[
+  {
+    "status": "OK",
+    "data": {
+      "name": "Aberdeen University Research Archive",
+      "uri": "http://aura.abdn.ac.uk/dspace-oai/request",
+      "id": 1,
+      "OpenDoarId": 1767,
+      "repositoryLocation": {
+        "repositoryName": "",
+        "country": "",
+        "latitude": "57.165000",
+        "longitude": "-2.099100",
+        "countryCode": "GB"
+      }
+    }
+  },
+  {
+    "status": "OK",
+    "data": {
+      "name": "Abertay Research Collections",
+      "uri": "http://repository.abertay.ac.uk/oai/request",
+      "id": 2,
+      "OpenDoarId": 1589,
+      "repositoryLocation": {
+        "repositoryName": "",
+        "country": "",
+        "latitude": "56.459900",
+        "longitude": "-2.988800",
+        "countryCode": "GB"
+      }
+    }
+  },
+  {
+    "status": "OK",
+    "data": {
+      "name": "Access to Research Resources for Teachers",
+      "uri": "http://gtcni.openrepository.com/gtcni-oai/request",
+      "id": 3,
+      "OpenDoarId": 549,
+      "repositoryLocation": {
+        "repositoryName": "",
+        "country": "",
+        "latitude": "54.592850",
+        "longitude": "-5.935900",
+        "countryCode": "GB"
+      }
+    }
+  }
+]

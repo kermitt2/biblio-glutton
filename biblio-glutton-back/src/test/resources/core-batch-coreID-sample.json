@@ -1,0 +1,343 @@
+[
+  {
+    "status": "OK",
+    "data": {
+      "id": "29429717",
+      "authors": [
+        "Blanuša, Nebojša",
+        "Bovan, Kosta"
+      ],
+      "contributors": [],
+      "datePublished": "2015-07-01T00:00:00Z",
+      "description": "In the last thirty years uneasiness among scholars and political actors has been growing larger as more citizens demonstrate cynical attitudes. These citizens feel that politicians are immoral and incompetent, have less faith in democracy, and show lower levels of political participation. However, Peter Sloterdijk points out that the dominant view of cynicism is simplified. He divides cynical reason into two separate ways of thinking: cynicism and kynicism. The main difference between them is in individual’s reaction to the cleavage between public ideological mask and individual’s idea of social reality. Cynics persist in keeping the ideological mask on and have an “enlightened false consciousness”, while kynics highlight this cleavage, oppose the dominant ideology and point out misuses of political power. This research was conducted with the goal of creating cynicism and kynicism scales. Their validity was tested for two samples – a smaller sample of students and later on the representative sample of Croatian citizens (N=1002). Also, connection of cynical and kynical thought with an array of relevant political attitudes and political behavior was tested. Results indicate that cynicism and kynicism are relatively separated and coherent types of political thought. Kynicism is primarily related to low trust in political institutions, but also to lower support of democracy. Specific combinations of these two types of thought have a highly negative potential for abandoning the democratic way of thinking. This work offers an empirical confirmation for Sloterdijk’s model, and confirms usefulness of it in understanding political thought and behavior of Croatian citizens",
+      "identifiers": [
+        "oai:doaj.org/article:942889ad1a5a4671a4c6abb268439e57",
+        null
+      ],
+      "journals": [
+        {
+          "title": null,
+          "identifiers": [
+            "2285-4916",
+            "url:https://doaj.org/article/942889ad1a5a4671a4c6abb268439e57",
+            "issn:2285-4916"
+          ]
+        }
+      ],
+      "relations": [
+        "http://sites.google.com/a/fspub.unibuc.ro/european-quarterly-of-political-attitudes-and-mentalities/Home/eqpam-vol-4-no-3-july-2015---blanusa-bovan",
+        "https://doaj.org/toc/2285-4916",
+        "https://doaj.org/toc/2285-4916"
+      ],
+      "repositories": [
+        {
+          "id": "645",
+          "openDoarId": 0,
+          "name": "Directory of Open Access Journals (new)",
+          "uri": null,
+          "uriJournals": null,
+          "physicalName": "noname",
+          "source": null,
+          "software": null,
+          "metadataFormat": null,
+          "description": null,
+          "journal": null,
+          "pdfStatus": null,
+          "nrUpdates": 0,
+          "disabled": false,
+          "lastUpdateTime": null,
+          "metadataRecordCount": 0,
+          "metadataDeletedRecordCount": 0,
+          "metadataLinkCount": 0,
+          "metadataSize": 0,
+          "journalMetadataSize": 0,
+          "metadataAge": null,
+          "journalMetadataAge": null,
+          "metadataInIndexCount": 0,
+          "metadataDeletedInIndexCount": 0,
+          "metadataAlloweInIndexCount": 0,
+          "metadataDisabledInIndexCount": 0,
+          "metadataExtractionDate": null,
+          "journalMetadataExtractionDate": null,
+          "databaseRecordCount": 0,
+          "databaseDeletedRecordCount": 0,
+          "databasePdfLinkCount": 0,
+          "databasePdfCount": 0,
+          "databaseDeletedPdfCount": 0,
+          "hardDrivePdfSize": 0,
+          "hardDrivePdfCount": 0,
+          "hardDriveDeletedPdfCount": 0,
+          "databaseTextCount": 0,
+          "databaseTextNotDeletedCount": 0,
+          "hardDriveTextCount": 0,
+          "hardDriveDeletedTextCount": 0,
+          "databaseIndexCount": 0,
+          "indexRecordCount": 0,
+          "indexJournalCount": 0,
+          "indexTextCount": 0,
+          "metadataOnlyIndex": 0,
+          "indexTextCountDB": 0,
+          "indexedPdfDB": 0,
+          "indexedDisabledDB": 0,
+          "indexTextNotDeletedCount": 0,
+          "hardDriveCitationFiles": 0,
+          "citationFilesDb": 0,
+          "crawlingLimit": 0,
+          "citationCount": 0,
+          "citationWithDocCount": 0,
+          "citationDoiCount": 0,
+          "documentDoiCount": 0,
+          "documentDoiWithFulltextCount": 0,
+          "repositoryLocation": null
+        }
+      ],
+      "subjects": [
+        "article"
+      ],
+      "title": "Political Cynicism and Kynicism of Croatian Citizens. Profiles of Political Thinking and Behavior",
+      "topics": [
+        "political cynicism",
+        "political kynicism",
+        "cynicism scale",
+        "kynicism scale",
+        "alienation",
+        "political participation",
+        "Political science",
+        "J",
+        "Social Sciences",
+        "H"
+      ],
+      "types": [],
+      "year": 2015,
+      "duplicates": [],
+      "fulltextUrls": [
+        "https://core.ac.uk/display/29429717",
+        "https://doaj.org/toc/2285-4916",
+        "https://doaj.org/toc/2285-4916",
+        "http://sites.google.com/a/fspub.unibuc.ro/european-quarterly-of-political-attitudes-and-mentalities/Home/eqpam-vol-4-no-3-july-2015---blanusa-bovan",
+        "https://doaj.org/article/942889ad1a5a4671a4c6abb268439e57"
+      ],
+      "rawRecordXml": {
+        "datetime": "2015-09-08 16:17:18",
+        "metadata": "<record><header xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\" ><identifier>oai:doaj.org/article:942889ad1a5a4671a4c6abb268439e57</identifier><datestamp>2015-08-25T15:38:36Z</datestamp><setSpec>TENDOlBvbGl0aWNhbCBzY2llbmNl</setSpec><setSpec>TENDOlNvY2lhbCBTY2llbmNlcw~~</setSpec></header><metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\" ><oai_dc:dc xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\" ><dc:title>Political Cynicism and Kynicism of Croatian Citizens. Profiles of Political Thinking and Behavior</dc:title><dc:identifier>2285-4916</dc:identifier><dc:identifier>2285-4916</dc:identifier><dc:identifier>https://doaj.org/article/942889ad1a5a4671a4c6abb268439e57</dc:identifier><dc:date>2015-07-01T00:00:00Z</dc:date><dc:relation>http://sites.google.com/a/fspub.unibuc.ro/european-quarterly-of-political-attitudes-and-mentalities/Home/eqpam-vol-4-no-3-july-2015---blanusa-bovan</dc:relation><dc:relation>https://doaj.org/toc/2285-4916</dc:relation><dc:relation>https://doaj.org/toc/2285-4916</dc:relation><dc:description>In the last thirty years uneasiness among scholars and political actors has been growing larger as more citizens demonstrate cynical attitudes. These citizens feel that politicians are immoral and incompetent, have less faith in democracy, and show lower levels of political participation. However, Peter Sloterdijk points out that the dominant view of cynicism is simplified. He divides cynical reason into two separate ways of thinking: cynicism and kynicism. The main difference between them is in individual’s reaction to the cleavage between public ideological mask and individual’s idea of social reality. Cynics persist in keeping the ideological mask on and have an “enlightened false consciousness”, while kynics highlight this cleavage, oppose the dominant ideology and point out misuses of political power. This research was conducted with the goal of creating cynicism and kynicism scales. Their validity was tested for two samples – a smaller sample of students and later on the representative sample of Croatian citizens (N=1002). Also, connection of cynical and kynical thought with an array of relevant political attitudes and political behavior was tested. Results indicate that cynicism and kynicism are relatively separated and coherent types of political thought. Kynicism is primarily related to low trust in political institutions, but also to lower support of democracy. Specific combinations of these two types of thought have a highly negative potential for abandoning the democratic way of thinking. This work offers an empirical confirmation for Sloterdijk’s model, and confirms usefulness of it in understanding political thought and behavior of Croatian citizens.</dc:description><dc:creator>Blanuša, Nebojša</dc:creator><dc:creator>Bovan, Kosta</dc:creator><dc:type>article</dc:type><dc:subject>political cynicism</dc:subject><dc:subject>political kynicism</dc:subject><dc:subject>cynicism scale</dc:subject><dc:subject>kynicism scale</dc:subject><dc:subject>alienation</dc:subject><dc:subject>political participation</dc:subject><dc:subject xsi:type=\"dcterms:LCSH\" >Political science</dc:subject><dc:subject xsi:type=\"dcterms:LCSH\" >J</dc:subject><dc:subject xsi:type=\"dcterms:LCSH\" >Social Sciences</dc:subject><dc:subject xsi:type=\"dcterms:LCSH\" >H</dc:subject><dc:language>EN</dc:language><dc:rights>CC BY-NC-ND</dc:rights><dc:source>European Quarterly of Political Attitudes and Mentalities, Vol 4, Iss 3, Pp 1-29 (2015)</dc:source></oai_dc:dc></metadata></record>"
+      },
+      "oai": "oai:doaj.org/article:942889ad1a5a4671a4c6abb268439e57"
+    }
+  },
+  {
+    "status": "OK",
+    "data": {
+      "id": "8388736",
+      "authors": [
+        "Meyer, Thomas J",
+        "Srikanta, Deepa",
+        "Conlin, Erin M",
+        "Batzer, Mark A"
+      ],
+      "contributors": [],
+      "identifiers": [
+        "oai:pubmedcentral.nih.gov:2837659",
+        null
+      ],
+      "language": {
+        "code": "en",
+        "id": 9,
+        "name": "English"
+      },
+      "publisher": "BioMed Central",
+      "relations": [],
+      "repositories": [
+        {
+          "id": "150",
+          "openDoarId": 0,
+          "name": "PubMed Central",
+          "uri": null,
+          "uriJournals": null,
+          "physicalName": "noname",
+          "source": null,
+          "software": null,
+          "metadataFormat": null,
+          "description": null,
+          "journal": null,
+          "pdfStatus": null,
+          "nrUpdates": 0,
+          "disabled": false,
+          "lastUpdateTime": null,
+          "metadataRecordCount": 0,
+          "metadataDeletedRecordCount": 0,
+          "metadataLinkCount": 0,
+          "metadataSize": 0,
+          "journalMetadataSize": 0,
+          "metadataAge": null,
+          "journalMetadataAge": null,
+          "metadataInIndexCount": 0,
+          "metadataDeletedInIndexCount": 0,
+          "metadataAlloweInIndexCount": 0,
+          "metadataDisabledInIndexCount": 0,
+          "metadataExtractionDate": null,
+          "journalMetadataExtractionDate": null,
+          "databaseRecordCount": 0,
+          "databaseDeletedRecordCount": 0,
+          "databasePdfLinkCount": 0,
+          "databasePdfCount": 0,
+          "databaseDeletedPdfCount": 0,
+          "hardDrivePdfSize": 0,
+          "hardDrivePdfCount": 0,
+          "hardDriveDeletedPdfCount": 0,
+          "databaseTextCount": 0,
+          "databaseTextNotDeletedCount": 0,
+          "hardDriveTextCount": 0,
+          "hardDriveDeletedTextCount": 0,
+          "databaseIndexCount": 0,
+          "indexRecordCount": 0,
+          "indexJournalCount": 0,
+          "indexTextCount": 0,
+          "metadataOnlyIndex": 0,
+          "indexTextCountDB": 0,
+          "indexedPdfDB": 0,
+          "indexedDisabledDB": 0,
+          "indexTextNotDeletedCount": 0,
+          "hardDriveCitationFiles": 0,
+          "citationFilesDb": 0,
+          "crawlingLimit": 0,
+          "citationCount": 0,
+          "citationWithDocCount": 0,
+          "citationDoiCount": 0,
+          "documentDoiCount": 0,
+          "documentDoiWithFulltextCount": 0,
+          "repositoryLocation": null
+        }
+      ],
+      "subjects": [
+        "Text"
+      ],
+      "title": "Heads or tails: L1 insertion-associated 5' homopolymeric sequences",
+      "topics": [
+        "Research"
+      ],
+      "types": [],
+      "duplicates": [],
+      "fulltextUrls": [
+        "https://core.ac.uk/download/pdf/8388736.pdf",
+        "https://core.ac.uk/display/8388736",
+        "http://www.pubmedcentral.nih.gov/articlerender.fcgi?artid=2837659"
+      ],
+      "rawRecordXml": {
+        "datetime": "2016-04-15 21:33:01",
+        "metadata": "<record><header><identifier>oai:pubmedcentral.nih.gov:2837659</identifier><datestamp>2010-03-13</datestamp><setSpec>mdna</setSpec><setSpec>pmc-open</setSpec></header><metadata><oai_dc:dc xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd\" ><dc:title>\n  Heads or tails: L1 insertion-associated 5' homopolymeric sequences</dc:title><dc:creator>\n  Meyer, Thomas J</dc:creator><dc:creator>\n  Srikanta, Deepa</dc:creator><dc:creator>\n  Conlin, Erin M</dc:creator><dc:creator>\n  Batzer, Mark A</dc:creator><dc:subject>\n  Research</dc:subject><dc:description>\n  </dc:description><dc:publisher>\n  BioMed Central</dc:publisher><dc:identifier>\n  http://www.pubmedcentral.nih.gov/articlerender.fcgi?artid=2837659</dc:identifier><dc:type>\n  Text</dc:type><dc:language>\n  en</dc:language><dc:rights>\n  </dc:rights>\n</oai_dc:dc>\n\n</metadata></record>"
+      },
+      "fulltextIdentifier": "https://core.ac.uk/download/pdf/8388736.pdf",
+      "oai": "oai:pubmedcentral.nih.gov:2837659"
+    }
+  },
+  {
+    "status": "OK",
+    "data": {
+      "id": "2097197",
+      "authors": [
+        "Corbelli, Edvige",
+        "Lorenzoni, Silvio",
+        "Walterbos, René A. M.",
+        "Braun, Robert",
+        "Thilker, David A."
+      ],
+      "contributors": [],
+      "datePublished": "2009-12-21",
+      "description": "We test cosmological models of structure formation using the rotation curve\nof the nearest spiral galaxy, M31, determined using a recent deep, full-disk\n21-cm imaging survey smoothed to 466 pc resolution. We fit a tilted ring model\nto the HI data from 8 to 37 kpc. The disk of M31 warps from 25 kpc outwards and\nbecomes more inclined with respect to our line of sight. Newtonian dynamics\nwithout a dark matter halo provide a very poor fit to the rotation curve\nderived using the warp model. In the framework of modified Newtonian dynamic\nhowever the 21-cm rotation curve is well fitted by the gravitational potential\ntraced by the baryonic matter density alone. The inclusion of a dark matter\nhalo with a density profile as predicted by structure formation in a\nhierarchical clustering LambdaCDM cosmology makes the mass model in newtonian\ndynamic compatible with the rotation curve data. The dark halo concentration\nfor the best fit is C=12 and its total mass is 1.2 10^{12} Msun. If a dark halo\nmodel with a constant density core is considered, the core radius has to be\nlarger than 20 kpc in order for the model to fit to the data. We extrapolate\nthe best-fit LambdaCDM and constant-density core mass models to very large\ngalactocentric radii, comparable to the size of the dark matter halo. A\ncomparison of the predicted mass with the M31 mass determined at such large\nradii using other dynamical tracers, confirms the validity of our results. In\nparticular the LambdaCDM dark halo model which best fits the 21-cm data well\nreproduces the M31 mass traced out to 560 kpc. Our estimated total mass of M31\nis 1.3 10^{12} Msun, with 12% baryonic fraction and only 6% of the baryons in\nneutral gas.Comment: 19 pages, 16 figures, accepted for publication in A&",
+      "identifiers": [
+        "oai:arXiv.org:0912.4133",
+        "10.1051/0004-6361"
+      ],
+      "language": {
+        "code": "en",
+        "id": 9,
+        "name": "English"
+      },
+      "relations": [],
+      "repositories": [
+        {
+          "id": "144",
+          "openDoarId": 0,
+          "name": "arXiv.org e-Print Archive",
+          "uri": null,
+          "uriJournals": null,
+          "physicalName": "noname",
+          "source": null,
+          "software": null,
+          "metadataFormat": null,
+          "description": null,
+          "journal": null,
+          "pdfStatus": null,
+          "nrUpdates": 0,
+          "disabled": false,
+          "lastUpdateTime": null,
+          "metadataRecordCount": 0,
+          "metadataDeletedRecordCount": 0,
+          "metadataLinkCount": 0,
+          "metadataSize": 0,
+          "journalMetadataSize": 0,
+          "metadataAge": null,
+          "journalMetadataAge": null,
+          "metadataInIndexCount": 0,
+          "metadataDeletedInIndexCount": 0,
+          "metadataAlloweInIndexCount": 0,
+          "metadataDisabledInIndexCount": 0,
+          "metadataExtractionDate": null,
+          "journalMetadataExtractionDate": null,
+          "databaseRecordCount": 0,
+          "databaseDeletedRecordCount": 0,
+          "databasePdfLinkCount": 0,
+          "databasePdfCount": 0,
+          "databaseDeletedPdfCount": 0,
+          "hardDrivePdfSize": 0,
+          "hardDrivePdfCount": 0,
+          "hardDriveDeletedPdfCount": 0,
+          "databaseTextCount": 0,
+          "databaseTextNotDeletedCount": 0,
+          "hardDriveTextCount": 0,
+          "hardDriveDeletedTextCount": 0,
+          "databaseIndexCount": 0,
+          "indexRecordCount": 0,
+          "indexJournalCount": 0,
+          "indexTextCount": 0,
+          "metadataOnlyIndex": 0,
+          "indexTextCountDB": 0,
+          "indexedPdfDB": 0,
+          "indexedDisabledDB": 0,
+          "indexTextNotDeletedCount": 0,
+          "hardDriveCitationFiles": 0,
+          "citationFilesDb": 0,
+          "crawlingLimit": 0,
+          "citationCount": 0,
+          "citationWithDocCount": 0,
+          "citationDoiCount": 0,
+          "documentDoiCount": 0,
+          "documentDoiWithFulltextCount": 0,
+          "repositoryLocation": null
+        }
+      ],
+      "subjects": [
+        "text"
+      ],
+      "title": "A wide-field HI mosaic of Messier 31. II.The disk warp, rotation and the\n  dark matter halo",
+      "topics": [
+        "Astrophysics - Cosmology and Nongalactic Astrophysics"
+      ],
+      "types": [],
+      "year": 2009,
+      "duplicates": [],
+      "fulltextUrls": [
+        "https://core.ac.uk/download/pdf/2097197.pdf",
+        "https://core.ac.uk/display/2097197",
+        "http://arxiv.org/abs/0912.4133"
+      ],
+      "rawRecordXml": {
+        "datetime": "2016-08-02 19:31:59",
+        "metadata": "<record><header><identifier>\n\n\n oai:arXiv.org:0912.4133</identifier><datestamp>\n 2015-05-14</datestamp><setSpec>\n physics:astro-ph</setSpec>\n</header><metadata><oai_dc:dc xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd\" ><dc:title>\n\n \n A wide-field HI mosaic of Messier 31. II.The disk warp, rotation and the\n  dark matter halo</dc:title><dc:creator>\n Corbelli, Edvige</dc:creator><dc:creator>\n Lorenzoni, Silvio</dc:creator><dc:creator>\n Walterbos, René A. M.</dc:creator><dc:creator>\n Braun, Robert</dc:creator><dc:creator>\n Thilker, David A.</dc:creator><dc:subject>\n Astrophysics - Cosmology and Nongalactic Astrophysics</dc:subject><dc:description>\n   We test cosmological models of structure formation using the rotation curve\nof the nearest spiral galaxy, M31, determined using a recent deep, full-disk\n21-cm imaging survey smoothed to 466 pc resolution. We fit a tilted ring model\nto the HI data from 8 to 37 kpc. The disk of M31 warps from 25 kpc outwards and\nbecomes more inclined with respect to our line of sight. Newtonian dynamics\nwithout a dark matter halo provide a very poor fit to the rotation curve\nderived using the warp model. In the framework of modified Newtonian dynamic\nhowever the 21-cm rotation curve is well fitted by the gravitational potential\ntraced by the baryonic matter density alone. The inclusion of a dark matter\nhalo with a density profile as predicted by structure formation in a\nhierarchical clustering LambdaCDM cosmology makes the mass model in newtonian\ndynamic compatible with the rotation curve data. The dark halo concentration\nfor the best fit is C=12 and its total mass is 1.2 10^{12} Msun. If a dark halo\nmodel with a constant density core is considered, the core radius has to be\nlarger than 20 kpc in order for the model to fit to the data. We extrapolate\nthe best-fit LambdaCDM and constant-density core mass models to very large\ngalactocentric radii, comparable to the size of the dark matter halo. A\ncomparison of the predicted mass with the M31 mass determined at such large\nradii using other dynamical tracers, confirms the validity of our results. In\nparticular the LambdaCDM dark halo model which best fits the 21-cm data well\nreproduces the M31 mass traced out to 560 kpc. Our estimated total mass of M31\nis 1.3 10^{12} Msun, with 12% baryonic fraction and only 6% of the baryons in\nneutral gas.\n</dc:description><dc:description>\n Comment: 19 pages, 16 figures, accepted for publication in A&A</dc:description><dc:date>\n 2009-12-21</dc:date><dc:type>\n text</dc:type><dc:identifier>\n http://arxiv.org/abs/0912.4133</dc:identifier><dc:identifier>\n doi:10.1051/0004-6361/200913297</dc:identifier>\n </oai_dc:dc>\n</metadata>\n</record>"
+      },
+      "fulltextIdentifier": "https://core.ac.uk/download/pdf/2097197.pdf",
+      "doi": "10.1051/0004-6361",
+      "oai": "oai:arXiv.org:0912.4133"
+    }
+  }
+]

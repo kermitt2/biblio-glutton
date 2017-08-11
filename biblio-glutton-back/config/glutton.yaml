@@ -1,0 +1,24 @@
+# biblio-glutton back-end configuration
+
+# path to ISTEX data
+istexDirectory: ../data/istex
+
+# path to the CORE data
+coreDirectory: ../data/core
+
+# path to the PMC data
+pmcDirectory: ../data/pmc
+
+# path to the pubmed data
+#pubmedDirectory: ../data/pubmed
+pubmedDirectory: /mnt/data/biblio/pubmed
+
+# path to the LMDB databases 
+dbDirectory: ../data/db
+
+# the key for using the CORE API
+coreKey: xv8wpum0jYCkZrH7N4iOTMa6L5WD1GRE
+
+# the credentials for using CrossRef
+crossrefLogin: inria
+crossrefPassword: inria518

@@ -1,0 +1,15 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "description": "Crawl ISTEX identifiers with DOI, PII and PMIDs",
+  "main": "dump-istexid-and-other-ids.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "async": "^2.2.0",
+    "requestretry" : "^1.12.0" 
+  },
+  "author": "",
+  "license": "MIT"
+}

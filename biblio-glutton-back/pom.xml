@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+		                    http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.scienceminer.glutton</groupId>
+    <artifactId>com.scienceminer.glutton</artifactId>
+    <packaging>war</packaging>
+    <version>0.0.1</version>
+
+	<name>Biblio Glutton</name>
+	<description>A bibliophical data glutton</description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <lmdbjni.version>0.4.6</lmdbjni.version>
+        <jackson.version>2.9.0.pr3</jackson.version>
+    </properties>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+    </licenses>
+
+    <contributors>
+        <contributor>
+            <name>Patrice Lopez</name>
+            <roles>
+                <role>Developer</role>
+            </roles>
+        </contributor>
+    </contributors>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+
+            <resource>
+                <directory>src</directory>
+                <targetPath>source/src</targetPath>
+            </resource>
+            <resource>
+                <directory>${basedir}</directory>
+                <targetPath>source</targetPath>
+                <includes>
+                    <include>pom.xml</include>
+                </includes>
+            </resource>
+        </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>make-a-jar</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.jolira</groupId>
+                <artifactId>onejar-maven-plugin</artifactId>
+                <version>1.4.4</version>
+                <executions>
+                    <execution>
+                        <configuration>
+                            <mainClass>com.scienceminer.glutton.main.Main</mainClass>
+                            <onejarVersion>0.97</onejarVersion>
+                            <attachToBuild>true</attachToBuild>
+                            <classifier>onejar</classifier>
+                        </configuration>
+                        <goals>
+                            <goal>one-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <inherited>true</inherited>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.12.4</version>
+                <configuration>
+                    <argLine>-Xms256m -Xmx3072m</argLine>
+                </configuration>
+            </plugin>
+
+            <!-- start: for generating license headers in source files. Run mvn license:format -->
+            <plugin>
+                <groupId>com.google.code.maven-license-plugin</groupId>
+                <artifactId>maven-license-plugin</artifactId>
+                <version>1.4.0</version>
+                <configuration>
+                    <header>${basedir}/src/etc/header.txt</header>
+                    <includes>
+                        <include>src/main/java/**</include>
+                        <include>src/test/java/**</include>
+                    </includes>
+                </configuration>
+            </plugin>
+            <!-- end: for generating license headers in source files. Run mvn license:format -->
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.5.1</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>2.1.1</version>
+                <configuration>
+                    <webResources>
+                        <resource>
+                            <directory>src/main/webapp/WEB-INF</directory>
+                            <!--excludes>
+                                <exclude>src/main/resources/</exclude>
+                            </excludes-->
+                            <!--includes>
+                                <include>web.xml</include>
+                            </includes-->
+                            <!--filtering>true</filtering-->
+                            <targetPath>WEB-INF</targetPath>
+                        </resource>
+                        <!--resource>
+                            <directory>utils/brat</directory>
+                            <targetPath>brat</targetPath>
+                        </resource-->
+                        <resource>
+                            <directory>doc</directory>
+                            <targetPath>doc</targetPath>
+                        </resource>
+                        <resource>
+                            <directory>lib</directory>
+                            <targetPath>WEB-INF/lib</targetPath>
+                        </resource>
+                    </webResources>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <version>9.4.2.v20170220</version>
+
+                <configuration>
+                    <jvmArgs>-Xms8g -Xmx13g -Dfile.encoding=UTF-8</jvmArgs>
+                    <scanIntervalSeconds>0</scanIntervalSeconds>
+                    <stopKey/>
+                    <stopPort/>
+                    <systemProperties>
+                        <!-- enable easy JMX connection to JConsole -->
+                        <systemProperty>
+                            <name>com.sun.management.jmxremote</name>
+                            <value/>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>jetty.port</name>
+                            <value>8080</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>maxIdleTime</name>
+                            <value>60000</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>log4j.configuration</name>
+                            <value>log4j-jetty.properties</value>
+                        </systemProperty>
+                    </systemProperties>
+                </configuration>
+            </plugin>
+
+            </plugins>
+	</build>
+
+	<profiles>
+	</profiles>
+
+	<repositories>
+		<repository>
+			<id>3rd-party-local-repo</id>
+			<name>This is a local repository included in the project, to access 3rd party libs.</name>
+			<url>file:///${basedir}/lib/</url>
+			<layout>default</layout>
+		</repository>
+		<repository>
+			<id>maven2-repository.dev.java.net</id>
+			<name>Java.net Repository for Maven</name>
+			<url>http://download.java.net/maven/2/</url>
+			<layout>default</layout>
+		</repository>
+		<repository>
+	    	<id>sonatype-oss-public</id>
+		    <url>https://oss.sonatype.org/content/groups/public/</url>
+		    <releases>
+		      <enabled>true</enabled>
+		    </releases>
+		    <snapshots>
+		      <enabled>true</enabled>
+		    </snapshots>
+	  </repository>
+	</repositories>
+
+	<dependencies>
+		<!--Apache commons -->
+		<dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>4.5.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.9.3</version>
+        </dependency>
+
+        <!-- logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.7.25</version>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
+        </dependency>
+
+        <!-- for test only -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+            <version>1.3</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Jersey and dependencies -->
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>1.8</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-server</artifactId>
+            <version>1.8</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.jersey.contribs</groupId>
+            <artifactId>jersey-multipart</artifactId>
+            <version>1.8</version>
+            <scope>compile</scope>
+        </dependency>
+
+
+        <!-- language identifier (if needed) --> 
+        <!--dependency>
+            <groupId>com.cybozu</groupId>
+            <artifactId>language-detection</artifactId>
+            <version>09-13-2011</version>
+        </dependency-->
+
+        <!-- LMDB -->
+        <dependency>
+            <groupId>org.deephacks.lmdbjni</groupId>
+            <artifactId>lmdbjni</artifactId>
+          <version>${lmdbjni.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.deephacks.lmdbjni</groupId>
+          <artifactId>lmdbjni-linux64</artifactId>
+          <version>${lmdbjni.version}</version>
+        </dependency>
+
+        <!-- machine learning library -->
+        <!--dependency>
+      		<groupId>com.github.haifengl</groupId>
+      		<artifactId>smile-core</artifactId>
+            <version>1.3.1</version>
+        </dependency-->
+
+        <!-- Serialization -->
+    	<dependency>
+			<groupId>com.thoughtworks.xstream</groupId>
+			<artifactId>xstream</artifactId>
+			<version>1.4.9</version>
+		</dependency>
+		<dependency>
+    		<groupId>de.ruedigermoeller</groupId>
+		    <artifactId>fst</artifactId>
+		    <version>2.50</version>
+		</dependency>
+		<dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+        	<groupId>com.fasterxml.jackson.dataformat</groupId>
+        	<artifactId>jackson-dataformat-yaml</artifactId>
+        	<version>${jackson.version}</version>
+	    </dependency>
+
+        <!-- for GROBID NER -->
+        <!--dependency>
+            <groupId>org.grobid</groupId>
+            <artifactId>grobid-core</artifactId>
+            <version>0.4.2-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/grobid-core-0.4.2-SNAPSHOT.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>org.grobid.ner</groupId>
+            <artifactId>grobid-ner</artifactId>
+            <version>0.4.2-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/grobid-ner-0.4.2-SNAPSHOT.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>directory-naming</groupId>
+            <artifactId>naming-java</artifactId>
+            <version>0.8</version>
+        </dependency>
+        <dependency>
+            <groupId>fr.limsi.wapiti</groupId>
+            <artifactId>wapiti</artifactId>
+            <version>1.5.0</version>
+        </dependency>
+		<dependency>
+            <groupId>org.wipo.analysers</groupId>
+            <artifactId>wipo-analysers</artifactId>
+            <version>0.0.1</version>
+        </dependency-->
+        
+		<!-- utilities -->
+		<dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>19.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.arnx</groupId>
+            <artifactId>jsonic</artifactId>
+            <version>1.3.10</version>
+        </dependency>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>2.9.9</version>
+        </dependency>
+        
+        <!-- LMDB -->
+        <dependency>
+            <groupId>org.deephacks.lmdbjni</groupId>
+            <artifactId>lmdbjni</artifactId>
+            <version>${lmdbjni.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deephacks.lmdbjni</groupId>
+            <artifactId>lmdbjni-linux64</artifactId>
+            <version>${lmdbjni.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deephacks.lmdbjni</groupId>
+            <artifactId>lmdbjni-osx64</artifactId>
+            <version>${lmdbjni.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deephacks.lmdbjni</groupId>
+            <artifactId>lmdbjni-win64</artifactId>
+            <version>${lmdbjni.version}</version>
+        </dependency>
+        
+        <!-- Special libraries -->
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>1.4.8</version>
+        </dependency>
+
+    </dependencies>
+</project>
