@@ -54,11 +54,17 @@ public class MedlineSaxHandler extends DefaultHandler {
     private String lastPage = null;
     private String articleTitle = null;
 
+    private List<Person> authors;
+    private List<Affiliation> affiliations = null;
     private String lastName = null;
     private String foreName = null;
     private String suffix = null;
 	private String initials = null;
-	private String authorIdentifier = null;
+	private String identifier = null;
+	private String identifierSource = null;
+	private Identifier identifierObject = null;
+	private Identifier authorIdentifierObject = null;
+	private String affiliationString = null;
 
 	private String language = null;
 
@@ -66,6 +72,7 @@ public class MedlineSaxHandler extends DefaultHandler {
     private boolean pubDate = false;
     private boolean electronic = false;
     private boolean print = false;
+    private boolean inAffiliationInfo = false;
 
     private DateTimeFieldType[] fieldYMD = new DateTimeFieldType[] {
        	DateTimeFieldType.year(),
@@ -172,25 +179,33 @@ public class MedlineSaxHandler extends DefaultHandler {
     	} else if (qName.equals("Chemical")) {
     		// store the chemical
     		MeSHClass mesh = new MeSHClass();
-    		mesh.setChemicalNameOfSubstance(chemicalNameOfSubstance);
-    		mesh.setChemicalRegistryNumber(chemicalRegistryNumber);
-    		mesh.setChemicalUI(chemicalUI);
+    		if ( (chemicalNameOfSubstance != null) && (chemicalNameOfSubstance.length() > 0) )
+	    		mesh.setChemicalNameOfSubstance(chemicalNameOfSubstance);
+	    	if ( (chemicalRegistryNumber != null) && (chemicalRegistryNumber.length() > 0) )
+    			mesh.setChemicalRegistryNumber(chemicalRegistryNumber);
+    		if ( (chemicalUI != null) && (chemicalUI.length() > 0) )
+    			mesh.setChemicalUI(chemicalUI);
 
-    		biblio.addClass(mesh);
+    		if ( (chemicalUI != null) && (chemicalUI.length() > 0) )
+    			biblio.addClass(mesh);
 
     		chemicalUI = null;
 			chemicalNameOfSubstance = null;
 			chemicalRegistryNumber = null;
         } else if (qName.equals("MeshHeading")) {
 			MeSHClass mesh = new MeSHClass();
-    		mesh.setDescriptorUI(descriptorUI);
-    		mesh.setDescriptorName(descriptorName);
-    		mesh.setQualifierUI(qualifierUI);
-    		mesh.setQualifierName(qualifierName);
-    		mesh.setMajorTopicDescriptor(majorTopicDescriptor);
+			if ( (descriptorUI != null) && (descriptorUI.length() > 0) )
+    			mesh.setDescriptorUI(descriptorUI);
+    		if ( (descriptorName != null) && (descriptorName.length() > 0) )
+    			mesh.setDescriptorName(descriptorName);
+    		if ( (qualifierUI != null) && (qualifierUI.length() > 0) )
+	    		mesh.setQualifierUI(qualifierUI);
+    		if ( (qualifierName != null) && (qualifierName.length() > 0) )
+    			mesh.setQualifierName(qualifierName);
     		mesh.setMajorTopicQualifier(majorTopicQualifier);
 
-    		biblio.addClass(mesh);
+    		if ( (descriptorUI != null) && (descriptorUI.length() > 0) )
+    			biblio.addClass(mesh);
 
     		descriptorUI = null;
     		qualifierUI = null;
@@ -444,12 +459,66 @@ public class MedlineSaxHandler extends DefaultHandler {
         } else if (qName.equals("Initials")) {
         	initials = getText();
         } else if (qName.equals("Identifier")) {
-        	authorIdentifier = getText();
+        	identifier = getText();
+        	if (inAffiliationInfo)
+	        	identifierObject = new Identifier(identifierSource, identifier);
+	        else 
+	        	authorIdentifierObject = new Identifier(identifierSource, identifier);
+        	identifier = null;
+			identifierSource = null;
         } else if (qName.equals("Author")) {
         	Person author = new Person();
-        	
-        } 
+        	if ( (lastName != null) && (lastName.length() > 0) )
+	        	author.setLastName(lastName);
+	        if ( (foreName != null) && (foreName.length() > 0) )
+	        	author.setFirstName(foreName);
+	        if ( (suffix != null) && (suffix.length() > 0) )
+	        	author.setSuffix(suffix);
+	        if ( (initials != null) && (initials.length() > 0) )
+	        	author.setInits(initials);
 
+	        if ( (authorIdentifierObject != null) && 
+	        	 (authorIdentifierObject.getIdentifierName() != null) && 
+	        	 (authorIdentifierObject.getIdentifierValue() != null) ) {
+	        	author.addIdentifier(authorIdentifierObject);
+	        }
+
+	        if ( (affiliations != null) && (affiliations.size() > 0) )
+	        	author.setAffiliations(affiliations);
+
+	        if (author.getLastName() != null) {
+	        	authors.add(author);
+	        }
+	        author = null;
+	        lastName = null;
+	        foreName = null;
+	        suffix = null;
+	        initials = null;
+	        authorIdentifierObject = null;
+	        affiliations = null;
+        } else if (qName.equals("AuthorList")) { 
+        	if ( (authors != null) && (authors.size() >0) )
+        		biblio.setAuthors(authors);
+        	authors = null;
+        } else if (qName.equals("AffiliationInfo")) { 
+        	// create an affiliation to be attached to the current author
+        	if ( (affiliationString != null) && (affiliationString.length() >0) ) {
+	        	Affiliation affiliation = new Affiliation(affiliationString);
+	        	if ( (identifierObject != null) && 
+		        	 (identifierObject.getIdentifierName() != null) && 
+		        	 (identifierObject.getIdentifierValue() != null) ) {
+		        	affiliation.addIdentifier(identifierObject);
+		        }
+		        if (affiliations == null)
+		        	affiliations = new ArrayList<Affiliation>();
+		        affiliations.add(affiliation);
+		    }
+        	inAffiliationInfo = false;
+        	affiliationString = null;
+        	identifierObject = null;
+        } else if (qName.equals("Affiliation")) { 
+        	affiliationString = getText();
+        }
 
         accumulator.setLength(0);
     }
@@ -515,7 +584,7 @@ public class MedlineSaxHandler extends DefaultHandler {
             }
         } else if (qName.equals("PubDate")) {
         	pubDate = true;
-        } if (qName.equals("ISSN")) {
+        } else if (qName.equals("ISSN")) {
         	int length = atts.getLength();
 
             // Process each attribute
@@ -533,6 +602,27 @@ public class MedlineSaxHandler extends DefaultHandler {
                     }
                 }
             }
+        } else if (qName.equals("AuthorList")) { 
+        	authors = new ArrayList<Person>();
+        } else if (qName.equals("Author")) { 
+        	affiliations = new ArrayList<Affiliation>();
+        } else if (qName.equals("Identifier")) { 
+        	int length = atts.getLength();
+
+            // Process each attribute
+            for (int i = 0; i < length; i++) {
+                // Get names and values for each attribute
+                String name = atts.getQName(i);
+                String value = atts.getValue(i);
+
+                if ((name != null) & (value != null)) {
+                    if (name.equals("Source")) {
+                        identifierSource = value;
+                    } 
+                }
+            }
+        } else if (qName.equals("AffiliationInfo")) {
+        	inAffiliationInfo = true;
         }
     }
 }
