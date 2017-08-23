@@ -33,11 +33,11 @@ public class MedlineSaxHandler extends DefaultHandler {
     private String chemicalRegistryNumber = null;
 
     private String descriptorUI = null;
-    private String qualifierUI = null;
+    private List<String> qualifierUIs = null;
     private String descriptorName = null;
-    private String qualifierName = null;
+    private List<String> qualifierNames = null;
     private boolean majorTopicDescriptor = false;
-    private boolean majorTopicQualifier = false;
+    private List<Boolean> majorTopicQualifiers = null;
 
     // biblio
     private Integer pmid = null;
@@ -198,21 +198,21 @@ public class MedlineSaxHandler extends DefaultHandler {
     			mesh.setDescriptorUI(descriptorUI);
     		if ( (descriptorName != null) && (descriptorName.length() > 0) )
     			mesh.setDescriptorName(descriptorName);
-    		if ( (qualifierUI != null) && (qualifierUI.length() > 0) )
-	    		mesh.setQualifierUI(qualifierUI);
-    		if ( (qualifierName != null) && (qualifierName.length() > 0) )
-    			mesh.setQualifierName(qualifierName);
-    		mesh.setMajorTopicQualifier(majorTopicQualifier);
+    		if ( (qualifierUIs != null) && (qualifierUIs.size() > 0) )
+	    		mesh.setQualifierUIs(qualifierUIs);
+    		if ( (qualifierNames != null) && (qualifierNames.size() > 0) )
+    			mesh.setQualifierNames(qualifierNames);
+    		mesh.setMajorTopicQualifiers(majorTopicQualifiers);
 
     		if ( (descriptorUI != null) && (descriptorUI.length() > 0) )
     			biblio.addClass(mesh);
 
     		descriptorUI = null;
-    		qualifierUI = null;
+    		qualifierUIs = null;
     		descriptorName = null;
-    		qualifierName = null;
+    		qualifierNames = null;
     		majorTopicDescriptor = false;
-    		majorTopicQualifier = false;
+    		majorTopicQualifiers = null;
 		} else if (qName.equals("RegistryNumber")) {
 			chemicalRegistryNumber = getText();
 		} else if (qName.equals("NameOfSubstance")) {
@@ -220,7 +220,9 @@ public class MedlineSaxHandler extends DefaultHandler {
 		} else if (qName.equals("DescriptorName")) {
 			 descriptorName = getText();
 		} else if (qName.equals("QualifierName")) {
-			 qualifierName = getText();
+			if (qualifierNames == null)
+				qualifierNames = new ArrayList<String>();
+			 qualifierNames.add(getText());
 		} else if (qName.equals("MedlinePgn")) {
 			// this is the pagination type used in practice currently
 			String pagination = getText(); 
@@ -575,10 +577,19 @@ public class MedlineSaxHandler extends DefaultHandler {
 
                 if ((name != null) & (value != null)) {
                     if (name.equals("UI")) {
-                        qualifierUI = value;
+                    	if (qualifierUIs == null)
+                    		qualifierUIs = new ArrayList<String>();
+                        qualifierUIs.add(value);
                     } else if (name.equals("MajorTopicYN")) {
-                    	if (value.equals("Y"))
-	                        majorTopicQualifier = true;
+                    	if (value.equals("Y")) {
+                    		if (majorTopicQualifiers == null)
+                    			majorTopicQualifiers = new ArrayList<Boolean>();
+	                        majorTopicQualifiers.add(new Boolean(true));
+                    	} else {
+                    		if (majorTopicQualifiers == null)
+                    			majorTopicQualifiers = new ArrayList<Boolean>();
+	                        majorTopicQualifiers.add(new Boolean(false));
+                    	}
                     }
                 }
             }
