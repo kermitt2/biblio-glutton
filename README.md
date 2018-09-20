@@ -1,12 +1,32 @@
 # biblio-glutton framework
 
-Identify dynamically Open Access resources in the browser pages.
-
 The framework is based on a back-end service implementing bibliographical ingestion, aggregation and data provision functionalities and browser addon based on the WebExtension framework.  
 
 ## biblio-glutton backend
 
 Any command will first initialize the `staging area` databases, this is only done the first time a command is launched.
+
+### ISTEX identifier mapping
+
+For creating a dump of all ISTEX identifiers associated with existing identifiers (DOI, ark, pii), use the node.js script as f
+follow:
+
+* install:
+
+```bash
+> cd scripts
+>  npm install requestretry
+```
+
+* Generate the json dump:
+
+```bash
+> node dump-istexid-and-other-ids.js > istexIds.all
+```
+
+Be sure to have a good internet bandwidth for ensuring a high rate usage of the ISTEX REST API.
+
+You can then move the json dump (e.g. `istexIds.all`) to the Istex data path indicated in the file `config/glutton.yaml` (by default `data/istex/`). 
 
 ### ISTEX to PubMed mapping
 

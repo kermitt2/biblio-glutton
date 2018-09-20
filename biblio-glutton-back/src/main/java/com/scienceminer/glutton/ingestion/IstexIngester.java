@@ -51,6 +51,7 @@ public class IstexIngester {
         int totalPmidWithMeSHClass = 0;
         int totalMeSHClasses = 0;
         int totalIstexId = 0;
+        int totalIstexArk = 0;
         int totalConflicts = 0;
         try {
         	// output file
@@ -81,6 +82,17 @@ public class IstexIngester {
 					JsonNode istexNode = rootNode.findPath("istexId");
 					if ((istexNode != null) && (!istexNode.isMissingNode())) {
 						istexId = istexNode.textValue();
+					}
+
+					String istexArk = null;
+					JsonNode istexArkNode = rootNode.findPath("ark");
+					if ((istexArkNode != null) && (!istexArkNode.isMissingNode())) {
+						Iterator<JsonNode> ite = istexArkNode.elements();
+			        	if (ite.hasNext()) {
+				        	JsonNode arkValNode = ite.next();
+				        	istexArk = arkValNode.textValue();
+				        	totalIstexArk++;
+				        }
 					}
 
 			        String doi = null;
@@ -183,6 +195,12 @@ public class IstexIngester {
 						newJson.append(",\"doi\":[");
 						if (doi != null) {
 							newJson.append("\""+doi+"\"");
+						}
+						newJson.append("]");
+
+						newJson.append(",\"ark\":[");
+						if (istexArk != null) {
+							newJson.append("\""+istexArk+"\"");
 						}
 						newJson.append("]");
 

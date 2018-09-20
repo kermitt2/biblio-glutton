@@ -16,3 +16,5 @@ data/core
 data/pubmed
 data/pmc
 data/db
+scripts/dump.json
+scripts/dump.json.gz
