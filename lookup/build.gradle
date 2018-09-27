@@ -1,0 +1,75 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.2'
+    }
+}
+
+
+apply plugin: 'application'
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+
+group 'com.scienceminer.istex'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+// The main class of the application
+mainClassName = 'web.GCServiceApplication'
+tasks.run.workingDir = rootProject.rootDir
+
+
+repositories {
+    mavenCentral()
+
+}
+
+sourceSets.main.resources {
+    srcDirs = ["src/main/resources", "data/config"];
+}
+
+processResources {
+    filesMatching('**/*.config.yml') {
+        filter {
+            it.replace('project.version', project.property('version_placeholder'))
+        }
+    }
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile "org.hamcrest:hamcrest-all:1.3"
+
+    compile "io.dropwizard:dropwizard-core:1.1.0"
+    compile "io.dropwizard:dropwizard-assets:1.1.0"
+    compile "com.hubspot.dropwizard:dropwizard-guicier:1.3.5.0"
+    compile "io.dropwizard:dropwizard-testing:1.1.0"
+    compile "io.dropwizard:dropwizard-forms:1.1.0"
+    compile "io.dropwizard:dropwizard-client:1.1.0"
+    compile "io.dropwizard:dropwizard-auth:1.1.0"
+    compile 'org.lmdbjava:lmdbjava:0.6.1'
+    compile 'de.ruedigermoeller:fst:2.50'
+}
+
+shadowJar {
+    classifier = 'onejar'
+    mergeServiceFiles()
+    zip64 true
+    manifest {
+        attributes 'Main-Class': mainClassName
+    }
+}
+
+artifacts {
+    archives shadowJar
+}
