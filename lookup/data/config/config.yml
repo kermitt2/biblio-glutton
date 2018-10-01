@@ -1,5 +1,5 @@
 
-storage: data2/db
+storage: data/db
 #storage: /Volumes/SEAGATE1TB/scienceminer/glutter/lmdb
 version: version_placeholder
 
