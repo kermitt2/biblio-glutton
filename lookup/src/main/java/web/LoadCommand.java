@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import storage.lookup.MetadataDoiLookup;
 import storage.lookup.DoiIstexIdsLookup;
-import web.configuration.GCConfiguration;
+import web.configuration.LookupConfiguration;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -18,7 +18,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
-public class LoadCommand extends ConfiguredCommand<GCConfiguration> {
+public class LoadCommand extends ConfiguredCommand<LookupConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadCommand.class);
 
     public static final String UNPAIDWALL_SOURCE = "unpaidwallSource";
@@ -49,7 +49,7 @@ public class LoadCommand extends ConfiguredCommand<GCConfiguration> {
     }
 
     @Override
-    protected void run(Bootstrap bootstrap, Namespace namespace, GCConfiguration configuration) throws Exception {
+    protected void run(Bootstrap bootstrap, Namespace namespace, LookupConfiguration configuration) throws Exception {
         final String unpaidWallFilePath = namespace.get(UNPAIDWALL_SOURCE);
         final String istexFilePath = namespace.get(ISTEX_SOURCE);
         LOGGER.info("Preparing the system. Loading data for unpaidwall from " + unpaidWallFilePath

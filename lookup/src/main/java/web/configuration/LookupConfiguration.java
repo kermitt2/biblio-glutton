@@ -2,7 +2,7 @@ package web.configuration;
 
 import io.dropwizard.Configuration;
 
-public class GCConfiguration extends Configuration {
+public class LookupConfiguration extends Configuration {
 
     private String storage;
 

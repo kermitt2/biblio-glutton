@@ -5,14 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Binder;
 import com.google.inject.Provides;
 import com.hubspot.dropwizard.guicier.DropwizardAwareModule;
-import web.configuration.GCConfiguration;
+import web.configuration.LookupConfiguration;
 import web.resource.DataController;
 import web.resource.LookupController;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 
-public class GCServiceModule extends DropwizardAwareModule<GCConfiguration> {
+public class LookupServiceModule extends DropwizardAwareModule<LookupConfiguration> {
 
 
     @Override

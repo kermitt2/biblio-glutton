@@ -3,8 +3,7 @@ package web.healthcheck;
 import com.codahale.metrics.health.HealthCheck;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import storage.StorageLMDB;
-import web.configuration.GCConfiguration;
+import web.configuration.LookupConfiguration;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -18,7 +17,7 @@ import javax.ws.rs.core.Response;
 public class GCHealthCheck extends HealthCheck {
 
     @Inject
-    private GCConfiguration configuration;
+    private LookupConfiguration configuration;
 
     @Inject
     public GCHealthCheck() {
