@@ -9,14 +9,13 @@ import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import web.configuration.LookupConfiguration;
-import web.healthcheck.GCHealthCheck;
+import web.healthcheck.LookupHealthCheck;
 import web.module.LookupServiceModule;
 
 import java.util.List;
 
 public final class LookupServiceApplication extends Application<LookupConfiguration> {
     private static final String RESOURCES = "/service";
-
 
     // ========== Application ==========
     @Override
@@ -26,11 +25,11 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
 
     @Override
     public void run(LookupConfiguration lookupConfiguration, Environment environment) throws Exception {
+
         environment.jersey().setUrlPattern(RESOURCES + "/*");
 
-        final GCHealthCheck healthCheck = new GCHealthCheck();
-        environment.healthChecks().register("GCHealth", healthCheck);
-
+        final LookupHealthCheck healthCheck = new LookupHealthCheck();
+        environment.healthChecks().register("HealthCheck", healthCheck);
     }
 
     private List<? extends Module> getGuiceModules() {
@@ -45,7 +44,6 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
                 .build();
         bootstrap.addBundle(guiceBundle);
         bootstrap.addBundle(new MultiPartBundle());
-
         bootstrap.addCommand(new LoadCommand());
     }
 

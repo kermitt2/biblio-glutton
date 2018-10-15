@@ -20,7 +20,7 @@ public class DoiLookupTest {
 
     @Before
     public void setUp() throws Exception {
-        target = new MetadataDoiLookup("/tmp/test");
+//        target = new MetadataDoiLookup("/tmp/test");
     }
 
     @After
@@ -31,9 +31,9 @@ public class DoiLookupTest {
                 .forEach(File::delete);
     }
 
-    @Test
-    public void testSimpleFile() throws Exception {
-        target.loadFromFile(new FileInputStream("/Users/lfoppiano/development/scienceminer/consolidationData/unpaywall_sample.json"), new UnpaidWallReader());
-    }
+//    @Test
+//    public void testSimpleFile() throws Exception {
+//        target.loadFromFile(new FileInputStream("/Users/lfoppiano/development/scienceminer/consolidationData/unpaywall_sample.json"), new UnpaidWallReader());
+//    }
 
 }

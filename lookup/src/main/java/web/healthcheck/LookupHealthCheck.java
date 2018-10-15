@@ -14,13 +14,13 @@ import javax.ws.rs.core.Response;
 @Path("health")
 @Singleton
 @Produces("application/json;charset=UTF-8")
-public class GCHealthCheck extends HealthCheck {
+public class LookupHealthCheck extends HealthCheck {
 
     @Inject
     private LookupConfiguration configuration;
 
     @Inject
-    public GCHealthCheck() {
+    public LookupHealthCheck() {
     }
 
     @GET

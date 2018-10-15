@@ -3,6 +3,7 @@ package web.resource;
 import com.google.inject.Inject;
 import data.IstexData;
 import org.apache.commons.lang3.tuple.Pair;
+import storage.StorageEnvFactory;
 import storage.StorageLMDB;
 import web.configuration.LookupConfiguration;
 
@@ -21,9 +22,9 @@ public class DataController {
     private LookupConfiguration configuration;
 
     @Inject
-    public DataController(LookupConfiguration configuration) {
+    public DataController(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) {
         this.configuration = configuration;
-        this.storage = new StorageLMDB(configuration.getStorage());
+        this.storage = new StorageLMDB(storageEnvFactory);
     }
 
     @GET

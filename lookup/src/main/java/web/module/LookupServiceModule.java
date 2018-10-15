@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Binder;
 import com.google.inject.Provides;
 import com.hubspot.dropwizard.guicier.DropwizardAwareModule;
+import storage.StorageEnvFactory;
 import web.configuration.LookupConfiguration;
 import web.resource.DataController;
 import web.resource.LookupController;
@@ -20,6 +21,8 @@ public class LookupServiceModule extends DropwizardAwareModule<LookupConfigurati
         //REST
         binder.bind(LookupController.class);
         binder.bind(DataController.class);
+
+        binder.bind(StorageEnvFactory.class);
     }
 
     @Provides

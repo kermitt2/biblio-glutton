@@ -1,5 +1,7 @@
 package storage.lookup;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.annotation.Timed;
 import data.IstexData;
 import loader.IstexIdsReader;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -8,8 +10,8 @@ import org.lmdbjava.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import storage.BinarySerialiser;
+import storage.StorageEnvFactory;
 
-import java.io.File;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -27,28 +29,17 @@ public class DoiIstexIdsLookup {
 
     protected Env<ByteBuffer> environment;
     protected Dbi<ByteBuffer> db;
-    protected String storagePath;
 
     public static final String NAME = "istex";
     private final static int BATCH_SIZE = 10000;
 
-    public DoiIstexIdsLookup(String storagePath) {
-        this.storagePath = storagePath;
-
-        File thePath = new File(this.storagePath);
-        if (!thePath.exists()) {
-            thePath.mkdirs();
-        }
-
-        this.environment = Env.create()
-                .setMapSize(100L * 1024L * 1024L * 1024L)
-                .setMaxReaders(126)
-                .open(thePath, EnvFlags.MDB_NOTLS);
+    public DoiIstexIdsLookup(StorageEnvFactory storageEnvFactory) {
+        this.environment = storageEnvFactory.getEnv();
 
         db = this.environment.openDbi(NAME, DbiFlags.MDB_CREATE);
     }
 
-    public void loadFromFile(InputStream is, IstexIdsReader reader) {
+    public void loadFromFile(InputStream is, IstexIdsReader reader, Meter metric) {
         final AtomicInteger totalCounter = new AtomicInteger(0);
         final AtomicInteger partialCounter = new AtomicInteger(0);
 
@@ -61,6 +52,7 @@ public class DoiIstexIdsLookup {
                 
                 //unwrapping list of dois
                 for (String doi : istexData.getDoi()) {
+                    metric.mark();
                     store(doi, istexData, tx);
                     partialCounter.incrementAndGet();
                 }

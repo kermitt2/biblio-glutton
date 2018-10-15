@@ -20,9 +20,9 @@ public class StorageLMDB {
 
     }
 
-    public StorageLMDB(String storagePath) {
-        this.doiLookup = new MetadataDoiLookup(storagePath);
-        this.istexLookup = new DoiIstexIdsLookup(storagePath);
+    public StorageLMDB(StorageEnvFactory storageFactory) {
+        this.doiLookup = new MetadataDoiLookup(storageFactory);
+        this.istexLookup = new DoiIstexIdsLookup(storageFactory);
     }
 
 
