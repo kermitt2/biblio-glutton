@@ -52,12 +52,10 @@ function initIndex(indexName) {
         index: indexName
     }).then(function (resp) {
         console.log(resp);
-        res.status(200)
-        return res.json(resp)
+        return true;
     }, function (err) {
         console.log(err.message);
-        res.status(500)
-        return res.json(err)
+        return false;
     });
 }
 
