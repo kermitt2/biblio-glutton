@@ -9,9 +9,13 @@
   "author": "Patrice Lopez",
   "license": "Apache-2.0",
   "keywords": [
-    "crossref", "DOI"
+    "crossref",
+    "DOI"
   ],
   "dependencies": {
-    "elasticsearch": "~15.1.1"
+    "elasticsearch": "~15.1.1",
+    "event-stream": "^4.0.1",
+    "lzma-native": "^4.0.2"
+//    "elasticsearch-writable-stream": "^2.0.1"
   }
 }
