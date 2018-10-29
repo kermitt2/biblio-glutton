@@ -20,4 +20,4 @@ scripts/dump.json
 scripts/dump.json.gz
 lookup/build
 .gradle
-
+node_modules
