@@ -21,9 +21,15 @@ When `action` is one of [`health`, `index`]
 
 Example:
 
+```
 > node main health
+```
 
+```
 > node main -dump ~/tmp/crossref-works.2018-09-05.json.xz index
+```
+
+Parameter `-force` when use with action `index` will fully re-index the data if true, deleting existing index. 
 
 ## Requirements
 
