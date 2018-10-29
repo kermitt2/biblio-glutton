@@ -18,14 +18,14 @@
         },
         "authors": {
             "type": "text",
-            "analyzer": "case_insensitive_folding"
+            "analyzer": "case_insensitive_folding_text"
         },
         "first_page": {
             "type": "keyword"
         }, 
         "journal": {
             "type": "text",
-            "analyzer": "case_insensitive_folding"
+            "analyzer": "case_insensitive_folding_text"
         },
         "abbreviated_journal": {
             "type": "keyword",
