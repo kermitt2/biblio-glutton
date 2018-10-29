@@ -8,49 +8,47 @@ import io.dropwizard.Application;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import web.configuration.GCConfiguration;
-import web.healthcheck.GCHealthCheck;
-import web.module.GCServiceModule;
+import web.configuration.LookupConfiguration;
+import web.healthcheck.LookupHealthCheck;
+import web.module.LookupServiceModule;
 
 import java.util.List;
 
-public final class GCServiceApplication extends Application<GCConfiguration> {
+public final class LookupServiceApplication extends Application<LookupConfiguration> {
     private static final String RESOURCES = "/service";
-
 
     // ========== Application ==========
     @Override
     public String getName() {
-        return "grobid-consolidation";
+        return "lookup-service";
     }
 
     @Override
-    public void run(GCConfiguration nerdKidConfiguration, Environment environment) throws Exception {
+    public void run(LookupConfiguration lookupConfiguration, Environment environment) throws Exception {
+
         environment.jersey().setUrlPattern(RESOURCES + "/*");
 
-        final GCHealthCheck healthCheck = new GCHealthCheck();
-        environment.healthChecks().register("GCHealth", healthCheck);
-
+        final LookupHealthCheck healthCheck = new LookupHealthCheck();
+        environment.healthChecks().register("HealthCheck", healthCheck);
     }
 
     private List<? extends Module> getGuiceModules() {
-        return Lists.newArrayList(new GCServiceModule());
+        return Lists.newArrayList(new LookupServiceModule());
     }
 
 
     @Override
-    public void initialize(Bootstrap<GCConfiguration> bootstrap) {
-        GuiceBundle<GCConfiguration> guiceBundle = GuiceBundle.defaultBuilder(GCConfiguration.class)
+    public void initialize(Bootstrap<LookupConfiguration> bootstrap) {
+        GuiceBundle<LookupConfiguration> guiceBundle = GuiceBundle.defaultBuilder(LookupConfiguration.class)
                 .modules(getGuiceModules())
                 .build();
         bootstrap.addBundle(guiceBundle);
         bootstrap.addBundle(new MultiPartBundle());
-
         bootstrap.addCommand(new LoadCommand());
     }
 
     // ========== static ==========
     public static void main(String... args) throws Exception {
-        new GCServiceApplication().run(args);
+        new LookupServiceApplication().run(args);
     }
 }

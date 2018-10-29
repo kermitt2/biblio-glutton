@@ -1,5 +1,6 @@
 package storage.lookup;
 
+import com.codahale.metrics.Meter;
 import loader.UnpaidWallReader;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
@@ -9,8 +10,8 @@ import org.lmdbjava.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import storage.BinarySerialiser;
+import storage.StorageEnvFactory;
 
-import java.io.File;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
@@ -32,25 +33,15 @@ public class MetadataDoiLookup {
     protected Env<ByteBuffer> environment;
     protected Dbi<ByteBuffer> dbMetadataDoi;
     protected Dbi<ByteBuffer> dbDoiOAUrl;
-    protected String storagePath;
 
     public static final String NAME_METADATA_DOI = "metadataDoi";
     public static final String NAME_DOI_OA_URL = "doiOAUrl";
     private final static int BATCH_SIZE = 10000;
 
-    public MetadataDoiLookup(String storagePath) {
-        this.storagePath = storagePath;
 
-        File thePath = new File(this.storagePath);
-        if (!thePath.exists()) {
-            thePath.mkdirs();
-        }
+    public MetadataDoiLookup(StorageEnvFactory storageEnvFactory) {
 
-        this.environment = Env.create()
-                .setMapSize(100L * 1024L * 1024L * 1024L)
-                .setMaxReaders(126)
-                .setMaxDbs(2)
-                .open(thePath, EnvFlags.MDB_NOTLS);
+        this.environment = storageEnvFactory.getEnv();
 
         dbMetadataDoi = this.environment.openDbi(NAME_METADATA_DOI, DbiFlags.MDB_CREATE);
         dbDoiOAUrl = this.environment.openDbi(NAME_DOI_OA_URL, DbiFlags.MDB_CREATE);
@@ -165,7 +156,7 @@ public class MetadataDoiLookup {
         throw new RuntimeException("Cannot calculate Md5 of " + title);
     }
 
-    public void loadFromFile(InputStream is, UnpaidWallReader loader) {
+    public void loadFromFile(InputStream is, UnpaidWallReader loader, Meter meter) {
         final AtomicInteger partialCounter = new AtomicInteger(0);
         final AtomicInteger totalCounter = new AtomicInteger(0);
 
@@ -189,6 +180,7 @@ public class MetadataDoiLookup {
                         LOGGER.debug(key + "," + unpaidWallMetadata.getTitle() + "," + issn);
 //                        unpaidWallMetadata.getVolume(), unpaidWallMetadata.getFirstPage());
 
+                        meter.mark();
                         store(key, unpaidWallMetadata.getDoi(), dbMetadataDoi, tx);
                         partialCounter.incrementAndGet();
                     }
@@ -196,6 +188,7 @@ public class MetadataDoiLookup {
                     key = getKeyHash(unpaidWallMetadata.getTitle(), null, null, null);
 
                     LOGGER.debug(key + "," + unpaidWallMetadata.getTitle() + "," + Arrays.toString(unpaidWallMetadata.getJournalIssnsList().toArray()));
+                    meter.mark();
                     store(key, unpaidWallMetadata.getDoi(), dbMetadataDoi, tx);
                     partialCounter.incrementAndGet();
                 }

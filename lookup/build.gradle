@@ -25,7 +25,7 @@ version '1.0-SNAPSHOT'
 sourceCompatibility = 1.8
 
 // The main class of the application
-mainClassName = 'web.GCServiceApplication'
+mainClassName = 'web.LookupServiceApplication'
 tasks.run.workingDir = rootProject.rootDir
 
 
@@ -57,6 +57,8 @@ dependencies {
     compile "io.dropwizard:dropwizard-forms:1.1.0"
     compile "io.dropwizard:dropwizard-client:1.1.0"
     compile "io.dropwizard:dropwizard-auth:1.1.0"
+    compile "io.dropwizard.metrics:metrics-core:4.0.0"
+    compile "io.dropwizard.metrics:metrics-servlets:4.0.0"
     compile 'org.lmdbjava:lmdbjava:0.6.1'
     compile 'de.ruedigermoeller:fst:2.50'
 }

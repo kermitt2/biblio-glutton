@@ -1,9 +1,0 @@
-
-storage: data2/db
-#storage: /Volumes/SEAGATE1TB/scienceminer/glutter/lmdb
-version: version_placeholder
-
-#source:
-#  unpaidwall: /Users/lfoppiano/development/scienceminer/consolidation data/unpaywall_sample.json
-#  istex: /Users/lfoppiano/development/scienceminer/consolidation data/sample-istex-ids.json
-#

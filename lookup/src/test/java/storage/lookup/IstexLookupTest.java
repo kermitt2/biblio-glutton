@@ -20,7 +20,7 @@ public class IstexLookupTest {
 
     @Before
     public void setUp() throws Exception {
-        target = new DoiIstexIdsLookup("/tmp/test");
+//        target = new DoiIstexIdsLookup("/tmp/test");
     }
 
     @After
@@ -31,9 +31,9 @@ public class IstexLookupTest {
                 .forEach(File::delete);
     }
 
-    @Test
-    public void testSimpleFile() throws Exception {
-        target.loadFromFile(new FileInputStream("/Users/lfoppiano/development/scienceminer/consolidation data/sample-istex-ids.json"), new IstexIdsReader());
-    }
+//    @Test
+//    public void testSimpleFile() throws Exception {
+//        target.loadFromFile(new FileInputStream("/Users/lfoppiano/development/scienceminer/consolidation data/sample-istex-ids.json"), new IstexIdsReader());
+//    }
 
 }

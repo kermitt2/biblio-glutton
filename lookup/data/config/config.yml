@@ -1,0 +1,32 @@
+storage: data/db
+#storage: /Volumes/SEAGATE1TB/scienceminer/glutter/lmdb
+version: version_placeholder
+
+#source:
+#  unpaidwall: /Users/lfoppiano/development/scienceminer/consolidationData/unpaywall_sample.json
+#  istex: /Users/lfoppiano/development/scienceminer/consolidationData/sample-istex-ids.json
+
+server:
+  type: custom
+  applicationConnectors:
+  - type: http
+    port: 8080
+  adminConnectors:
+  - type: http
+    port: 8081
+  registerDefaultExceptionMappers: false
+
+
+logging:
+  level: INFO
+  appenders:
+  - type: console
+    threshold: INFO
+    timeZone: UTC
+  - type: file
+    currentLogFilename: logs/lookup-service.log
+    threshold: ALL
+    archive: true
+    archivedLogFilenamePattern: logs/lookup-service-%d.log
+    archivedFileCount: 5
+    timeZone: UTC

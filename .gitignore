@@ -10,7 +10,6 @@ target
 *.old
 *.obj
 *.zip
-data/
 data/istex
 data/core
 data/pubmed
