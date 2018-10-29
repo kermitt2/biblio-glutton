@@ -2,3 +2,18 @@ ISTEX:
 total 17 409 172 records 
 DOI 16636673 (note that 11 DOI do not start with "10.")
 PMID 307 183 -> 4 109 972
+
+
+25.09.2018
+
+Total ISTEX ID considered: 21866967
+Total PMID found: 5124140
+Total PMC ID found: 421505
+Total PMID already in ISTEX prior mapping: 4190278
+Total PMID added in ISTEX by mapping: 933862
+Total PMID already in ISTEX but not in mapping: 4190278
+Total ISTEX ID now with at least one MeSH class: 4590847
+Total MeSH classes added: 63174587
+Average number of MeSH class (including cheical substances) per ISTEX ID having at least one MeSH class: 13.760987
+Total conflicts between PMID present and from mapping: 2176
+

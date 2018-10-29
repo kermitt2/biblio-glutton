@@ -1,0 +1,21 @@
+{
+    "analysis" : { 
+       "analyzer" : { 
+            "case_insensitive_keyword" : { 
+                "type" : "custom", 
+                "tokenizer" : "keyword",
+                "filter" : "lowercase"
+            }, 
+            "case_insensitive_folding_keyword" : { 
+                "type" : "custom", 
+                "tokenizer" : "keyword",
+                "filter" : [ "lowercase", "asciifolding" ]
+            }, 
+            "case_insensitive_folding_text" : { 
+                "type" : "custom", 
+                "tokenizer" : "standard",
+                "filter" : [ "lowercase", "asciifolding" ]
+            }
+        } 
+    }
+}

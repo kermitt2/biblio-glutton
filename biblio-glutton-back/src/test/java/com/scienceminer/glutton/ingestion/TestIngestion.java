@@ -52,7 +52,7 @@ public class TestIngestion {
         }
 	}
    	
-	@Test
+	//@Test
 	public void testRepoCall() {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
@@ -73,7 +73,7 @@ public class TestIngestion {
 		}
 	}
 
-	@Test
+	//@Test
 	public void testbiblioCall() {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
