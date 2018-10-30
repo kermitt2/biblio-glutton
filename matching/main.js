@@ -151,7 +151,9 @@ function index(options) {
             obj.id = data._id.$oid;
             delete data._id;
 
-            // just keep the fields we want to index
+            // Just keep the fields we want to index
+
+            // - Main fields (in the mapping)
             obj.title = data.title;
             obj.DOI = data.DOI;
 
@@ -169,12 +171,11 @@ function index(options) {
             obj.issue = data.issue;
             obj.year = data.year;
 
-            // Additional fields
+            // - Additional fields (not in the mapping)
             obj.publisher = data.publisher;
             obj.ISSN = data.ISSN;
             obj.prefix = data.prefix;
             obj.language = data.language;
-
             obj.alternative_id = data['alternative-id'];
             obj.URL = data.URL;
 
@@ -183,23 +184,6 @@ function index(options) {
 
             cb(null, obj)
         }))
-
-        /*        .pipe(es.map(function (jsonObj, cb) {
-                    var response = undefined;
-                    try {
-                        var localId = jsonObj._id;
-                        delete jsonObj._id;
-                        response = client.index({
-                            index: index_name,
-                            type: doc_type,
-                            id: localId,
-                            body: jsonObj
-                        });
-                    } catch (error) {
-                        console.trace(error)
-                    }
-                    cb(null, response)
-                }))*/
         .on('error',
             function (error) {
                 console.log("Error occurred: " + error);
