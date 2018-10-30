@@ -15,7 +15,7 @@
                 "type": "text",
                 "analyzer": "case_insensitive_folding_keyword"
             },
-            "authors": {
+            "author": {
                 "type": "text",
                 "analyzer": "case_insensitive_folding_text"
             },

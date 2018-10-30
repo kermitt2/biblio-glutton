@@ -128,6 +128,7 @@ function massage(data) {
     var jsonObj = JSON.parse(data);
     delete jsonObj.reference;
     delete jsonObj.abstract;
+    delete jsonObj.indexed;
 
     return jsonObj;
 }
@@ -138,7 +139,7 @@ function index(options) {
         .pipe(es.split())
         .pipe(es.map(function (data, cb) {
             // prepare/massage the data
-            //console.log(data);
+            console.log(data);
             data = massage(data);
             var obj = new Object();
 
@@ -152,9 +153,14 @@ function index(options) {
             obj.title = data.title;
             obj.DOI = data.DOI;
 
-            if(data.author) {
-                obj.first_author = data.author.filter(obj => "first" === obj.sequence)
-                obj.authors = data.author;
+            if (data.author) {
+                obj.author = "";
+                for (var aut in data.author) {
+                    if (data.author[aut].sequence === "first")
+                        obj.first_author = data.author[aut].family
+                    obj.author += data.author[aut].family + " ";
+                }
+                obj.author = obj.author.trim();
             }
 
             //TODO: check
