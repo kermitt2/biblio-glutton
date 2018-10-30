@@ -151,35 +151,41 @@ function index(options) {
             obj._id = data._id.$oid;
             delete data._id;
 
-            // just keep the fields we want to index
+            // Just keep the fields we want to index
+
+            // - Main fields (in the mapping)
             obj.title = data.title;
             obj.DOI = data.DOI;
-            // ... 
+
+            if(data.author) {
+                obj.first_author = data.author.filter(obj => "first" === obj.sequence)
+                obj.authors = data.author;
+            }
+
+            //TODO: check
+            // obj.first_page = data.first_page;
+
+            //TODO: check
+            obj.journal = data['container-title'];
+            obj.abbreviated_journal = data['short-container-title'];
+
+            obj.volume = data.volume;
+            obj.issue = data.issue;
+            obj.year = data.year;
+
+            // - Additional fields (not in the mapping)
+            obj.publisher = data.publisher;
+            obj.ISSN = data.ISSN;
+            obj.prefix = data.prefix;
+            obj.language = data.language;
+            obj.alternative_id = data['alternative-id'];
+            obj.URL = data.URL;
 
             // store the whole json doc in a field, to avoid further parsing it during indexing
             obj.jsondoc = JSON.stringify(data);
 
-            //console.log(obj);
-
             cb(null, obj)
         }))
-
-        /*        .pipe(es.map(function (jsonObj, cb) {
-                    var response = undefined;
-                    try {
-                        var localId = jsonObj._id;
-                        delete jsonObj._id;
-                        response = client.index({
-                            index: index_name,
-                            type: doc_type,
-                            id: localId,
-                            body: jsonObj
-                        });
-                    } catch (error) {
-                        console.trace(error)
-                    }
-                    cb(null, response)
-                }))*/
         .on('error',
             function (error) {
                 console.log("Error occurred: " + error);
