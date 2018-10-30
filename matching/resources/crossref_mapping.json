@@ -5,8 +5,7 @@
                 "analyzer": "case_insensitive_keyword"
             },
             "jsondoc": {
-                "type": "text",
-                "index": false
+                "type": "keyword"
             },
             "title": {
                 "type": "text",

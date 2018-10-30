@@ -22,7 +22,7 @@ const mappingPath = "resources/crossref_mapping.json";
 //TODO: move them in the configuration / parameters if convenient
 const index_name = "crossref";
 const doc_type = "work";
-const batchSize = 1000;
+const batchSize = 10000;
 
 function processAction(options) {
     if (options.action === "health") {
@@ -148,7 +148,7 @@ function index(options) {
             var obj = new Object();
 
             // - migrate id from '_id' to 'id'
-            obj.id = data._id.$oid;
+            obj._id = data._id.$oid;
             delete data._id;
 
             // just keep the fields we want to index
@@ -201,11 +201,13 @@ function index(options) {
 
                 readStream.on("data", function (doc) {
                     // console.log('indexing %s', doc.id);
+                    var localId = doc._id;
+                    delete doc._id;
                     batch.push({
                         index: {
                             "_index": 'crossref',
                             "_type": 'work',
-                            "_id": doc.id.toString()
+                            "_id": localId
                         }
                     });
 
