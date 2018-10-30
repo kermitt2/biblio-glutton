@@ -19,11 +19,6 @@ const reset = '\x1b[0m';
 const analyserPath = "resources/analyzer.json";
 const mappingPath = "resources/crossref_mapping.json";
 
-//TODO: move them in the configuration / parameters if convenient
-const index_name = "crossref";
-const doc_type = "work";
-const batchSize = 10000;
-
 function processAction(options) {
     if (options.action === "health") {
         client.cluster.health({}, function (err, resp, status) {
@@ -37,7 +32,7 @@ function processAction(options) {
             function indexExists(callback) {
                 console.log("indexExists");
                 client.indices.exists({
-                    index: index_name
+                    index: options.indexName
                 }, function (err, resp, status) {
                     if (err) {
                         console.log('indexExists error: ' + err.message);
@@ -51,7 +46,7 @@ function processAction(options) {
                 console.log("deleteIndex: " + existence);
                 if (existence) {
                     client.indices.delete({
-                        index: index_name
+                        index: options.indexName
                     }, function (err, resp, status) {
                         if (err) {
                             console.error('deleteIndex error: ' + err.message);
@@ -76,7 +71,7 @@ function processAction(options) {
 
                 if (!existence) {
                     client.indices.create({
-                        index: index_name,
+                        index: options.indexName,
                         body: analyzers
                     }, function (err, resp, status) {
                         if (err) {
@@ -99,8 +94,8 @@ function processAction(options) {
 
                 // put the mapping now
                 client.indices.putMapping({
-                    index: index_name,
-                    type: doc_type,
+                    index: options.indexName,
+                    type: options.docType,
                     body: mapping
                 }, function (err, resp, status) {
                     if (err) {
@@ -165,7 +160,6 @@ function index(options) {
             //TODO: check
             // obj.first_page = data.first_page;
 
-            //TODO: check
             obj.journal = data['container-title'];
             obj.abbreviated_journal = data['short-container-title'];
 
@@ -174,12 +168,12 @@ function index(options) {
             obj.year = data.year;
 
             // - Additional fields (not in the mapping)
-            obj.publisher = data.publisher;
+            /*obj.publisher = data.publisher;
             obj.ISSN = data.ISSN;
             obj.prefix = data.prefix;
             obj.language = data.language;
             obj.alternative_id = data['alternative-id'];
-            obj.URL = data.URL;
+            obj.URL = data.URL;*/
 
             // store the whole json doc in a field, to avoid further parsing it during indexing
             obj.jsondoc = JSON.stringify(data);
@@ -196,7 +190,6 @@ function index(options) {
                 console.log("Finished. ")
             }
         );
-
 
     async.series(
         [
@@ -219,11 +212,11 @@ function index(options) {
 
                     batch.push(doc);
                     i++;
-                    if (i % batchSize === 0) {
+                    if (i % options.batchSize === 0) {
                         let end = new Date();
                         let total_time = (end - start) / 1000;
                         let intermediate_time = (end - previous_end) / 1000;
-                        console.log('Loaded %s records in %d s (%d record/s)', i, total_time, batchSize / intermediate_time);
+                        console.log('Loaded %s records in %d s (%d record/s)', i, total_time, options.batchSize / intermediate_time);
                         client.bulk(
                             {
                                 refresh: "wait_for", //we do refresh only at the end
@@ -283,6 +276,12 @@ function index(options) {
  */
 function init() {
     var options = new Object();
+
+    // first get the config
+    const config = require('./config.json');
+    options.indexName = config.indexName;
+    options.docType = config.docType;
+    options.batchSize = config.batchSize;
 
     options.action = "health";
     options.concurrency = 100; // number of concurrent call, default is 10
