@@ -183,7 +183,7 @@ function index(options) {
 
             let bytesLength = Buffer.byteLength(z, 'utf8');
             if (bytesLength > 32766) {
-                console.log(bytesLength);
+                // console.log(bytesLength);
                 let number_field_required = Math.ceil(bytesLength / 32766);
                 console.log("Need %s fields", number_field_required);
                 let buffer = Buffer.from(z, 'utf8');
@@ -192,8 +192,8 @@ function index(options) {
                 }
                 obj.jsondoc = 'split, ' + number_field_required;
 
-                console.log(z);
-                console.log(obj);
+                // console.log(z);
+                // console.log(obj);
             }
 
             cb(null, obj)

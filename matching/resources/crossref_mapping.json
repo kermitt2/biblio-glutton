@@ -7,6 +7,9 @@
             "jsondoc": {
                 "type": "keyword"
             },
+            "jsondoc0": {
+                "type": "keyword"
+            },
             "jsondoc1": {
                 "type": "keyword"
             },
