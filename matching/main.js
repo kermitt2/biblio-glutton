@@ -23,9 +23,13 @@ function processAction(options) {
         if (indexExists("crossref")) {
             deleteIndex("crossref");
         }
+        initIndex("crossref");
+        initMapping("crossref", payload);
+    } 
 
-    } else if ( (options.action === "index") {
-
+    if ( (options.action === "index") && (indexExists("crossref")) ) {
+        // launch the heavy indexing stuff...
+        
     }
 }
 
@@ -62,10 +66,9 @@ function initIndex(indexName) {
 /**
  * Load the analyzer and mapping to the index 
  */
-function initMapping(indexName, docType, payload) {
+function initMapping(indexName, payload) {
     client.indices.putMapping({
         index: indexName,
-        type: docType,
         body: payload
     }).then(function (resp) {
         console.log(resp);
@@ -79,10 +82,9 @@ function initMapping(indexName, docType, payload) {
 /** 
  * Delete a document from an index
  */
-function deleteDocument(indexName, _id, docType) {
+function deleteDocument(indexName, _id) {
     client.delete({
         index: indexName,
-        type: docType,
         id: _id
     }, function(err, resp) {
         if (err) { 
