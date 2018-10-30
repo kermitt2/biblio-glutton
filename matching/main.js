@@ -22,7 +22,7 @@ const mappingPath = "resources/crossref_mapping.json";
 //TODO: move them in the configuration / parameters if convenient
 const index_name = "crossref";
 const doc_type = "work";
-const batchSize = 1000;
+const batchSize = 10000;
 
 function processAction(options) {
     if (options.action === "health") {
@@ -154,12 +154,32 @@ function index(options) {
             // just keep the fields we want to index
             obj.title = data.title;
             obj.DOI = data.DOI;
-            // ... 
+
+            obj.first_author = data.author.filter(obj => "first" === obj.sequence)
+            obj.authors = data.author;
+
+            //TODO: check
+            // obj.first_page = data.first_page;
+
+            //TODO: check
+            obj.journal = data['container-title'];
+            obj.abbreviated_journal = data['short-container-title'];
+
+            obj.volume = data.volume;
+            obj.issue = data.issue;
+            obj.year = data.year;
+
+            // Additional fields
+            obj.publisher = data.publisher;
+            obj.ISSN = data.ISSN;
+            obj.prefix = data.prefix;
+            obj.language = data.language;
+
+            obj.alternative_id = data['alternative-id'];
+            obj.URL = data.URL;
 
             // store the whole json doc in a field, to avoid further parsing it during indexing
             obj.jsondoc = JSON.stringify(data);
-
-            //console.log(obj);
 
             cb(null, obj)
         }))
