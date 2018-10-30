@@ -157,8 +157,10 @@ function index(options) {
             obj.title = data.title;
             obj.DOI = data.DOI;
 
-            obj.first_author = data.author.filter(obj => "first" === obj.sequence)
-            obj.authors = data.author;
+            if(data.author) {
+                obj.first_author = data.author.filter(obj => "first" === obj.sequence)
+                obj.authors = data.author;
+            }
 
             //TODO: check
             // obj.first_page = data.first_page;
