@@ -1,7 +1,10 @@
 'use strict';
 
 var client = require('./my_connection.js'),
-    path = require('fs');
+    fs = require('fs'),
+    lzma = require('lzma-native'),
+    es = require('event-stream'),
+    async = require("async");
 
 // for making console output less boring
 const green = '\x1b[32m';
@@ -13,106 +16,174 @@ const score = '\x1b[7m';
 const bright = "\x1b[1m";
 const reset = '\x1b[0m';
 
+const analyserPath = "resources/analyzer.json";
+const mappingPath = "resources/crossref_mapping.json";
+
 function processAction(options) {
     if (options.action === "health") {
         client.cluster.health({},function(err, resp, status) {  
             console.log("ES Health --", resp);
         });
-    } else if ( (options.action === "index") and (options.force) ) {
+    } else if ( (options.action === "index") && (options.force) ) {
         // remove previous index
-        if (indexExists("crossref")) {
-            deleteIndex("crossref");
-        }
-        initIndex("crossref");
-        initMapping("crossref", payload);
+        console.log("force index")
+
+        async.waterfall([
+            function indexExists(callback) {
+                console.log("indexExists");
+                client.indices.exists({
+                    index: "crossref"
+                }, function(err, resp, status) {
+                    if (err) {
+                        console.log('indexExists error: ' + err.message);
+                        return callback(err);
+                    }
+                    console.log("indexExists: ", resp); 
+                    return callback(null, resp);
+                });
+            },
+            function deleteIndex(existence, callback) {
+                console.log("deleteIndex: " + existence);
+                if (existence) {
+                    client.indices.delete({
+                        index: "crossref"
+                    }, function(err, resp, status) {
+                        if (err) {
+                            console.error('deleteIndex error: ' + err.message);
+                            return callback(err);
+                        } else {
+                            console.log('Index crossref have been deleted', resp);
+                            return callback(null, false);
+                        }
+                    });
+                } else {
+                    return callback(null, false);
+                }
+            }, 
+            function createIndex(existence, callback) {
+                console.log("createIndex");
+                var analyzers; 
+                try {
+                    analyzers = fs.readFileSync(analyserPath, 'utf8');
+                } catch (e) {
+                    console.log('error reading analyzer file ' + e);
+                }
+
+                if (!existence) {
+                    client.indices.create({
+                        index: "crossref",
+                        body: analyzers
+                    }, function(err, resp, status) {
+                        if (err) {
+                            console.log('createIndex error: ' + err.message);
+                            return callback(err)
+                        } 
+                        console.log('createIndex: ', resp);
+                        return callback(null, true);
+                    });
+                }
+
+            },
+            function addMappings(existence, callback) {
+                var mapping; 
+                try {
+                    mapping = fs.readFileSync(mappingPath, 'utf8');
+                } catch (e) {
+                    console.log('error reading mapping file ' + e);
+                }
+
+                // put the mapping now
+                client.indices.putMapping({
+                    index: "crossref",
+                    type: "work",
+                    body: mapping
+                }, function(err, resp, status) {
+                    if (err) {
+                        console.log('mapping error: ' + err.message);
+                    } else
+                        console.log("mapping loaded");
+                    return callback(null, true);
+                });
+            }
+        ], (err, results) => {
+            if (err) {
+                console.log('setting error: ' + err);
+            }
+
+            if (options.action === "index") {
+                // launch the heavy indexing stuff...
+                index(options);
+            }
+        })
     } 
-
-    if ( (options.action === "index") && (indexExists("crossref")) ) {
-        // launch the heavy indexing stuff...
-        
-    }
-}
-
-/** 
- * Check if an index exists 
- */
-function indexExists(indexName) {
-    client.indices.exists({
-        index: indexName
-    }).then(function (resp) {
-        console.log(resp);
-        return resp;
-    }, function (err) {
-        console.log(err.message);
-        return false;
-    });
-}
-
-/** 
- * Create the index 
- */
-function initIndex(indexName) {
-    client.indices.create({
-        index: indexName
-    }).then(function (resp) {
-        console.log(resp);
-        return true;
-    }, function (err) {
-        console.log(err.message);
-        return false;
-    });
+    
 }
 
 /**
- * Load the analyzer and mapping to the index 
+ * This function removes some non-used stuff from a crossref work entry, 
+ * in particular the citation information, which represent a considerable
+ * amount of data.
  */
-function initMapping(indexName, payload) {
-    client.indices.putMapping({
-        index: indexName,
-        body: payload
-    }).then(function (resp) {
-        console.log(resp);
-        return true;
-    }, function (err) {
-        console.error(err.message);
-        return false;
-    });
+function massage(data) {
+    var jsonObj = JSON.parse(data);
+    delete jsonObj.reference;
+    delete jsonObj.abstract;
+    
+    return jsonObj;
 }
 
-/** 
- * Delete a document from an index
- */
-function deleteDocument(indexName, _id) {
-    client.delete({
-        index: indexName,
-        id: _id
-    }, function(err, resp) {
-        if (err) { 
-            console.error(err.message);
-            return false;
-        } else {
-            console.log(resp);
-            return true;
-        }
-    });
-}
+function index(options) {
+    fs.createReadStream(options.dump)
+        .pipe(lzma.createDecompressor())
+        .pipe(es.split())
+        .pipe(es.map(function (data, cb) {
+            // prepare/massage the data
+            //console.log(data);
+            data = massage(data);
+            var obj = new Object();
 
-/**
- * Delete the index
- */
-function deleteIndex(indexName) {
-    client.indices.delete({
-        index: indexName
-    }, function(err, resp) {
-        if (err) {
-            console.error(err.message);
-            return false;
-        } else {
-            console.log(resp);
-            console.log('Index ' + indexName + ' have been deleted', resp);
-            return true;
-        }
-    });
+            // - migrate id from '_id' to 'id'
+            obj._id = data._id.$oid
+            delete data._id;
+
+            // just keep the fields we want to index
+            obj.title = data.title
+            obj.DOI = data.DOI
+            // ... 
+
+            // store the whole json doc in a field, to avoid further parsing it during indexing
+            obj.jsondoc = JSON.stringify(data);
+
+            //console.log(obj);
+
+            cb(null, obj)
+        }))
+        .pipe(es.map(function (jsonObj, cb) {
+            var response = undefined;
+            try {
+                var localId = jsonObj._id;
+                delete jsonObj._id;
+                response = client.index({
+                    index: "crossref",
+                    type: "work",
+                    id: localId,
+                    body: jsonObj
+                });
+            } catch (error) {
+                console.trace(error)
+            }
+            cb(null, response)
+        }))
+        .on('error',
+            function (error) {
+                console.log("Error occurred: " + error);
+            }
+        )
+        .on('finish',
+            function () {
+                console.log("Finished. ")
+            }
+        );
 }
 
 /**
@@ -137,7 +208,7 @@ function init() {
         }
     }
 
-    console.log("\matching: ", red, options.action+"\n", reset);
+    console.log("action: ", red, options.action+"\n", reset);
 
     // check the dump path, if any
     if (options.dump) {
@@ -164,7 +235,7 @@ var start;
 function main() {
     var options = init();
     start = new Date()
-    process_action(options);
+    processAction(options);
 }
 
 main();
