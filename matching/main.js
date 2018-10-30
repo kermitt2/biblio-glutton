@@ -152,10 +152,12 @@ function index(options) {
             obj.title = data.title;
             obj.DOI = data.DOI;
 
-            if(data.author) {
-                obj.first_author = data.author.filter(obj => "first" === obj.sequence)
-                obj.authors = data.author;
-            }
+
+            //TODO: transform to string
+            // if(data.author) {
+            // obj.first_author = data.author.filter(obj => "first" === obj.sequence);
+            // obj.authors = data.author;
+            // }
 
             //TODO: check
             // obj.first_page = data.first_page;
@@ -168,15 +170,31 @@ function index(options) {
             obj.year = data.year;
 
             // - Additional fields (not in the mapping)
-            /*obj.publisher = data.publisher;
-            obj.ISSN = data.ISSN;
-            obj.prefix = data.prefix;
-            obj.language = data.language;
-            obj.alternative_id = data['alternative-id'];
-            obj.URL = data.URL;*/
+            // obj.publisher = data.publisher;
+            // obj.ISSN = data.ISSN;
+            // obj.prefix = data.prefix;
+            // obj.language = data.language;
+            // obj.alternative_id = data['alternative-id'];
+            // obj.URL = data.URL;
 
             // store the whole json doc in a field, to avoid further parsing it during indexing
-            obj.jsondoc = JSON.stringify(data);
+            let z = JSON.stringify(data);
+            obj.jsondoc = z;
+
+            let bytesLength = Buffer.byteLength(z, 'utf8');
+            if (bytesLength > 32766) {
+                console.log(bytesLength);
+                let number_field_required = Math.ceil(bytesLength / 32766);
+                console.log("Need %s fields", number_field_required);
+                let buffer = Buffer.from(z, 'utf8');
+                for (var i = 0; i < number_field_required; i++) {
+                    obj['jsondoc' + i] = buffer.toString('utf8', (i * 32766), (i + 1) * 32766);
+                }
+                obj.jsondoc = 'split, ' + number_field_required;
+
+                console.log(z);
+                console.log(obj);
+            }
 
             cb(null, obj)
         }))
