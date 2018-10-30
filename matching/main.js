@@ -192,8 +192,12 @@ function index(options) {
                 }
                 obj.jsondoc = 'split, ' + number_field_required;
 
-                // console.log(z);
-                // console.log(obj);
+                // dump the source in case the required number of fields are more than what we have already configured in the mapping
+                // if (number_field_required > 5) {
+                //     console.log("review field: ");
+                //     console.log(obj);
+                // }
+
             }
 
             cb(null, obj)
