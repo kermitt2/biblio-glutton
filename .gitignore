@@ -21,3 +21,6 @@ lookup/build
 .gradle
 matching/node_modules
 *.mdb
+**/node_modules
+**/out
+**/package-lock.json

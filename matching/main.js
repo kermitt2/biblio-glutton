@@ -19,26 +19,31 @@ const reset = '\x1b[0m';
 const analyserPath = "resources/analyzer.json";
 const mappingPath = "resources/crossref_mapping.json";
 
+//TODO: move them in the configuration / parameters if convenient
+const index_name = "crossref";
+const doc_type = "work";
+const batchSize = 1000;
+
 function processAction(options) {
     if (options.action === "health") {
-        client.cluster.health({},function(err, resp, status) {  
+        client.cluster.health({}, function (err, resp, status) {
             console.log("ES Health --", resp);
         });
-    } else if ( (options.action === "index") && (options.force) ) {
+    } else if ((options.action === "index") && (options.force)) {
         // remove previous index
-        console.log("force index")
+        console.log("force index");
 
         async.waterfall([
             function indexExists(callback) {
                 console.log("indexExists");
                 client.indices.exists({
-                    index: "crossref"
-                }, function(err, resp, status) {
+                    index: index_name
+                }, function (err, resp, status) {
                     if (err) {
                         console.log('indexExists error: ' + err.message);
                         return callback(err);
                     }
-                    console.log("indexExists: ", resp); 
+                    console.log("indexExists: ", resp);
                     return callback(null, resp);
                 });
             },
@@ -46,8 +51,8 @@ function processAction(options) {
                 console.log("deleteIndex: " + existence);
                 if (existence) {
                     client.indices.delete({
-                        index: "crossref"
-                    }, function(err, resp, status) {
+                        index: index_name
+                    }, function (err, resp, status) {
                         if (err) {
                             console.error('deleteIndex error: ' + err.message);
                             return callback(err);
@@ -59,10 +64,10 @@ function processAction(options) {
                 } else {
                     return callback(null, false);
                 }
-            }, 
+            },
             function createIndex(existence, callback) {
                 console.log("createIndex");
-                var analyzers; 
+                var analyzers;
                 try {
                     analyzers = fs.readFileSync(analyserPath, 'utf8');
                 } catch (e) {
@@ -71,13 +76,13 @@ function processAction(options) {
 
                 if (!existence) {
                     client.indices.create({
-                        index: "crossref",
+                        index: index_name,
                         body: analyzers
-                    }, function(err, resp, status) {
+                    }, function (err, resp, status) {
                         if (err) {
                             console.log('createIndex error: ' + err.message);
                             return callback(err)
-                        } 
+                        }
                         console.log('createIndex: ', resp);
                         return callback(null, true);
                     });
@@ -85,7 +90,7 @@ function processAction(options) {
 
             },
             function addMappings(existence, callback) {
-                var mapping; 
+                var mapping;
                 try {
                     mapping = fs.readFileSync(mappingPath, 'utf8');
                 } catch (e) {
@@ -94,10 +99,10 @@ function processAction(options) {
 
                 // put the mapping now
                 client.indices.putMapping({
-                    index: "crossref",
-                    type: "work",
+                    index: index_name,
+                    type: doc_type,
                     body: mapping
-                }, function(err, resp, status) {
+                }, function (err, resp, status) {
                     if (err) {
                         console.log('mapping error: ' + err.message);
                     } else
@@ -115,12 +120,12 @@ function processAction(options) {
                 index(options);
             }
         })
-    } 
-    
+    }
+
 }
 
 /**
- * This function removes some non-used stuff from a crossref work entry, 
+ * This function removes some non-used stuff from a crossref work entry,
  * in particular the citation information, which represent a considerable
  * amount of data.
  */
@@ -128,12 +133,12 @@ function massage(data) {
     var jsonObj = JSON.parse(data);
     delete jsonObj.reference;
     delete jsonObj.abstract;
-    
+
     return jsonObj;
 }
 
 function index(options) {
-    fs.createReadStream(options.dump)
+    var readStream = fs.createReadStream(options.dump)
         .pipe(lzma.createDecompressor())
         .pipe(es.split())
         .pipe(es.map(function (data, cb) {
@@ -143,12 +148,12 @@ function index(options) {
             var obj = new Object();
 
             // - migrate id from '_id' to 'id'
-            obj._id = data._id.$oid
+            obj.id = data._id.$oid;
             delete data._id;
 
             // just keep the fields we want to index
-            obj.title = data.title
-            obj.DOI = data.DOI
+            obj.title = data.title;
+            obj.DOI = data.DOI;
             // ... 
 
             // store the whole json doc in a field, to avoid further parsing it during indexing
@@ -158,22 +163,23 @@ function index(options) {
 
             cb(null, obj)
         }))
-        .pipe(es.map(function (jsonObj, cb) {
-            var response = undefined;
-            try {
-                var localId = jsonObj._id;
-                delete jsonObj._id;
-                response = client.index({
-                    index: "crossref",
-                    type: "work",
-                    id: localId,
-                    body: jsonObj
-                });
-            } catch (error) {
-                console.trace(error)
-            }
-            cb(null, response)
-        }))
+
+        /*        .pipe(es.map(function (jsonObj, cb) {
+                    var response = undefined;
+                    try {
+                        var localId = jsonObj._id;
+                        delete jsonObj._id;
+                        response = client.index({
+                            index: index_name,
+                            type: doc_type,
+                            id: localId,
+                            body: jsonObj
+                        });
+                    } catch (error) {
+                        console.trace(error)
+                    }
+                    cb(null, response)
+                }))*/
         .on('error',
             function (error) {
                 console.log("Error occurred: " + error);
@@ -184,6 +190,84 @@ function index(options) {
                 console.log("Finished. ")
             }
         );
+
+
+    async.series(
+        [
+            function (next) {
+                var i = 0;
+                var batch = [];
+                var previous_end = start;
+
+                readStream.on("data", function (doc) {
+                    // console.log('indexing %s', doc.id);
+                    batch.push({
+                        index: {
+                            "_index": 'crossref',
+                            "_type": 'work',
+                            "_id": doc.id.toString()
+                        }
+                    });
+
+                    batch.push(doc);
+                    i++;
+                    if (i % batchSize === 0) {
+                        let end = new Date();
+                        let total_time = (end - start) / 1000;
+                        let intermediate_time = (end - previous_end) / 1000;
+                        console.log('Loaded %s records in %d s (%d record/s)', i, total_time, batchSize / intermediate_time);
+                        client.bulk(
+                            {
+                                refresh: "wait_for", //we do refresh only at the end
+                                body: batch
+                            },
+                            function (err, resp) {
+                                if (err) {
+                                    throw err;
+                                } else if (resp.errors) {
+                                    throw resp;
+                                }
+                            }
+                        );
+                        batch = [];
+                        previous_end = end;
+                    }
+                });
+
+                // When the stream ends write the remaining records
+                readStream.on("end", function () {
+                    if (batch.length > 0) {
+                        console.log('Loaded %s records', batch.length);
+                        client().bulk({
+                            refresh: "true", // we wait for this last batch before refreshing
+                            body: batch
+                        }, function (err, resp) {
+                            if (err) {
+                                console.log(err, 'Failed to build index');
+                                throw err;
+                            } else if (resp.errors) {
+                                console.log(resp.errors, 'Failed to build index');
+                                throw resp;
+                            } else {
+                                console.log('Completed crossref indexing.');
+                                next();
+                            }
+                        });
+                    } else {
+                        next();
+                    }
+
+                    batch = [];
+                });
+            }
+        ],
+        function (err, results) {
+            if (err)
+                console.log(err);
+            else
+                console.log(results);
+        }
+    );
 }
 
 /**
@@ -191,24 +275,23 @@ function index(options) {
  */
 function init() {
     var options = new Object();
-    
-    // default service is full text processing
+
     options.action = "health";
     options.concurrency = 100; // number of concurrent call, default is 10
     options.force = false; // delete existing index and full re-indexing if true
     var attribute; // name of the passed parameter
-    // get the path to the PDF to be processed
+
     for (var i = 2, len = process.argv.length; i < len; i++) {
-        if (process.argv[i] == "-force") {
+        if (process.argv[i] === "-force") {
             options.force = true;
-        } else if (process.argv[i-1] == "-dump") {
+        } else if (process.argv[i - 1] === "-dump") {
             options.dump = process.argv[i];
         } else if (!process.argv[i].startsWith("-")) {
             options.action = process.argv[i];
         }
     }
 
-    console.log("action: ", red, options.action+"\n", reset);
+    console.log("action: ", red, options.action + "\n", reset);
 
     // check the dump path, if any
     if (options.dump) {
@@ -217,7 +300,7 @@ function init() {
                 console.log(err);
             if (stats.isDirectory())
                 console.log("CrossRef dump path must be a file, not a directory");
-            if (!stats.isFile()) 
+            if (!stats.isFile())
                 console.log("CrossRef dump path must be a valid file");
         });
     }
@@ -226,7 +309,7 @@ function init() {
 }
 
 function end() {
-    var this_is_the_end = new Date() - start
+    var this_is_the_end = new Date() - start;
     console.info('Execution time: %dms', this_is_the_end)
 }
 
@@ -234,7 +317,7 @@ var start;
 
 function main() {
     var options = init();
-    start = new Date()
+    start = new Date();
     processAction(options);
 }
 
