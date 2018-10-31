@@ -25,78 +25,77 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Lookup metadata -> doi
+ * Lookup doi -> best OA Location
  */
-public class MetadataDoiLookup {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MetadataDoiLookup.class);
+public class OADoiLookup {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OADoiLookup.class);
 
-    protected Env<ByteBuffer> environment;
-    protected Dbi<ByteBuffer> dbMetadataDoi;
-    protected Dbi<ByteBuffer> dbDoiOAUrl;
+    private Env<ByteBuffer> environment;
+//    private Dbi<ByteBuffer> dbMetadataDoi;
+    private Dbi<ByteBuffer> dbDoiOAUrl;
 
-    public static final String NAME_METADATA_DOI = "metadataDoi";
+//    public static final String NAME_METADATA_DOI = "metadataDoi";
     public static final String NAME_DOI_OA_URL = "doiOAUrl";
     private final static int BATCH_SIZE = 10000;
 
 
-    public MetadataDoiLookup(StorageEnvFactory storageEnvFactory) {
-
+    public OADoiLookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv();
 
-        dbMetadataDoi = this.environment.openDbi(NAME_METADATA_DOI, DbiFlags.MDB_CREATE);
+//        dbMetadataDoi = this.environment.openDbi(NAME_METADATA_DOI, DbiFlags.MDB_CREATE);
         dbDoiOAUrl = this.environment.openDbi(NAME_DOI_OA_URL, DbiFlags.MDB_CREATE);
     }
 
-    public long getSizeMetadataDoi() {
-        try (final Txn<ByteBuffer> txn = this.environment.txnRead()) {
-            Stat statistics = dbMetadataDoi.stat(txn);
-            return statistics.entries;
-        }
-    }
+//    public long getSizeMetadataDoi() {
+//        try (final Txn<ByteBuffer> txn = this.environment.txnRead()) {
+//            Stat statistics = dbMetadataDoi.stat(txn);
+//            return statistics.entries;
+//        }
+//    }
 
-    public long getSizeDoiOAUrl() {
+    public long getSize() {
         try (final Txn<ByteBuffer> txn = this.environment.txnRead()) {
             Stat statistics = dbDoiOAUrl.stat(txn);
             return statistics.entries;
         }
     }
 
-    public String retrieveDoiByMetadata(String hash) {
-        final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
-        ByteBuffer cachedData = null;
-        String record = null;
-        try (Txn<ByteBuffer> tx = environment.txnRead()) {
-            keyBuffer.put(BinarySerialiser.serialize(hash)).flip();
-            cachedData = dbMetadataDoi.get(tx, keyBuffer);
-            if (cachedData != null) {
-                record = (String) BinarySerialiser.deserialize(cachedData);
-            }
-        } catch (Exception e) {
-            LOGGER.error("Cannot retrieve doi having hash: " + hash, e);
-        }
+//    public String retrieveDoiByMetadata(String hash) {
+//        final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
+//        ByteBuffer cachedData = null;
+//        String record = null;
+//        try (Txn<ByteBuffer> tx = environment.txnRead()) {
+//            keyBuffer.put(BinarySerialiser.serialize(hash)).flip();
+//            cachedData = dbMetadataDoi.get(tx, keyBuffer);
+//            if (cachedData != null) {
+//                record = (String) BinarySerialiser.deserialize(cachedData);
+//            }
+//        } catch (Exception e) {
+//            LOGGER.error("Cannot retrieve doi having hash: " + hash, e);
+//        }
+//
+//        return record;
+//    }
 
-        return record;
-    }
-
-    public List<Pair<String, String>> retrieveDoiByMetadataSampleList(Integer total) {
-        List<Pair<String, String>> values = new ArrayList<>();
-
-        int counter = 0;
-
-        try (Txn<ByteBuffer> txn = environment.txnRead()) {
-            try (CursorIterator<ByteBuffer> it = dbMetadataDoi.iterate(txn, KeyRange.all())) {
-                for (final CursorIterator.KeyVal<ByteBuffer> kv : it.iterable()) {
-                    values.add(new ImmutablePair(BinarySerialiser.deserialize(kv.key()), BinarySerialiser.deserialize(kv.val())));
-                    if (total != null && counter == total) {
-                        txn.close();
-                        break;
-                    }
-
-                }
-            }
-        }
-        return values;
-    }
+//    public List<Pair<String, String>> retrieveDoiByMetadataSampleList(Integer total) {
+//        List<Pair<String, String>> values = new ArrayList<>();
+//
+//        int counter = 0;
+//
+//        try (Txn<ByteBuffer> txn = environment.txnRead()) {
+//            try (CursorIterator<ByteBuffer> it = dbMetadataDoi.iterate(txn, KeyRange.all())) {
+//                for (final CursorIterator.KeyVal<ByteBuffer> kv : it.iterable()) {
+//                    values.add(new ImmutablePair(BinarySerialiser.deserialize(kv.key()), BinarySerialiser.deserialize(kv.val())));
+//                    if (total != null && counter == total) {
+//                        txn.close();
+//                        break;
+//                    }
+//
+//                }
+//            }
+//        }
+//        return values;
+//    }
 
     public List<Pair<String, String>> retrieveOAUrlSampleList(Integer total) {
         List<Pair<String, String>> values = new ArrayList<>();
@@ -136,25 +135,25 @@ public class MetadataDoiLookup {
         return record;
     }
 
-    public String getKeyHash(String title, String issn, String volume, String firstPage) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(StringUtils.stripToEmpty(StringUtils.lowerCase(title)));
-        sb.append(StringUtils.stripToEmpty(issn));
-        sb.append(StringUtils.stripToEmpty(volume));
-        sb.append(StringUtils.stripToEmpty(firstPage));
-        String key = sb.toString();
-
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            md.update(key.getBytes(UTF_8));
-            byte[] hash = md.digest();
-
-            return new String(Hex.encodeHex(hash));
-        } catch (NoSuchAlgorithmException e) {
-
-        }
-        throw new RuntimeException("Cannot calculate Md5 of " + title);
-    }
+//    public String getKeyHash(String title, String issn, String volume, String firstPage) {
+//        StringBuilder sb = new StringBuilder();
+//        sb.append(StringUtils.stripToEmpty(StringUtils.lowerCase(title)));
+//        sb.append(StringUtils.stripToEmpty(issn));
+//        sb.append(StringUtils.stripToEmpty(volume));
+//        sb.append(StringUtils.stripToEmpty(firstPage));
+//        String key = sb.toString();
+//
+//        try {
+//            MessageDigest md = MessageDigest.getInstance("MD5");
+//            md.update(key.getBytes(UTF_8));
+//            byte[] hash = md.digest();
+//
+//            return new String(Hex.encodeHex(hash));
+//        } catch (NoSuchAlgorithmException e) {
+//
+//        }
+//        throw new RuntimeException("Cannot calculate Md5 of " + title);
+//    }
 
     public void loadFromFile(InputStream is, UnpaidWallReader loader, Meter meter) {
         final AtomicInteger partialCounter = new AtomicInteger(0);
@@ -173,7 +172,7 @@ public class MetadataDoiLookup {
                 }
 
                 //unwrapping list of issns
-                if (unpaidWallMetadata.getJournalIssnsList().size() > 0) {
+                /*if (unpaidWallMetadata.getJournalIssnsList().size() > 0) {
 
                     for (String issn : unpaidWallMetadata.getJournalIssnsList()) {
                         key = getKeyHash(unpaidWallMetadata.getTitle(), issn, null, null);
@@ -191,7 +190,7 @@ public class MetadataDoiLookup {
                     meter.mark();
                     store(key, unpaidWallMetadata.getDoi(), dbMetadataDoi, tx);
                     partialCounter.incrementAndGet();
-                }
+                }*/
             });
             tx.commit();
             totalCounter.addAndGet(partialCounter.get());

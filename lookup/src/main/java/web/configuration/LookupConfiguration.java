@@ -10,6 +10,8 @@ public class LookupConfiguration extends Configuration {
 
     private Source source;
 
+    private Elastic elastic;
+
     public String getStorage() {
         return storage;
     }
@@ -34,6 +36,14 @@ public class LookupConfiguration extends Configuration {
         this.source = source;
     }
 
+    public Elastic getElastic() {
+        return elastic;
+    }
+
+    public void setElastic(Elastic elastic) {
+        this.elastic = elastic;
+    }
+
     class Source {
         private String unpaidwall;
         private String istex;
@@ -52,6 +62,37 @@ public class LookupConfiguration extends Configuration {
 
         public void setIstex(String istex) {
             this.istex = istex;
+        }
+    }
+
+    public class Elastic {
+        private String host;
+        private String index;
+        private String type;
+
+
+        public String getHost() {
+            return host;
+        }
+
+        public void setHost(String host) {
+            this.host = host;
+        }
+
+        public String getIndex() {
+            return index;
+        }
+
+        public void setIndex(String index) {
+            this.index = index;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
         }
     }
 }

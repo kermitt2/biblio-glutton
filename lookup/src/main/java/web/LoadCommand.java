@@ -11,7 +11,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import storage.StorageEnvFactory;
-import storage.lookup.MetadataDoiLookup;
+import storage.lookup.OADoiLookup;
 import storage.lookup.DoiIstexIdsLookup;
 import web.configuration.LookupConfiguration;
 
@@ -69,15 +69,14 @@ public class LoadCommand extends ConfiguredCommand<LookupConfiguration> {
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
 
         long start = System.nanoTime();
-        MetadataDoiLookup doiLookup = new MetadataDoiLookup(storageEnvFactory);
+        OADoiLookup doiLookup = new OADoiLookup(storageEnvFactory);
         InputStream inputStreamUnpaidWall = Files.newInputStream(Paths.get(unpaidWallFilePath));
         if (unpaidWallFilePath.endsWith(".gz")) {
             inputStreamUnpaidWall = new GZIPInputStream(inputStreamUnpaidWall);
         }
         doiLookup.loadFromFile(inputStreamUnpaidWall, new UnpaidWallReader(), metrics.meter("doiLookup"));
 
-        LOGGER.info("Doi lookup (metadata -> doi) loaded " + doiLookup.getSizeMetadataDoi() + " records. ");
-        LOGGER.info("Doi lookup (doi -> oa url) loaded " + doiLookup.getSizeDoiOAUrl() + " records. ");
+        LOGGER.info("Doi lookup (doi -> oa url) loaded " + doiLookup.getSize() + " records. ");
 
         DoiIstexIdsLookup istexLookup = new DoiIstexIdsLookup(storageEnvFactory);
         InputStream inputStreamIstexIds = Files.newInputStream(Paths.get(istexFilePath));

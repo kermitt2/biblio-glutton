@@ -17,9 +17,9 @@ public class StorageEnvFactory {
     private Env<ByteBuffer> environment = null;
 
     @Inject
-    public StorageEnvFactory(LookupConfiguration configurarion) {
-        this.configuration = configurarion;
-        this.storagePath = configurarion.getStorage();
+    public StorageEnvFactory(LookupConfiguration configuration) {
+        this.configuration = configuration;
+        this.storagePath = configuration.getStorage();
     }
 
     public Env<ByteBuffer> getEnv() {
@@ -41,5 +41,9 @@ public class StorageEnvFactory {
 
         return environment;
 
+    }
+
+    public LookupConfiguration getConfiguration() {
+        return configuration;
     }
 }
