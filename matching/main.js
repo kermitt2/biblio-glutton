@@ -293,42 +293,41 @@ function index(options) {
             }
         );
 
-    async.series(
-        [
-            function (next) {
-                var i = 0;
-                var indexed = 0;
-                var batch = [];
-                var previous_end = start;
+        var i = 0;
+        var indexed = 0;
+        var batch = [];
+        var previous_end = start;
 
-                readStream.on("data", function (doc) {
-                    // console.log('indexing %s', doc.id);
+        readStream.on("data", function (doc) {
+            // console.log('indexing %s', doc.id);
 
-                    // filter some type of DOI not corresponding to a publication (e.g. component 
-                    // of a publication)
-                    if (!filterType(doc)) {
-                        var localId = doc._id;
-                        delete doc._id;
-                        batch.push({
-                            index: {
-                                _index: 'crossref',
-                                _type: 'work',
-                                _id: localId
-                            }
-                        });
-
-                        batch.push(doc);
-                        i++;
+            // filter some type of DOI not corresponding to a publication (e.g. component 
+            // of a publication)
+            if (!filterType(doc)) {
+                var localId = doc._id;
+                delete doc._id;
+                batch.push({
+                    index: {
+                        _index: 'crossref',
+                        _type: 'work',
+                        _id: localId
                     }
-                    if (i % options.batchSize === 0) {
-                        // wait a bit to avoid rejection of bulks... this slowdown factor can be 
-                        // changed in the config file, but it will also be changed automatically
-                        // if bulks are rejected
-                        var previous_start = new Date();
-                        sleep.msleep(options.slowdown);
+                });
+
+                batch.push(doc);
+                i++;
+            }
+
+            if (i % options.batchSize === 0) {
+                var previous_start = new Date();
+                //sleep.msleep(options.slowdown);
+
+                async.waterfall([
+                    function (callback) {
                         client.bulk(
                             {
                                 refresh: "wait_for", //we do refresh only at the end
+                                requestTimeout: 200000,
                                 body: batch
                             },
                             function (err, resp) {
@@ -336,17 +335,14 @@ function index(options) {
                                     console.log(err.message);
                                     throw err;
                                 } else if (resp.errors) {
-                                    console.log(resp);
-                                    //throw resp;
-                                    // let's just re-send the bulk request with increased 
+                                    console.log('bulk is rejected...', resp);
+                                    // let's just wait and re-send the bulk request with increased 
                                     // timeout to be on the safe side
-                                    sleep.msleep(10000);
-                                    // increase slowdown factor to avoid that in the future
-                                    options.slowdown += 20;
+                                    sleep.msleep(10000); // -> this is blocking... time for elasticsearch to do whatever it does
                                     client.bulk(
                                         {
                                             refresh: "wait_for", 
-                                            requestTimeout: 50000,
+                                            requestTimeout: 200000,
                                             body: batch
                                         },
                                         function (err, resp) {
@@ -355,56 +351,62 @@ function index(options) {
                                                 throw err;
                                             } else if (resp.errors) {
                                                 console.log(resp);
+                                                // at this point it's hopeless ?
                                                 throw resp;
                                             }
+                                            let theEnd = new Date();
+                                            return callback(null, theEnd);
                                         });
+                                } else {
+                                    let theEnd = new Date();
+                                    return callback(null, theEnd);
                                 }
-                                let end = new Date();
-                                let total_time = (end - start) / 1000;
-                                let intermediate_time = (end - previous_start) / 1000;
-
-                                indexed += options.batchSize;
-                                console.log('Loaded %s records in %d s (%d record/s)', indexed, total_time, options.batchSize / intermediate_time);
-                                //previous_end = end;
                             });
+                    },
+                    function(end, callback) {
+                        let total_time = (end - start) / 1000;
+                        let intermediate_time = (end - previous_start) / 1000;
 
-                        batch = [];
+                        indexed += options.batchSize;
+                        console.log('Loaded %s records in %d s (%d record/s)', indexed, total_time, options.batchSize / intermediate_time);
+                        return callback(null, total_time);
                     }
+                ],
+                function (err, total_time) {
+                    if (err)
+                        console.log(err);
                 });
 
-                // When the stream ends write the remaining records
-                readStream.on("end", function () {
-                    if (batch.length > 0) {
-                        console.log('Loaded %s records', batch.length);
-                        client().bulk({
-                            refresh: "true", // we wait for this last batch before refreshing
-                            body: batch
-                        }, function (err, resp) {
-                            if (err) {
-                                console.log(err, 'Failed to build index');
-                                throw err;
-                            } else if (resp.errors) {
-                                console.log(resp.errors, 'Failed to build index');
-                                throw resp;
-                            } else {
-                                console.log('Completed crossref indexing.');
-                                next();
-                            }
-                        });
+                batch = [];
+            }
+        });
+
+        // When the stream ends write the remaining records
+        readStream.on("end", function () {
+            if (batch.length > 0) {
+                console.log('Loaded %s records', batch.length);
+                client().bulk({
+                    refresh: "true", // we wait for this last batch before refreshing
+                    body: batch
+                }, function (err, resp) {
+                    if (err) {
+                        console.log(err, 'Failed to build index');
+                        throw err;
+                    } else if (resp.errors) {
+                        console.log(resp.errors, 'Failed to build index');
+                        throw resp;
                     } else {
+                        console.log('Completed crossref indexing.');
                         next();
                     }
-
-                    batch = [];
                 });
+            } else {
+                next();
             }
-        ],
-        function (err, results) {
-            if (err)
-                console.log(err);
-            else
-                console.log(results);
+
+            batch = [];
         }
+               
     );
 }
 
