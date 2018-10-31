@@ -5,7 +5,8 @@ var client = new elasticsearch.Client( {
     host: 'http://localhost:9200/',
     keepAlive: true,
     log: "error",
-    sniffOnStart: true    //discover the rest of the cluster at startup
+    requestTimeout: 60000,  //to give more time for digestion
+    sniffOnStart: true      //discover the rest of the cluster at startup
     // sniffOnConnectionFault: true,
     // sniffInterval: 300,
     // suggestCompression: true

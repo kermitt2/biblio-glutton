@@ -1,5 +1,9 @@
 {
     "settings": {
+        "index" : {
+            "number_of_replicas": 0,
+            "codec": "best_compression"
+        },
         "analysis": { 
            "analyzer": { 
                 "case_insensitive_keyword": { 

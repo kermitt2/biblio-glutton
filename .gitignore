@@ -19,7 +19,6 @@ scripts/dump.json
 scripts/dump.json.gz
 lookup/build
 .gradle
-matching/node_modules
 *.mdb
 **/node_modules
 **/out

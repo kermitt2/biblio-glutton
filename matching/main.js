@@ -4,7 +4,8 @@ var client = require('./my_connection.js'),
     fs = require('fs'),
     lzma = require('lzma-native'),
     es = require('event-stream'),
-    async = require("async");
+    async = require("async"),
+    sleep = require('system-sleep');
 
 // for making console output less boring
 const green = '\x1b[32m';
@@ -16,7 +17,7 @@ const score = '\x1b[7m';
 const bright = "\x1b[1m";
 const reset = '\x1b[0m';
 
-const analyserPath = "resources/analyzer.json";
+const settingsPath = "resources/settings.json";
 const mappingPath = "resources/crossref_mapping.json";
 
 function processAction(options) {
@@ -64,7 +65,7 @@ function processAction(options) {
                 console.log("createIndex");
                 var analyzers;
                 try {
-                    analyzers = fs.readFileSync(analyserPath, 'utf8');
+                    analyzers = fs.readFileSync(settingsPath, 'utf8');
                 } catch (e) {
                     console.log('error reading analyzer file ' + e);
                 }
@@ -133,13 +134,54 @@ function massage(data) {
     return jsonObj;
 }
 
+function buildBibliographicField(obj) {
+    var res = "";
+
+    if (obj.author)
+        res += obj.author;
+    else if (obj.first_author)
+        res += obj.first_author;
+
+    if (obj.title)
+        res += " " + obj.title;
+
+    if (obj.journal)
+        res += " " + obj.journal;
+
+    if (obj.abbreviated_journal) 
+        res += " " + obj.abbreviated_journal;
+
+    if (obj.volume) 
+        res += " " + obj.volume;
+
+    if (obj.issue) 
+        res += " " + obj.issue;
+
+    if (obj.first_page) 
+        res += " " + obj.first_page;
+
+    if (obj.year) 
+        res += " " + obj.year;
+
+    return res.trim();
+}
+
+function filterType(doc) {
+    // if document type is component, we ignore it (it means that the DOI is 
+    // for a sub-part of a publication, like 10.1371/journal.pone.0104614.t002)
+    if (doc.type === "component") {
+        return true;
+    }
+    return false;
+}
+
 function index(options) {
     var readStream = fs.createReadStream(options.dump)
         .pipe(lzma.createDecompressor())
         .pipe(es.split())
         .pipe(es.map(function (data, cb) {
             // prepare/massage the data
-            console.log(data);
+            //console.log(data);
             data = massage(data);
             var obj = new Object();
 
@@ -157,32 +199,85 @@ function index(options) {
                 obj.author = "";
                 for (var aut in data.author) {
                     if (data.author[aut].sequence === "first")
-                        obj.first_author = data.author[aut].family
-                    obj.author += data.author[aut].family + " ";
+                        if (data.author[aut].family)
+                            obj.first_author = data.author[aut].family;
+                        /*else {
+                            obj.first_author = data.author[aut].name;
+                            console.log(data.author[aut]);
+                        }*/
+                    if (data.author[aut].family)
+                        obj.author += data.author[aut].family + " ";
+                    /*else 
+                        console.log(data.author[aut]);*/
                 }
                 obj.author = obj.author.trim();
             }
 
-            //TODO: check
-            // obj.first_page = data.first_page;
+            // parse page metadata to get the first page only
+            if (data.page) {
+                var pagePieces = data.page.split(/,|-| /g);
+                if (pagePieces && pagePieces.length > 0) {
+                    obj.first_page = pagePieces[0];
+                    //console.log(data.page, obj.first_page);
+                }
+            }
 
             obj.journal = data['container-title'];
             obj.abbreviated_journal = data['short-container-title'];
 
             obj.volume = data.volume;
             obj.issue = data.issue;
-            obj.year = data.year;
+
+            // year is a date part (first one) in issued or created or published-online (we follow this order)
+            if (data.issued) {
+                if (data.issued['date-parts']) {
+                    obj.year = data.issued['date-parts'][0][0]
+                }
+            }
+            if (!obj.year && data.created) {
+                if (data.created['date-parts']) {
+                    obj.year = data.created['date-parts'][0][0]
+                }
+            }
+            if (!obj.year && data['published-online']) {
+                if (data['published-online']['date-parts']) {
+                    obj.year = data['published-online']['date-parts'][0][0]
+                }
+            }
+            //console.log(obj.year);
+
+            // bibliograohic field is the concatenation of usual bibliographic metadata
+            var biblio = buildBibliographicField(obj);
+            if (biblio && biblio.length > 0) {
+                obj.bibliographic = biblio;
+            }
 
             // - Additional fields (not in the mapping)
-            /*obj.publisher = data.publisher;
-            obj.ISSN = data.ISSN;
-            obj.prefix = data.prefix;
-            obj.language = data.language;
-            obj.alternative_id = data['alternative-id'];
-            obj.URL = data.URL;*/
+            // obj.publisher = data.publisher;
+            // obj.ISSN = data.ISSN;
+            // obj.prefix = data.prefix;
+            // obj.language = data.language;
+            // obj.alternative_id = data['alternative-id'];
+            // obj.URL = data.URL;
 
             // store the whole json doc in a field, to avoid further parsing it during indexing
-            obj.jsondoc = JSON.stringify(data);
+            let z = JSON.stringify(data);
+            obj.jsondoc = [];
+
+            let bytesLength = Buffer.byteLength(z, 'utf8');
+            if (bytesLength > 30000) {
+                console.log(obj._id);
+                console.log(obj.DOI);
+                console.log("bytesLength:", bytesLength);
+            }
+            let buffer = Buffer.from(z, 'utf8');
+            var number_chunks_required = Math.ceil(bytesLength / 30000);
+            if (bytesLength > 30000) {
+                console.log("number_chunks_required:", number_chunks_required);
+            }
+            for (var i = 0; i < number_chunks_required; i++) {
+                obj.jsondoc.push(buffer.toString('utf8', (i * 30000), (i + 1) * 30000));
+            }
 
             cb(null, obj)
         }))
@@ -193,7 +288,8 @@ function index(options) {
         )
         .on('finish',
             function () {
-                console.log("Finished. ")
+                console.log("Finished. ");
+                end();
             }
         );
 
@@ -201,28 +297,35 @@ function index(options) {
         [
             function (next) {
                 var i = 0;
+                var indexed = 0;
                 var batch = [];
                 var previous_end = start;
 
                 readStream.on("data", function (doc) {
                     // console.log('indexing %s', doc.id);
-                    var localId = doc._id;
-                    delete doc._id;
-                    batch.push({
-                        index: {
-                            "_index": 'crossref',
-                            "_type": 'work',
-                            "_id": localId
-                        }
-                    });
 
-                    batch.push(doc);
-                    i++;
+                    // filter some type of DOI not corresponding to a publication (e.g. component 
+                    // of a publication)
+                    if (!filterType(doc)) {
+                        var localId = doc._id;
+                        delete doc._id;
+                        batch.push({
+                            index: {
+                                _index: 'crossref',
+                                _type: 'work',
+                                _id: localId
+                            }
+                        });
+
+                        batch.push(doc);
+                        i++;
+                    }
                     if (i % options.batchSize === 0) {
-                        let end = new Date();
-                        let total_time = (end - start) / 1000;
-                        let intermediate_time = (end - previous_end) / 1000;
-                        console.log('Loaded %s records in %d s (%d record/s)', i, total_time, options.batchSize / intermediate_time);
+                        // wait a bit to avoid rejection of bulks... this slowdown factor can be 
+                        // changed in the config file, but it will also be changed automatically
+                        // if bulks are rejected
+                        var previous_start = new Date();
+                        sleep(options.slowdown);
                         client.bulk(
                             {
                                 refresh: "wait_for", //we do refresh only at the end
@@ -230,14 +333,42 @@ function index(options) {
                             },
                             function (err, resp) {
                                 if (err) {
+                                    console.log(err.message);
                                     throw err;
                                 } else if (resp.errors) {
-                                    throw resp;
+                                    console.log(resp);
+                                    //throw resp;
+                                    // let's just re-send the bulk request with increased 
+                                    // timeout to be on the safe side
+                                    sleep(10000);
+                                    // increase slowdown factor to avoid that in the future
+                                    options.slowdown += 20;
+                                    client.bulk(
+                                        {
+                                            refresh: "wait_for", 
+                                            requestTimeout: 50000,
+                                            body: batch
+                                        },
+                                        function (err, resp) {
+                                            if (err) {
+                                                console.log(err.message);
+                                                throw err;
+                                            } else if (resp.errors) {
+                                                console.log(resp);
+                                                throw resp;
+                                            }
+                                        });
                                 }
-                            }
-                        );
+                                let end = new Date();
+                                let total_time = (end - start) / 1000;
+                                let intermediate_time = (end - previous_start) / 1000;
+
+                                indexed += options.batchSize;
+                                console.log('Loaded %s records in %d s (%d record/s)', indexed, total_time, options.batchSize / intermediate_time);
+                                //previous_end = end;
+                            });
+
                         batch = [];
-                        previous_end = end;
                     }
                 });
 
@@ -288,6 +419,7 @@ function init() {
     options.indexName = config.indexName;
     options.docType = config.docType;
     options.batchSize = config.batchSize;
+    options.slowdown = config.slowdown;
 
     options.action = "health";
     options.concurrency = 100; // number of concurrent call, default is 10
