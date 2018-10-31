@@ -5,7 +5,7 @@ var client = require('./my_connection.js'),
     lzma = require('lzma-native'),
     es = require('event-stream'),
     async = require("async"),
-    sleep = require('system-sleep');
+    sleep = require('sleep');
 
 // for making console output less boring
 const green = '\x1b[32m';
@@ -325,7 +325,7 @@ function index(options) {
                         // changed in the config file, but it will also be changed automatically
                         // if bulks are rejected
                         var previous_start = new Date();
-                        sleep(options.slowdown);
+                        sleep.msleep(options.slowdown);
                         client.bulk(
                             {
                                 refresh: "wait_for", //we do refresh only at the end
@@ -340,7 +340,7 @@ function index(options) {
                                     //throw resp;
                                     // let's just re-send the bulk request with increased 
                                     // timeout to be on the safe side
-                                    sleep(10000);
+                                    sleep.msleep(10000);
                                     // increase slowdown factor to avoid that in the future
                                     options.slowdown += 20;
                                     client.bulk(
