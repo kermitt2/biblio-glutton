@@ -1,5 +1,4 @@
 {
-
     "_all": {
         "enabled": false
     },
@@ -57,5 +56,4 @@
             "analyzer": "case_insensitive_folding_text"
         }
     }
-
 }
