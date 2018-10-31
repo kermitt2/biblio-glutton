@@ -4,6 +4,7 @@ package web;
 import com.google.common.collect.Lists;
 import com.google.inject.Module;
 import com.hubspot.dropwizard.guicier.GuiceBundle;
+import exception.ServiceException;
 import io.dropwizard.Application;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
@@ -11,6 +12,7 @@ import io.dropwizard.setup.Environment;
 import web.configuration.LookupConfiguration;
 import web.healthcheck.LookupHealthCheck;
 import web.module.LookupServiceModule;
+import web.module.ServiceExceptionMapper;
 
 import java.util.List;
 
@@ -27,6 +29,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
     public void run(LookupConfiguration lookupConfiguration, Environment environment) throws Exception {
 
         environment.jersey().setUrlPattern(RESOURCES + "/*");
+        environment.jersey().register(new ServiceExceptionMapper());
 
         final LookupHealthCheck healthCheck = new LookupHealthCheck();
         environment.healthChecks().register("HealthCheck", healthCheck);

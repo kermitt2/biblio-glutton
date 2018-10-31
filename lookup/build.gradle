@@ -59,8 +59,11 @@ dependencies {
     compile "io.dropwizard:dropwizard-auth:1.1.0"
     compile "io.dropwizard.metrics:metrics-core:4.0.0"
     compile "io.dropwizard.metrics:metrics-servlets:4.0.0"
+
     compile 'org.lmdbjava:lmdbjava:0.6.1'
     compile 'de.ruedigermoeller:fst:2.50'
+
+    compile 'org.elasticsearch.client:elasticsearch-rest-high-level-client:6.4.2'
 }
 
 shadowJar {
