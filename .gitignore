@@ -20,6 +20,6 @@ scripts/dump.json.gz
 lookup/build
 .gradle
 *.mdb
-**/node_modules
+**/node_modules/**
 **/out
 **/package-lock.json
