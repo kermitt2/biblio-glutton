@@ -320,7 +320,7 @@ function index(options) {
 
             if (i % options.batchSize === 0) {
                 var previous_start = new Date();
-                sleep.msleep(options.slowdown);
+                //sleep.msleep(options.slowdown);
 
                 async.waterfall([
                     function (callback) {
@@ -382,6 +382,7 @@ function index(options) {
                 });
 
                 batch = [];
+                i = 0;
             }
         });
 
