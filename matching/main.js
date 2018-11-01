@@ -148,19 +148,19 @@ function buildBibliographicField(obj) {
     if (obj.journal)
         res += " " + obj.journal;
 
-    if (obj.abbreviated_journal) 
+    if (obj.abbreviated_journal)
         res += " " + obj.abbreviated_journal;
 
-    if (obj.volume) 
+    if (obj.volume)
         res += " " + obj.volume;
 
-    if (obj.issue) 
+    if (obj.issue)
         res += " " + obj.issue;
 
-    if (obj.first_page) 
+    if (obj.first_page)
         res += " " + obj.first_page;
 
-    if (obj.year) 
+    if (obj.year)
         res += " " + obj.year;
 
     return res.trim();
@@ -201,10 +201,10 @@ function index(options) {
                     if (data.author[aut].sequence === "first")
                         if (data.author[aut].family)
                             obj.first_author = data.author[aut].family;
-                        /*else {
-                            obj.first_author = data.author[aut].name;
-                            console.log(data.author[aut]);
-                        }*/
+                    /*else {
+                        obj.first_author = data.author[aut].name;
+                        console.log(data.author[aut]);
+                    }*/
                     if (data.author[aut].family)
                         obj.author += data.author[aut].family + " ";
                     /*else 
@@ -226,7 +226,9 @@ function index(options) {
             obj.abbreviated_journal = data['short-container-title'];
 
             obj.volume = data.volume;
-            obj.issue = data.issue;
+            if (data.issue) {
+                obj.issue = data.issue;
+            }
 
             // year is a date part (first one) in issued or created or published-online (we follow this order)
             if (data.issued) {
@@ -293,40 +295,41 @@ function index(options) {
             }
         );
 
-        var i = 0;
-        var indexed = 0;
-        var batch = [];
-        var previous_end = start;
+    var i = 0;
+    var indexed = 0;
+    var batch = [];
+    var previous_end = start;
 
-        readStream.on("data", function (doc) {
-            // console.log('indexing %s', doc.id);
+    readStream.on("data", function (doc) {
+        // console.log('indexing %s', doc.id);
 
-            // filter some type of DOI not corresponding to a publication (e.g. component 
-            // of a publication)
-            if (!filterType(doc)) {
-                var localId = doc._id;
-                delete doc._id;
-                batch.push({
-                    index: {
-                        _index: 'crossref',
-                        _type: 'work',
-                        _id: localId
-                    }
-                });
+        // filter some type of DOI not corresponding to a publication (e.g. component
+        // of a publication)
+        if (!filterType(doc)) {
+            var localId = doc._id;
+            delete doc._id;
+            batch.push({
+                index: {
+                    _index: 'crossref',
+                    _type: 'work',
+                    _id: localId
+                }
+            });
 
-                batch.push(doc);
-                i++;
-            }
+            batch.push(doc);
+            i++;
+        }
 
-            if (i % options.batchSize === 0) {
-                var previous_start = new Date();
-                //sleep.msleep(options.slowdown);
+        if (i % options.batchSize === 0) {
+            var previous_start = new Date();
+            //sleep.msleep(options.slowdown);
 
-                async.waterfall([
+            async.waterfall([
                     function (callback) {
+                        //First attempt!
                         client.bulk(
                             {
-                                refresh: "wait_for", //we do refresh only at the end
+                                refresh: "false", //we do refresh only at the end
                                 requestTimeout: 200000,
                                 body: batch
                             },
@@ -335,14 +338,15 @@ function index(options) {
                                     console.log(err.message);
                                     throw err;
                                 } else if (resp.errors) {
-                                    console.log('bulk is rejected... let\'s medidate 10 seconds about the illusion of time and consciousness');
-                                    // let's just wait and re-send the bulk request with increased 
+                                    console.log('Bulk is rejected... let\'s medidate 10 seconds about the illusion of time and consciousness');
+                                    // let's just wait and re-send the bulk request with increased
                                     // timeout to be on the safe side
+                                    console.log("Waiting for 10 seconds");
                                     sleep.msleep(10000); // -> this is blocking... time for elasticsearch to do whatever it does
                                     // and be in a better mood to accept this bulk
                                     client.bulk(
                                         {
-                                            refresh: "wait_for", 
+                                            refresh: "false",
                                             requestTimeout: 200000,
                                             body: batch
                                         },
@@ -354,7 +358,7 @@ function index(options) {
                                                 console.log(resp);
                                                 // at this point it's hopeless ?
                                                 throw resp;
-                                                // alternative would be to block again and resend 
+                                                // alternative would be to block again and resend
                                                 // propagate that in a next function of the async to have something less ugly?
                                             }
                                             console.log("bulk is finally ingested...");
@@ -367,7 +371,7 @@ function index(options) {
                                 }
                             });
                     },
-                    function(end, callback) {
+                    function (end, callback) {
                         let total_time = (end - start) / 1000;
                         let intermediate_time = (end - previous_start) / 1000;
 
@@ -381,13 +385,13 @@ function index(options) {
                         console.log(err);
                 });
 
-                batch = [];
-                i = 0;
-            }
-        });
+            batch = [];
+            i = 0;
+        }
+    });
 
-        // When the stream ends write the remaining records
-        readStream.on("end", function () {
+    // When the stream ends write the remaining records
+    readStream.on("end", function () {
             if (batch.length > 0) {
                 console.log('Loaded %s records', batch.length);
                 client().bulk({
@@ -411,7 +415,6 @@ function index(options) {
 
             batch = [];
         }
-               
     );
 }
 
