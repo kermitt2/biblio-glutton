@@ -320,7 +320,7 @@ function index(options) {
 
             if (i % options.batchSize === 0) {
                 var previous_start = new Date();
-                //sleep.msleep(options.slowdown);
+                sleep.msleep(options.slowdown);
 
                 async.waterfall([
                     function (callback) {
@@ -335,10 +335,11 @@ function index(options) {
                                     console.log(err.message);
                                     throw err;
                                 } else if (resp.errors) {
-                                    console.log('bulk is rejected...', resp);
+                                    console.log('bulk is rejected... let\'s medidate 10 seconds about the illusion of time and consciousness');
                                     // let's just wait and re-send the bulk request with increased 
                                     // timeout to be on the safe side
                                     sleep.msleep(10000); // -> this is blocking... time for elasticsearch to do whatever it does
+                                    // and be in a better mood to accept this bulk
                                     client.bulk(
                                         {
                                             refresh: "wait_for", 
@@ -353,7 +354,10 @@ function index(options) {
                                                 console.log(resp);
                                                 // at this point it's hopeless ?
                                                 throw resp;
+                                                // alternative would be to block again and resend 
+                                                // propagate that in a next function of the async to have something less ugly?
                                             }
+                                            console.log("bulk is finally ingested...");
                                             let theEnd = new Date();
                                             return callback(null, theEnd);
                                         });

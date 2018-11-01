@@ -1,6 +1,6 @@
 {
     "indexName":"crossref",
     "docType": "work",
-    "batchSize": 400,
+    "batchSize": 1000,
     "slowdown": 50
 }
