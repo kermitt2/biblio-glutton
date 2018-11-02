@@ -324,7 +324,8 @@ function index(options) {
             var previous_start = new Date();
             //sleep.msleep(options.slowdown);
 
-            async.waterfall([
+            async.waterfall(
+                [
                     function (callback) {
                         //First attempt!
                         client.bulk(
@@ -334,15 +335,20 @@ function index(options) {
                                 body: batch
                             },
                             function (err, resp) {
+                                if (resp.took) {
+                                    if (resp.took > 100) {
+                                        console.log("The service is slowing down... trying to throttle the requests")
+                                        sleep.msleep(resp.took)
+                                    }
+                                }
                                 if (err) {
                                     console.log(err.message);
                                     throw err;
                                 } else if (resp.errors) {
-                                    console.log('Bulk is rejected... let\'s medidate 10 seconds about the illusion of time and consciousness');
+                                    console.log('Bulk is rejected... let\'s meditate 30 seconds about the illusion of time and consciousness');
                                     // let's just wait and re-send the bulk request with increased
                                     // timeout to be on the safe side
-                                    console.log("Waiting for 10 seconds");
-                                    sleep.msleep(10000); // -> this is blocking... time for elasticsearch to do whatever it does
+                                    sleep.msleep(30000); // -> this is blocking... time for elasticsearch to do whatever it does
                                     // and be in a better mood to accept this bulk
                                     client.bulk(
                                         {
@@ -351,6 +357,13 @@ function index(options) {
                                             body: batch
                                         },
                                         function (err, resp) {
+                                            if (resp.took) {
+                                                if (resp.took > 100) {
+                                                    console.log("The service still needs time... trying to throttle more the requests");
+                                                    sleep.msleep(2 * resp.took)
+                                                }
+                                            }
+
                                             if (err) {
                                                 console.log(err.message);
                                                 throw err;
@@ -361,7 +374,7 @@ function index(options) {
                                                 // alternative would be to block again and resend
                                                 // propagate that in a next function of the async to have something less ugly?
                                             }
-                                            console.log("bulk is finally ingested...");
+                                            console.log("Bulk is finally ingested... Alleluia!");
                                             let theEnd = new Date();
                                             return callback(null, theEnd);
                                         });
@@ -369,7 +382,8 @@ function index(options) {
                                     let theEnd = new Date();
                                     return callback(null, theEnd);
                                 }
-                            });
+                            }
+                        );
                     },
                     function (end, callback) {
                         let total_time = (end - start) / 1000;
