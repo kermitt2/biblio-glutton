@@ -9,7 +9,10 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.search.MatchQuery;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -69,8 +72,7 @@ public class MetadataLookup {
         if (isBlank(doi)) {
             throw new ServiceException(401, "Supplied doi is null.");
         }
-        final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_DOI, doi));
+        final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_DOI, doi);
 
         return executeQuery(query);
     }
@@ -111,7 +113,7 @@ public class MetadataLookup {
         return executeQuery(query);
     }
 
-    private String executeQuery(BoolQueryBuilder query) {
+    private String executeQuery(QueryBuilder query) {
         SearchSourceBuilder builder = new SearchSourceBuilder();
         builder.query(query);
         builder.from(0);
@@ -145,8 +147,7 @@ public class MetadataLookup {
             throw new ServiceException(401, "Supplied bibliographical string is null.");
         }
 
-        final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio));
+        final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
 
         return executeQuery(query);
 
