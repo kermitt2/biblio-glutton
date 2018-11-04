@@ -4,15 +4,12 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
 import data.IstexData;
 import storage.StorageEnvFactory;
-import storage.StorageLMDB;
+import storage.LookupEngine;
 import web.configuration.LookupConfiguration;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import java.util.List;
 import java.util.Map;
-
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 
 /**
@@ -25,7 +22,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @Timed
 public class LookupController {
 
-    private StorageLMDB storage = null;
+    private LookupEngine storage = null;
     private LookupConfiguration configuration;
     private final StorageEnvFactory storageEnvFactory;
 
@@ -33,39 +30,75 @@ public class LookupController {
     public LookupController(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) {
         this.configuration = configuration;
         this.storageEnvFactory = storageEnvFactory;
-        this.storage = new StorageLMDB(storageEnvFactory);
+        this.storage = new LookupEngine(storageEnvFactory);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/crossref/{doi}")
-    public String getByDoi(@PathParam("doi") String doi) {
-        return storage.retrieveByMetadata(doi);
+    @Path("/crossref/doi/{doi}")
+    public String getByDoiPath(@PathParam("doi") String doi) {
+        return storage.retrieveByDoi(doi);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/crossref/doi")
+    public String getByDoiQuery(@QueryParam("doi") String doi) {
+        return storage.retrieveByDoi(doi);
     }
 
 
-    /** Rule for selection:
-     * - if doi present, use it
-     * - if title and first_page, use them.
-     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/crossref")
-    public String getByMetadata(@QueryParam("doi") String doi,
-                                @QueryParam("title") String title,
-                                @QueryParam("journalTitle") String journalTitle,
-                                @QueryParam("abbreviatedJournalTitle") String journalAbbreviatedTitle,
-                                @QueryParam("volume") String volume,
-                                @QueryParam("firstAuthor") String firstAuthor,
-                                @QueryParam("firstPage") String firstPage) {
+    @Path("/crossref/article")
+    public String getByArticleMetadataQuery(@QueryParam("firstAuthor") String firstAuthor,
+                                            @QueryParam("title") String title) {
 
-        if(isNotBlank(doi)) {
-            return storage.retrieveByMetadata(doi);
-        } else if(isNotBlank(journalTitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            return storage.retrieveByMetadata(journalTitle, journalAbbreviatedTitle, volume, firstPage);
-        }
+        return storage.retrieveByArticleMetadata(title, firstAuthor);
+    }
 
-        return storage.retrieveByMetadata(title, firstAuthor);
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/crossref/article/title/{title}/firstAuthor/{firstAuthor}")
+    public String getByArticleMetadataPath(@PathParam("firstAuthor") String firstAuthor,
+                                           @PathParam("title") String title) {
+
+        return storage.retrieveByArticleMetadata(title, firstAuthor);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/crossref/journal")
+    public String getByMetadataQuery(@QueryParam("title") String title,
+                                     @QueryParam("volume") String volume,
+                                     @QueryParam("firstPage") String firstPage) {
+
+        return storage.retrieveByJournalMetadata(title, volume, firstPage);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/crossref/journal/title/{title}/volume/{volume}/firstPage/{firstPage}")
+    public String getByMetadataPath(@PathParam("title") String title,
+                                    @PathParam("volume") String volume,
+                                    @PathParam("firstPage") String firstPage) {
+
+        return storage.retrieveByJournalMetadata(title, volume, firstPage);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/crossref/biblio")
+    public String getByBiblioString(@QueryParam("biblio") String biblio) {
+        return storage.retrieveByBiblio(biblio);
+    }
+
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Path("/crossref/biblio")
+    public String getByBiblioString_Post(String biblio) {
+        return storage.retrieveByBiblio(biblio);
     }
 
 

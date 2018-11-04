@@ -40,6 +40,7 @@ public class MetadataLookup {
     public static final String INDEX_FIELD_NAME_DOI = "DOI";
     public static final String INDEX_FIELD_NAME_VOLUME = "volume";
     public static final String INDEX_FIELD_NAME_ISSN = "issn";
+    public static final String INDEX_FIELD_NAME_BIBLIOGRAPHIC = "bibliographic";
     public static final String INDEX_FIELD_NAME_JOURNAL_TITLE = "journal";
     public static final String INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE = "abbreviated_journal";
 
@@ -92,19 +93,18 @@ public class MetadataLookup {
     /**
      * Lookup by journal title, journal abbreviated title, volume, first page
      **/
-    public String retrieveByMetadata(String journalTitle, String abbreviatedJournalTitle, String volume,
+    public String retrieveByMetadata(String title, String volume,
                                      String firstPage) {
 
-        if (isBlank(journalTitle)
-                || isBlank(abbreviatedJournalTitle)
+        if (isBlank(title)
                 || isBlank(volume)
                 || isBlank(firstPage)) {
             throw new ServiceException(401, "Supplied journalTitle or abbr journal title or volume, or first page are null.");
         }
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, journalTitle))
-                .should(QueryBuilders.termQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, abbreviatedJournalTitle))
+                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
+                .should(QueryBuilders.termQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
 
@@ -138,5 +138,17 @@ public class MetadataLookup {
         }
 
         throw new ServiceException(404, "Cannot find records for the input query. ");
+    }
+
+    public String retrieveByBiblio(String biblio) {
+        if (isBlank(biblio)) {
+            throw new ServiceException(401, "Supplied bibliographical string is null.");
+        }
+
+        final BoolQueryBuilder query = QueryBuilders.boolQuery()
+                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio));
+
+        return executeQuery(query);
+
     }
 }

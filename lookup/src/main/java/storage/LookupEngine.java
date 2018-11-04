@@ -13,33 +13,33 @@ import java.util.Map;
 
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 
-public class StorageLMDB {
+public class LookupEngine {
 
     private OADoiLookup doiLookup = null;
     private DoiIstexIdsLookup istexLookup = null;
     private MetadataLookup metadataLookup = null;
 
-    public StorageLMDB() {
+    public LookupEngine() {
 
     }
 
-    public StorageLMDB(StorageEnvFactory storageFactory) {
+    public LookupEngine(StorageEnvFactory storageFactory) {
         this.doiLookup = new OADoiLookup(storageFactory);
         this.istexLookup = new DoiIstexIdsLookup(storageFactory);
         this.metadataLookup = new MetadataLookup(storageFactory);
     }
 
 
-    public String retrieveByMetadata(String title, String firstAuthor) {
+    public String retrieveByArticleMetadata(String title, String firstAuthor) {
         return metadataLookup.retrieveByMetadata(title, firstAuthor);
     }
 
-    public String retrieveByMetadata(String doi) {
+    public String retrieveByDoi(String doi) {
         return metadataLookup.retrieveByMetadata(doi);
     }
 
-    public String retrieveByMetadata(String journalTitle, String abbreviatedJournalTitle, String volume, String firstPage) {
-        return metadataLookup.retrieveByMetadata(journalTitle, abbreviatedJournalTitle, volume, firstPage);
+    public String retrieveByJournalMetadata(String title, String volume, String firstPage) {
+        return metadataLookup.retrieveByMetadata(title, volume, firstPage);
     }
 
 
@@ -72,5 +72,9 @@ public class StorageLMDB {
 
     public List<Pair<String, String>> retrieveOaRecords(Integer total) {
         return doiLookup.retrieveOAUrlSampleList(total);
+    }
+
+    public String retrieveByBiblio(String biblio) {
+        return metadataLookup.retrieveByBiblio(biblio);
     }
 }
