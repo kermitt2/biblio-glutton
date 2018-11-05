@@ -198,13 +198,14 @@ function index(options) {
             if (data.author) {
                 obj.author = "";
                 for (var aut in data.author) {
-                    if (data.author[aut].sequence === "first")
+                    if (data.author[aut].sequence === "first") {
                         if (data.author[aut].family)
                             obj.first_author = data.author[aut].family;
-                    /*else {
-                        obj.first_author = data.author[aut].name;
-                        console.log(data.author[aut]);
-                    }*/
+                        /*else {
+                            obj.first_author = data.author[aut].name;
+                            console.log(data.author[aut]);
+                        }*/
+                    }
                     if (data.author[aut].family)
                         obj.author += data.author[aut].family + " ";
                     /*else 
@@ -325,65 +326,64 @@ function index(options) {
             //sleep.msleep(options.slowdown);
 
             async.waterfall([
-                    function (callback) {
-                        //First attempt!
-                        client.bulk(
-                            {
-                                refresh: "false", //we do refresh only at the end
-                                requestTimeout: 200000,
-                                body: batch
-                            },
-                            function (err, resp) {
-                                if (err) {
-                                    console.log(err.message);
-                                    throw err;
-                                } else if (resp.errors) {
-                                    console.log('Bulk is rejected... let\'s medidate 10 seconds about the illusion of time and consciousness');
-                                    // let's just wait and re-send the bulk request with increased
-                                    // timeout to be on the safe side
-                                    console.log("Waiting for 10 seconds");
-                                    sleep.msleep(10000); // -> this is blocking... time for elasticsearch to do whatever it does
-                                    // and be in a better mood to accept this bulk
-                                    client.bulk(
-                                        {
-                                            refresh: "false",
-                                            requestTimeout: 200000,
-                                            body: batch
-                                        },
-                                        function (err, resp) {
-                                            if (err) {
-                                                console.log(err.message);
-                                                throw err;
-                                            } else if (resp.errors) {
-                                                console.log(resp);
-                                                // at this point it's hopeless ?
-                                                throw resp;
-                                                // alternative would be to block again and resend
-                                                // propagate that in a next function of the async to have something less ugly?
-                                            }
-                                            console.log("bulk is finally ingested...");
-                                            let theEnd = new Date();
-                                            return callback(null, theEnd);
-                                        });
-                                } else {
-                                    let theEnd = new Date();
-                                    return callback(null, theEnd);
-                                }
-                            });
-                    },
-                    function (end, callback) {
-                        let total_time = (end - start) / 1000;
-                        let intermediate_time = (end - previous_start) / 1000;
+                function (callback) {
+                    client.bulk(
+                        {
+                            refresh: "false", //we do refresh only at the end
+                            requestTimeout: 200000,
+                            body: batch
+                        },
+                        function (err, resp) {
+                            if (err) {
+                                console.log(err.message);
+                                throw err;
+                            } else if (resp.errors) {
+                                console.log('Bulk is rejected... let\'s medidate 10 seconds about the illusion of time and consciousness');
+                                // let's just wait and re-send the bulk request with increased
+                                // timeout to be on the safe side
+                                console.log("Waiting for 10 seconds");
+                                sleep.msleep(10000); // -> this is blocking... time for elasticsearch to do whatever it does
+                                // and be in a better mood to accept this bulk
+                                client.bulk(
+                                    {
+                                        refresh: "false",
+                                        requestTimeout: 200000,
+                                        body: batch
+                                    },
+                                    function (err, resp) {
+                                        if (err) {
+                                            console.log(err.message);
+                                            throw err;
+                                        } else if (resp.errors) {
+                                            console.log(resp);
+                                            // at this point it's hopeless ?
+                                            throw resp;
+                                            // alternative would be to block again and resend
+                                            // propagate that in a next function of the async to have something less ugly?
+                                        }
+                                        console.log("bulk is finally ingested...");
+                                        let theEnd = new Date();
+                                        return callback(null, theEnd);
+                                    });
+                            } else {
+                                let theEnd = new Date();
+                                return callback(null, theEnd);
+                            }
+                        });
+                },
+                function(end, callback) {
+                    let total_time = (end - start) / 1000;
+                    let intermediate_time = (end - previous_start) / 1000;
 
-                        indexed += options.batchSize;
-                        console.log('Loaded %s records in %d s (%d record/s)', indexed, total_time, options.batchSize / intermediate_time);
-                        return callback(null, total_time);
-                    }
-                ],
-                function (err, total_time) {
-                    if (err)
-                        console.log(err);
-                });
+                    indexed += options.batchSize;
+                    console.log('Loaded %s records in %d s (%d record/s)', indexed, total_time, options.batchSize / intermediate_time);
+                    return callback(null, total_time);
+                }
+            ],
+            function (err, total_time) {
+                if (err)
+                    console.log(err);
+            });
 
             batch = [];
             i = 0;
@@ -392,30 +392,29 @@ function index(options) {
 
     // When the stream ends write the remaining records
     readStream.on("end", function () {
-            if (batch.length > 0) {
-                console.log('Loaded %s records', batch.length);
-                client().bulk({
-                    refresh: "true", // we wait for this last batch before refreshing
-                    body: batch
-                }, function (err, resp) {
-                    if (err) {
-                        console.log(err, 'Failed to build index');
-                        throw err;
-                    } else if (resp.errors) {
-                        console.log(resp.errors, 'Failed to build index');
-                        throw resp;
-                    } else {
-                        console.log('Completed crossref indexing.');
-                        next();
-                    }
-                });
-            } else {
-                next();
-            }
-
-            batch = [];
+        if (batch.length > 0) {
+            console.log('Loaded %s records', batch.length);
+            client().bulk({
+                refresh: "true", // we wait for this last batch before refreshing
+                body: batch
+            }, function (err, resp) {
+                if (err) {
+                    console.log(err, 'Failed to build index');
+                    throw err;
+                } else if (resp.errors) {
+                    console.log(resp.errors, 'Failed to build index');
+                    throw resp;
+                } else {
+                    console.log('Completed crossref indexing.');
+                    next();
+                }
+            });
+        } else {
+            next();
         }
-    );
+
+        batch = [];
+    });
 }
 
 /**
