@@ -9,7 +9,10 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.search.MatchQuery;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -40,6 +43,7 @@ public class MetadataLookup {
     public static final String INDEX_FIELD_NAME_DOI = "DOI";
     public static final String INDEX_FIELD_NAME_VOLUME = "volume";
     public static final String INDEX_FIELD_NAME_ISSN = "issn";
+    public static final String INDEX_FIELD_NAME_BIBLIOGRAPHIC = "bibliographic";
     public static final String INDEX_FIELD_NAME_JOURNAL_TITLE = "journal";
     public static final String INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE = "abbreviated_journal";
 
@@ -68,8 +72,7 @@ public class MetadataLookup {
         if (isBlank(doi)) {
             throw new ServiceException(401, "Supplied doi is null.");
         }
-        final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_DOI, doi));
+        final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_DOI, doi);
 
         return executeQuery(query);
     }
@@ -92,26 +95,25 @@ public class MetadataLookup {
     /**
      * Lookup by journal title, journal abbreviated title, volume, first page
      **/
-    public String retrieveByMetadata(String journalTitle, String abbreviatedJournalTitle, String volume,
+    public String retrieveByMetadata(String title, String volume,
                                      String firstPage) {
 
-        if (isBlank(journalTitle)
-                || isBlank(abbreviatedJournalTitle)
+        if (isBlank(title)
                 || isBlank(volume)
                 || isBlank(firstPage)) {
             throw new ServiceException(401, "Supplied journalTitle or abbr journal title or volume, or first page are null.");
         }
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, journalTitle))
-                .should(QueryBuilders.termQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, abbreviatedJournalTitle))
+                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
+                .should(QueryBuilders.termQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
 
         return executeQuery(query);
     }
 
-    private String executeQuery(BoolQueryBuilder query) {
+    private String executeQuery(QueryBuilder query) {
         SearchSourceBuilder builder = new SearchSourceBuilder();
         builder.query(query);
         builder.from(0);
@@ -138,5 +140,16 @@ public class MetadataLookup {
         }
 
         throw new ServiceException(404, "Cannot find records for the input query. ");
+    }
+
+    public String retrieveByBiblio(String biblio) {
+        if (isBlank(biblio)) {
+            throw new ServiceException(401, "Supplied bibliographical string is null.");
+        }
+
+        final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
+
+        return executeQuery(query);
+
     }
 }

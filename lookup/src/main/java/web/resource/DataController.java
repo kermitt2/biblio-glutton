@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import data.IstexData;
 import org.apache.commons.lang3.tuple.Pair;
 import storage.StorageEnvFactory;
-import storage.StorageLMDB;
+import storage.LookupEngine;
 import web.configuration.LookupConfiguration;
 
 import javax.ws.rs.GET;
@@ -18,13 +18,13 @@ import java.util.Map;
 @Path("/data")
 public class DataController {
 
-    private StorageLMDB storage = null;
+    private LookupEngine storage = null;
     private LookupConfiguration configuration;
 
     @Inject
     public DataController(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) {
         this.configuration = configuration;
-        this.storage = new StorageLMDB(storageEnvFactory);
+        this.storage = new LookupEngine(storageEnvFactory);
     }
 
     @GET

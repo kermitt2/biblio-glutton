@@ -9,7 +9,7 @@ var client = new elasticsearch.Client( {
     sniffOnStart: true      //discover the rest of the cluster at startup
     // sniffOnConnectionFault: true,
     // sniffInterval: 300,
-    // suggestCompression: true
+    suggestCompression: true
 });
 
 module.exports = client;
