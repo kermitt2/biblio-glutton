@@ -16,6 +16,10 @@ public class IstexData implements Serializable {
     private List<String> doi;
 
     private List<String> ark;
+    
+    private List<String> pmc;
+
+    private List<String> mesh;
 
     public String getIstexId() {
         return istexId;
@@ -55,5 +59,21 @@ public class IstexData implements Serializable {
 
     public void setArk(List<String> ark) {
         this.ark = ark;
+    }
+
+    public List<String> getPmc() {
+        return pmc;
+    }
+
+    public void setPmc(List<String> pmc) {
+        this.pmc = pmc;
+    }
+
+    public List<String> getMesh() {
+        return mesh;
+    }
+
+    public void setMesh(List<String> mesh) {
+        this.mesh = mesh;
     }
 }

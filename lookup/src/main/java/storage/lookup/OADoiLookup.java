@@ -90,28 +90,23 @@ public class OADoiLookup {
     }
 
     public void loadFromFile(InputStream is, UnpaidWallReader loader, Meter meter) {
-        final AtomicInteger partialCounter = new AtomicInteger(0);
-        final AtomicInteger totalCounter = new AtomicInteger(0);
-
         try (Txn<ByteBuffer> tx = environment.txnWrite()) {
             loader.load(is, unpaidWallMetadata -> {
-                if (partialCounter.get() >= BATCH_SIZE) {
-                    LOGGER.debug("Processed " + totalCounter.get() + " records.");
-                }
 
                 String key = unpaidWallMetadata.getDoi();
                 if (unpaidWallMetadata.getBestOALocation() != null) {
                     String value = unpaidWallMetadata.getBestOALocation().getPdfUrl();
                     if(isNotBlank(value)) {
                         store(key, value, dbDoiOAUrl, tx);
+                        meter.mark();
                     }
                 }
             });
+
             tx.commit();
-            totalCounter.addAndGet(partialCounter.get());
         }
 
-        LOGGER.info("Cross checking number of records added: " + partialCounter.get());
+        LOGGER.info("Cross checking number of records processed: " + meter.getCount());
     }
 
     private void store(String key, String value, Dbi<ByteBuffer> db, Txn<ByteBuffer> tx) {

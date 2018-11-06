@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -45,11 +44,9 @@ public class PmidLookup {
     }
 
     public void loadFromFile(InputStream is, PmidReader reader, Meter metric) {
-        final AtomicInteger totalCounter = new AtomicInteger(0);
-        final AtomicInteger partialCounter = new AtomicInteger(0);
-
         try (Txn<ByteBuffer> tx = environment.txnWrite()) {
             reader.load(is, pmidData -> {
+
                         if (isNotBlank(pmidData.getDoi())) {
                             store(dbDoiToIds, pmidData.getDoi(), pmidData, tx);
                         }
@@ -60,13 +57,10 @@ public class PmidLookup {
                         metric.mark();
                     }
             );
-
             tx.commit();
-            totalCounter.addAndGet(partialCounter.get());
-
         }
-        LOGGER.info("Cross checking number of records added: " + partialCounter.get());
 
+        LOGGER.info("Cross checking number of records processed:: " + metric.getCount());
     }
 
     public PmidData retrieveIdsByDoi(String doi) {

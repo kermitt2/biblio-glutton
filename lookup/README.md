@@ -2,6 +2,9 @@
 
 
 ### Prepare database
+The system read plain text files or compressed file with gzip.
+
+ 
 ##### unpaidwall
 
 > ./gradlew run unpaidwall --input /path/to/unpaidwall/json/file /path/to/your/configuration
@@ -15,11 +18,11 @@ Example:
 > ./gradlew run unpaidwall --input unpaywall_snapshot_2018-06-21T164548_with_versions.jsonl.gz data/config/config.yml 
 
 ##### istex 
-> ./gradlew run istex --input /path/to/istex/json/file /path/to/your/configuration
+> ./gradlew run istex --input /path/to/istex/json/file --alternative --input /path/to/istex/alternative/json/file  /path/to/your/configuration 
 
 or 
 
-> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar istex --input /path/to/istex/json/file /path/to/your/configuration
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar istex --input /path/to/istex/json/file --alternative /path/to/istex/alternative/json/file /path/to/your/configuration
 
 Example: 
 

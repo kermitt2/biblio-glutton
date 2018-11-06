@@ -49,37 +49,65 @@ public class IstexIdsLookup {
     }
 
     public void loadFromFile(InputStream is, IstexIdsReader reader, Meter metric) {
-        final AtomicInteger totalCounter = new AtomicInteger(0);
-        final AtomicInteger partialCounter = new AtomicInteger(0);
 
         try (Txn<ByteBuffer> tx = environment.txnWrite()) {
             reader.load(is, istexData -> {
                         //unwrapping list of dois   doi -> ids
                         for (String doi : istexData.getDoi()) {
-
                             if (isNotBlank(doi)) {
                                 store(dbDoiToIds, doi, istexData, tx);
-                                partialCounter.incrementAndGet();
                             }
-
                         }
 
                         // istex id -> ids (no need to unwrap)
                         if (isNotBlank(istexData.getIstexId())) {
                             store(dbIstexToIds, istexData.getIstexId(), istexData, tx);
+
                         }
 
                         metric.mark();
 
                     }
             );
-
             tx.commit();
-            totalCounter.addAndGet(partialCounter.get());
-
         }
-        LOGGER.info("Cross checking number of records added: " + partialCounter.get());
+        LOGGER.info("Cross checking number of records processed: " + metric.getCount());
+    }
 
+    public void loadFromFileAdditional(InputStream is, IstexIdsReader reader, Meter metric) {
+        final AtomicInteger storedDoiToIds = new AtomicInteger(0);
+        final AtomicInteger storedIstexToIds = new AtomicInteger(0);
+
+        try (Txn<ByteBuffer> tx = environment.txnWrite()) {
+            reader.load(is, istexData -> {
+
+                        //unwrapping list of dois   doi -> ids
+                        for (String doi : istexData.getDoi()) {
+                            if (isNotBlank(doi)) {
+                                if (retrieveByDoi(doi) == null) {
+                                    store(dbDoiToIds, doi, istexData, tx);
+                                    storedDoiToIds.incrementAndGet();
+                                }
+                            }
+                        }
+
+                        // istex id -> ids (no need to unwrap)
+                        if (isNotBlank(istexData.getIstexId())) {
+                            if (retrieveByIstexId(istexData.getIstexId()) == null) {
+                                store(dbIstexToIds, istexData.getIstexId(), istexData, tx);
+                                storedIstexToIds.incrementAndGet();
+                            }
+                        }
+
+                        metric.mark();
+                    }
+            );
+            tx.commit();
+        }
+
+        LOGGER.info("Cross checking number of records processed: " + metric.getCount()
+                + ", alternative file records stored: doi->ids " + storedDoiToIds.get()
+                + ", pmid->ids" + storedIstexToIds.get());
     }
 
     public Map<String, Long> getSize() {

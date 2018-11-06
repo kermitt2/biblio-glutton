@@ -7,6 +7,7 @@ import io.dropwizard.setup.Bootstrap;
 import loader.IstexIdsReader;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
+import org.apache.commons.collections4.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import storage.StorageEnvFactory;
@@ -21,13 +22,14 @@ import java.util.zip.GZIPInputStream;
 
 /**
  * This class is responsible for loading data for the istex mappings, in particular
- *  - istexid -> doi, ark, pmid
- *  - doi -> istexid, ark, pmid
+ * - istexid -> doi, ark, pmid
+ * - doi -> istexid, ark, pmid
  */
 public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadIstexIdsCommand.class);
 
-    public static final String ISTEX_SOURCE = "istexSource";
+    public static final String ISTEX_SOURCE = "istex.all_source";
+    public static final String ISTEX_SOURCE_ADDITIONAL = "istex2pmid_source";
 
     public LoadIstexIdsCommand() {
         super("istex", "Prepare the istex lookp database");
@@ -36,12 +38,18 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
     @Override
     public void configure(Subparser subparser) {
         super.configure(subparser);
-        
+
         subparser.addArgument("--input")
                 .dest(ISTEX_SOURCE)
                 .type(String.class)
                 .required(true)
-                .help("The path to the source file for istex ids");
+                .help("The path to the source file for mapping (istex.all).");
+
+        subparser.addArgument("--additional")
+                .dest(ISTEX_SOURCE)
+                .type(String.class)
+                .required(true)
+                .help("The path to the source file for istex additional mapping (istex2pmid).");
     }
 
     @Override
@@ -62,7 +70,7 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
 
         long start = System.nanoTime();
-        
+
         // Istex IDs
         IstexIdsLookup istexLookup = new IstexIdsLookup(storageEnvFactory);
         InputStream inputStreamIstexIds = Files.newInputStream(Paths.get(istexFilePath));
@@ -71,6 +79,19 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
         }
         istexLookup.loadFromFile(inputStreamIstexIds, new IstexIdsReader(), metrics.meter("istexLookup"));
         LOGGER.info("Istex lookup loaded " + istexLookup.getSize() + " records. ");
+
+
+        final String istexAdditionalFilePath = namespace.get(ISTEX_SOURCE_ADDITIONAL);
+        LOGGER.info("Preparing the system. Loading data for Istex from " + istexFilePath);
+
+        // Istex additional IDs
+        InputStream inputStreamIstexAdditionalIds = Files.newInputStream(Paths.get(istexAdditionalFilePath));
+        if (istexFilePath.endsWith(".gz")) {
+            inputStreamIstexAdditionalIds = new GZIPInputStream(inputStreamIstexAdditionalIds);
+        }
+        istexLookup.loadFromFileAdditional(inputStreamIstexAdditionalIds, new IstexIdsReader(), metrics.meter("istexAdditional"));
+        LOGGER.info("Istex lookup loaded: " + istexLookup.getSize());
+
 
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
