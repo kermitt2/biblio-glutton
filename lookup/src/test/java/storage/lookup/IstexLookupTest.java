@@ -1,13 +1,10 @@
 package storage.lookup;
 
-import loader.IstexIdsReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Test;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,7 +13,7 @@ import java.util.Comparator;
 @Ignore("Integration test")
 public class IstexLookupTest {
 
-    private DoiIstexIdsLookup target;
+    private IstexIdsLookup target;
 
     @Before
     public void setUp() throws Exception {

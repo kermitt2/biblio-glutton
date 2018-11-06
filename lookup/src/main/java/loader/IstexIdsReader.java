@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import data.IstexData;
 import data.UnpaidWallMetadata;
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +20,9 @@ import java.nio.file.Paths;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+/**
+ * Class responsible for reading the istex ids json file
+ **/
 public class IstexIdsReader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IstexIdsReader.class);
@@ -28,7 +32,7 @@ public class IstexIdsReader {
 
             stream.forEach(line -> closure.accept(fromJson(line)));
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Some serious error when processing the input Istex ID file.", e);
         }
 
     }
@@ -39,13 +43,13 @@ public class IstexIdsReader {
             //br returns as stream and convert it into a List
             br.lines().forEach(line -> {
                 final IstexData istexData = fromJson(line);
-                if (istexData != null && istexData.getDoi().size() > 0) {
+                if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi())) {
                     closure.accept(istexData);
                 }
             });
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Some serious error when processing the input Istex ID file.", e);
         }
     }
 

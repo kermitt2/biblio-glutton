@@ -5,14 +5,12 @@ import com.codahale.metrics.MetricRegistry;
 import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
 import loader.IstexIdsReader;
-import loader.UnpaidWallReader;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import storage.StorageEnvFactory;
-import storage.lookup.OADoiLookup;
-import storage.lookup.DoiIstexIdsLookup;
+import storage.lookup.IstexIdsLookup;
 import web.configuration.LookupConfiguration;
 
 import java.io.InputStream;
@@ -21,28 +19,25 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
-public class LoadCommand extends ConfiguredCommand<LookupConfiguration> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(LoadCommand.class);
+/**
+ * This class is responsible for loading data for the istex mappings, in particular
+ *  - istexid -> doi, ark, pmid
+ *  - doi -> istexid, ark, pmid
+ */
+public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoadIstexIdsCommand.class);
 
-    public static final String UNPAIDWALL_SOURCE = "unpaidwallSource";
     public static final String ISTEX_SOURCE = "istexSource";
 
-    public LoadCommand() {
-        super("prepare", "Prepare the database");
+    public LoadIstexIdsCommand() {
+        super("istex", "Prepare the istex lookp database");
     }
 
     @Override
     public void configure(Subparser subparser) {
         super.configure(subparser);
-
-        // Add a command line option
-        subparser.addArgument("--unpaidwall")
-                .dest(UNPAIDWALL_SOURCE)
-                .type(String.class)
-                .required(true)
-                .help("The path to the source file for unpaidwall");
-
-        subparser.addArgument("--istex")
+        
+        subparser.addArgument("--input")
                 .dest(ISTEX_SOURCE)
                 .type(String.class)
                 .required(true)
@@ -61,26 +56,17 @@ public class LoadCommand extends ConfiguredCommand<LookupConfiguration> {
 
         reporter.start(15, TimeUnit.SECONDS);
 
-        final String unpaidWallFilePath = namespace.get(UNPAIDWALL_SOURCE);
         final String istexFilePath = namespace.get(ISTEX_SOURCE);
-        LOGGER.info("Preparing the system. Loading data for unpaidwall from " + unpaidWallFilePath
-                + " and istex from  " + istexFilePath);
+        LOGGER.info("Preparing the system. Loading data for Istex from " + istexFilePath);
 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
 
         long start = System.nanoTime();
-        OADoiLookup doiLookup = new OADoiLookup(storageEnvFactory);
-        InputStream inputStreamUnpaidWall = Files.newInputStream(Paths.get(unpaidWallFilePath));
-        if (unpaidWallFilePath.endsWith(".gz")) {
-            inputStreamUnpaidWall = new GZIPInputStream(inputStreamUnpaidWall);
-        }
-        doiLookup.loadFromFile(inputStreamUnpaidWall, new UnpaidWallReader(), metrics.meter("doiLookup"));
-
-        LOGGER.info("Doi lookup (doi -> oa url) loaded " + doiLookup.getSize() + " records. ");
-
-        DoiIstexIdsLookup istexLookup = new DoiIstexIdsLookup(storageEnvFactory);
+        
+        // Istex IDs
+        IstexIdsLookup istexLookup = new IstexIdsLookup(storageEnvFactory);
         InputStream inputStreamIstexIds = Files.newInputStream(Paths.get(istexFilePath));
-        if (unpaidWallFilePath.endsWith(".gz")) {
+        if (istexFilePath.endsWith(".gz")) {
             inputStreamIstexIds = new GZIPInputStream(inputStreamIstexIds);
         }
         istexLookup.loadFromFile(inputStreamIstexIds, new IstexIdsReader(), metrics.meter("istexLookup"));

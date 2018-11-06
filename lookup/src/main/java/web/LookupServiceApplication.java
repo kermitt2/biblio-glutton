@@ -4,7 +4,6 @@ package web;
 import com.google.common.collect.Lists;
 import com.google.inject.Module;
 import com.hubspot.dropwizard.guicier.GuiceBundle;
-import exception.ServiceException;
 import io.dropwizard.Application;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
@@ -47,7 +46,9 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
                 .build();
         bootstrap.addBundle(guiceBundle);
         bootstrap.addBundle(new MultiPartBundle());
-        bootstrap.addCommand(new LoadCommand());
+        bootstrap.addCommand(new LoadUnpaidWallCommand());
+        bootstrap.addCommand(new LoadIstexIdsCommand());
+        bootstrap.addCommand(new LoadPMIDCommand());
     }
 
     // ========== static ==========

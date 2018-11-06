@@ -36,7 +36,7 @@ public class StorageEnvFactory {
         this.environment = Env.create()
                 .setMapSize(100L * 1024L * 1024L * 1024L)
                 .setMaxReaders(126)
-                .setMaxDbs(3)
+                .setMaxDbs(10)
                 .open(thePath, EnvFlags.MDB_NOTLS);
 
         return environment;

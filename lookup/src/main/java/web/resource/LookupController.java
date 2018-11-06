@@ -3,6 +3,7 @@ package web.resource;
 import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
 import data.IstexData;
+import data.PmidData;
 import storage.StorageEnvFactory;
 import storage.LookupEngine;
 import web.configuration.LookupConfiguration;
@@ -102,13 +103,63 @@ public class LookupController {
     }
 
 
+    // PMID mappings
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/pmid/doi/{doi}")
+    public PmidData getPmidIdsByDoi_Path(@PathParam("doi") String doi) {
+        return storage.retrievePMidsByDoi(doi);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/pmid/doi")
+    public PmidData getPmidIdsByDoi(@QueryParam("doi") String doi) {
+        return storage.retrievePMidsByDoi(doi);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/pmid/id")
+    public PmidData getPmidIdsByPmid(@QueryParam("pmid") String pmid) {
+        return storage.retrievePMidsByPmid(pmid);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/pmid/id/{pmid}")
+    public PmidData getPmidIdsByPmid_Path(@PathParam("pmid") String pmid) {
+        return storage.retrievePMidsByPmid(pmid);
+    }                       
+
+    // ISTEX Mappings
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/istex/doi")
+    public IstexData getIstexIdByDoi(@QueryParam("doi") String doi) {
+        return storage.retrieveIstexIdsByDoi(doi);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/istex/doi/{doi}")
+    public IstexData getIstexIdsByDoi_Path(@PathParam("doi") String doi) {
+        return storage.retrieveIstexIdsByDoi(doi);
+    }
+
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/istex/id")
-    public IstexData getIstexIdByDoi(@QueryParam("doi") String doi) {
-        return storage.retrieveIstexIdByDoi(doi);
+    public IstexData getIstexIdsByIstexId(@QueryParam("istexid") String istexid) {
+        return storage.retrieveIstexIdsByIstexId(istexid);
     }
 
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/istex/id/{istexid}")
+    public IstexData getIdsByIstexId_Path(@PathParam("istexid") String istexid) {
+        return storage.retrieveIstexIdsByIstexId(istexid);
+    }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
