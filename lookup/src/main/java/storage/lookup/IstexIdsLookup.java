@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.ByteBuffer.allocateDirect;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
  * Lookup:
@@ -55,12 +56,19 @@ public class IstexIdsLookup {
             reader.load(is, istexData -> {
                         //unwrapping list of dois   doi -> ids
                         for (String doi : istexData.getDoi()) {
-                            store(dbDoiToIds, doi, istexData, tx);
-                            partialCounter.incrementAndGet();
+
+                            if (isNotBlank(doi)) {
+                                store(dbDoiToIds, doi, istexData, tx);
+                                partialCounter.incrementAndGet();
+                            }
+
                         }
 
                         // istex id -> ids (no need to unwrap)
-                        store(dbIstexToIds, istexData.getIstexId(), istexData, tx);
+                        if (isNotBlank(istexData.getIstexId())) {
+                            store(dbIstexToIds, istexData.getIstexId(), istexData, tx);
+                        }
+
                         metric.mark();
 
                     }

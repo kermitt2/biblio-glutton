@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.ByteBuffer.allocateDirect;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 public class PmidLookup {
     private static final Logger LOGGER = LoggerFactory.getLogger(PmidLookup.class);
@@ -49,8 +50,13 @@ public class PmidLookup {
 
         try (Txn<ByteBuffer> tx = environment.txnWrite()) {
             reader.load(is, pmidData -> {
-                        store(dbDoiToIds, pmidData.getDoi(), pmidData, tx);
-                        store(dbPmidToIds, pmidData.getPmid(), pmidData, tx);
+                        if (isNotBlank(pmidData.getDoi())) {
+                            store(dbDoiToIds, pmidData.getDoi(), pmidData, tx);
+                        }
+
+                        if (isNotBlank(pmidData.getPmid())) {
+                            store(dbPmidToIds, pmidData.getPmid(), pmidData, tx);
+                        }
                         metric.mark();
                     }
             );
@@ -122,7 +128,7 @@ public class PmidLookup {
     }
 
 
-    public List<Pair<String, PmidData>>  retrieveList_pmidToIds(Integer total) {
+    public List<Pair<String, PmidData>> retrieveList_pmidToIds(Integer total) {
         return retrieveList(total, dbPmidToIds);
     }
 

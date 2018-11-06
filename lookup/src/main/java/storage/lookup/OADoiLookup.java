@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
  * Lookup doi -> best OA Location
@@ -101,7 +102,9 @@ public class OADoiLookup {
                 String key = unpaidWallMetadata.getDoi();
                 if (unpaidWallMetadata.getBestOALocation() != null) {
                     String value = unpaidWallMetadata.getBestOALocation().getPdfUrl();
-                    store(key, value, dbDoiOAUrl, tx);
+                    if(isNotBlank(value)) {
+                        store(key, value, dbDoiOAUrl, tx);
+                    }
                 }
             });
             tx.commit();
