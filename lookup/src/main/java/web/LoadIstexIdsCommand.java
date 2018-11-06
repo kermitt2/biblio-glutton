@@ -46,7 +46,7 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
                 .help("The path to the source file for mapping (istex.all).");
 
         subparser.addArgument("--additional")
-                .dest(ISTEX_SOURCE)
+                .dest(ISTEX_SOURCE_ADDITIONAL)
                 .type(String.class)
                 .required(true)
                 .help("The path to the source file for istex additional mapping (istex2pmid).");
@@ -64,32 +64,32 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
 
         reporter.start(15, TimeUnit.SECONDS);
 
+        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
+        IstexIdsLookup istexLookup = new IstexIdsLookup(storageEnvFactory);
+        long start = System.nanoTime();
         final String istexFilePath = namespace.get(ISTEX_SOURCE);
+
         LOGGER.info("Preparing the system. Loading data for Istex from " + istexFilePath);
 
-        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
-
-        long start = System.nanoTime();
-
         // Istex IDs
-        IstexIdsLookup istexLookup = new IstexIdsLookup(storageEnvFactory);
         InputStream inputStreamIstexIds = Files.newInputStream(Paths.get(istexFilePath));
         if (istexFilePath.endsWith(".gz")) {
             inputStreamIstexIds = new GZIPInputStream(inputStreamIstexIds);
         }
-        istexLookup.loadFromFile(inputStreamIstexIds, new IstexIdsReader(), metrics.meter("istexLookup"));
+        istexLookup.loadFromFile(inputStreamIstexIds, new IstexIdsReader(),
+                metrics.meter("istexLookup"));
         LOGGER.info("Istex lookup loaded " + istexLookup.getSize() + " records. ");
 
-
         final String istexAdditionalFilePath = namespace.get(ISTEX_SOURCE_ADDITIONAL);
-        LOGGER.info("Preparing the system. Loading data for Istex from " + istexFilePath);
+        LOGGER.info("Preparing the system. Loading data for Istex from " + istexAdditionalFilePath);
 
         // Istex additional IDs
         InputStream inputStreamIstexAdditionalIds = Files.newInputStream(Paths.get(istexAdditionalFilePath));
         if (istexFilePath.endsWith(".gz")) {
             inputStreamIstexAdditionalIds = new GZIPInputStream(inputStreamIstexAdditionalIds);
         }
-        istexLookup.loadFromFileAdditional(inputStreamIstexAdditionalIds, new IstexIdsReader(), metrics.meter("istexAdditional"));
+        istexLookup.loadFromFileAdditional(inputStreamIstexAdditionalIds, new IstexIdsReader(),
+                metrics.meter("istexAdditional"));
         LOGGER.info("Istex lookup loaded: " + istexLookup.getSize());
 
 
