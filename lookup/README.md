@@ -5,40 +5,28 @@
 The system read plain text files or compressed file with gzip.
 
  
-##### unpaidwall
+##### unpaywall
 
-> ./gradlew run unpaidwall --input /path/to/unpaidwall/json/file /path/to/your/configuration
-
-or 
-
-> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaidwall --input /path/to/unpaidwall/json/file /path/to/your/configuration
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input /path/to/unpaywall/json/file /path/to/your/configuration
 
 Example: 
 
-> ./gradlew run unpaidwall --input unpaywall_snapshot_2018-06-21T164548_with_versions.jsonl.gz data/config/config.yml 
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar --input unpaywall_snapshot_2018-06-21T164548_with_versions.jsonl.gz data/config/config.yml 
 
 ##### istex 
-> ./gradlew run istex --input /path/to/istex/json/file --additional /path/to/istex/additional/json/file  /path/to/your/configuration 
-
-or 
-
-> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar istex --input /path/to/istex/json/file --additional /path/to/istex/additional/json/file /path/to/your/configuration
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar istex --input /path/to/istex/json/file /path/to/your/configuration
 
 Example: 
 
-> ./gradlew run istex --input istexIds.all.gz data/config/config.yml
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar istex --input istexIds.all.gz data/config/config.yml
 
 ##### pmid 
-
-> ./gradlew run pmid --input /path/to/pmid/csv/file /path/to/your/configuration 
-
-or 
 
 > java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar pmid --input /path/to/pmid/csv/file /path/to/your/configuration 
 
 Example: 
 
-> ./gradlew run pmid --input PMID_PMCID_DOI.csv.gz data/config/config.yml 
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar pmid --input PMID_PMCID_DOI.csv.gz data/config/config.yml 
 
 
 
