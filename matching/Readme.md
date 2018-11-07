@@ -17,7 +17,7 @@ Usage (GROBID server must be up and running):
 
 > node main -dump *PATH_TO_THE_CROSSREF_JSON_DUMP* action
 
-When `action` is one of [`health`, `index`]
+Where `action` is one of [`health`, `index`]
 
 Example:
 
