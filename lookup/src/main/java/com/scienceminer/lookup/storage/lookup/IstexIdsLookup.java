@@ -3,14 +3,14 @@ package com.scienceminer.lookup.storage.lookup;
 import com.codahale.metrics.Meter;
 import com.scienceminer.lookup.data.IstexData;
 import com.scienceminer.lookup.reader.IstexIdsReader;
+import com.scienceminer.lookup.storage.BinarySerialiser;
+import com.scienceminer.lookup.storage.StorageEnvFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.lmdbjava.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.scienceminer.lookup.storage.BinarySerialiser;
-import com.scienceminer.lookup.storage.StorageEnvFactory;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;

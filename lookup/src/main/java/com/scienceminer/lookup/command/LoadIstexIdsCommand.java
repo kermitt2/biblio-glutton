@@ -19,6 +19,8 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 /**
  * This class is responsible for loading org.data for the istex mappings, in particular
  * - istexid -> doi, ark, pmid
@@ -44,11 +46,11 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
                 .required(true)
                 .help("The path to the source file for mapping (istex.all).");
 
-//        subparser.addArgument("--additional")
-//                .dest(ISTEX_SOURCE_ADDITIONAL)
-//                .type(String.class)
-//                .required(true)
-//                .help("The path to the source file for istex additional mapping (istex2pmid).");
+        /*subparser.addArgument("--additional")
+                .dest(ISTEX_SOURCE_ADDITIONAL)
+                .type(String.class)
+                .required(false)
+                .help("The path to the source file for istex additional mapping (istex2pmid).");*/
     }
 
     @Override
@@ -79,19 +81,21 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
                 metrics.meter("istexLookup"));
         LOGGER.info("Istex com.scienceminer.lookup loaded " + istexLookup.getSize() + " records. ");
 
-//        final String istexAdditionalFilePath = namespace.get(ISTEX_SOURCE_ADDITIONAL);
-//        LOGGER.info("Preparing the system. Loading org.data for Istex from " + istexAdditionalFilePath);
+        /*final String istexAdditionalFilePath = namespace.get(ISTEX_SOURCE_ADDITIONAL);
+        if (isNotBlank(istexAdditionalFilePath)) {
+            LOGGER.info("Preparing the system. Loading org.data for Istex from " + istexAdditionalFilePath);
 
-        // Istex additional IDs
-//        InputStream inputStreamIstexAdditionalIds = Files.newInputStream(Paths.get(istexAdditionalFilePath));
-//        if (istexFilePath.endsWith(".gz")) {
-//            inputStreamIstexAdditionalIds = new GZIPInputStream(inputStreamIstexAdditionalIds);
-//        }
-//        istexLookup.loadFromFileAdditional(inputStreamIstexAdditionalIds, new IstexIdsReader(),
-//                metrics.meter("istexAdditional"));
-//        LOGGER.info("Istex com.scienceminer.lookup loaded: " + istexLookup.getSize());
+            // Istex additional IDs
+            InputStream inputStreamIstexAdditionalIds = Files.newInputStream(Paths.get(istexAdditionalFilePath));
+            if (istexFilePath.endsWith(".gz")) {
+                inputStreamIstexAdditionalIds = new GZIPInputStream(inputStreamIstexAdditionalIds);
+            }
+            istexLookup.loadFromFileAdditional(inputStreamIstexAdditionalIds, new IstexIdsReader(),
+                    metrics.meter("istexAdditional"));
+            LOGGER.info("Istex com.scienceminer.lookup loaded: " + istexLookup.getSize());
 
-
+        }
+*/
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
     }

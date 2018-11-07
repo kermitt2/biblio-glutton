@@ -1,12 +1,12 @@
 package com.scienceminer.lookup.web.resource;
 
 import com.google.inject.Inject;
+import com.scienceminer.lookup.configuration.LookupConfiguration;
+import com.scienceminer.lookup.data.IstexData;
 import com.scienceminer.lookup.data.PmidData;
 import com.scienceminer.lookup.storage.LookupEngine;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
-import com.scienceminer.lookup.data.IstexData;
 import org.apache.commons.lang3.tuple.Pair;
-import com.scienceminer.lookup.configuration.LookupConfiguration;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;

@@ -2,11 +2,11 @@ package com.scienceminer.lookup.web.resource;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
-import com.scienceminer.lookup.data.PmidData;
-import com.scienceminer.lookup.data.IstexData;
-import com.scienceminer.lookup.storage.StorageEnvFactory;
-import com.scienceminer.lookup.storage.LookupEngine;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
+import com.scienceminer.lookup.data.IstexData;
+import com.scienceminer.lookup.data.PmidData;
+import com.scienceminer.lookup.storage.LookupEngine;
+import com.scienceminer.lookup.storage.StorageEnvFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;

@@ -1,8 +1,8 @@
 package com.scienceminer.lookup.storage;
 
+import com.scienceminer.lookup.configuration.LookupConfiguration;
 import org.lmdbjava.Env;
 import org.lmdbjava.EnvFlags;
-import com.scienceminer.lookup.configuration.LookupConfiguration;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

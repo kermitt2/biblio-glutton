@@ -1,5 +1,6 @@
 package com.scienceminer.lookup.storage.lookup;
 
+import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import org.apache.http.HttpHost;
@@ -18,7 +19,6 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.scienceminer.lookup.configuration.LookupConfiguration;
 
 import java.io.IOException;
 import java.util.Iterator;

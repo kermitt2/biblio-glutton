@@ -1,19 +1,20 @@
 package com.scienceminer.lookup.storage;
 
+import com.scienceminer.lookup.data.IstexData;
 import com.scienceminer.lookup.data.PmidData;
 import com.scienceminer.lookup.storage.lookup.IstexIdsLookup;
+import com.scienceminer.lookup.storage.lookup.MetadataLookup;
 import com.scienceminer.lookup.storage.lookup.OALookup;
 import com.scienceminer.lookup.storage.lookup.PmidLookup;
-import com.scienceminer.lookup.data.IstexData;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import com.scienceminer.lookup.storage.lookup.MetadataLookup;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.commons.lang3.StringUtils.*;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.length;
 
 public class LookupEngine {
 

@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Binder;
 import com.google.inject.Provides;
 import com.hubspot.dropwizard.guicier.DropwizardAwareModule;
-import com.scienceminer.lookup.storage.StorageEnvFactory;
-import com.scienceminer.lookup.web.resource.LookupController;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
+import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.web.resource.DataController;
+import com.scienceminer.lookup.web.resource.LookupController;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;

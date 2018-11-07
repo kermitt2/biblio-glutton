@@ -4,17 +4,17 @@ package com.scienceminer.lookup.web;
 import com.google.common.collect.Lists;
 import com.google.inject.Module;
 import com.hubspot.dropwizard.guicier.GuiceBundle;
-import com.scienceminer.lookup.web.module.ServiceExceptionMapper;
 import com.scienceminer.lookup.command.LoadIstexIdsCommand;
 import com.scienceminer.lookup.command.LoadPMIDCommand;
 import com.scienceminer.lookup.command.LoadUnpayWallCommand;
+import com.scienceminer.lookup.configuration.LookupConfiguration;
+import com.scienceminer.lookup.web.healthcheck.LookupHealthCheck;
+import com.scienceminer.lookup.web.module.LookupServiceModule;
+import com.scienceminer.lookup.web.module.ServiceExceptionMapper;
 import io.dropwizard.Application;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import com.scienceminer.lookup.configuration.LookupConfiguration;
-import com.scienceminer.lookup.web.healthcheck.LookupHealthCheck;
-import com.scienceminer.lookup.web.module.LookupServiceModule;
 
 import java.util.List;
 

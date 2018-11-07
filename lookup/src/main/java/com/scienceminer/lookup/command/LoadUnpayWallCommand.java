@@ -2,12 +2,12 @@ package com.scienceminer.lookup.command;
 
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
-import io.dropwizard.cli.ConfiguredCommand;
-import io.dropwizard.setup.Bootstrap;
-import com.scienceminer.lookup.storage.StorageEnvFactory;
-import com.scienceminer.lookup.storage.lookup.OALookup;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.reader.UnpayWallReader;
+import com.scienceminer.lookup.storage.StorageEnvFactory;
+import com.scienceminer.lookup.storage.lookup.OALookup;
+import io.dropwizard.cli.ConfiguredCommand;
+import io.dropwizard.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import org.slf4j.Logger;
