@@ -25,7 +25,7 @@ public class LoadUnpayWallCommand extends ConfiguredCommand<LookupConfiguration>
     public static final String UNPAYWALL_SOURCE = "unpaywallSource";
 
     public LoadUnpayWallCommand() {
-        super("unpaywall", "Prepare the unpaidWall database");
+        super("unpaywall", "Prepare the unpayWall database");
     }
 
     @Override
@@ -53,7 +53,7 @@ public class LoadUnpayWallCommand extends ConfiguredCommand<LookupConfiguration>
         reporter.start(15, TimeUnit.SECONDS);
 
         final String unpayWallFilePath = namespace.get(UNPAYWALL_SOURCE);
-        LOGGER.info("Preparing the system. Loading org.data for unpaidwall from " + unpayWallFilePath);
+        LOGGER.info("Preparing the system. Loading org.data for unpaywall from " + unpayWallFilePath);
 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
 
