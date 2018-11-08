@@ -31,7 +31,7 @@ Example:
 
 
 ### Run server
-> ./gradlew run server /path/to/your/configuration
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar server /path/to/your/configuration
 
 
 ## API
