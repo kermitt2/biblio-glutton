@@ -53,18 +53,20 @@ public class LookupController {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/crossref/article")
     public String getByArticleMetadataQuery(@QueryParam("firstAuthor") String firstAuthor,
-                                            @QueryParam("title") String title) {
+                                            @QueryParam("title") String title,
+                                            @QueryParam("postValidate") Boolean postValidate) {
 
-        return storage.retrieveByArticleMetadata(title, firstAuthor);
+        return storage.retrieveByArticleMetadata(title, firstAuthor, postValidate);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/crossref/article/title/{title}/firstAuthor/{firstAuthor}")
     public String getByArticleMetadataPath(@PathParam("firstAuthor") String firstAuthor,
-                                           @PathParam("title") String title) {
+                                           @PathParam("title") String title,
+                                           @QueryParam("postValidate") Boolean postValidate) {
 
-        return storage.retrieveByArticleMetadata(title, firstAuthor);
+        return storage.retrieveByArticleMetadata(title, firstAuthor, postValidate);
     }
 
     @GET

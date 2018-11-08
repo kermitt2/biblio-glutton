@@ -1,6 +1,8 @@
 package com.scienceminer.lookup.storage.lookup;
 
 import com.scienceminer.lookup.configuration.LookupConfiguration;
+import com.scienceminer.lookup.data.MatchingDocument;
+import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import org.apache.commons.lang3.tuple.Pair;
@@ -60,7 +62,7 @@ public class MetadataLookup {
             SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
             return response.getHits().getTotalHits();
         } catch (IOException e) {
-            throw new ServiceException(502, "Error while fetching cardinality for "
+            throw new ServiceException(502, "Error while contacting Elasticsearch to fetch the size of "
                     + configuration.getElastic().getIndex() + " index.", e);
         }
     }
@@ -68,9 +70,9 @@ public class MetadataLookup {
     /**
      * Lookup by DOI
      **/
-    public Pair<String, String> retrieveByMetadata(String doi) {
+    public MatchingDocument retrieveByMetadata(String doi) {
         if (isBlank(doi)) {
-            throw new ServiceException(401, "Supplied doi is null.");
+            throw new ServiceException(401, "The supplied DOI is null.");
         }
         final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_DOI, doi);
 
@@ -80,7 +82,7 @@ public class MetadataLookup {
     /**
      * Lookup by title, firstAuthor
      **/
-    public Pair<String, String> retrieveByMetadata(String title, String firstAuthor) {
+    public MatchingDocument retrieveByMetadata(String title, String firstAuthor) {
         if (isBlank(title) || isBlank(firstAuthor)) {
             throw new ServiceException(401, "Supplied title or firstAuthor are null.");
         }
@@ -95,8 +97,8 @@ public class MetadataLookup {
     /**
      * Lookup by journal title, journal abbreviated title, volume, first page
      **/
-    public Pair<String, String> retrieveByMetadata(String title, String volume,
-                                                   String firstPage) {
+    public MatchingDocument retrieveByMetadata(String title, String volume,
+                                               String firstPage) {
 
         if (isBlank(title)
                 || isBlank(volume)
@@ -113,13 +115,19 @@ public class MetadataLookup {
         return executeQuery(query);
     }
 
-    private Pair<String, String> executeQuery(QueryBuilder query) {
+    private MatchingDocument executeQuery(QueryBuilder query) {
         SearchSourceBuilder builder = new SearchSourceBuilder();
         builder.query(query);
         builder.from(0);
         builder.size(1);
 
-        String[] includeFields = new String[]{INDEX_FIELD_NAME_JSONDOC, INDEX_FIELD_NAME_DOI};
+        String[] includeFields = new String[]
+                {
+                        INDEX_FIELD_NAME_JSONDOC,
+                        INDEX_FIELD_NAME_DOI,
+                        INDEX_FIELD_NAME_FIRST_AUTHOR,
+                        INDEX_FIELD_NAME_TITLE
+                };
         String[] excludeFields = new String[]{"*"};
         builder.fetchSource(includeFields, null);
 
@@ -137,17 +145,19 @@ public class MetadataLookup {
 
                 List<String> jsonObj = (List<String>) hit.getSourceAsMap().get(INDEX_FIELD_NAME_JSONDOC);
                 String DOI = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_DOI);
+                String firstAuthor = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_FIRST_AUTHOR);
+                String title = ((List<String>) hit.getSourceAsMap().get(INDEX_FIELD_NAME_TITLE)).get(0);
 
-                return Pair.of(String.join("", jsonObj), DOI);
+                return new MatchingDocument(DOI, firstAuthor, title, String.join("", jsonObj));
             }
         } catch (IOException e) {
             throw new ServiceException(502, "Cannot fetch org.data from Elasticsearch. ", e);
         }
 
-        throw new ServiceException(404, "Cannot find records for the input query. ");
+        throw new NotFoundException("Cannot find records for the input query. ");
     }
 
-    public Pair<String, String> retrieveByBiblio(String biblio) {
+    public MatchingDocument retrieveByBiblio(String biblio) {
         if (isBlank(biblio)) {
             throw new ServiceException(401, "Supplied bibliographical string is null.");
         }

@@ -23,7 +23,7 @@ public class ServiceException extends RuntimeException {
         this.code = code;
     }
 
-    public int getCode() {
+    public int getStatusCode() {
         return code;
     }
 }

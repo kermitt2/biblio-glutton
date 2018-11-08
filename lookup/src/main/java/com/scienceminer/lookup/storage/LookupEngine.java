@@ -1,13 +1,20 @@
 package com.scienceminer.lookup.storage;
 
+import com.rockymadden.stringmetric.similarity.RatcliffObershelpMetric;
 import com.scienceminer.lookup.data.IstexData;
+import com.scienceminer.lookup.data.MatchingDocument;
 import com.scienceminer.lookup.data.PmidData;
+import com.scienceminer.lookup.exception.NotFoundException;
+import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.lookup.IstexIdsLookup;
 import com.scienceminer.lookup.storage.lookup.MetadataLookup;
 import com.scienceminer.lookup.storage.lookup.OALookup;
 import com.scienceminer.lookup.storage.lookup.PMIdsLookup;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.omg.CORBA.SystemException;
+import scala.Option;
 
 import java.util.HashMap;
 import java.util.List;
@@ -39,14 +46,19 @@ public class LookupEngine {
     }
 
 
-    public String retrieveByArticleMetadata(String title, String firstAuthor) {
-        final Pair<String, String> outputData = metadataLookup.retrieveByMetadata(title, firstAuthor);
-        return injectIdsByDoi(outputData.getLeft(), outputData.getRight());
+    public String retrieveByArticleMetadata(String title, String firstAuthor, Boolean postValidate) {
+        MatchingDocument outputData = metadataLookup.retrieveByMetadata(title, firstAuthor);
+        if(postValidate) {
+            if(!areMetadataMatching(title, firstAuthor, outputData)) {
+                throw new NotFoundException("Article not found.");
+            }
+        }
+        return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
     }
 
     public String retrieveByDoi(String doi) {
-        final Pair<String, String> outputData = metadataLookup.retrieveByMetadata(doi);
-        return injectIdsByDoi(outputData.getLeft(), outputData.getRight());
+        MatchingDocument outputData = metadataLookup.retrieveByMetadata(doi);
+        return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
     }
 
     public String injectIdsByDoi(String jsonobj, String doi) {
@@ -107,8 +119,8 @@ public class LookupEngine {
     }
 
     public String retrieveByJournalMetadata(String title, String volume, String firstPage) {
-        final Pair<String, String> outputData = metadataLookup.retrieveByMetadata(title, volume, firstPage);
-        return injectIdsByDoi(outputData.getLeft(), outputData.getRight());
+        MatchingDocument outputData = metadataLookup.retrieveByMetadata(title, volume, firstPage);
+        return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
     }
 
     public PmidData retrievePMidsByDoi(String doi) {
@@ -177,8 +189,8 @@ public class LookupEngine {
     }
 
     public String retrieveByBiblio(String biblio) {
-        final Pair<String, String> outputData = metadataLookup.retrieveByBiblio(biblio);
-        return injectIdsByDoi(outputData.getLeft(), outputData.getRight());
+        final MatchingDocument outputData = metadataLookup.retrieveByBiblio(biblio);
+        return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
     }
 
     protected void setOaDoiLookup(OALookup oaDoiLookup) {
@@ -210,4 +222,55 @@ public class LookupEngine {
 
         return null;
     }
+
+    /**
+     * Methods borrowed from GROBID Consolidation.java
+     */
+
+    /**
+     * The new public CrossRef API is a search API, and thus returns
+     * many false positives. It is necessary to validate return results
+     * against the (incomplete) source bibliographic item to block
+     * inconsistent results.
+     */
+    private boolean areMetadataMatching(String title, String firstAuthor, MatchingDocument result) {
+        boolean valid = true;
+
+        // check main metadata available in source with fuzzy matching
+        if (!StringUtils.isBlank(title) && !StringUtils.isBlank(title)) {
+            if (ratcliffObershelpDistance(title, result.getTitle(), false) < 0.8)
+                return false;
+        }
+
+        if (StringUtils.isNotBlank(firstAuthor) &&
+                StringUtils.isNotBlank(result.getFirstAuthor())) {
+            if (ratcliffObershelpDistance(firstAuthor, result.getFirstAuthor(), false) < 0.8)
+                return false;
+        }
+
+        return valid;
+    }
+
+    private double ratcliffObershelpDistance(String string1, String string2, boolean caseDependent) {
+        if (StringUtils.isBlank(string1) || StringUtils.isBlank(string2))
+            return 0.0;
+        Double similarity = 0.0;
+
+        if (!caseDependent) {
+            string1 = string1.toLowerCase();
+            string2 = string2.toLowerCase();
+        }
+
+        if (string1.equals(string2))
+            similarity = 1.0;
+        if ((string1.length() > 0) && (string2.length() > 0)) {
+            Option<Object> similarityObject =
+                    RatcliffObershelpMetric.compare(string1, string2);
+            if ((similarityObject != null) && (similarityObject.get() != null))
+                similarity = (Double) similarityObject.get();
+        }
+
+        return similarity.doubleValue();
+    }
+
 }
