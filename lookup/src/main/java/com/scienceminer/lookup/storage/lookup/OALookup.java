@@ -65,7 +65,7 @@ public class OALookup {
             try (CursorIterator<ByteBuffer> it = dbDoiOAUrl.iterate(txn, KeyRange.all())) {
                 for (final CursorIterator.KeyVal<ByteBuffer> kv : it.iterable()) {
                     values.add(new ImmutablePair(BinarySerialiser.deserialize(kv.key()), BinarySerialiser.deserialize(kv.val())));
-                    if (total != null && counter == total) {
+                    if (counter == total) {
                         txn.close();
                         break;
                     }

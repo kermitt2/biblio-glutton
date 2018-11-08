@@ -201,7 +201,7 @@ public class IstexIdsLookup {
             try (CursorIterator<ByteBuffer> it = db.iterate(txn, KeyRange.all())) {
                 for (final CursorIterator.KeyVal<ByteBuffer> kv : it.iterable()) {
                     values.add(new ImmutablePair<>((String) BinarySerialiser.deserialize(kv.key()), (IstexData) BinarySerialiser.deserialize(kv.val())));
-                    if (total != null && counter == total) {
+                    if (counter == total) {
                         txn.close();
                         break;
                     }

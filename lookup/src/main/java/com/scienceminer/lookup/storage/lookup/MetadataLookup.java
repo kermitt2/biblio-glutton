@@ -3,6 +3,7 @@ package com.scienceminer.lookup.storage.lookup;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -31,6 +32,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
  */
 public class MetadataLookup {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataLookup.class);
+    private final String INDEX_FIELD_NAME_JSONDOC = "jsondoc";
 
     private LookupConfiguration configuration;
     private RestHighLevelClient esClient;
@@ -66,7 +68,7 @@ public class MetadataLookup {
     /**
      * Lookup by DOI
      **/
-    public String retrieveByMetadata(String doi) {
+    public Pair<String, String> retrieveByMetadata(String doi) {
         if (isBlank(doi)) {
             throw new ServiceException(401, "Supplied doi is null.");
         }
@@ -78,7 +80,7 @@ public class MetadataLookup {
     /**
      * Lookup by title, firstAuthor
      **/
-    public String retrieveByMetadata(String title, String firstAuthor) {
+    public Pair<String, String> retrieveByMetadata(String title, String firstAuthor) {
         if (isBlank(title) || isBlank(firstAuthor)) {
             throw new ServiceException(401, "Supplied title or firstAuthor are null.");
         }
@@ -93,8 +95,8 @@ public class MetadataLookup {
     /**
      * Lookup by journal title, journal abbreviated title, volume, first page
      **/
-    public String retrieveByMetadata(String title, String volume,
-                                     String firstPage) {
+    public Pair<String, String> retrieveByMetadata(String title, String volume,
+                                                   String firstPage) {
 
         if (isBlank(title)
                 || isBlank(volume)
@@ -111,11 +113,15 @@ public class MetadataLookup {
         return executeQuery(query);
     }
 
-    private String executeQuery(QueryBuilder query) {
+    private Pair<String, String> executeQuery(QueryBuilder query) {
         SearchSourceBuilder builder = new SearchSourceBuilder();
         builder.query(query);
         builder.from(0);
         builder.size(1);
+
+        String[] includeFields = new String[]{INDEX_FIELD_NAME_JSONDOC, INDEX_FIELD_NAME_DOI};
+        String[] excludeFields = new String[]{"*"};
+        builder.fetchSource(includeFields, null);
 
         final SearchRequest searchRequest = new SearchRequest(configuration.getElastic().getIndex());
         searchRequest.searchType(SearchType.DFS_QUERY_THEN_FETCH);
@@ -129,9 +135,10 @@ public class MetadataLookup {
             while (it.hasNext()) {
                 SearchHit hit = it.next();
 
-                List<String> jsonObj = (List<String>) hit.getSourceAsMap().get("jsondoc");
+                List<String> jsonObj = (List<String>) hit.getSourceAsMap().get(INDEX_FIELD_NAME_JSONDOC);
+                String DOI = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_DOI);
 
-                return String.join("", jsonObj);
+                return Pair.of(String.join("", jsonObj), DOI);
             }
         } catch (IOException e) {
             throw new ServiceException(502, "Cannot fetch org.data from Elasticsearch. ", e);
@@ -140,7 +147,7 @@ public class MetadataLookup {
         throw new ServiceException(404, "Cannot find records for the input query. ");
     }
 
-    public String retrieveByBiblio(String biblio) {
+    public Pair<String, String> retrieveByBiblio(String biblio) {
         if (isBlank(biblio)) {
             throw new ServiceException(401, "Supplied bibliographical string is null.");
         }

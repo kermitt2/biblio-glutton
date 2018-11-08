@@ -5,7 +5,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.reader.PmidReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
-import com.scienceminer.lookup.storage.lookup.PmidLookup;
+import com.scienceminer.lookup.storage.lookup.PMIdsLookup;
 import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -63,7 +63,7 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
 
         long start = System.nanoTime();
         
-        PmidLookup pmidLookup = new PmidLookup(storageEnvFactory);
+        PMIdsLookup pmidLookup = new PMIdsLookup(storageEnvFactory);
         InputStream inputStreampmidMapping = Files.newInputStream(Paths.get(pmidMappingPath));
         if (pmidMappingPath.endsWith(".gz")) {
             inputStreampmidMapping = new GZIPInputStream(inputStreampmidMapping);

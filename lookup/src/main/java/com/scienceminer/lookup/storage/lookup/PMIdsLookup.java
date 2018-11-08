@@ -24,8 +24,8 @@ import static com.scienceminer.lookup.web.resource.DataController.DEFAULT_MAX_SI
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-public class PmidLookup {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PmidLookup.class);
+public class PMIdsLookup {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PMIdsLookup.class);
     
     public static final String NAME_DOI2IDS = "pmidLookup_doi2ids";
     public static final String NAME_PMID2IDS = "pmid_lookup_pmid2ids";
@@ -36,7 +36,7 @@ public class PmidLookup {
 
     private final int batchSize;
 
-    public PmidLookup(StorageEnvFactory storageEnvFactory) {
+    public PMIdsLookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv();
         batchSize = storageEnvFactory.getConfiguration().getBatchSize();
 
@@ -84,7 +84,7 @@ public class PmidLookup {
                 record = (PmidData) BinarySerialiser.deserialize(cachedData);
             }
         } catch (Exception e) {
-            LOGGER.error("Cannot retrieve OA url having doi: " + doi, e);
+            LOGGER.error("Cannot retrieve PubMed Ids by DOI: " + doi, e);
         }
 
         return record;
@@ -101,7 +101,7 @@ public class PmidLookup {
                 record = (PmidData) BinarySerialiser.deserialize(cachedData);
             }
         } catch (Exception e) {
-            LOGGER.error("Cannot retrieve OA url having doi: " + pmid, e);
+            LOGGER.error("Cannot retrieve PubMed Ids by PMID: " + pmid, e);
         }
 
         return record;
@@ -152,7 +152,7 @@ public class PmidLookup {
             try (CursorIterator<ByteBuffer> it = db.iterate(txn, KeyRange.all())) {
                 for (final CursorIterator.KeyVal<ByteBuffer> kv : it.iterable()) {
                     values.add(new ImmutablePair<>((String) BinarySerialiser.deserialize(kv.key()), (PmidData) BinarySerialiser.deserialize(kv.val())));
-                    if (total != null && counter == total) {
+                    if (counter == total) {
                         txn.close();
                         break;
                     }

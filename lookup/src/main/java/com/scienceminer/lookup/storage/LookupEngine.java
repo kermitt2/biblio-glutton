@@ -5,13 +5,15 @@ import com.scienceminer.lookup.data.PmidData;
 import com.scienceminer.lookup.storage.lookup.IstexIdsLookup;
 import com.scienceminer.lookup.storage.lookup.MetadataLookup;
 import com.scienceminer.lookup.storage.lookup.OALookup;
-import com.scienceminer.lookup.storage.lookup.PmidLookup;
+import com.scienceminer.lookup.storage.lookup.PMIdsLookup;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.length;
@@ -21,7 +23,9 @@ public class LookupEngine {
     private OALookup oaDoiLookup = null;
     private IstexIdsLookup istexLookup = null;
     private MetadataLookup metadataLookup = null;
-    private PmidLookup pmidLookup = null;
+    private PMIdsLookup pmidLookup = null;
+
+    public static Pattern DOIPattern = Pattern.compile("\"DOI\":\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
 
     public LookupEngine() {
 
@@ -31,86 +35,18 @@ public class LookupEngine {
         this.oaDoiLookup = new OALookup(storageFactory);
         this.istexLookup = new IstexIdsLookup(storageFactory);
         this.metadataLookup = new MetadataLookup(storageFactory);
-        this.pmidLookup = new PmidLookup(storageFactory);
+        this.pmidLookup = new PMIdsLookup(storageFactory);
     }
 
 
     public String retrieveByArticleMetadata(String title, String firstAuthor) {
-        return metadataLookup.retrieveByMetadata(title, firstAuthor);
+        final Pair<String, String> outputData = metadataLookup.retrieveByMetadata(title, firstAuthor);
+        return injectIdsByDoi(outputData.getLeft(), outputData.getRight());
     }
 
     public String retrieveByDoi(String doi) {
-        return metadataLookup.retrieveByMetadata(doi);
-    }
-
-    public String injectIdsByIstexId(String jsonobj, String doi) {
-
-        return null;
-    }
-
-    public String injectIdsByPmid(String jsonobj, String pmid) {
-        final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
-
-        if(pmidData != null) {
-            
-        }
-
-//        final IstexData istexData = istexLookup.retrieveByDoi(doi);
-//        boolean pmid = false;
-//        boolean pmc = false;
-//        boolean foundIstexData = false;
-//        boolean foundPmidData = false;
-//        StringBuilder sb = new StringBuilder();
-//        sb.append(jsonobj, 0, length(jsonobj) - 1);
-//
-//        if (istexData != null) {
-//            if (isNotBlank(istexData.getIstexId())) {
-//                sb.append(", \"istexId\":\"" + istexData.getIstexId() + "\"");
-//                foundIstexData = true;
-//            }
-//            if (CollectionUtils.isNotEmpty(istexData.getArk())) {
-//                sb.append(", \"ark\":\"" + istexData.getArk().get(0) + "\"");
-//                foundIstexData = true;
-//            }
-//            if (CollectionUtils.isNotEmpty(istexData.getPmid())) {
-//                sb.append(", \"pmid\":\"" + istexData.getPmid().get(0) + "\"");
-//                pmid = true;
-//                foundIstexData = true;
-//            }
-//            if (CollectionUtils.isNotEmpty(istexData.getPmc())) {
-//                sb.append(", \"pmcid\":\"" + istexData.getPmc().get(0) + "\"");
-//                pmc = true;
-//                foundIstexData = true;
-//            }
-//            if (CollectionUtils.isNotEmpty(istexData.getMesh())) {
-//                sb.append(", \"mesh\":\"" + istexData.getMesh().get(0) + "\"");
-//                foundIstexData = true;
-//            }
-//        return null;
-//        }
-//
-//        if (!pmid || !pmc) {
-//
-//            if (pmidData != null) {
-//                if (isNotBlank(pmidData.getPmid())) {
-//                    sb.append(", \"pmid\":\"" + pmidData.getPmid() + "\"");
-//                    foundPmidData = true;
-//                }
-//
-//                if (isNotBlank(pmidData.getPmcid())) {
-//                    sb.append(", \"pmcid\":\"" + pmidData.getPmcid() + "\"");
-//                    foundPmidData = true;
-//                }
-//            }
-//        }
-//
-//        if(foundIstexData || foundPmidData) {
-//            sb.append("}");
-//            return sb.toString();
-//        } else {
-//            return jsonobj;
-//        }
-        return null;
+        final Pair<String, String> outputData = metadataLookup.retrieveByMetadata(doi);
+        return injectIdsByDoi(outputData.getLeft(), outputData.getRight());
     }
 
     public String injectIdsByDoi(String jsonobj, String doi) {
@@ -162,7 +98,7 @@ public class LookupEngine {
             }
         }
 
-        if(foundIstexData || foundPmidData) {
+        if (foundIstexData || foundPmidData) {
             sb.append("}");
             return sb.toString();
         } else {
@@ -171,7 +107,8 @@ public class LookupEngine {
     }
 
     public String retrieveByJournalMetadata(String title, String volume, String firstPage) {
-        return metadataLookup.retrieveByMetadata(title, volume, firstPage);
+        final Pair<String, String> outputData = metadataLookup.retrieveByMetadata(title, volume, firstPage);
+        return injectIdsByDoi(outputData.getLeft(), outputData.getRight());
     }
 
     public PmidData retrievePMidsByDoi(String doi) {
@@ -240,7 +177,8 @@ public class LookupEngine {
     }
 
     public String retrieveByBiblio(String biblio) {
-        return metadataLookup.retrieveByBiblio(biblio);
+        final Pair<String, String> outputData = metadataLookup.retrieveByBiblio(biblio);
+        return injectIdsByDoi(outputData.getLeft(), outputData.getRight());
     }
 
     protected void setOaDoiLookup(OALookup oaDoiLookup) {
@@ -255,7 +193,21 @@ public class LookupEngine {
         this.metadataLookup = metadataLookup;
     }
 
-    protected void setPmidLookup(PmidLookup pmidLookup) {
+    protected void setPmidLookup(PMIdsLookup pmidLookup) {
         this.pmidLookup = pmidLookup;
+    }
+
+    public String fetchDOI(String input) {
+        //From grobid
+//        Pattern DOIPattern = Pattern.compile("(10\\.\\d{4,5}\\/[\\S]+[^;,.\\s])");
+
+        Matcher doiMatcher = DOIPattern.matcher(input);
+        while (doiMatcher.find()) {
+            if (doiMatcher.groupCount() == 1) {
+                return doiMatcher.group(1);
+            }
+        }
+
+        return null;
     }
 }
