@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.scienceminer.lookup.web.resource.DataController.DEFAULT_MAX_SIZE_LIST;
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -52,6 +53,10 @@ public class OALookup {
     }
 
     public List<Pair<String, String>> retrieveOAUrlSampleList(Integer total) {
+        if (total == null || total == 0) {
+            total = DEFAULT_MAX_SIZE_LIST;
+        }
+        
         List<Pair<String, String>> values = new ArrayList<>();
 
         int counter = 0;

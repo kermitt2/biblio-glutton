@@ -16,6 +16,8 @@ import java.util.Map;
 @Path("data")
 public class DataController {
 
+    public static final int DEFAULT_MAX_SIZE_LIST = 100;
+
     private LookupEngine storage = null;
     private LookupConfiguration configuration;
 

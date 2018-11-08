@@ -20,14 +20,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.scienceminer.lookup.web.resource.DataController.DEFAULT_MAX_SIZE_LIST;
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 public class PmidLookup {
     private static final Logger LOGGER = LoggerFactory.getLogger(PmidLookup.class);
-
-    private final int DEFAULT_MAX_SIZE_LIST = 100;
-
+    
     public static final String NAME_DOI2IDS = "pmidLookup_doi2ids";
     public static final String NAME_PMID2IDS = "pmid_lookup_pmid2ids";
 

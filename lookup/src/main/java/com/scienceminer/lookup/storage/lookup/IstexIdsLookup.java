@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.scienceminer.lookup.web.resource.DataController.DEFAULT_MAX_SIZE_LIST;
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
@@ -31,7 +32,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 public class IstexIdsLookup {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IstexIdsLookup.class);
-    private final int DEFAULT_MAX_SIZE_LIST = 100;
 
     protected Env<ByteBuffer> environment;
     protected Dbi<ByteBuffer> dbDoiToIds;
