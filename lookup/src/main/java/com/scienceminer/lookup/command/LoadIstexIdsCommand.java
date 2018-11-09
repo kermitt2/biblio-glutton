@@ -79,7 +79,7 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
         }
         istexLookup.loadFromFile(inputStreamIstexIds, new IstexIdsReader(),
                 metrics.meter("istexLookup"));
-        LOGGER.info("Istex com.scienceminer.lookup loaded " + istexLookup.getSize() + " records. ");
+        LOGGER.info("Istex lookup loaded " + istexLookup.getSize() + " records. ");
 
         /*final String istexAdditionalFilePath = namespace.get(ISTEX_SOURCE_ADDITIONAL);
         if (isNotBlank(istexAdditionalFilePath)) {
@@ -92,7 +92,7 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
             }
             istexLookup.loadFromFileAdditional(inputStreamIstexAdditionalIds, new IstexIdsReader(),
                     metrics.meter("istexAdditional"));
-            LOGGER.info("Istex com.scienceminer.lookup loaded: " + istexLookup.getSize());
+            LOGGER.info("Istex lookup loaded: " + istexLookup.getSize());
 
         }
 */

@@ -30,7 +30,7 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
     public static final String PMID_SOURCE = "pmidSource";
 
     public LoadPMIDCommand() {
-        super("pmid", "Prepare the pmid database com.scienceminer.lookup");
+        super("pmid", "Prepare the pmid database lookup");
     }
 
     @Override
@@ -69,7 +69,7 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
             inputStreampmidMapping = new GZIPInputStream(inputStreampmidMapping);
         }
         pmidLookup.loadFromFile(inputStreampmidMapping, new PmidReader(), metrics.meter("pmidLookup"));
-        LOGGER.info("Istex com.scienceminer.lookup loaded " + pmidLookup.getSize() + " records. ");
+        LOGGER.info("Istex lookup loaded " + pmidLookup.getSize() + " records. ");
 
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");

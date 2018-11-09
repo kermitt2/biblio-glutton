@@ -64,7 +64,7 @@ public class LoadUnpayWallCommand extends ConfiguredCommand<LookupConfiguration>
             inputStreamUnpayWall = new GZIPInputStream(inputStreamUnpayWall);
         }
         openAccessLookup.loadFromFile(inputStreamUnpayWall, new UnpayWallReader(), metrics.meter("openAccessLookup"));
-        LOGGER.info("Doi com.scienceminer.lookup (doi -> oa url) loaded " + openAccessLookup.getSize() + " records. ");
+        LOGGER.info("Doi lookup (doi -> oa url) loaded " + openAccessLookup.getSize() + " records. ");
         
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");

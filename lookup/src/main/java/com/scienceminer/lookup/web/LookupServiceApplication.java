@@ -25,7 +25,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
     // ========== Application ==========
     @Override
     public String getName() {
-        return "com.scienceminer.lookup-service";
+        return "lookup-service";
     }
 
     @Override
