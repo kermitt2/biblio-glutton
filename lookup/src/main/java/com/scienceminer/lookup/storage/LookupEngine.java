@@ -48,7 +48,7 @@ public class LookupEngine {
 
     public String retrieveByArticleMetadata(String title, String firstAuthor, Boolean postValidate) {
         MatchingDocument outputData = metadataLookup.retrieveByMetadata(title, firstAuthor);
-        if(postValidate) {
+        if(postValidate!= null && postValidate) {
             if(!areMetadataMatching(title, firstAuthor, outputData)) {
                 throw new NotFoundException("Article found but it didn't passed the postValidation.");
             }

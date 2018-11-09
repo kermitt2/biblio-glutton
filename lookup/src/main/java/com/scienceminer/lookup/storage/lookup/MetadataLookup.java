@@ -88,8 +88,8 @@ public class MetadataLookup {
         }
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_TITLE, title))
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_TITLE, title))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
 
         return executeQuery(query);
     }
@@ -107,8 +107,8 @@ public class MetadataLookup {
         }
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
-                .should(QueryBuilders.termQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
 
