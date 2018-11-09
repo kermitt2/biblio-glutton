@@ -50,7 +50,7 @@ public class LookupEngine {
         MatchingDocument outputData = metadataLookup.retrieveByMetadata(title, firstAuthor);
         if(postValidate) {
             if(!areMetadataMatching(title, firstAuthor, outputData)) {
-                throw new NotFoundException("Article not found.");
+                throw new NotFoundException("Article found but it didn't passed the postValidation.");
             }
         }
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
