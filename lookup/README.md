@@ -47,8 +47,9 @@ Here a brief description of the API:
         - `GET host:port/service/lookup/crossref/doi/{DOI}`
 
     - match document by article metadata (title and firstAuthor)
-        - `GET host:port/service/lookup/crossref/article/?title=ARTICLE_TITLE&firstAuthor=FIRST_AUTHOR_SURNAME`
-        - `GET host:port/service/lookup/crossref/article/title/{ARTICLE_TITLE}/firstAuthor/{FIRST_AUTHOR_SURNAME}` 
+        - `GET host:port/service/lookup/crossref/article/?title=ARTICLE_TITLE&firstAuthor=FIRST_AUTHOR_SURNAME[?postValidate=true]`
+        - `GET host:port/service/lookup/crossref/article/title/{ARTICLE_TITLE}/firstAuthor/{FIRST_AUTHOR_SURNAME[?postValidate=true]}`
+        (The post validation (optional parameter) avoids returning documents whose title and first author are too different from the searched) 
     
     - match document by journal metadata (journal title or abbreviated title, volume and first page)
         - `GET host:port/service/lookup/crossref/journal?title=JOURNAL_TITLE&volume=VOLUME&firstPage=FIRST_PAGE`
