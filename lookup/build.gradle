@@ -15,7 +15,7 @@ buildscript {
 
 apply plugin: 'application'
 apply plugin: 'java'
-//apply plugin: 'maven'
+apply plugin: 'maven'
 apply plugin: 'com.github.johnrengelman.shadow'
 
 
@@ -79,6 +79,14 @@ shadowJar {
     manifest {
         attributes 'Main-Class': mainClassName
     }
+}
+
+distZip {
+    classifier = 'zip'
+}
+
+distTar {
+    classifier = 'tar'
 }
 
 artifacts {
