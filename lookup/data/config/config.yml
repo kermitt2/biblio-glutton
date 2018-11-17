@@ -10,11 +10,6 @@ elastic:
   host: localhost:9200
   index: crossref
   type: work
-  
-
-#source:
-#  unpaidwall: /Users/lfoppiano/development/scienceminer/consolidationData/unpaywall_sample.json
-#  istex: /Users/lfoppiano/development/scienceminer/consolidationData/sample-istex-ids.json
 
 server:
   type: custom
@@ -25,7 +20,6 @@ server:
   - type: http
     port: 8081
   registerDefaultExceptionMappers: false
-
 
 logging:
   level: INFO

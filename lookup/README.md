@@ -1,5 +1,9 @@
 # lookup service
 
+## Build 
+
+> ./gradlew clean build
+
 
 ### Prepare database
 The system read plain text files or compressed file with gzip.
