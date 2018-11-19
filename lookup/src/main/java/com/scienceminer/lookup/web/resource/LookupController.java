@@ -89,7 +89,6 @@ public class LookupController {
         throw new ServiceException(401, "The supplied parameters were not sufficient to select the query");
     }
 
-
     //BY DOI
     @GET
     @Produces(MediaType.APPLICATION_JSON)

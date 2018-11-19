@@ -34,7 +34,7 @@ public class LookupEngine {
     private MetadataLookup metadataLookup = null;
     private PMIdsLookup pmidLookup = null;
 
-    public static Pattern DOIPattern = Pattern.compile("\"DOI\":\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
+    public static Pattern DOIPattern = Pattern.compile("\"DOI\"\\s?:\\s?\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
 
     public LookupEngine() {
     }
@@ -95,9 +95,11 @@ public class LookupEngine {
     public String retrieveByIstexid(String istexid) {
         final IstexData istexData = istexLookup.retrieveByIstexId(istexid);
 
+
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi()) && isNotBlank(istexData.getDoi().get(0))) {
-            MatchingDocument outputData = metadataLookup.retrieveByMetadata(istexData.getDoi().get(0));
-            return injectIdsByIstexData(outputData.getJsonObject(), istexData);
+            final String doi = istexData.getDoi().get(0);
+            MatchingDocument outputData = metadataLookup.retrieveByMetadata(doi);
+            return injectIdsByIstexData(outputData.getJsonObject(), doi, istexData);
         }
 
         throw new NotFoundException("Cannot find record by Istex ID " + istexid);
@@ -238,16 +240,16 @@ public class LookupEngine {
     protected String injectIdsByDoi(String jsonobj, String doi) {
         final IstexData istexData = istexLookup.retrieveByDoi(doi);
 
-        return injectIdsByIstexData(jsonobj, istexData);
+        return injectIdsByIstexData(jsonobj, doi, istexData);
     }
 
 
-    protected String injectIdsByIstexData(String jsonobj, IstexData istexData) {
+    protected String injectIdsByIstexData(String jsonobj, String doi, IstexData istexData) {
         boolean pmid = false;
         boolean pmc = false;
         boolean foundIstexData = false;
         boolean foundPmidData = false;
-        boolean foundDoi = false;
+
         StringBuilder sb = new StringBuilder();
         sb.append(jsonobj, 0, length(jsonobj) - 1);
 
@@ -274,14 +276,10 @@ public class LookupEngine {
                 sb.append(", \"mesh\":\"" + istexData.getMesh().get(0) + "\"");
                 foundIstexData = true;
             }
-            if (CollectionUtils.isNotEmpty(istexData.getDoi())
-                    && isNotBlank(istexData.getDoi().get(0))) {
-                foundDoi = true;
-            }
         }
 
-        if ((!pmid || !pmc) && foundDoi) {
-            final PmidData pmidData = pmidLookup.retrieveIdsByDoi(istexData.getDoi().get(0));
+        if (!pmid || !pmc) {
+            final PmidData pmidData = pmidLookup.retrieveIdsByDoi(doi);
             if (pmidData != null) {
                 if (isNotBlank(pmidData.getPmid())) {
                     sb.append(", \"pmid\":\"" + pmidData.getPmid() + "\"");

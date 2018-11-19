@@ -1,16 +1,13 @@
 package com.scienceminer.lookup.data;
 
 public class MatchingDocument {
-    private String jsonObject;
     private String DOI;
     private String firstAuthor;
     private String title;
+    private String jsonObject;
 
-    public MatchingDocument(String DOI, String firstAuthor, String title, String jsonObject) {
+    public MatchingDocument(String DOI) {
         this.DOI = DOI;
-        this.firstAuthor = firstAuthor;
-        this.title = title;
-        this.jsonObject = jsonObject;
     }
 
     public String getJsonObject() {
@@ -44,5 +41,4 @@ public class MatchingDocument {
     public void setTitle(String title) {
         this.title = title;
     }
-
 }

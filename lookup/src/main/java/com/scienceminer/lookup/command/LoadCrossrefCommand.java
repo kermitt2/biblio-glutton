@@ -3,15 +3,18 @@ package com.scienceminer.lookup.command;
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
-import com.scienceminer.lookup.reader.PmidReader;
+import com.scienceminer.lookup.reader.CrossrefJsonReader;
+import com.scienceminer.lookup.reader.IstexIdsReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
-import com.scienceminer.lookup.storage.lookup.PMIdsLookup;
+import com.scienceminer.lookup.storage.lookup.IstexIdsLookup;
+import com.scienceminer.lookup.storage.lookup.MetadataLookup;
 import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tukaani.xz.XZInputStream;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -20,28 +23,27 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
 /**
- * This class is responsible for loading org.data for the istex mappings, in particular
- *  - istexid -> doi, ark, pmid
- *  - doi -> istexid, ark, pmid
+ * This class is responsible for loading the crossref dump in lmdb
+ * id -> Json object
  */
-public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(LoadPMIDCommand.class);
+public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoadCrossrefCommand.class);
 
-    public static final String PMID_SOURCE = "pmidSource";
+    public static final String CROSSREF_SOURCE = "crossref.dump";
 
-    public LoadPMIDCommand() {
-        super("pmid", "Prepare the pmid database lookup");
+    public LoadCrossrefCommand() {
+        super("crossref", "Prepare the crossref database");
     }
 
     @Override
     public void configure(Subparser subparser) {
         super.configure(subparser);
-        
+
         subparser.addArgument("--input")
-                .dest(PMID_SOURCE)
+                .dest(CROSSREF_SOURCE)
                 .type(String.class)
                 .required(true)
-                .help("The path to the source file for pmid mapping");
+                .help("The path to the source file of crossref dump.");
     }
 
     @Override
@@ -56,20 +58,21 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
 
         reporter.start(15, TimeUnit.SECONDS);
 
-        final String pmidMappingPath = namespace.get(PMID_SOURCE);
-        LOGGER.info("Preparing the system. Loading data for PMID from " + pmidMappingPath);
-
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
-
+        MetadataLookup metadataLookup = new MetadataLookup(storageEnvFactory);
         long start = System.nanoTime();
-        
-        PMIdsLookup pmidLookup = new PMIdsLookup(storageEnvFactory);
-        InputStream inputStreampmidMapping = Files.newInputStream(Paths.get(pmidMappingPath));
-        if (pmidMappingPath.endsWith(".gz")) {
-            inputStreampmidMapping = new GZIPInputStream(inputStreampmidMapping);
+        final String crossrefFilePath = namespace.get(CROSSREF_SOURCE);
+
+        LOGGER.info("Preparing the system. Loading data for Istex from " + crossrefFilePath);
+
+        // Istex IDs
+        InputStream inputStreamCrossref = Files.newInputStream(Paths.get(crossrefFilePath));
+        if (crossrefFilePath.endsWith(".xz")) {
+            inputStreamCrossref = new XZInputStream(inputStreamCrossref);
         }
-        pmidLookup.loadFromFile(inputStreampmidMapping, new PmidReader(), metrics.meter("pmidLookup"));
-        LOGGER.info("Istex lookup loaded " + pmidLookup.getSize() + " records. ");
+        metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefJsonReader(),
+                metrics.meter("crossrefLookup"));
+        LOGGER.info("Crossref lookup loaded " + metadataLookup.getSize() + " records. ");
 
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");

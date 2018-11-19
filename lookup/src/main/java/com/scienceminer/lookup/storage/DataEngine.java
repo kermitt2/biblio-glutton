@@ -42,9 +42,7 @@ public class DataEngine {
 
         return returnMap;
     }
-
-
-
+    
     public List<Pair<String, String>> retrieveOaRecords(Integer total) {
         return oaDoiLookup.retrieveOAUrlSampleList(total);
     }
@@ -65,6 +63,10 @@ public class DataEngine {
         return istexLookup.retrieveList_istexToIds(total);
     }
 
+    public List<Pair<String, String>> retrieveCrossrefRecords(Integer total) {
+        return metadataLookup.retrieveList(total);
+    }
+
 
     //DELETE 
     public boolean dropIstex(String dbName) {
@@ -77,6 +79,10 @@ public class DataEngine {
 
     public boolean dropOA(String dbName) {
         return oaDoiLookup.dropDb(dbName);
+    }
+
+    public boolean dropCrossref(String dbName) {
+        return metadataLookup.dropDb(dbName);
     }
 
 

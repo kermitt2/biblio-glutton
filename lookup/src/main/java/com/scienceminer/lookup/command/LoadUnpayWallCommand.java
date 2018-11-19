@@ -53,7 +53,7 @@ public class LoadUnpayWallCommand extends ConfiguredCommand<LookupConfiguration>
         reporter.start(15, TimeUnit.SECONDS);
 
         final String unpayWallFilePath = namespace.get(UNPAYWALL_SOURCE);
-        LOGGER.info("Preparing the system. Loading org.data for unpaywall from " + unpayWallFilePath);
+        LOGGER.info("Preparing the system. Loading data for unpaywall from " + unpayWallFilePath);
 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
 

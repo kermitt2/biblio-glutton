@@ -8,6 +8,13 @@
 ### Prepare database
 The system read plain text files or compressed file with gzip.
 
+##### crossref
+
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file /path/to/your/configuration
+
+Example (XZ files will be streamed directly from the compressed): 
+
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2018-09-05.json.xz data/config/config.yml
  
 ##### unpaywall
 
@@ -94,6 +101,8 @@ The `/data` entry is used to check the samples of data
 - `DELETE host:port/service/data/pmid?name=DB_NAME` drop the database name from the PMID lookup
 - `GET host:port/service/data/oa` return samples of data from the database (for testing purposes only)
 - `DELETE host:port/service/data/oa?name=DB_NAME` drop the database name from the OA lookup
+- `GET host:port/service/data/crossref` return samples of data from the database (for testing purposes only)
+- `DELETE host:port/service/data/crossref?name=DB_NAME` drop the database name from the Crossref json db
 
 ### cURL examples
 

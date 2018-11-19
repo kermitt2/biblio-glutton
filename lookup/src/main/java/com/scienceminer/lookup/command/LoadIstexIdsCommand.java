@@ -70,7 +70,7 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
         long start = System.nanoTime();
         final String istexFilePath = namespace.get(ISTEX_SOURCE);
 
-        LOGGER.info("Preparing the system. Loading org.data for Istex from " + istexFilePath);
+        LOGGER.info("Preparing the system. Loading data for Istex from " + istexFilePath);
 
         // Istex IDs
         InputStream inputStreamIstexIds = Files.newInputStream(Paths.get(istexFilePath));

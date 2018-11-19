@@ -87,6 +87,20 @@ public class DataController {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @Path("/crossref")
+    public List<Pair<String, String>> getMetadataSamples(@QueryParam("total") Integer total) {
+        return storage.retrieveCrossrefRecords(total);
+    }
+
+    @DELETE
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/crossref")
+    public boolean deleteMetadataDb(@QueryParam("name") String name) {
+        return storage.dropCrossref(name);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("/")
     public Map<String, String> getDocumentSize() {
         return storage.getDataInformation();

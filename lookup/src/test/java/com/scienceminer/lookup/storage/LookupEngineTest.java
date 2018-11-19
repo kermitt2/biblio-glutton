@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import com.scienceminer.lookup.data.IstexData;
 import com.scienceminer.lookup.data.PmidData;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import com.scienceminer.lookup.storage.lookup.IstexIdsLookup;
 import com.scienceminer.lookup.storage.lookup.PMIdsLookup;
@@ -128,9 +129,9 @@ public class LookupEngineTest {
 //        final PmidData pmidData = new PmidData("pmid1", "", "10.1070/rc1998v067n04abeh000372");
         expect(mockPmidLookup.retrieveIdsByDoi(doi)).andReturn(null);
 
-        replay(mockPmidLookup);
+        replay(mockPmidLookup, mockIstexLookup);
         String output = target.injectIdsByDoi(input, doi);
-        verify(mockPmidLookup);
+        verify(mockPmidLookup, mockIstexLookup);
 
         assertThat(output, is(input));
 
