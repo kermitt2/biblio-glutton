@@ -5,12 +5,15 @@ import com.google.inject.Inject;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.data.IstexData;
 import com.scienceminer.lookup.data.PmidData;
+import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.LookupEngine;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.util.Map;
+
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 
 /**
@@ -36,146 +39,93 @@ public class LookupController {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/crossref/doi/{doi}")
-    public String getByDoiPath(@PathParam("doi") String doi) {
+    @Path("/")
+    public String getByQuery(
+            @QueryParam("doi") String doi,
+            @QueryParam("pmid") String pmid,
+            @QueryParam("pmc") String pmc,
+            @QueryParam("istexid") String istexid,
+            @QueryParam("firstAuthor") String firstAuthor,
+            @QueryParam("atitle") String atitle,
+            @QueryParam("postValidate") Boolean postValidate,
+            @QueryParam("jtitle") String jtitle,
+            @QueryParam("volume") String volume,
+            @QueryParam("firstPage") String firstPage,
+            @QueryParam("biblio") String biblio
+    ) {
+
+        if (isNotBlank(doi)) {
+            return storage.retrieveByDoi(doi);
+        }
+
+        if (isNotBlank(pmid)) {
+            return storage.retrieveByPmid(pmid);
+        }
+
+        if (isNotBlank(pmc)) {
+            return storage.retrieveByPmid(pmc);
+        }
+
+        if (isNotBlank(istexid)) {
+            return storage.retrieveByIstexid(istexid);
+        }
+
+        if (isNotBlank(atitle) && isNotBlank(firstAuthor) && isNotBlank(firstAuthor)) {
+            storage.retrieveByArticleMetadata(atitle, firstAuthor, postValidate);
+        }
+
+        if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
+            storage.retrieveByJournalMetadata(jtitle, volume, firstPage);
+        }
+
+        if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
+            return storage.retrieveByJournalMetadata(jtitle, volume, firstPage, firstAuthor);
+        }
+
+        if (isNotBlank(biblio)) {
+            storage.retrieveByBiblio(biblio);
+        }
+
+        throw new ServiceException(401, "The supplied parameters were not sufficient to select the query");
+    }
+
+
+    //BY DOI
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/doi/{doi}")
+    public String getByDoi(@PathParam("doi") String doi) {
         return storage.retrieveByDoi(doi);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/crossref/doi")
-    public String getByDoiQuery(@QueryParam("doi") String doi) {
-        return storage.retrieveByDoi(doi);
-    }
-
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/crossref/article")
-    public String getByArticleMetadataQuery(@QueryParam("firstAuthor") String firstAuthor,
-                                            @QueryParam("title") String title,
-                                            @QueryParam("postValidate") Boolean postValidate) {
-
-        return storage.retrieveByArticleMetadata(title, firstAuthor, postValidate);
+    @Path("/pmid/{pmid}")
+    public String getByPmid(@PathParam("pmid") String pmid) {
+        return storage.retrieveByPmid(pmid);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/crossref/article/title/{title}/firstAuthor/{firstAuthor}")
-    public String getByArticleMetadataPath(@PathParam("firstAuthor") String firstAuthor,
-                                           @PathParam("title") String title,
-                                           @QueryParam("postValidate") Boolean postValidate) {
-
-        return storage.retrieveByArticleMetadata(title, firstAuthor, postValidate);
+    @Path("/pmc/{pmc}")
+    public String getByPmc(@PathParam("pmc") String pmc) {
+        return storage.retrieveByPmc(pmc);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/crossref/journal")
-    public String getByMetadataQuery(@QueryParam("title") String title,
-                                     @QueryParam("volume") String volume,
-                                     @QueryParam("firstPage") String firstPage) {
-
-        return storage.retrieveByJournalMetadata(title, volume, firstPage);
+    @Path("/istexid/{istexid}")
+    public String getByIstexid(@PathParam("istexid") String istexid) {
+        return storage.retrieveByIstexid(istexid);
     }
 
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/crossref/journal/title/{title}/volume/{volume}/firstPage/{firstPage}")
-    public String getByMetadataPath(@PathParam("title") String title,
-                                    @PathParam("volume") String volume,
-                                    @PathParam("firstPage") String firstPage) {
-
-        return storage.retrieveByJournalMetadata(title, volume, firstPage);
-    }
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/crossref/biblio")
-    public String getByBiblioString(@QueryParam("biblio") String biblio) {
-        return storage.retrieveByBiblio(biblio);
-    }
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.TEXT_PLAIN)
-    @Path("/crossref/biblio")
-    public String getByBiblioString_Post(String biblio) {
-        return storage.retrieveByBiblio(biblio);
-    }
-
-
-    // PMID mappings
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/pmid/doi/{doi}")
-    public PmidData getPmidIdsByDoi_Path(@PathParam("doi") String doi) {
-        return storage.retrievePMidsByDoi(doi);
-    }
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/pmid/doi")
-    public PmidData getPmidIdsByDoi(@QueryParam("doi") String doi) {
-        return storage.retrievePMidsByDoi(doi);
-    }
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/pmid/id")
-    public PmidData getPmidIdsByPmid(@QueryParam("pmid") String pmid) {
-        return storage.retrievePMidsByPmid(pmid);
-    }
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/pmid/id/{pmid}")
-    public PmidData getPmidIdsByPmid_Path(@PathParam("pmid") String pmid) {
-        return storage.retrievePMidsByPmid(pmid);
-    }                       
-
-    // ISTEX Mappings
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/istex/doi")
-    public IstexData getIstexIdByDoi(@QueryParam("doi") String doi) {
-        return storage.retrieveIstexIdsByDoi(doi);
-    }
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/istex/doi/{doi}")
-    public IstexData getIstexIdsByDoi_Path(@PathParam("doi") String doi) {
-        return storage.retrieveIstexIdsByDoi(doi);
-    }
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/istex/id")
-    public IstexData getIstexIdsByIstexId(@QueryParam("istexid") String istexid) {
-        return storage.retrieveIstexIdsByIstexId(istexid);
-    }
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/istex/id/{istexid}")
-    public IstexData getIdsByIstexId_Path(@PathParam("istexid") String istexid) {
-        return storage.retrieveIstexIdsByIstexId(istexid);
-    }
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/oa/url")
-    public String getDoiByMetadata(@QueryParam("doi") String doi,
-                                   @QueryParam("pmid") String pmid) {
-        return storage.retrieveOpenAccessUrlByDoiAndPmdi(doi);
-    }
-
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
     @Path("/")
-    public Map<String, String> getDocumentSize() {
-        return storage.getDataInformation();
+    public String getByBiblioStringWithPost(String biblio) {
+        return storage.retrieveByBiblio(biblio);
     }
 }
 

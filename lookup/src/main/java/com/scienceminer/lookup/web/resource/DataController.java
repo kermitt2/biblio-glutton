@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.data.IstexData;
 import com.scienceminer.lookup.data.PmidData;
+import com.scienceminer.lookup.storage.DataEngine;
 import com.scienceminer.lookup.storage.LookupEngine;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import org.apache.commons.lang3.tuple.Pair;
@@ -18,13 +19,13 @@ public class DataController {
 
     public static final int DEFAULT_MAX_SIZE_LIST = 100;
 
-    private LookupEngine storage = null;
+    private DataEngine storage = null;
     private LookupConfiguration configuration;
 
     @Inject
     public DataController(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) {
         this.configuration = configuration;
-        this.storage = new LookupEngine(storageEnvFactory);
+        this.storage = new DataEngine(storageEnvFactory);
     }
 
     @GET

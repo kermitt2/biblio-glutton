@@ -9,6 +9,7 @@ import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.web.resource.DataController;
 import com.scienceminer.lookup.web.resource.LookupController;
+import com.scienceminer.lookup.web.resource.OAController;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -21,7 +22,9 @@ public class LookupServiceModule extends DropwizardAwareModule<LookupConfigurati
         //REST
         binder.bind(LookupController.class);
         binder.bind(DataController.class);
+        binder.bind(OAController.class);
 
+        //LMDB
         binder.bind(StorageEnvFactory.class);
     }
 

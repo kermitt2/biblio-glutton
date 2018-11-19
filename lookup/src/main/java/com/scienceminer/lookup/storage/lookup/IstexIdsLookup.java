@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.scienceminer.lookup.web.resource.DataController.DEFAULT_MAX_SIZE_LIST;
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 /**
  * Lookup:
@@ -65,7 +66,7 @@ public class IstexIdsLookup {
                     //unwrapping list of dois   doi -> ids
                     for (String doi : istexData.getDoi()) {
                         if (isNotBlank(doi)) {
-                            store(dbDoiToIds, doi, istexData, transactionWrapper.tx);
+                            store(dbDoiToIds, lowerCase(doi), istexData, transactionWrapper.tx);
                         }
                     }
 
@@ -149,7 +150,7 @@ public class IstexIdsLookup {
         ByteBuffer cachedData = null;
         IstexData record = null;
         try (Txn<ByteBuffer> tx = environment.txnRead()) {
-            keyBuffer.put(BinarySerialiser.serialize(doi)).flip();
+            keyBuffer.put(BinarySerialiser.serialize(lowerCase(doi))).flip();
             cachedData = dbDoiToIds.get(tx, keyBuffer);
             if (cachedData != null) {
                 record = (IstexData) BinarySerialiser.deserialize(cachedData);

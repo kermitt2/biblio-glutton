@@ -23,16 +23,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.scienceminer.lookup.web.resource.DataController.DEFAULT_MAX_SIZE_LIST;
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 public class PMIdsLookup {
     private static final Logger LOGGER = LoggerFactory.getLogger(PMIdsLookup.class);
-    
+
     public static final String NAME_DOI2IDS = "pmidLookup_doi2ids";
     public static final String NAME_PMID2IDS = "pmid_lookup_pmid2ids";
+    public static final String NAME_PMC2IDS = "pmid_lookup_pmc2ids";
 
     protected Env<ByteBuffer> environment;
     protected Dbi<ByteBuffer> dbDoiToIds;
     protected Dbi<ByteBuffer> dbPmidToIds;
+    protected Dbi<ByteBuffer> dbPmcToIds;
 
     private final int batchSize;
 
@@ -42,6 +45,7 @@ public class PMIdsLookup {
 
         dbDoiToIds = this.environment.openDbi(NAME_DOI2IDS, DbiFlags.MDB_CREATE);
         dbPmidToIds = this.environment.openDbi(NAME_PMID2IDS, DbiFlags.MDB_CREATE);
+        dbPmcToIds = this.environment.openDbi(NAME_PMC2IDS, DbiFlags.MDB_CREATE);
     }
 
     public void loadFromFile(InputStream is, PmidReader reader, Meter metric) {
@@ -57,11 +61,15 @@ public class PMIdsLookup {
                     }
 
                     if (isNotBlank(pmidData.getDoi())) {
-                        store(dbDoiToIds, pmidData.getDoi(), pmidData, transactionWrapper.tx);
+                        store(dbDoiToIds, lowerCase(pmidData.getDoi()), pmidData, transactionWrapper.tx);
                     }
 
                     if (isNotBlank(pmidData.getPmid())) {
                         store(dbPmidToIds, pmidData.getPmid(), pmidData, transactionWrapper.tx);
+                    }
+
+                    if (isNotBlank(pmidData.getPmcid())) {
+                        store(dbPmcToIds, pmidData.getPmcid(), pmidData, transactionWrapper.tx);
                     }
                     metric.mark();
                     counter.incrementAndGet();
@@ -78,7 +86,7 @@ public class PMIdsLookup {
         ByteBuffer cachedData = null;
         PmidData record = null;
         try (Txn<ByteBuffer> tx = environment.txnRead()) {
-            keyBuffer.put(BinarySerialiser.serialize(doi)).flip();
+            keyBuffer.put(BinarySerialiser.serialize(lowerCase(doi))).flip();
             cachedData = dbDoiToIds.get(tx, keyBuffer);
             if (cachedData != null) {
                 record = (PmidData) BinarySerialiser.deserialize(cachedData);
@@ -102,6 +110,23 @@ public class PMIdsLookup {
             }
         } catch (Exception e) {
             LOGGER.error("Cannot retrieve PubMed Ids by PMID: " + pmid, e);
+        }
+
+        return record;
+    }
+
+    public PmidData retrieveIdsByPmc(String pmc) {
+        final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
+        ByteBuffer cachedData = null;
+        PmidData record = null;
+        try (Txn<ByteBuffer> tx = environment.txnRead()) {
+            keyBuffer.put(BinarySerialiser.serialize(pmc)).flip();
+            cachedData = dbPmcToIds.get(tx, keyBuffer);
+            if (cachedData != null) {
+                record = (PmidData) BinarySerialiser.deserialize(cachedData);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Cannot retrieve PubMed Ids by PMC ID: " + pmc, e);
         }
 
         return record;

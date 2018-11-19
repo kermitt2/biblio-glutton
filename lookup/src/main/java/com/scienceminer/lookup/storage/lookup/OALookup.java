@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.scienceminer.lookup.web.resource.DataController.DEFAULT_MAX_SIZE_LIST;
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 /**
  * Lookup doi -> best OA Location
@@ -82,7 +83,7 @@ public class OALookup {
         ByteBuffer cachedData = null;
         String record = null;
         try (Txn<ByteBuffer> tx = environment.txnRead()) {
-            keyBuffer.put(BinarySerialiser.serialize(doi)).flip();
+            keyBuffer.put(BinarySerialiser.serialize(lowerCase(doi))).flip();
             cachedData = dbDoiOAUrl.get(tx, keyBuffer);
             if (cachedData != null) {
                 record = (String) BinarySerialiser.deserialize(cachedData);
@@ -105,7 +106,7 @@ public class OALookup {
                 transactionWrapper.tx = environment.txnWrite();
                 counter.set(0);
             }
-            String key = unpayWallMetadata.getDoi();
+            String key = lowerCase(unpayWallMetadata.getDoi());
             if (unpayWallMetadata.getBestOALocation() != null) {
                 String value = unpayWallMetadata.getBestOALocation().getPdfUrl();
                 if (isNotBlank(value)) {

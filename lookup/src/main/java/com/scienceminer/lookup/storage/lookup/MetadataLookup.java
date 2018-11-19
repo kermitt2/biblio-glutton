@@ -5,7 +5,6 @@ import com.scienceminer.lookup.data.MatchingDocument;
 import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -28,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 /**
  * Lookup metadata -> doi
@@ -74,7 +74,7 @@ public class MetadataLookup {
         if (isBlank(doi)) {
             throw new ServiceException(401, "The supplied DOI is null.");
         }
-        final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_DOI, doi);
+        final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_DOI, lowerCase(doi));
 
         return executeQuery(query);
     }
@@ -111,6 +111,28 @@ public class MetadataLookup {
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
+
+        return executeQuery(query);
+    }
+
+    /**
+     * Lookup by journal title, journal abbreviated title, volume, first page
+     **/
+    public MatchingDocument retrieveByMetadata(String title, String volume,
+                                               String firstPage, String firstAuthor) {
+
+        if (isBlank(title)
+                || isBlank(volume)
+                || isBlank(firstPage)) {
+            throw new ServiceException(401, "Supplied journalTitle or abbr journal title or volume, or first page are null.");
+        }
+
+        final BoolQueryBuilder query = QueryBuilders.boolQuery()
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
+                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
+                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage))
+                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
 
         return executeQuery(query);
     }
