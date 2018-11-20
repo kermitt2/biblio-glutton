@@ -22,7 +22,8 @@ public class DataEngine {
 
     public static Pattern DOIPattern = Pattern.compile("\"DOI\":\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
 
-    public DataEngine() { }
+    public DataEngine() {
+    }
 
     public DataEngine(StorageEnvFactory storageFactory) {
         this.oaDoiLookup = new OALookup(storageFactory);
@@ -30,7 +31,7 @@ public class DataEngine {
         this.metadataLookup = new MetadataLookup(storageFactory);
         this.pmidLookup = new PMIdsLookup(storageFactory);
     }
-    
+
 
     public Map<String, String> getDataInformation() {
         Map<String, String> returnMap = new HashMap<>();
@@ -42,7 +43,7 @@ public class DataEngine {
 
         return returnMap;
     }
-    
+
     public List<Pair<String, String>> retrieveOaRecords(Integer total) {
         return oaDoiLookup.retrieveOAUrlSampleList(total);
     }
@@ -67,25 +68,6 @@ public class DataEngine {
         return metadataLookup.retrieveList(total);
     }
 
-
-    //DELETE 
-    public boolean dropIstex(String dbName) {
-        return istexLookup.dropDb(dbName);
-    }
-
-    public boolean dropPMID(String dbName) {
-        return pmidLookup.dropDb(dbName);
-    }
-
-    public boolean dropOA(String dbName) {
-        return oaDoiLookup.dropDb(dbName);
-    }
-
-    public boolean dropCrossref(String dbName) {
-        return metadataLookup.dropDb(dbName);
-    }
-
-
     //Setters
     protected void setOaDoiLookup(OALookup oaDoiLookup) {
         this.oaDoiLookup = oaDoiLookup;
@@ -102,13 +84,5 @@ public class DataEngine {
     protected void setPmidLookup(PMIdsLookup pmidLookup) {
         this.pmidLookup = pmidLookup;
     }
-
-
-
-
-
-
-
-
 
 }

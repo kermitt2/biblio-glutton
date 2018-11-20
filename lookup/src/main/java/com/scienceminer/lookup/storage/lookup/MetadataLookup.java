@@ -1,6 +1,9 @@
 package com.scienceminer.lookup.storage.lookup;
 
 import com.codahale.metrics.Meter;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.data.MatchingDocument;
 import com.scienceminer.lookup.exception.NotFoundException;
@@ -58,6 +61,16 @@ public class MetadataLookup {
 
     private LookupConfiguration configuration;
     private RestHighLevelClient esClient;
+
+    /*private LoadingCache<String, MatchingDocument> cacheByDoi = CacheBuilder.newBuilder()
+            .maximumSize(1000000)
+            .build(
+                    new CacheLoader<String, MatchingDocument>() {
+                        public MatchingDocument load(String doi) throws Exception {
+                            return retrieveByMetadata(doi);
+                        }
+                    }
+            );*/
 
     public static final String INDEX_FIELD_NAME_ID = "id";
     public static final String INDEX_FIELD_NAME_TITLE = "title";
@@ -291,17 +304,6 @@ public class MetadataLookup {
 
         return executeQuery(query);
 
-    }
-
-    public boolean dropDb(String dbName) {
-        if (StringUtils.equals(dbName, NAME_CROSSREF_JSON)) {
-            try (Txn<ByteBuffer> txn = environment.txnWrite()) {
-                dbCrossrefJson.drop(txn);
-                txn.commit();
-            }
-            return true;
-        }
-        return false;
     }
 
     public List<Pair<String, String>> retrieveList(Integer total) {

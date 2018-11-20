@@ -136,15 +136,4 @@ public class OALookup {
             e.printStackTrace();
         }
     }
-
-    public boolean dropDb(String dbName) {
-        if (StringUtils.equals(dbName, NAME_DOI_OA_URL)) {
-            try (Txn<ByteBuffer> txn = environment.txnWrite()) {
-                dbDoiOAUrl.drop(txn);
-                txn.commit();
-            }
-            return true;
-        }
-        return false;
-    }
 }

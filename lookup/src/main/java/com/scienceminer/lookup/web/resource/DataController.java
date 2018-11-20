@@ -42,14 +42,6 @@ public class DataController {
         return storage.retrievePmid_doiToIds(total);
     }
 
-    @DELETE
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/pmid")
-    public boolean deletePmidDb(@QueryParam("name") String name) {
-        return storage.dropPMID(name);
-    }
-
-
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/istex/doi")
@@ -63,14 +55,7 @@ public class DataController {
     public List<Pair<String, IstexData>> getIstexData_istexIdToIds(@QueryParam("total") Integer total) {
         return storage.retrieveIstexRecords_istexToIds(total);
     }
-
-    @DELETE
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/istex")
-    public boolean deleteIstexDb(@QueryParam("name") String name) {
-        return storage.dropIstex(name);
-    }
-
+    
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/oa")
@@ -78,25 +63,11 @@ public class DataController {
         return storage.retrieveOaRecords(total);
     }
 
-    @DELETE
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/oa")
-    public boolean deleteOADb(@QueryParam("name") String name) {
-        return storage.dropOA(name);
-    }
-
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/crossref")
     public List<Pair<String, String>> getMetadataSamples(@QueryParam("total") Integer total) {
         return storage.retrieveCrossrefRecords(total);
-    }
-
-    @DELETE
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/crossref")
-    public boolean deleteMetadataDb(@QueryParam("name") String name) {
-        return storage.dropCrossref(name);
     }
 
     @GET

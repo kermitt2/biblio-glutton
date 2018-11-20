@@ -89,7 +89,6 @@ public class LookupController {
         throw new ServiceException(401, "The supplied parameters were not sufficient to select the query");
     }
 
-    //BY DOI
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/doi/{doi}")
@@ -117,8 +116,7 @@ public class LookupController {
     public String getByIstexid(@PathParam("istexid") String istexid) {
         return storage.retrieveByIstexid(istexid);
     }
-
-
+    
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.TEXT_PLAIN)

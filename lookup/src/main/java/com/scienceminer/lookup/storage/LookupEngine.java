@@ -1,5 +1,8 @@
 package com.scienceminer.lookup.storage;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.rockymadden.stringmetric.similarity.RatcliffObershelpMetric;
 import com.scienceminer.lookup.data.IstexData;
 import com.scienceminer.lookup.data.MatchingDocument;
@@ -32,7 +35,6 @@ public class LookupEngine {
     private OALookup oaDoiLookup = null;
     private IstexIdsLookup istexLookup = null;
     private MetadataLookup metadataLookup = null;
-    
     private PMIdsLookup pmidLookup = null;
 
     public static Pattern DOIPattern = Pattern.compile("\"DOI\"\\s?:\\s?\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");

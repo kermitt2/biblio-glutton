@@ -191,22 +191,4 @@ public class PMIdsLookup {
 
         return values;
     }
-
-
-    public boolean dropDb(String dbName) {
-        if (StringUtils.equals(dbName, NAME_DOI2IDS)) {
-            try (Txn<ByteBuffer> txn = environment.txnWrite()) {
-                dbDoiToIds.drop(txn);
-                txn.commit();
-            }
-            return true;
-        } else if (StringUtils.equals(dbName, NAME_PMID2IDS)) {
-            try (Txn<ByteBuffer> txn = environment.txnWrite()) {
-                dbPmidToIds.drop(txn);
-                txn.commit();
-            }
-            return true;
-        }
-        return false;
-    }
 }

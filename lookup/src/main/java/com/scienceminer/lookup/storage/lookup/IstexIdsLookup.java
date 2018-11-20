@@ -215,21 +215,4 @@ public class IstexIdsLookup {
 
         return values;
     }
-
-    public boolean dropDb(String dbName) {
-        if (StringUtils.equals(dbName, NAME_DOI2IDS)) {
-            try (Txn<ByteBuffer> txn = environment.txnWrite()) {
-                dbDoiToIds.drop(txn);
-                txn.commit();
-            }
-            return true;
-        } else if (StringUtils.equals(dbName, NAME_ISTEX2IDS)) {
-            try (Txn<ByteBuffer> txn = environment.txnWrite()) {
-                dbIstexToIds.drop(txn);
-                txn.commit();
-            }
-            return true;
-        }
-        return false;
-    }
 }
