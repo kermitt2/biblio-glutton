@@ -137,6 +137,7 @@ public class PMIdsLookup {
         try (final Txn<ByteBuffer> txn = this.environment.txnRead()) {
             size.put(NAME_DOI2IDS, dbDoiToIds.stat(txn).entries);
             size.put(NAME_PMID2IDS, dbPmidToIds.stat(txn).entries);
+            size.put(NAME_PMC2IDS, dbPmcToIds.stat(txn).entries);
         }
 
         return size;

@@ -37,7 +37,7 @@ public class DataEngine {
 
         returnMap.put("Doi OA size", String.valueOf(oaDoiLookup.getSize()));
         returnMap.put("Metadata Crossref size", String.valueOf(metadataLookup.getSize()));
-        returnMap.put("Pmid com.scienceminer.lookup size", String.valueOf(pmidLookup.getSize()));
+        returnMap.put("Pmid lookup size", String.valueOf(pmidLookup.getSize()));
         returnMap.put("Istex size", String.valueOf(istexLookup.getSize()));
 
         return returnMap;

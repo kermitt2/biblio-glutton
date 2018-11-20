@@ -32,6 +32,7 @@ public class LookupEngine {
     private OALookup oaDoiLookup = null;
     private IstexIdsLookup istexLookup = null;
     private MetadataLookup metadataLookup = null;
+    
     private PMIdsLookup pmidLookup = null;
 
     public static Pattern DOIPattern = Pattern.compile("\"DOI\"\\s?:\\s?\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
