@@ -14,7 +14,6 @@ public class StorageEnvFactory {
 
     private final String storagePath;
     private LookupConfiguration configuration;
-    private Env<ByteBuffer> environment = null;
 
     @Inject
     public StorageEnvFactory(LookupConfiguration configuration) {
@@ -22,25 +21,21 @@ public class StorageEnvFactory {
         this.storagePath = configuration.getStorage();
     }
 
-    public Env<ByteBuffer> getEnv() {
+    public Env<ByteBuffer> getEnv(String envName) {
+        Env<ByteBuffer> environment = null;
 
-        if (environment != null) {
-            return environment;
-        }
-
-        File thePath = new File(this.storagePath);
+        File thePath = new File(this.storagePath + File.separator + envName);
         if (!thePath.exists()) {
             thePath.mkdirs();
         }
 
-        this.environment = Env.create()
+        environment = Env.create()
                 .setMapSize(300L * 1024L * 1024L * 1024L)
                 .setMaxReaders(126)
                 .setMaxDbs(10)
                 .open(thePath, EnvFlags.MDB_NOTLS);
 
         return environment;
-
     }
 
     public LookupConfiguration getConfiguration() {

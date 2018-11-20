@@ -38,13 +38,15 @@ public class IstexIdsLookup {
     protected Dbi<ByteBuffer> dbDoiToIds;
     protected Dbi<ByteBuffer> dbIstexToIds;
 
-    public static final String NAME_DOI2IDS = "istexLookup_doi2ids";
-    public static final String NAME_ISTEX2IDS = "istexLookup_istex2ids";
+    public static final String ENV_NAME = "istex";
+
+    public static final String NAME_DOI2IDS = ENV_NAME + "_doi2ids";
+    public static final String NAME_ISTEX2IDS = ENV_NAME + "_istex2ids";
 
     private final int batchSize;
 
     public IstexIdsLookup(StorageEnvFactory storageEnvFactory) {
-        this.environment = storageEnvFactory.getEnv();
+        this.environment = storageEnvFactory.getEnv(ENV_NAME);
         batchSize = storageEnvFactory.getConfiguration().getBatchSize();
 
         dbDoiToIds = this.environment.openDbi(NAME_DOI2IDS, DbiFlags.MDB_CREATE);

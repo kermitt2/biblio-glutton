@@ -51,7 +51,9 @@ public class MetadataLookup {
     private Env<ByteBuffer> environment;
     private Dbi<ByteBuffer> dbCrossrefJson;
 
-    public static final String NAME_CROSSREF_JSON = "metadata_CrossrefJson";
+    public static final String ENV_NAME = "crossref";
+
+    public static final String NAME_CROSSREF_JSON = ENV_NAME + "_Jsondoc";
     private final int batchSize;
 
     private LookupConfiguration configuration;
@@ -69,7 +71,7 @@ public class MetadataLookup {
     public static final String INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE = "abbreviated_journal";
 
     public MetadataLookup(StorageEnvFactory storageEnvFactory) {
-        this.environment = storageEnvFactory.getEnv();
+        this.environment = storageEnvFactory.getEnv(ENV_NAME);
 
         configuration = storageEnvFactory.getConfiguration();
         batchSize = configuration.getBatchSize();

@@ -28,9 +28,11 @@ import static org.apache.commons.lang3.StringUtils.lowerCase;
 public class PMIdsLookup {
     private static final Logger LOGGER = LoggerFactory.getLogger(PMIdsLookup.class);
 
-    public static final String NAME_DOI2IDS = "pmidLookup_doi2ids";
-    public static final String NAME_PMID2IDS = "pmid_lookup_pmid2ids";
-    public static final String NAME_PMC2IDS = "pmid_lookup_pmc2ids";
+    public static final String ENV_NAME = "pmid";
+
+    public static final String NAME_DOI2IDS = ENV_NAME + "_doi2ids";
+    public static final String NAME_PMID2IDS = ENV_NAME + "_pmid2ids";
+    public static final String NAME_PMC2IDS = ENV_NAME + "_pmc2ids";
 
     protected Env<ByteBuffer> environment;
     protected Dbi<ByteBuffer> dbDoiToIds;
@@ -40,7 +42,7 @@ public class PMIdsLookup {
     private final int batchSize;
 
     public PMIdsLookup(StorageEnvFactory storageEnvFactory) {
-        this.environment = storageEnvFactory.getEnv();
+        this.environment = storageEnvFactory.getEnv(ENV_NAME);
         batchSize = storageEnvFactory.getConfiguration().getBatchSize();
 
         dbDoiToIds = this.environment.openDbi(NAME_DOI2IDS, DbiFlags.MDB_CREATE);

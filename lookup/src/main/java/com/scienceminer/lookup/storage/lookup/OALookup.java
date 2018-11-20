@@ -33,12 +33,14 @@ public class OALookup {
     private Env<ByteBuffer> environment;
     private Dbi<ByteBuffer> dbDoiOAUrl;
 
-    public static final String NAME_DOI_OA_URL = "OALookup_doiOAUrl";
+    public static final String ENV_NAME = "unpayWall";
+
+    public static final String NAME_DOI_OA_URL = ENV_NAME + "_doiOAUrl";
     private final int batchSize;
 
 
     public OALookup(StorageEnvFactory storageEnvFactory) {
-        this.environment = storageEnvFactory.getEnv();
+        this.environment = storageEnvFactory.getEnv(ENV_NAME);
         batchSize = storageEnvFactory.getConfiguration().getBatchSize();
 
         dbDoiOAUrl = this.environment.openDbi(NAME_DOI_OA_URL, DbiFlags.MDB_CREATE);
@@ -57,7 +59,7 @@ public class OALookup {
         if (total == null || total == 0) {
             total = DEFAULT_MAX_SIZE_LIST;
         }
-        
+
         List<Pair<String, String>> values = new ArrayList<>();
 
         int counter = 0;
