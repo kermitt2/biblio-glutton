@@ -1,6 +1,5 @@
 package com.scienceminer.lookup.reader;
 
-import com.cedarsoftware.util.io.JsonObject;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
