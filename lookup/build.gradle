@@ -65,7 +65,8 @@ dependencies {
     compile "com.rockymadden.stringmetric:stringmetric-core_2.10:0.27.3"
 
     compile 'org.lmdbjava:lmdbjava:0.6.1'
-    compile 'de.ruedigermoeller:fst:2.50'
+    compile 'de.ruedigermoeller:fst:2.56'
+    compile 'org.xerial.snappy:snappy-java:1.1.7.2'
 
     compile 'org.elasticsearch.client:elasticsearch-rest-high-level-client:6.4.2'
 

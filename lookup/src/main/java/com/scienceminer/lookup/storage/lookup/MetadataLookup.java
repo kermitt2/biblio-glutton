@@ -1,18 +1,14 @@
 package com.scienceminer.lookup.storage.lookup;
 
 import com.codahale.metrics.Meter;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.data.MatchingDocument;
 import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.reader.CrossrefJsonReader;
-import com.scienceminer.lookup.storage.BinarySerialiser;
+import com.scienceminer.lookup.utils.BinarySerialiser;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpHost;
@@ -123,7 +119,7 @@ public class MetadataLookup {
         try {
             final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
             keyBuffer.put(BinarySerialiser.serialize(key)).flip();
-            final byte[] serializedValue = BinarySerialiser.serialize(value);
+            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(value);
             final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
             valBuffer.put(serializedValue).flip();
             db.put(tx, keyBuffer, valBuffer);
@@ -160,7 +156,7 @@ public class MetadataLookup {
             keyBuffer.put(BinarySerialiser.serialize(doi)).flip();
             cachedData = dbCrossrefJson.get(tx, keyBuffer);
             if (cachedData != null) {
-                record = (String) BinarySerialiser.deserialize(cachedData);
+                record = (String) BinarySerialiser.deserializeAndDecompress(cachedData);
             }
         } catch (Exception e) {
             LOGGER.error("Cannot retrieve Crossref document by DOI:  " + doi, e);
@@ -321,7 +317,13 @@ public class MetadataLookup {
         try (Txn<ByteBuffer> txn = environment.txnRead()) {
             try (CursorIterator<ByteBuffer> it = db.iterate(txn, KeyRange.all())) {
                 for (final CursorIterator.KeyVal<ByteBuffer> kv : it.iterable()) {
-                    values.add(new ImmutablePair<>((String) BinarySerialiser.deserialize(kv.key()), (String) BinarySerialiser.deserialize(kv.val())));
+                    String key = null;
+                    try {
+                        key = (String) BinarySerialiser.deserialize(kv.key());
+                        values.add(new ImmutablePair<>(key, (String) BinarySerialiser.deserializeAndDecompress(kv.val())));
+                    } catch (IOException e) {
+                        LOGGER.error("Cannot decompress document with key: " + key, e);
+                    }
                     if (counter == total) {
                         txn.close();
                         break;

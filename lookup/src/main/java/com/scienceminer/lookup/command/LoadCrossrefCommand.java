@@ -63,7 +63,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         long start = System.nanoTime();
         final String crossrefFilePath = namespace.get(CROSSREF_SOURCE);
 
-        LOGGER.info("Preparing the system. Loading data for Istex from " + crossrefFilePath);
+        LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefFilePath);
 
         // Istex IDs
         InputStream inputStreamCrossref = Files.newInputStream(Paths.get(crossrefFilePath));
