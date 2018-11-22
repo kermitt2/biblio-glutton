@@ -266,7 +266,6 @@ public class MetadataLookup {
             while (it.hasNext()) {
                 SearchHit hit = it.next();
 
-//                String id = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_ID);
                 String DOI = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_DOI);
                 String firstAuthor = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_FIRST_AUTHOR);
                 final List<String> titles = (List<String>) hit.getSourceAsMap().get(INDEX_FIELD_NAME_TITLE);
@@ -287,7 +286,7 @@ public class MetadataLookup {
                 return matchingDocument;
             }
         } catch (IOException e) {
-            throw new ServiceException(502, "Cannot fetch org.data from Elasticsearch. ", e);
+            throw new ServiceException(502, "Cannot fetch data from Elasticsearch. ", e);
         }
 
         throw new NotFoundException("Cannot find records for the input query. ");

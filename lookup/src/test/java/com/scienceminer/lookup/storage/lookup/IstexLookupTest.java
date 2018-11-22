@@ -30,7 +30,7 @@ public class IstexLookupTest {
 
 //    @Test
 //    public void testSimpleFile() throws Exception {
-//        target.loadFromFile(new FileInputStream("/Users/lfoppiano/development/scienceminer/consolidation org.data/sample-istex-ids.json"), new IstexIdsReader());
+//        target.loadFromFile(new FileInputStream("/Users/lfoppiano/development/scienceminer/consolidation data/sample-istex-ids.json"), new IstexIdsReader());
 //    }
 
 }

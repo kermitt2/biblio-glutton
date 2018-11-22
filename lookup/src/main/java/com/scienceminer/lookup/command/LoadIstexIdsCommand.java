@@ -22,7 +22,7 @@ import java.util.zip.GZIPInputStream;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
- * This class is responsible for loading org.data for the istex mappings, in particular
+ * This class is responsible for loading data for the istex mappings, in particular
  * - istexid -> doi, ark, pmid
  * - doi -> istexid, ark, pmid
  */
@@ -83,7 +83,7 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
 
         /*final String istexAdditionalFilePath = namespace.get(ISTEX_SOURCE_ADDITIONAL);
         if (isNotBlank(istexAdditionalFilePath)) {
-            LOGGER.info("Preparing the system. Loading org.data for Istex from " + istexAdditionalFilePath);
+            LOGGER.info("Preparing the system. Loading data for Istex from " + istexAdditionalFilePath);
 
             // Istex additional IDs
             InputStream inputStreamIstexAdditionalIds = Files.newInputStream(Paths.get(istexAdditionalFilePath));

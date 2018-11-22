@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
 /**
- * This class is responsible for loading org.data for the istex mappings, in particular
+ * This class is responsible for loading data for the istex mappings, in particular
  *  - istexid -> doi, ark, pmid
  *  - doi -> istexid, ark, pmid
  */
