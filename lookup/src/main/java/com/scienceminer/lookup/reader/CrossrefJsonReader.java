@@ -51,8 +51,8 @@ public class CrossrefJsonReader {
                 }
 
                 //Ignoring document of type component
-                if (crossrefData.get("type") == null
-                        || StringUtils.equals(crossrefData.get("type").asText(), "component")) {
+                if (crossrefData.get("type") != null
+                        && StringUtils.equals(crossrefData.get("type").asText(), "component")) {
                     return;
                 }
 
