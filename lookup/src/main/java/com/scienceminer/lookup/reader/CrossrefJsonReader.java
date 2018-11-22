@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 public class CrossrefJsonReader {
     private static final Logger LOGGER = LoggerFactory.getLogger(CrossrefJsonReader.class);

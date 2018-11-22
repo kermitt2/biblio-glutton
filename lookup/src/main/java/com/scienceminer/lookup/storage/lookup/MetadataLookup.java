@@ -135,13 +135,15 @@ public class MetadataLookup {
             sizes.put(NAME_CROSSREF_JSON, dbCrossrefJson.stat(txn).entries);
         }
 
+        sizes.put("elasticsearch", 0l);
+
         try {
             SearchRequest searchRequest = new SearchRequest(configuration.getElastic().getIndex());
 
             SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
             sizes.put("elasticsearch", response.getHits().getTotalHits());
         } catch (IOException e) {
-            throw new ServiceException(502, "Error while contacting Elasticsearch to fetch the size of "
+            LOGGER.error("Error while contacting Elasticsearch to fetch the size of "
                     + configuration.getElastic().getIndex() + " index.", e);
         }
 
