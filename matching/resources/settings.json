@@ -3,8 +3,8 @@
     "index": {
       "number_of_replicas": 0,
 //      "index.merge.scheduler.max_thread_count": 1,  // remove if storage on SSD!
-      "index.refresh_interval": -1,                 // disable refresh
-      "indices.memory.index_buffer_size": "20%",    // increase the buffer size (not sure it helps actually)
+      "refresh_interval": -1,                 // disable refresh
+//      "memory.index_buffer_size": "20%",    // increase the buffer size (not sure it helps actually)
 //      "index.routing.allocation.total_shards_per_node": 1,  // reduce the shards per node to 1
       "codec": "best_compression"
     },

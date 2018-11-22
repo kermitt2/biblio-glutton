@@ -255,6 +255,8 @@ function index(options) {
                 obj.bibliographic = biblio;
             }
 
+            obj.type = data.type;
+
             // - Additional fields (not in the mapping)
             // obj.publisher = data.publisher;
             // obj.ISSN = data.ISSN;
@@ -264,7 +266,7 @@ function index(options) {
             // obj.URL = data.URL;
 
             // store the whole json doc in a field, to avoid further parsing it during indexing
-            let z = JSON.stringify(data);
+            /*let z = JSON.stringify(data);
             obj.jsondoc = [];
 
             let bytesLength = Buffer.byteLength(z, 'utf8');
@@ -280,7 +282,7 @@ function index(options) {
             }
             for (var i = 0; i < number_chunks_required; i++) {
                 obj.jsondoc.push(buffer.toString('utf8', (i * 30000), (i + 1) * 30000));
-            }
+            }*/
 
             cb(null, obj)
         }))
@@ -309,6 +311,7 @@ function index(options) {
         if (!filterType(doc)) {
             var localId = doc._id;
             delete doc._id;
+            delete doc.type;
             batch.push({
                 index: {
                     _index: 'crossref',
@@ -319,7 +322,10 @@ function index(options) {
 
             batch.push(doc);
             i++;
+        } else {
+            return ;
         }
+
 
         if (i % options.batchSize === 0) {
             var previous_start = new Date();

@@ -6,7 +6,7 @@ var client = new elasticsearch.Client( {
     keepAlive: true,
     log: "error",
     requestTimeout: 100000,  //to give more time for indexing
-    sniffOnStart: true      //discover the rest of the cluster at startup
+    sniffOnStart: true,      //discover the rest of the cluster at startup
     // sniffOnConnectionFault: true,
     // sniffInterval: 300,
     suggestCompression: true
