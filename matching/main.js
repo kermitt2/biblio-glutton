@@ -349,7 +349,7 @@ function index(options) {
                                 // let's just wait and re-send the bulk request with increased
                                 // timeout to be on the safe side
                                 console.log("Waiting for 10 seconds");
-                                sleep.msleep(10000); // -> this is blocking... time for elasticsearch to do whatever it does
+                                sleep.msleep(20000); // -> this is blocking... time for elasticsearch to do whatever it does
                                 // and be in a better mood to accept this bulk
                                 client.bulk(
                                     {
