@@ -25,10 +25,8 @@ function processAction(options) {
         client.cluster.health({}, function (err, resp, status) {
             console.log("ES Health --", resp);
         });
-    } else if ((options.action === "index") && (options.force)) {
-        // remove previous index
-        console.log("force index");
-
+    } else if ((options.action === "index")) {
+        // remove previous index if it exists
         async.waterfall([
             function indexExists(callback) {
                 console.log("indexExists");
@@ -52,10 +50,9 @@ function processAction(options) {
                         if (err) {
                             console.error('deleteIndex error: ' + err.message);
                             return callback(err);
-                        } else {
-                            console.log('Index crossref have been deleted', resp);
-                            return callback(null, false);
-                        }
+                        } 
+                        console.log('Index crossref have been deleted', resp);
+                        return callback(null, false);
                     });
                 } else {
                     return callback(null, false);
@@ -86,6 +83,7 @@ function processAction(options) {
 
             },
             function addMappings(existence, callback) {
+                console.log("addMappings");
                 var mapping;
                 try {
                     mapping = fs.readFileSync(mappingPath, 'utf8');
@@ -94,17 +92,20 @@ function processAction(options) {
                 }
 
                 // put the mapping now
-                client.indices.putMapping({
-                    index: options.indexName,
-                    type: options.docType,
-                    body: mapping
-                }, function (err, resp, status) {
-                    if (err) {
-                        console.log('mapping error: ' + err.message);
-                    } else
+                if (existence) {
+                    client.indices.putMapping({
+                        index: options.indexName,
+                        type: options.docType,
+                        body: mapping
+                    }, function (err, resp, status) {
+                        if (err) {
+                            console.log('mapping error: ' + err.message);
+                            return callback(err)
+                        } 
                         console.log("mapping loaded");
-                    return callback(null, true);
-                });
+                        return callback(null, true);
+                    });
+                }
             }
         ], (err, results) => {
             if (err) {
@@ -336,11 +337,11 @@ function index(options) {
                     client.bulk(
                         {
                             refresh: "false", //we do refresh only at the end
-                            requestTimeout: 200000,
+                            //requestTimeout: 200000,
                             body: batch
                         },
-                        function (err, resp) {
-                            if (err) {
+                        function (err, resp) { 
+                            if (err) { 
                                 console.log(err.message);
                                 throw err;
                             } else if (resp.errors) {
@@ -353,11 +354,11 @@ function index(options) {
                                 client.bulk(
                                     {
                                         refresh: "false",
-                                        requestTimeout: 200000,
+                                        //requestTimeout: 200000,
                                         body: batch
                                     },
-                                    function (err, resp) {
-                                        if (err) {
+                                    function (err, resp) { 
+                                        if (err) { 
                                             console.log(err.message);
                                             throw err;
                                         } else if (resp.errors) {
@@ -438,13 +439,14 @@ function init() {
 
     options.action = "health";
     options.concurrency = 100; // number of concurrent call, default is 10
-    options.force = false; // delete existing index and full re-indexing if true
+    //options.force = false; // delete existing index and full re-indexing if true
     var attribute; // name of the passed parameter
 
     for (var i = 2, len = process.argv.length; i < len; i++) {
-        if (process.argv[i] === "-force") {
+        /*if (process.argv[i] === "-force") {
             options.force = true;
-        } else if (process.argv[i - 1] === "-dump") {
+        } else*/ 
+        if (process.argv[i - 1] === "-dump") {
             options.dump = process.argv[i];
         } else if (!process.argv[i].startsWith("-")) {
             options.action = process.argv[i];
