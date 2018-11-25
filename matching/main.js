@@ -315,8 +315,8 @@ function index(options) {
             delete doc.type;
             batch.push({
                 index: {
-                    _index: 'crossref',
-                    _type: 'work',
+                    _index: options.indexName,
+                    _type: options.docType,
                     _id: localId
                 }
             });
