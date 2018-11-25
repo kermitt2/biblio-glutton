@@ -340,15 +340,15 @@ function index(options) {
                             body: batch
                         },
                         function (err, resp) {
-                            if (err) {
-                                console.log(err.message);
-                                throw err;
-                            } else if (resp.errors) {
+                            if (err || resp.errors) {
+                                if(err) {
+                                    console.log(err.message);
+                                }
                                 console.log('Bulk is rejected... let\'s medidate 10 seconds about the illusion of time and consciousness');
                                 // let's just wait and re-send the bulk request with increased
                                 // timeout to be on the safe side
                                 console.log("Waiting for 10 seconds");
-                                sleep.msleep(10000); // -> this is blocking... time for elasticsearch to do whatever it does
+                                sleep.msleep(20000); // -> this is blocking... time for elasticsearch to do whatever it does
                                 // and be in a better mood to accept this bulk
                                 client.bulk(
                                     {
@@ -357,15 +357,16 @@ function index(options) {
                                         body: batch
                                     },
                                     function (err, resp) {
-                                        if (err) {
-                                            console.log(err.message);
-                                            throw err;
-                                        } else if (resp.errors) {
-                                            console.log(resp);
-                                            // at this point it's hopeless ?
-                                            throw resp;
-                                            // alternative would be to block again and resend
-                                            // propagate that in a next function of the async to have something less ugly?
+                                        if (err || resp.errors) {
+                                            if(err) {
+                                                console.log(err.message);
+                                            } else if(resp) {
+                                                console.log(resp);
+                                                // at this point it's hopeless ?
+                                                throw resp;
+                                                // alternative would be to block again and resend
+                                                // propagate that in a next function of the async to have something less ugly?
+                                            }
                                         }
                                         console.log("bulk is finally ingested...");
                                         let theEnd = new Date();
