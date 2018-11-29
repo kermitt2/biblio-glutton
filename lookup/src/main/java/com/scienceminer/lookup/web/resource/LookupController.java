@@ -70,12 +70,12 @@ public class LookupController {
             return storage.retrieveByIstexid(istexid);
         }
 
-        if (isNotBlank(atitle) && isNotBlank(firstAuthor) && isNotBlank(firstAuthor)) {
-            storage.retrieveByArticleMetadata(atitle, firstAuthor, postValidate);
+        if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
+            return storage.retrieveByArticleMetadata(atitle, firstAuthor, postValidate);
         }
 
         if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            storage.retrieveByJournalMetadata(jtitle, volume, firstPage);
+            return storage.retrieveByJournalMetadata(jtitle, volume, firstPage);
         }
 
         if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
@@ -83,7 +83,7 @@ public class LookupController {
         }
 
         if (isNotBlank(biblio)) {
-            storage.retrieveByBiblio(biblio);
+            return storage.retrieveByBiblio(biblio);
         }
 
         throw new ServiceException(401, "The supplied parameters were not sufficient to select the query");
