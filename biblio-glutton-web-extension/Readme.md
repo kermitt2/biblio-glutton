@@ -1,5 +1,7 @@
 # biblio-glutton-web-extension
 
+**Work in progress**
+
 An add-on for identifying dynamically Open Access resources in the browser pages.
 
 This extension is based on the cross-browser "WebExtension" framework.
