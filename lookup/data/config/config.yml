@@ -2,6 +2,10 @@ storage: data/db
 #storage: /Volumes/SEAGATE1TB/scienceminer/glutter/lmdb
 #storage: /Volumes/Lacie/workspace/crossref/lmdb
 version: version_placeholder
+ignoreCrossRefFields: 
+  - reference
+  - abstract
+  - indexed
 
 # Loading batch size
 batchSize: 10000

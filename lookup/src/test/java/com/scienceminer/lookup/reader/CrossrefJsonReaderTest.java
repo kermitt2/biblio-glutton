@@ -13,7 +13,7 @@ public class CrossrefJsonReaderTest {
     @Before
     public void setUp() throws Exception {
 
-        target = new CrossrefJsonReader();
+        target = new CrossrefJsonReader(null);
     }
 
 //    @Test
