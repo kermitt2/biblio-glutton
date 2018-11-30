@@ -330,7 +330,6 @@ function index(options) {
 
         if (i % options.batchSize === 0) {
             var previous_start = new Date();
-            //sleep.msleep(options.slowdown);
 
             async.waterfall([
                 function (callback) {
@@ -435,7 +434,6 @@ function init() {
     options.indexName = config.indexName;
     options.docType = config.docType;
     options.batchSize = config.batchSize;
-    options.slowdown = config.slowdown;
 
     options.action = "health";
     options.concurrency = 100; // number of concurrent call, default is 10
