@@ -126,14 +126,14 @@ function processAction(options) {
  * in particular the citation information, which represent a considerable
  * amount of data.
  */
-function massage(data) {
+/*function massage(data) {
     var jsonObj = JSON.parse(data);
     delete jsonObj.reference;
     delete jsonObj.abstract;
     delete jsonObj.indexed;
 
     return jsonObj;
-}
+}*/
 
 function buildBibliographicField(obj) {
     var res = "";
@@ -183,7 +183,7 @@ function index(options) {
         .pipe(es.map(function (data, cb) {
             // prepare/massage the data
             //console.log(data);
-            data = massage(data);
+            //data = massage(data);
             var obj = new Object();
 
             // - migrate id from '_id' to 'id'
@@ -257,14 +257,6 @@ function index(options) {
             }
 
             obj.type = data.type;
-
-            // - Additional fields (not in the mapping)
-            // obj.publisher = data.publisher;
-            // obj.ISSN = data.ISSN;
-            // obj.prefix = data.prefix;
-            // obj.language = data.language;
-            // obj.alternative_id = data['alternative-id'];
-            // obj.URL = data.URL;
 
             // store the whole json doc in a field, to avoid further parsing it during indexing
             /*let z = JSON.stringify(data);
