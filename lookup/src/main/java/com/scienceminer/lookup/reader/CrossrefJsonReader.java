@@ -1,5 +1,7 @@
 package com.scienceminer.lookup.reader;
 
+import com.scienceminer.lookup.configuration.LookupConfiguration;
+
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -24,6 +26,11 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 
 public class CrossrefJsonReader {
     private static final Logger LOGGER = LoggerFactory.getLogger(CrossrefJsonReader.class);
+    private LookupConfiguration configuration;
+
+    public CrossrefJsonReader(LookupConfiguration configuration) {
+        this.configuration = configuration;
+    }
 
     public void load(String input, Consumer<String> closure) {
         try (Stream<String> stream = Files.lines(Paths.get(input))) {
@@ -57,9 +64,14 @@ public class CrossrefJsonReader {
                 }
 
                 ObjectNode object = (ObjectNode) crossrefData;
-                object.remove("reference");
-                object.remove("abstract");
-                object.remove("indexed");
+                if (configuration != null && configuration.getIgnoreCrossRefFields() != null) {
+                    for(String field : configuration.getIgnoreCrossRefFields()) {
+                        object.remove(field);
+                    }
+                    /*object.remove("reference");
+                    object.remove("abstract");
+                    object.remove("indexed");*/
+                }
                 object.remove("_id");
 
                 closure.accept(crossrefData);

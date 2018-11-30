@@ -70,7 +70,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         if (crossrefFilePath.endsWith(".xz")) {
             inputStreamCrossref = new XZInputStream(inputStreamCrossref);
         }
-        metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefJsonReader(),
+        metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefJsonReader(configuration),
                 metrics.meter("crossrefLookup"));
         LOGGER.info("Crossref lookup loaded " + metadataLookup.getSize() + " records. ");
 
