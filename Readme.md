@@ -2,13 +2,13 @@
 
 Framework dedicated to bibliographic information. It includes:
 
-- a fast and accurate bibliographical reference matching service, supporting as input raw bibliographical references or combination of key metadata, 
-- a fast metadata look-up service,
+- a bibliographical reference matching service: from an input such as a raw bibliographical reference or a combination of key metadata, the service will return the disambiguated bibliographical object with in particular its DOI and a set of metadata aggregated from CrossRef and other sources, 
+- a fast metadata look-up service: from a "strong" identifier such as DOI, PMID, etc. the service will return a set of metadata aggregated from CrossRef and other sources,
 - various mapping between DOI, PMID, PMC, ISTEX ID and ark, integrated in the bibliographical service,
 - Open Access resolver: Integration of Open Access links via the Unpaywall dataset from Impactstory,
 - MeSH classes mapping for PubMed articles.
 
-The framework is designed both for speed and matching accuracy. 
+The framework is designed both for speed (targeting more than 1,000 request per second) and matching accuracy. Benchmarking against the CrossRef API is work-in-progres. 
 
 ## Bibliographical data look-up and matching
 
@@ -18,17 +18,17 @@ For building the service, you will need these resources:
 
 * DOI to PMID and PMC mapping: available at [Europe PMC](ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/),
 
-* Optionally, to get Open Access links, the Unpaywall dataset,
+* the Unpaywall dataset, optionally, to get Open Access links aggregated with the bibliographical metadata,
 
-* Optionally, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see bellow. 
+* for getting ISTEX identifier informations, optionally, you need to build the ISTEX ID mapping, see bellow. 
 
-The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and  Elasticsearch for text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
+The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
 
 The databases and elasticsearch index must first be built from the resource files. The full service needs around 300GB of space for building these index and it is highly recommended to use SSD for best performance.
 
 ### Build the databases
 
-Resource dumps will be compiled in high performance LMDB databases. The system can read compressed or plain text files files (gzip or .xz), so in practice you do not need to uncompress anything.
+Resource dumps will be compiled in high performance LMDB databases. The system can read compressed or plain text files files (`gzip` or `.xz`), so in practice you do not need to uncompress anything.
 
 ##### Build
 
@@ -46,7 +46,14 @@ Example (XZ files will be streamed directly from the compressed versions):
 
 > java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2018-09-05.json.xz data/config/config.yml
  
-Note: by default the abstract and the bibliographical references included in CrossRef records are ignored to save some disk  space. TODO: add a parameter for controlling this in the config file.
+**Note:** by default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk  space. The `reference` field is often particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `data/config/config.yml`, by editing the lines:
+
+```
+ignoreCrossRefFields: 
+  - reference
+  - abstract
+  - indexed
+```
 
 ##### PMID and PMC ID
 
