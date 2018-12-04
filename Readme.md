@@ -245,6 +245,12 @@ The argument `-addMeSH` is optional, if present the mapping will include the MeS
 The mapping contains all the ISTEX identifier found in PubMed, associated with a PubMed ID, a PubMedCentral ID (if found), and - if the paramter `-addMeSH` is present, the MeSH classes corresponding to the article (descriptors with qualifiers, chemicals, and main topic information).
 
 
+## Main authors and contact
+
+- Patrice Lopez (@kermitt2, patrice.lopez@science-miner.com)
+
+- Luca Foppiano (@lfoppiano)
+
 ## License
 
 Distributed under [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0). 
