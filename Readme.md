@@ -247,9 +247,9 @@ The mapping contains all the ISTEX identifier found in PubMed, associated with a
 
 ## Main authors and contact
 
-- Patrice Lopez (@kermitt2, patrice.lopez@science-miner.com)
+- Patrice Lopez ([@kermitt2](https://github.com/kermitt2), patrice.lopez@science-miner.com)
 
-- Luca Foppiano (@lfoppiano)
+- Luca Foppiano ([@lfoppiano](https://github.com/lfoppiano))
 
 ## License
 
