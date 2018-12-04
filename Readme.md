@@ -10,110 +10,18 @@ Framework dedicated to bibliographic information. It includes:
 
 The framework is designed both for speed (targeting more than 1,000 request per second) and matching accuracy. Benchmarking against the CrossRef API is work-in-progres. 
 
-## Bibliographical data look-up and matching
+## The bibliographical look-up and matching REST API
 
-For building the service, you will need these resources:
+Once the databases and index are built, the bibliographical REST API can be started. For building the databases and index, see the next sections below. 
 
-* CrossRef metadata dump: available via the Crossref Metadata Plus subscription or at Internet Archive, see https://github.com/greenelab/crossref,
-
-* DOI to PMID and PMC mapping: available at [Europe PMC](ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/),
-
-* the Unpaywall dataset, optionally, to get Open Access links aggregated with the bibliographical metadata,
-
-* for getting ISTEX identifier informations, optionally, you need to build the ISTEX ID mapping, see bellow. 
-
-The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
-
-The databases and elasticsearch index must first be built from the resource files. The full service needs around 300GB of space for building these index and it is highly recommended to use SSD for best performance.
-
-### Build the databases
-
-Resource dumps will be compiled in high performance LMDB databases. The system can read compressed or plain text files files (`gzip` or `.xz`), so in practice you do not need to uncompress anything.
-
-##### Build
+### Build the service lookup 
 
 > cd lookup
 
 > ./gradlew clean build
 
-All the following commands need to be launched under the subdirectory `lookup/`.
 
-##### CrossRef metadata
-
-> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file /path/to/your/configuration
-
-Example (XZ files will be streamed directly from the compressed versions): 
-
-> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2018-09-05.json.xz data/config/config.yml
- 
-**Note:** by default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk  space. The `reference` field is often particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `data/config/config.yml`, by editing the lines:
-
-```
-ignoreCrossRefFields: 
-  - reference
-  - abstract
-  - indexed
-```
-
-##### PMID and PMC ID
-
-> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar pmid --input /path/to/pmid/csv/file /path/to/your/configuration 
-
-Example: 
-
-> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar pmid --input PMID_PMCID_DOI.csv.gz data/config/config.yml 
-
-
-##### OA via Unpaywall
-
-> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input /path/to/unpaywall/json/file /path/to/your/configuration
-
-Example: 
-
-> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2018-06-21T164548_with_versions.jsonl.gz data/config/config.yml 
-
-##### ISTEX
-
-> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar istex --input /path/to/istex/json/file /path/to/your/configuration
-
-Example: 
-
-> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar istex --input istexIds.all.gz data/config/config.yml
-
-Note: see bellow how to create this mapping file `istexIds.all.gz`. 
-
-### Build the Elasticsearch index
-
-A node.js utility under the subdirectory `matching/` is used to build the Elasticsearch index. It will take a couple of hours for the 100M crossref entries.
-
-#### Install and configure
-
-You need first to install and start ElasticSearch, latest version. Replace placeholder in the file `my_connection.js` to set the host name and port of the Elasticsearch server. 
-
-Install the node.js module:
-
-> cd matching/
-
-> npm install
-
-
-#### Build the index 
-
-> node main -dump *PATH_TO_THE_CROSSREF_JSON_DUMP* index
-
-Example:
-
-```
-> node main -dump ~/tmp/crossref-works.2018-09-05.json.xz index
-```
-
-Note than launching the above command will fully re-index the data, deleting existing index. The default name of the index is `crossref`, but this can be changed via the config file `matching/config.json`.
-
-### The bibliographical look-up and matching REST API
-
-Once the databases and index are built, the bibliographical REST API can be started. 
-
-#### Start the server
+### Start the server
 
 > cd lookup/
 
@@ -123,7 +31,7 @@ Once the databases and index are built, the bibliographical REST API can be star
 
 The last parameter is the path where your configuration file is located - the default path being here indicated. 
 
-#### REST API
+### REST API
 
    - match record by DOI
         - `GET host:port/service/lookup?doi=DOI`
@@ -163,7 +71,7 @@ Open Access resolver API returns the OA PDF link (URL) by identifier:
         - `GET host:port/service/oa?pmid=PMID` return the best Open Accss PDF url for a given PMID 
         - `GET host:port/service/oa?pmc=PMC` return the best Open Accss PDF url for a given PMC ID
 
-#### cURL examples
+### cURL examples
 
 To illustrate the usage of the API, we provide some cURL example queries:
 
@@ -192,6 +100,107 @@ Bibliographical metadata lookup by ISTEX ID:
 Open Access resolver by DOI:
 
 > curl "http://localhost:8080/service/oa?doi=10.1038/nature12373"
+
+
+## Building the bibliographical data look-up and matching databases
+
+For building the database and index used by service, you will need these resources:
+
+* CrossRef metadata dump: available via the Crossref Metadata Plus subscription or at Internet Archive, see https://github.com/greenelab/crossref,
+
+* DOI to PMID and PMC mapping: available at [Europe PMC](ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/),
+
+* the Unpaywall dataset, optionally, to get Open Access links aggregated with the bibliographical metadata,
+
+* for getting ISTEX identifier informations, optionally, you need to build the ISTEX ID mapping, see bellow. 
+
+The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
+
+The databases and elasticsearch index must first be built from the resource files. The full service needs around 300GB of space for building these index and it is highly recommended to use SSD for best performance.
+
+### Build the databases
+
+Resource dumps will be compiled in high performance LMDB databases. The system can read compressed or plain text files files (`gzip` or `.xz`), so in practice you do not need to uncompress anything.
+
+#### Build the data loader 
+
+> cd lookup
+
+> ./gradlew clean build
+
+All the following commands need to be launched under the subdirectory `lookup/`.
+
+#### CrossRef metadata
+
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file /path/to/your/configuration
+
+Example (XZ files will be streamed directly from the compressed versions): 
+
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2018-09-05.json.xz data/config/config.yml
+ 
+**Note:** by default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk  space. The `reference` field is often particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `data/config/config.yml`, by editing the lines:
+
+```
+ignoreCrossRefFields:                                                   
+  - reference
+  - abstract
+  - indexed
+```
+
+#### PMID and PMC ID
+
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar pmid --input /path/to/pmid/csv/file /path/to/your/configuration 
+
+Example: 
+
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar pmid --input PMID_PMCID_DOI.csv.gz data/config/config.yml 
+
+
+#### OA via Unpaywall
+
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input /path/to/unpaywall/json/file /path/to/your/configuration
+
+Example: 
+
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2018-06-21T164548_with_versions.jsonl.gz data/config/config.yml 
+
+#### ISTEX
+
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar istex --input /path/to/istex/json/file /path/to/your/configuration
+
+Example: 
+
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar istex --input istexIds.all.gz data/config/config.yml
+
+Note: see bellow how to create this mapping file `istexIds.all.gz`. 
+
+### Build the Elasticsearch index
+
+A node.js utility under the subdirectory `matching/` is used to build the Elasticsearch index. It will take a couple of hours for the 100M crossref entries.
+
+#### Install and configure
+
+You need first to install and start ElasticSearch, latest version. Replace placeholder in the file `my_connection.js` to set the host name and port of the Elasticsearch server. 
+
+Install the node.js module:
+
+> cd matching/
+
+> npm install
+
+
+#### Build the index 
+
+> node main -dump *PATH_TO_THE_CROSSREF_JSON_DUMP* index
+
+Example:
+
+```
+> node main -dump ~/tmp/crossref-works.2018-09-05.json.xz index
+```
+
+Note than launching the above command will fully re-index the data, deleting existing index. The default name of the index is `crossref`, but this can be changed via the config file `matching/config.json`.
+
 
 
 ## ISTEX mapping
