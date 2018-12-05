@@ -48,7 +48,7 @@ public class OAController {
             return storage.retrieveOAUrlByPmc(pmc);
         }
 
-        throw new ServiceException(401, "The supplied parameters were not sufficient to select the query");
+        throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
     }
 
 

@@ -173,7 +173,7 @@ public class MetadataLookup {
      **/
     public MatchingDocument retrieveByMetadata(String doi) {
         if (isBlank(doi)) {
-            throw new ServiceException(401, "The supplied DOI is null.");
+            throw new ServiceException(400, "The supplied DOI is null.");
         }
         final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_DOI, lowerCase(doi));
 
@@ -185,7 +185,7 @@ public class MetadataLookup {
      **/
     public MatchingDocument retrieveByMetadata(String title, String firstAuthor) {
         if (isBlank(title) || isBlank(firstAuthor)) {
-            throw new ServiceException(401, "Supplied title or firstAuthor are null.");
+            throw new ServiceException(400, "Supplied title or firstAuthor are null.");
         }
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
@@ -204,7 +204,7 @@ public class MetadataLookup {
         if (isBlank(title)
                 || isBlank(volume)
                 || isBlank(firstPage)) {
-            throw new ServiceException(401, "Supplied journalTitle or abbr journal title or volume, or first page are null.");
+            throw new ServiceException(400, "Supplied journalTitle or abbr journal title or volume, or first page are null.");
         }
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
@@ -225,7 +225,7 @@ public class MetadataLookup {
         if (isBlank(title)
                 || isBlank(volume)
                 || isBlank(firstPage)) {
-            throw new ServiceException(401, "Supplied journalTitle or abbr journal title or volume, or first page are null.");
+            throw new ServiceException(400, "Supplied journalTitle or abbr journal title or volume, or first page are null.");
         }
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
@@ -294,7 +294,7 @@ public class MetadataLookup {
 
     public MatchingDocument retrieveByBiblio(String biblio) {
         if (isBlank(biblio)) {
-            throw new ServiceException(401, "Supplied bibliographical string is null.");
+            throw new ServiceException(400, "Supplied bibliographical string is null.");
         }
 
         final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
