@@ -1,6 +1,8 @@
 package com.scienceminer.lookup.web.resource;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.data.IstexData;
 import com.scienceminer.lookup.data.PmidData;
@@ -14,7 +16,9 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
 
+@Timed
 @Path("data")
+@Singleton
 public class DataController {
 
     public static final int DEFAULT_MAX_SIZE_LIST = 100;

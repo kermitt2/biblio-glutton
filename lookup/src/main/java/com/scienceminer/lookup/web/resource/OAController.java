@@ -2,6 +2,7 @@ package com.scienceminer.lookup.web.resource;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.LookupEngine;
@@ -14,6 +15,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Path("oa")
 @Timed
+@Singleton
 public class OAController {
 
     private LookupEngine storage = null;

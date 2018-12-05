@@ -2,6 +2,7 @@ package com.scienceminer.lookup.web.resource;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.data.IstexData;
 import com.scienceminer.lookup.data.PmidData;
@@ -24,6 +25,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
  */
 @Path("lookup")
 @Timed
+@Singleton
 public class LookupController {
 
     private LookupEngine storage = null;
