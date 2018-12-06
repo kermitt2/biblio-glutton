@@ -13,28 +13,49 @@ var service = "/service/oa?doi="
  *
  *  > npm install
  *
- *  > node istex_oa_coverage -dump ../data/istex/istexIds.all.gz
+ *  > node oa_coverage -istex ../data/istex/istexIds.all.gz
  *
- *  (dump file is gzipped)
+ *  (istex dump file is gzipped)
  */
 
 function processDump(options, callback) {
     // read dump file line by line, get the DOI, check the OA 
     // availability of the DOI via biblio-glutton
-    console.log(options.dump_path);
+    var file_path;
+    if (ptions.istex_path)
+        file_path = options.istex_path;
+    else
+        file_path = options.dump_path;
+
+    console.log("processing... ", file_path);
 
     let rstream = readline.createInterface({
-        input: fs.createReadStream(options.dump_path).pipe(zlib.createGunzip())
+        input: fs.createReadStream(options.file_path).pipe(zlib.createGunzip())
     });
 
-    //var rstream = fs.createReadStream(options.dump_path).pipe(zlib.createGunzip());
+    //var rstream = fs.createReadStream(options.file_path).pipe(zlib.createGunzip());
     var total = 0; // total entries
     var total_oa = 0; // total open access available
     rstream.on('line', function(line) {
         total++;
-        var json = JSON.parse(line);
-        
-        if (json.doi && json.doi.length > 0) {
+        var doi;
+        if (options.istex_path) {
+            var json = JSON.parse(line);
+            if (json.doi && json.doi.length > 0) {
+                doi = json.doi[0]
+            }
+        } else {
+            var pieces = line.split(",");
+            if (pieces.length == 2) {
+                doi = pieces[0];
+                if (doi.lenght > 1)
+                    doi = doi.substring(1, doi.length-1);
+                else 
+                    doi = null;
+            }
+        }   
+
+        if (doi) {
             //console.log(json.doi[0]);
             var url = "http://" + options.glutton_host + ":" + options.glutton_port + options.service + json.doi[0]; 
             //console.log(url);
@@ -103,24 +124,31 @@ function init() {
     for (var i = 2, len = process.argv.length; i < len; i++) {
         if (process.argv[i-1] == "-dump") {
             options.dump_path = process.argv[i];
+        } if (process.argv[i-1] == "-istex") {
+            options.istex_path = process.argv[i];
         } else if (!process.argv[i].startsWith("-")) {
             options.action = process.argv[i];
         } 
     }
 
-    if (!options.dump_path) {
+    if (!options.dump_path && !options.istex_path) {
         console.log("ISTEX ID dump path is not defines");
         return;
     }
 
     // check the input path
-    fs.lstat(options.dump_path, (err, stats) => {
+    var the_path;
+    if (options.istex_path)
+        the_path = options.istex_path;
+    else
+        the_path = options.dump_path;
+    fs.lstat(the_path, (err, stats) => {
         if (err)
             console.log(err);
         if (stats.isDirectory())
-            console.log("ISTEX ID dump path must be a file, not a directory");
+            console.log("ID dump path must be a file, not a directory");
         if (!stats.isFile()) 
-            console.log("ISTEX ID dump path must be a valid file");
+            console.log("ID dump path must be a valid file");
     });
 
     return options;

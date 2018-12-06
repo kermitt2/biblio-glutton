@@ -237,8 +237,8 @@ public class KBStagingEnvironment extends KBEnvironment {
 		File istexDirectory = new File(conf.getIstexDirectory());
 		File istexIdData = getDataFile(istexDirectory, "istexIds.all.gz");		
 
-		File coreDirectory = new File(conf.getCoreDirectory());
-		File coreData = getDataFile(coreDirectory, "repository_metadata_2016-10-05.tar.gz");			
+		//File coreDirectory = new File(conf.getCoreDirectory());
+		//File coreData = getDataFile(coreDirectory, "repository_metadata_2016-10-05.tar.gz");			
 
 		File pubmedDirectory = new File(conf.getPubmedDirectory());
 

@@ -33,7 +33,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 public class TestIngestion {
 	
 	private KBStagingEnvironment env1 = null;
-	private KBServiceEnvironment env2 = null;
+	//private KBServiceEnvironment env2 = null;
 	private GluttonConfig conf = null;
 
 	@Before
@@ -45,15 +45,15 @@ public class TestIngestion {
             env1 = new KBStagingEnvironment(conf);
             env1.buildEnvironment(false);
 
-            env2 = new KBServiceEnvironment(conf);
-            env2.buildEnvironment(false);
+            //env2 = new KBServiceEnvironment(conf);
+            //env2.buildEnvironment(false);
         } catch(Exception e) {
         	e.printStackTrace();
         }
 	}
    	
 	//@Test
-	public void testRepoCall() {
+	/*public void testRepoCall() {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			CoreIngester coreIngester = new CoreIngester(env1, env2);
@@ -71,10 +71,10 @@ public class TestIngestion {
 		catch(Exception e) {
 			e.printStackTrace();
 		}
-	}
+	}*/
 
 	//@Test
-	public void testbiblioCall() {
+	/*public void testbiblioCall() {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			CoreIngester coreIngester = new CoreIngester(env1, env2);
@@ -86,13 +86,13 @@ public class TestIngestion {
 		catch(Exception e) {
 			e.printStackTrace();
 		}
-	}
+	}*/
 	
 	@After
 	public void testClose() {
 		try {
 			env1.close();
-			env2.close();
+			//env2.close();
 		}
 		catch(Exception e) {
 			e.printStackTrace();

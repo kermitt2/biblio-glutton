@@ -36,6 +36,8 @@ import java.nio.charset.Charset;
 import org.apache.commons.codec.binary.Base64;
 
 /**
+ * DEPRECATED!! (we didn't find any interesting use for CORE dataset)
+ *
  * Ingester for CORE bibliographical record. 
  *
  * It includes an harvester using incomplete records present in the CORE dump file 

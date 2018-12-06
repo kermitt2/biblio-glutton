@@ -22,7 +22,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  */
 public class Main {
 
-    private static List<String> availableCommands = Arrays.asList("istexPMID", "coreHarvesting");
+    private static List<String> availableCommands = Arrays.asList("istexPMID");
 
     /**
      * Arguments of the command.
@@ -154,7 +154,7 @@ public class Main {
                     if (env != null)  
                         env.close();
                 }
-            } else if (gbdArgs.getProcessMethodName().equals("coreharvesting")) {
+            } /*else if (gbdArgs.getProcessMethodName().equals("coreharvesting")) {
                 System.out.println("Harvesting CORE data");
                 KBStagingEnvironment env1 = null;
                 KBServiceEnvironment env2 = null;
@@ -180,7 +180,7 @@ public class Main {
                     if (env2 != null)
                         env2.close();
                 }
-            }
+            }*/
         }
     }
 

@@ -7,7 +7,7 @@
 
     <groupId>com.scienceminer.glutton</groupId>
     <artifactId>com.scienceminer.glutton</artifactId>
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
     <version>0.0.1</version>
 
 	<name>Biblio Glutton</name>
@@ -121,39 +121,6 @@
                     <source>1.8</source>
                     <target>1.8</target>
                     <encoding>UTF-8</encoding>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>2.1.1</version>
-                <configuration>
-                    <webResources>
-                        <resource>
-                            <directory>src/main/webapp/WEB-INF</directory>
-                            <!--excludes>
-                                <exclude>src/main/resources/</exclude>
-                            </excludes-->
-                            <!--includes>
-                                <include>web.xml</include>
-                            </includes-->
-                            <!--filtering>true</filtering-->
-                            <targetPath>WEB-INF</targetPath>
-                        </resource>
-                        <!--resource>
-                            <directory>utils/brat</directory>
-                            <targetPath>brat</targetPath>
-                        </resource-->
-                        <resource>
-                            <directory>doc</directory>
-                            <targetPath>doc</targetPath>
-                        </resource>
-                        <resource>
-                            <directory>lib</directory>
-                            <targetPath>WEB-INF/lib</targetPath>
-                        </resource>
-                    </webResources>
                 </configuration>
             </plugin>
 
