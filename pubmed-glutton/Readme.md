@@ -14,7 +14,7 @@ First build the project:
 
 ```
 
-### MedLine
+### MEDLINE/PubMed data
 
 You need to download the MEDLINE/PubMed data file available at: https://www.nlm.nih.gov/databases/download/pubmed_medline.html
 

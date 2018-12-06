@@ -230,7 +230,7 @@ You can then move the json dump (e.g. `istexIds.all`) to the Istex data path ind
 
 ### ISTEX to PubMed mapping
 
-The mapping add PudMed information (in particular MeSH classes) to ISTEX entries. 
+The mapping adds PudMed information (in particular MeSH classes) to ISTEX entries. 
 See the instructions [here](pubmed-glutton/Readme.md)
 
 ## Main authors and contact
