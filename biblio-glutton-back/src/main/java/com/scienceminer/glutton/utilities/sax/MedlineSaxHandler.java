@@ -65,6 +65,7 @@ public class MedlineSaxHandler extends DefaultHandler {
 	private Identifier identifierObject = null;
 	private Identifier authorIdentifierObject = null;
 	private String affiliationString = null;
+    private String abstractString = null;
 
 	private String language = null;
 
@@ -520,6 +521,9 @@ public class MedlineSaxHandler extends DefaultHandler {
         	identifierObject = null;
         } else if (qName.equals("Affiliation")) { 
         	affiliationString = getText();
+        } else if (qName.equals("AbstractText")) {
+            abstractString = getText();
+            biblio.setAbstract(abstractString);
         }
 
         accumulator.setLength(0);

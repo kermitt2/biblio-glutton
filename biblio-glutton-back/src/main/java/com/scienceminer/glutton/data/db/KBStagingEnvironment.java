@@ -878,7 +878,7 @@ System.out.println("isLoaded: " + isLoaded);
 								try {
 									db.put(tx, 
 										KBEnvironment.serialize(pmid), 
-										KBEnvironment.serialize(biblio) );
+										KBEnvironment.serialize(biblio));
 									nbToAdd++;
 								} catch(Exception e) {
 									e.printStackTrace();
