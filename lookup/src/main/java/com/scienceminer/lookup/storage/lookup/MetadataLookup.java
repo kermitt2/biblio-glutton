@@ -175,9 +175,9 @@ public class MetadataLookup {
         if (isBlank(doi)) {
             throw new ServiceException(400, "The supplied DOI is null.");
         }
-        final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_DOI, lowerCase(doi));
+        final String jsonDocument = retrieveJsonDocument(lowerCase(doi));
 
-        return executeQuery(query);
+        return new MatchingDocument(doi, jsonDocument);
     }
 
     /**

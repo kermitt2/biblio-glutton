@@ -10,6 +10,11 @@ public class MatchingDocument {
         this.DOI = DOI;
     }
 
+    public MatchingDocument(String DOI, String jsonObject) {
+        this.DOI = DOI;
+        this.jsonObject = jsonObject;
+    }
+
     public String getJsonObject() {
         return jsonObject;
     }
