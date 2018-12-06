@@ -19,7 +19,7 @@ apply plugin: 'maven'
 apply plugin: 'com.github.johnrengelman.shadow'
 
 
-group 'com.scienceminer.istex'
+group 'com.scienceminer.glutton'
 version '1.0-SNAPSHOT'
 
 sourceCompatibility = 1.8

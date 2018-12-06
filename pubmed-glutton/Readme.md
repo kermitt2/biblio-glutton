@@ -1,4 +1,6 @@
-## biblio-glutton backend
+## pubmed-glutton
+
+This package can be used to parse and store the PubMed data (all MEDLINE data, with abstract, MeSH classes etc.), and provides some mapping functionalities.
 
 Any command will first initialize the `staging area` databases, this is only done the first time a command is launched.
 
@@ -6,11 +8,19 @@ First build the project:
 
 ```bash
 
-> cd biblio-glutton-back
+> cd pubmed-glutton
 
 > mvn clean install
 
 ```
+
+### MedLine
+
+You need to download the MEDLINE/PubMed data file available at: https://www.nlm.nih.gov/databases/download/pubmed_medline.html
+
+Then indicate the directory path where you stored these xml dumps (as warning, MEDLINE/PubMed data consist in around 900 files taking 21GB, compressed) in the file `config/glutton.yaml`: 
+
+> pubmedDirectory: /home/lopez/data/pubmed
 
 ### ISTEX to PubMed mapping
 
