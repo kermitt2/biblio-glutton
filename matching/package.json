@@ -14,7 +14,7 @@
   ],
   "dependencies": {
     "elasticsearch": "^15.2.0",
-    "event-stream": "^4.0.1",
+    "event-stream": "3.3.4",
     "lzma-native": "^4.0.2",
     "async": "^2.6.1",
     "sleep": "^5.2.3"
