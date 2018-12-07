@@ -128,7 +128,7 @@ Resource dumps will be compiled in high performance LMDB databases. The system c
 
 > ./gradlew clean build
 
-All the following commands need to be launched under the subdirectory `lookup/`.
+All the following commands need to be launched under the subdirectory `lookup/`. The loading of the following database can be done in parallel. 
 
 #### CrossRef metadata
 
@@ -162,7 +162,7 @@ Example:
 
 Example: 
 
-> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2018-06-21T164548_with_versions.jsonl.gz data/config/config.yml 
+> java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2018-09-24T232615.jsonl.gz data/config/config.yml 
 
 #### ISTEX
 

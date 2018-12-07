@@ -6,7 +6,7 @@ An add-on for identifying dynamically Open Access resources in the browser pages
 
 This extension is based on the cross-browser "WebExtension" framework.
 
-Mozilla Firefox and Google Chrome are currently supported.
+**WORK IN PROGRESS**
 
 ##Functionalities
 
@@ -34,14 +34,14 @@ Citation formats:
 
 ## Supported browser
 
-Currently: 
+Targeted: 
 
 * Firefox
 * Chrome
 
 ## Examples
 
-* Example of links on a Wikipedia page: https://en.wikipedia.org/wiki/Superfluid_helium-4
+* ...
 
 ## How to install
 
