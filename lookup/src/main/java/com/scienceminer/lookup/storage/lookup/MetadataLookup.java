@@ -135,7 +135,7 @@ public class MetadataLookup {
             sizes.put(NAME_CROSSREF_JSON, dbCrossrefJson.stat(txn).entries);
         }
 
-        sizes.put("elasticsearch", 0l);
+        sizes.put("elasticsearch", 0L);
 
         try {
             SearchRequest searchRequest = new SearchRequest(configuration.getElastic().getIndex());
@@ -176,7 +176,7 @@ public class MetadataLookup {
             throw new ServiceException(400, "The supplied DOI is null.");
         }
         final String jsonDocument = retrieveJsonDocument(lowerCase(doi));
-
+        
         return new MatchingDocument(doi, jsonDocument);
     }
 
