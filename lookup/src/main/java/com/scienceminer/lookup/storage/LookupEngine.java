@@ -284,12 +284,12 @@ public class LookupEngine {
         if (!pmid || !pmc) {
             final PmidData pmidData = pmidLookup.retrieveIdsByDoi(doi);
             if (pmidData != null) {
-                if (isNotBlank(pmidData.getPmid())) {
+                if (isNotBlank(pmidData.getPmid()) && !pmid) {
                     sb.append(", \"pmid\":\"" + pmidData.getPmid() + "\"");
                     foundPmidData = true;
                 }
 
-                if (isNotBlank(pmidData.getPmcid())) {
+                if (isNotBlank(pmidData.getPmcid()) && !pmc) {
                     sb.append(", \"pmcid\":\"" + pmidData.getPmcid() + "\"");
                     foundPmidData = true;
                 }
