@@ -26,9 +26,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static org.apache.commons.lang3.StringUtils.length;
+import static org.apache.commons.lang3.StringUtils.*;
 
 public class LookupEngine {
 
@@ -252,31 +250,60 @@ public class LookupEngine {
         boolean pmc = false;
         boolean foundIstexData = false;
         boolean foundPmidData = false;
+        boolean first = false;
 
         StringBuilder sb = new StringBuilder();
-        sb.append(jsonobj, 0, length(jsonobj) - 1);
+        if (isBlank(jsonobj)) {
+            sb.append("{");
+            first = true;
+        } else {
+            sb.append(jsonobj, 0, length(jsonobj) - 1);
+        }
 
         if (istexData != null) {
             if (isNotBlank(istexData.getIstexId())) {
-                sb.append(", \"istexId\":\"" + istexData.getIstexId() + "\"");
+                if(!first) {
+                    sb.append(", ");
+                } else {
+                    first = false;
+                }
+                sb.append("\"istexId\":\"" + istexData.getIstexId() + "\"");
                 foundIstexData = true;
             }
             if (CollectionUtils.isNotEmpty(istexData.getArk())) {
-                sb.append(", \"ark\":\"" + istexData.getArk().get(0) + "\"");
+                if(!first) {
+                    sb.append(", ");
+                } else {
+                    first = false;
+                }
+                sb.append("\"ark\":\"" + istexData.getArk().get(0) + "\"");
                 foundIstexData = true;
             }
             if (CollectionUtils.isNotEmpty(istexData.getPmid())) {
-                sb.append(", \"pmid\":\"" + istexData.getPmid().get(0) + "\"");
+                if(!first) {
+                    sb.append(", ");
+                } else {
+                    first = false;
+                }
+                sb.append("\"pmid\":\"" + istexData.getPmid().get(0) + "\"");
                 pmid = true;
                 foundIstexData = true;
             }
             if (CollectionUtils.isNotEmpty(istexData.getPmc())) {
-                sb.append(", \"pmcid\":\"" + istexData.getPmc().get(0) + "\"");
+                if(!first) {
+                    sb.append(", ");
+                } else {
+                    first = false;
+                }
+                sb.append("\"pmcid\":\"" + istexData.getPmc().get(0) + "\"");
                 pmc = true;
                 foundIstexData = true;
             }
             if (CollectionUtils.isNotEmpty(istexData.getMesh())) {
-                sb.append(", \"mesh\":\"" + istexData.getMesh().get(0) + "\"");
+                if(!first) {
+                    sb.append(", ");
+                }
+                sb.append("\"mesh\":\"" + istexData.getMesh().get(0) + "\"");
                 foundIstexData = true;
             }
         }
@@ -284,13 +311,23 @@ public class LookupEngine {
         if (!pmid || !pmc) {
             final PmidData pmidData = pmidLookup.retrieveIdsByDoi(doi);
             if (pmidData != null) {
-                if (isNotBlank(pmidData.getPmid())) {
-                    sb.append(", \"pmid\":\"" + pmidData.getPmid() + "\"");
+                if (isNotBlank(pmidData.getPmid()) && !pmid) {
+                    if(!first) {
+                        sb.append(", ");
+                    } else {
+                        first = false;
+                    }
+                    sb.append("\"pmid\":\"" + pmidData.getPmid() + "\"");
                     foundPmidData = true;
                 }
 
-                if (isNotBlank(pmidData.getPmcid())) {
-                    sb.append(", \"pmcid\":\"" + pmidData.getPmcid() + "\"");
+                if (isNotBlank(pmidData.getPmcid()) && !pmc) {
+                    if(!first) {
+                        sb.append(", ");
+                    } else {
+                        first = false;
+                    }
+                    sb.append("\"pmcid\":\"" + pmidData.getPmcid() + "\"");
                     foundPmidData = true;
                 }
             }

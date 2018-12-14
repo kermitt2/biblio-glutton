@@ -12,9 +12,11 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpHost;
+import org.apache.http.client.config.RequestConfig;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -25,6 +27,8 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.ElasticsearchException;
 import org.lmdbjava.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,7 +89,19 @@ public class MetadataLookup {
         configuration = storageEnvFactory.getConfiguration();
         batchSize = configuration.getBatchSize();
         esClient = new RestHighLevelClient(
-                RestClient.builder(HttpHost.create(configuration.getElastic().getHost())));
+        RestClient.builder(
+            HttpHost.create(configuration.getElastic().getHost()))
+            .setRequestConfigCallback(
+                new RestClientBuilder.RequestConfigCallback() {
+                    @Override
+                    public RequestConfig.Builder customizeRequestConfig(
+                            RequestConfig.Builder requestConfigBuilder) {
+                        return requestConfigBuilder
+                            .setConnectTimeout(5000)
+                            .setSocketTimeout(60000);
+                    }
+                })
+            .setMaxRetryTimeoutMillis(100000));
 
         dbCrossrefJson = this.environment.openDbi(NAME_CROSSREF_JSON, DbiFlags.MDB_CREATE);
     }
@@ -135,7 +151,7 @@ public class MetadataLookup {
             sizes.put(NAME_CROSSREF_JSON, dbCrossrefJson.stat(txn).entries);
         }
 
-        sizes.put("elasticsearch", 0l);
+        sizes.put("elasticsearch", 0L);
 
         try {
             SearchRequest searchRequest = new SearchRequest(configuration.getElastic().getIndex());
@@ -176,7 +192,7 @@ public class MetadataLookup {
             throw new ServiceException(400, "The supplied DOI is null.");
         }
         final String jsonDocument = retrieveJsonDocument(lowerCase(doi));
-
+        
         return new MatchingDocument(doi, jsonDocument);
     }
 
@@ -286,7 +302,9 @@ public class MetadataLookup {
                 return matchingDocument;
             }
         } catch (IOException e) {
-            throw new ServiceException(502, "Cannot fetch data from Elasticsearch. ", e);
+            throw new ServiceException(503, "No response from Elasticsearch. ", e);
+        } catch (Exception e) {
+            throw new ServiceException(503, "Elasticsearch server error. ", e);
         }
 
         throw new NotFoundException("Cannot find records for the input query. ");
@@ -300,7 +318,6 @@ public class MetadataLookup {
         final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
 
         return executeQuery(query);
-
     }
 
     public List<Pair<String, String>> retrieveList(Integer total) {

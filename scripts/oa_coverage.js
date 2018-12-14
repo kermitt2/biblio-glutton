@@ -14,6 +14,7 @@ var service = "/service/oa?doi="
  *  > npm install
  *
  *  > node oa_coverage -istex ../data/istex/istexIds.all.gz
+ *  > node oa_coverage -dump ../data/istex/istexIds.all.gz
  *
  *  (istex dump file is gzipped)
  */
@@ -22,15 +23,15 @@ function processDump(options, callback) {
     // read dump file line by line, get the DOI, check the OA 
     // availability of the DOI via biblio-glutton
     var file_path;
-    if (ptions.istex_path)
+    if (options.istex_path)
         file_path = options.istex_path;
     else
         file_path = options.dump_path;
 
-    console.log("processing... ", file_path);
+    //console.log("processing... ", file_path);
 
     let rstream = readline.createInterface({
-        input: fs.createReadStream(options.file_path).pipe(zlib.createGunzip())
+        input: fs.createReadStream(file_path).pipe(zlib.createGunzip())
     });
 
     //var rstream = fs.createReadStream(options.file_path).pipe(zlib.createGunzip());
@@ -48,7 +49,7 @@ function processDump(options, callback) {
             var pieces = line.split(",");
             if (pieces.length == 2) {
                 doi = pieces[0];
-                if (doi.lenght > 1)
+                if (doi.length > 1)
                     doi = doi.substring(1, doi.length-1);
                 else 
                     doi = null;
@@ -56,14 +57,14 @@ function processDump(options, callback) {
         }   
 
         if (doi) {
-            //console.log(json.doi[0]);
-            var url = "http://" + options.glutton_host + ":" + options.glutton_port + options.service + json.doi[0]; 
+            var url = "http://" + options.glutton_host + ":" + options.glutton_port + options.service + doi; 
             //console.log(url);
             var request = http.get(url, function(response) {
                 //console.log(response.statusCode);
                 if (response.statusCode == 200) {
                     response.on("data", function(chunk) {
-                        console.log("[OA]: " + chunk);
+                        //console.log("[OA]: " + chunk);
+                        console.log('{ "doi":"' + doi + '", "best_oa_location" : { "url_for_pdf": "' + chunk + '"} }')
                         total_oa++;
                     });
                 }
