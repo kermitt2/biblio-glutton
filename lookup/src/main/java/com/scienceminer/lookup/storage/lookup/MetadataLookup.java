@@ -192,7 +192,7 @@ public class MetadataLookup {
             throw new ServiceException(400, "The supplied DOI is null.");
         }
         final String jsonDocument = retrieveJsonDocument(lowerCase(doi));
-        
+
         return new MatchingDocument(doi, jsonDocument);
     }
 
@@ -312,7 +312,7 @@ public class MetadataLookup {
 
     public MatchingDocument retrieveByBiblio(String biblio) {
         if (isBlank(biblio)) {
-            throw new ServiceException(400, "Supplied bibliographical string is null.");
+            throw new ServiceException(400, "Supplied bibliographical string is empty.");
         }
 
         final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);

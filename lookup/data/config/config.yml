@@ -25,6 +25,8 @@ server:
   - type: http
     port: 8081
   registerDefaultExceptionMappers: false
+  maxThreads: 2048
+  maxQueuedRequests: 1024
 
 logging:
   level: INFO
