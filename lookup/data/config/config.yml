@@ -13,7 +13,7 @@ batchSize: 10000
 
 elastic:
   host: localhost:9200
-  index: crossref
+  index: crossref_new
   type: work
 
 server:

@@ -7,13 +7,9 @@
           "type": "text",
           "analyzer": "case_insensitive_keyword"
         },
-        "jsondoc": {
-          "type": "keyword",
-          "index": false
-        },
         "title": {
           "type": "text",
-                "analyzer": "case_insensitive_folding_text_stopwords"
+          "analyzer": "case_insensitive_folding_text_stopwords"
         },
         "first_author": {
           "type": "text",
@@ -53,7 +49,7 @@
         },
         "bibliographic": {
           "type": "text",
-                "analyzer": "case_insensitive_folding_text_stopwords"
+          "analyzer": "case_insensitive_folding_text_stopwords"
         }
       }
     }

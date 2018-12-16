@@ -104,6 +104,15 @@ Open Access resolver by DOI:
 
 ## Building the bibliographical data look-up and matching databases
 
+### Architecture
+
+Below is an overview of the biblio-glutton architecture. The biblio-glutton server manages locally high performance LMDB databases for all metadata look-up tasks (several thousand requests per second with multiple threads). For the costly metadata matching tasks, an Elasticsearch cluster is used. For scaling this sort of queries, simply add more nodes in this elasticsearch cluster, keepping a single biblio-glutton server instance. 
+
+![Glutton architecture](doc/glutton-architecture.png) 
+
+
+### Resources
+
 For building the database and index used by service, you will need these resources:
 
 * CrossRef metadata dump: available via the Crossref Metadata Plus subscription or at Internet Archive, see https://github.com/greenelab/crossref,
@@ -118,7 +127,7 @@ The bibliographical matching service uses a combination of high performance embe
 
 The databases and elasticsearch index must first be built from the resource files. The full service needs around 300GB of space for building these index and it is highly recommended to use SSD for best performance.
 
-### Build the databases
+### Build the embedded LMDB databases
 
 Resource dumps will be compiled in high performance LMDB databases. The system can read compressed or plain text files files (`gzip` or `.xz`), so in practice you do not need to uncompress anything.
 
