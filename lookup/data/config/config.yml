@@ -1,7 +1,7 @@
-#storage: data/db
+storage: data/db
 #storage: /Volumes/SEAGATE1TB/scienceminer/glutter/lmdb
 #storage: /Volumes/Lacie/workspace/crossref/lmdb
-storage: /media/lopez/T5/data/db
+#storage: /media/lopez/T5/data/db
 version: version_placeholder
 ignoreCrossRefFields: 
   - reference
@@ -13,7 +13,7 @@ batchSize: 10000
 
 elastic:
   host: localhost:9200
-  index: crossref_new
+  index: crossref
   type: work
 
 server:
@@ -25,8 +25,6 @@ server:
   - type: http
     port: 8081
   registerDefaultExceptionMappers: false
-  maxThreads: 2048
-  maxQueuedRequests: 1024
   acceptQueueSize: 1024
 
 logging:

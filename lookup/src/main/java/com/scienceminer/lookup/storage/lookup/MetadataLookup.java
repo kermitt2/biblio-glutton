@@ -302,9 +302,9 @@ public class MetadataLookup {
                 return matchingDocument;
             }
         } catch (IOException e) {
-            throw new ServiceException(503, "No response from Elasticsearch. ", e);
+            throw new ServiceException(500, "No response from Elasticsearch. ", e);
         } catch (Exception e) {
-            throw new ServiceException(503, "Elasticsearch server error. ", e);
+            throw new ServiceException(500, "Elasticsearch server error. ", e);
         }
 
         throw new NotFoundException("Cannot find records for the input query. ");
