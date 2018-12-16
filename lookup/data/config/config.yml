@@ -27,6 +27,7 @@ server:
   registerDefaultExceptionMappers: false
   maxThreads: 2048
   maxQueuedRequests: 1024
+  acceptQueueSize: 1024
 
 logging:
   level: INFO
