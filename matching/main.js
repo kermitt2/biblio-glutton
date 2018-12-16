@@ -126,14 +126,10 @@ function processAction(options) {
  * in particular the citation information, which represent a considerable
  * amount of data.
  */
-/*function massage(data) {
+function massage(data) {
     var jsonObj = JSON.parse(data);
-    delete jsonObj.reference;
-    delete jsonObj.abstract;
-    delete jsonObj.indexed;
-
     return jsonObj;
-}*/
+}
 
 function buildBibliographicField(obj) {
     var res = "";
@@ -183,7 +179,7 @@ function index(options) {
         .pipe(es.map(function (data, cb) {
             // prepare/massage the data
             //console.log(data);
-            //data = massage(data);
+            data = massage(data);
             var obj = new Object();
 
             // - migrate id from '_id' to 'id'
