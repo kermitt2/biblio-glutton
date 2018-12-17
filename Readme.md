@@ -33,7 +33,7 @@ The last parameter is the path where your configuration file is located - the de
 
 ### REST API
 
-   - match record by DOI
+    - match record by DOI
         - `GET host:port/service/lookup?doi=DOI`
         - `GET host:port/service/lookup/doi/{DOI}`
 
