@@ -15,6 +15,21 @@ public class MatchingDocument {
         this.jsonObject = jsonObject;
     }
 
+    public MatchingDocument() {
+
+    }
+
+    public MatchingDocument(MatchingDocument other) {
+        fillFromMatchindDocument(other);
+    }
+
+    public void fillFromMatchindDocument(MatchingDocument otherMatchingDocument) {
+        this.setDOI(otherMatchingDocument.getDOI());
+        this.setFirstAuthor(otherMatchingDocument.getFirstAuthor());
+        this.setJsonObject(otherMatchingDocument.getJsonObject());
+        this.setTitle(otherMatchingDocument.getTitle());
+    }
+
     public String getJsonObject() {
         return jsonObject;
     }

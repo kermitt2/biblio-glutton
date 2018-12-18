@@ -46,8 +46,8 @@ public class LookupController {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/async")
-    public void asyncGetWithTimeout(
+    @Path("/")
+    public void getByQueryAsync(
             @QueryParam("doi") String doi,
             @QueryParam("pmid") String pmid,
             @QueryParam("pmc") String pmc,
@@ -76,10 +76,8 @@ public class LookupController {
         }).start();
     }
 
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/")
-    public String getByQuery(
+
+    private String getByQuery(
             @QueryParam("doi") String doi,
             @QueryParam("pmid") String pmid,
             @QueryParam("pmc") String pmc,
