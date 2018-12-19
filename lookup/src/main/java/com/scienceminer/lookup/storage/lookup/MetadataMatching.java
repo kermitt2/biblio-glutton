@@ -4,9 +4,9 @@ import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.data.MatchingDocument;
 import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.exception.ServiceException;
+import com.scienceminer.lookup.storage.lookup.async.ESClientWrapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.http.HttpHost;
-import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
@@ -36,7 +36,7 @@ public class MetadataMatching {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataMatching.class);
 
     private LookupConfiguration configuration;
-    private RestHighLevelClient esClient;
+    private ESClientWrapper esClient;
     private MetadataLookup metadataLookup;
 
     public static final String INDEX_FIELD_NAME_ID = "id";
@@ -51,12 +51,12 @@ public class MetadataMatching {
     public static final String INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE = "abbreviated_journal";
 
     private final String INDEX_FIELD_NAME_JSONDOC = "jsondoc";
-    
+
 
     public MetadataMatching(LookupConfiguration configuration, MetadataLookup metadataLookup) {
         this.configuration = configuration;
-        
-        esClient = new RestHighLevelClient(
+
+        RestHighLevelClient esClient = new RestHighLevelClient(
                 RestClient.builder(
                         HttpHost.create(configuration.getElastic().getHost()))
                         .setRequestConfigCallback(
@@ -64,6 +64,8 @@ public class MetadataMatching {
                                         .setConnectTimeout(30000)
                                         .setSocketTimeout(60000))
                         .setMaxRetryTimeoutMillis(120000));
+
+        this.esClient = new ESClientWrapper(esClient, 2000);
 
         this.metadataLookup = metadataLookup;
 
@@ -76,7 +78,7 @@ public class MetadataMatching {
         try {
             SearchRequest searchRequest = new SearchRequest(configuration.getElastic().getIndex());
 
-            SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+            SearchResponse response = esClient.searchSync(searchRequest, RequestOptions.DEFAULT);
             sizes.put("elasticsearch", response.getHits().getTotalHits());
         } catch (IOException e) {
             LOGGER.error("Error while contacting Elasticsearch to fetch the size of "
@@ -142,7 +144,65 @@ public class MetadataMatching {
         return executeQuery(query);
     }
 
+    public MatchingDocument retrieveByBiblio(String biblio) {
+        if (isBlank(biblio)) {
+            throw new ServiceException(400, "Supplied bibliographical string is empty.");
+        }
+
+        final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
+
+        return executeQuery(query);
+    }
+
+    public void retrieveByBiblioAsync(String biblio, Consumer<MatchingDocument> callback) {
+        if (isBlank(biblio)) {
+            throw new ServiceException(400, "Supplied bibliographical string is empty.");
+        }
+
+        final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
+
+        callback.accept(executeQuery(query));
+    }
+
     private MatchingDocument executeQuery(QueryBuilder query) {
+        SearchRequest request = prepareQueryExecution(query);
+
+        try {
+            return processResponse(esClient.searchSync(request, RequestOptions.DEFAULT));
+
+        } catch (IOException e) {
+            throw new ServiceException(503, "No response from Elasticsearch. ", e);
+        } catch (Exception e) {
+            throw new ServiceException(503, "Elasticsearch server error. ", e);
+        }
+    }
+
+
+    private void executeQueryAsync(QueryBuilder query, Consumer<MatchingDocument> callback) {
+        SearchRequest searchRequest = prepareQueryExecution(query);
+
+        esClient.searchAsync(searchRequest, RequestOptions.DEFAULT, response -> callback.accept(processResponse(response)));
+
+        /*final MatchingDocument matchingDocument = new MatchingDocument();
+
+        final ActionListener<SearchResponse> listener = new ActionListener<SearchResponse>() {
+            @Override
+            public void onResponse(SearchResponse searchResponse) {
+                final MatchingDocument matchingDocument1 = processResponse(searchResponse);
+                matchingDocument.fillFromMatchindDocument(matchingDocument1);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                throw new ServiceException(503, "Elasticsearch server error. ", e);
+            }
+        };
+*/
+//        new Thread(() -> esClient.searchAsync(searchRequest, RequestOptions.DEFAULT, listener));
+//        return matchingDocument;
+    }
+
+    private SearchRequest prepareQueryExecution(QueryBuilder query) {
         SearchSourceBuilder builder = new SearchSourceBuilder();
         builder.query(query);
         builder.from(0);
@@ -162,37 +222,7 @@ public class MetadataMatching {
         searchRequest.searchType(SearchType.DFS_QUERY_THEN_FETCH);
         searchRequest.source(builder);
 
-//        try {
-//            return processResponse(esClient.search(searchRequest, RequestOptions.DEFAULT));
-//
-//        } catch (IOException e) {
-//            throw new ServiceException(503, "No response from Elasticsearch. ", e);
-//        } catch (Exception e) {
-//            throw new ServiceException(503, "Elasticsearch server error. ", e);
-//        }
-
-
-        final MatchingDocument matchingDocument = new MatchingDocument();
-
-        final ActionListener<SearchResponse> listener = new ActionListener<SearchResponse>() {
-            @Override
-            public void onResponse(SearchResponse searchResponse) {
-                final MatchingDocument matchingDocument1 = processResponse(searchResponse);
-                matchingDocument.fillFromMatchindDocument(matchingDocument1);
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                throw new ServiceException(503, "Elasticsearch server error. ", e);
-            }
-        };
-
-        new Thread(() -> esClient.searchAsync(searchRequest, RequestOptions.DEFAULT, listener));
-
-        
-
-        return matchingDocument;
-
+        return searchRequest;
     }
 
     private MatchingDocument processResponse(SearchResponse response) {
@@ -222,15 +252,5 @@ public class MetadataMatching {
             return matchingDocument;
         }
         throw new NotFoundException("Cannot find records for the input query. ");
-    }
-
-    public MatchingDocument retrieveByBiblio(String biblio) {
-        if (isBlank(biblio)) {
-            throw new ServiceException(400, "Supplied bibliographical string is empty.");
-        }
-
-        final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
-
-        return executeQuery(query);
     }
 }

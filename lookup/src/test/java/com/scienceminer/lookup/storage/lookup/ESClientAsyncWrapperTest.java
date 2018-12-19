@@ -1,5 +1,6 @@
 package com.scienceminer.lookup.storage.lookup;
 
+import com.scienceminer.lookup.storage.lookup.async.ESClientWrapper;
 import org.apache.http.HttpHost;
 import org.easymock.EasyMock;
 import org.elasticsearch.action.search.SearchRequest;
@@ -15,14 +16,15 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 import static com.scienceminer.lookup.storage.lookup.MetadataMatching.INDEX_FIELD_NAME_BIBLIOGRAPHIC;
-import static org.easymock.EasyMock.*;
+import static org.assertj.core.internal.bytebuddy.matcher.ElementMatchers.is;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertThat;
 
-public class ESClientAsyncWrapperTest {                              
+public class ESClientAsyncWrapperTest {
 
-    private ESClientAsyncWrapper target;
+    private ESClientWrapper target;
     private RestHighLevelClient mockEsClient;
     private RestHighLevelClient esClient;
 
@@ -38,7 +40,7 @@ public class ESClientAsyncWrapperTest {
                                         .setSocketTimeout(60000))
                         .setMaxRetryTimeoutMillis(120000));
 
-        target = new ESClientAsyncWrapper(esClient);
+        target = new ESClientWrapper(esClient, 2);
     }
 
     @Test
@@ -55,18 +57,15 @@ public class ESClientAsyncWrapperTest {
         final SearchRequest searchRequest = new SearchRequest("crossref_light");
         searchRequest.searchType(SearchType.DFS_QUERY_THEN_FETCH);
         searchRequest.source(builder);
-        
-//        final SearchRequest fakeSearchRequest = new SearchRequest("crossref_light")
-//                .;
-////        expect(mockEsClient.search(EasyMock.anyObject(), RequestOptions.DEFAULT)).andReturn(new SearchResponse());
-////        replay(mockEsClient);
 
-        final CompletableFuture<SearchResponse> searchResponseFuture = target.searchAsync(searchRequest, RequestOptions.DEFAULT);
+//        final SearchRequest fakeSearchRequest = new SearchRequest("crossref_light");
+//        expect(mockEsClient.search(EasyMock.anyObject(), RequestOptions.DEFAULT)).andReturn(new SearchResponse());
+//        replay(mockEsClient);
 
-        searchResponseFuture.thenAccept(searchResponse -> {
-//            callback.accept(searchResponse);
-        });
-        
+        final CompletableFuture<SearchResponse> searchResponseCompletableFuture = target.searchAsync(searchRequest, RequestOptions.DEFAULT,
+                searchResponse -> System.out.println(searchRequest.toString()));
+
+        System.out.println(searchResponseCompletableFuture.get());
 
 
 //        verify(mockEsClient);

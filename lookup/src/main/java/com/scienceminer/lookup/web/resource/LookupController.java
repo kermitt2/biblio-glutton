@@ -12,13 +12,16 @@ import com.scienceminer.lookup.storage.StorageEnvFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.CompletionCallback;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.container.TimeoutHandler;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 
@@ -60,7 +63,7 @@ public class LookupController {
             @QueryParam("firstPage") String firstPage,
             @QueryParam("biblio") String biblio,
             @Suspended final AsyncResponse asyncResponse) {
-        
+
         asyncResponse.setTimeoutHandler(asyncResponse1 ->
                 asyncResponse1.resume(Response.status(Response.Status.SERVICE_UNAVAILABLE)
                         .entity("Operation time out.")
@@ -69,58 +72,73 @@ public class LookupController {
         );
         asyncResponse.setTimeout(60, TimeUnit.SECONDS);
 
+        asyncResponse.register((CompletionCallback) throwable -> {
+            if (throwable != null) {
+                //Something happened with the client...
+//                lastException = throwable;
+            }
+        });
+
+
         new Thread(() -> {
-            String result = getByQuery(doi, pmid, pmc, istexid, firstAuthor, atitle,
-                    postValidate, jtitle, volume, firstPage, biblio);
-            asyncResponse.resume(result);
+            getByQuery(doi, pmid, pmc, istexid, firstAuthor, atitle,
+                    postValidate, jtitle, volume, firstPage, biblio, asyncResponse);
         }).start();
     }
 
-
-    private String getByQuery(
-            @QueryParam("doi") String doi,
-            @QueryParam("pmid") String pmid,
-            @QueryParam("pmc") String pmc,
-            @QueryParam("istexid") String istexid,
-            @QueryParam("firstAuthor") String firstAuthor,
-            @QueryParam("atitle") String atitle,
-            @QueryParam("postValidate") Boolean postValidate,
-            @QueryParam("jtitle") String jtitle,
-            @QueryParam("volume") String volume,
-            @QueryParam("firstPage") String firstPage,
-            @QueryParam("biblio") String biblio
+    private void getByQuery(
+            String doi,
+            String pmid,
+            String pmc,
+            String istexid,
+            String firstAuthor,
+            String atitle,
+            Boolean postValidate,
+            String jtitle,
+            String volume,
+            String firstPage,
+            String biblio,
+            AsyncResponse asyncResponse
     ) {
 
         if (isNotBlank(doi)) {
-            return storage.retrieveByDoi(doi);
+            asyncResponse.resume(storage.retrieveByDoi(doi));
+            return;
         }
 
         if (isNotBlank(pmid)) {
-            return storage.retrieveByPmid(pmid);
+            asyncResponse.resume(storage.retrieveByPmid(pmid));
+            return;
         }
 
         if (isNotBlank(pmc)) {
-            return storage.retrieveByPmid(pmc);
+            asyncResponse.resume(storage.retrieveByPmid(pmc));
+            return;
         }
 
         if (isNotBlank(istexid)) {
-            return storage.retrieveByIstexid(istexid);
+            asyncResponse.resume(storage.retrieveByIstexid(istexid));
+            return;
         }
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
-            return storage.retrieveByArticleMetadata(atitle, firstAuthor, postValidate);
+            asyncResponse.resume(storage.retrieveByArticleMetadata(atitle, firstAuthor, postValidate));
+            return;
         }
 
         if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            return storage.retrieveByJournalMetadata(jtitle, volume, firstPage);
+            asyncResponse.resume(storage.retrieveByJournalMetadata(jtitle, volume, firstPage));
+            return;
         }
 
         if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            return storage.retrieveByJournalMetadata(jtitle, volume, firstPage, firstAuthor);
+            asyncResponse.resume(storage.retrieveByJournalMetadata(jtitle, volume, firstPage, firstAuthor));
+            return;
         }
 
         if (isNotBlank(biblio)) {
-            return storage.retrieveByBiblio(biblio);
+            storage.retrieveByBiblioAsync(biblio, asyncResponse::resume);
+            return;
         }
 
         throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
@@ -153,7 +171,7 @@ public class LookupController {
     public String getByIstexid(@PathParam("istexid") String istexid) {
         return storage.retrieveByIstexid(istexid);
     }
-    
+
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.TEXT_PLAIN)

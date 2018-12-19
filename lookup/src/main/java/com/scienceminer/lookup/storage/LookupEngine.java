@@ -10,6 +10,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import scala.Option;
 
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -144,6 +145,12 @@ public class LookupEngine {
     public String retrieveByBiblio(String biblio) {
         final MatchingDocument outputData = metadataMatching.retrieveByBiblio(biblio);
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
+    }
+
+    public void retrieveByBiblioAsync(String biblio, Consumer<String> callback) {
+        final MatchingDocument outputData = metadataMatching.retrieveByBiblio(biblio);
+        final String s = injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
+        callback.accept(s);
     }
 
     protected void setOaDoiLookup(OALookup oaDoiLookup) {
