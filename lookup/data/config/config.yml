@@ -11,6 +11,7 @@ ignoreCrossRefFields:
 # Loading batch size
 batchSize: 10000
 
+# when set to -1 it's using the number of processors available to the machine
 maxAcceptedRequests: 2048
 
 elastic:

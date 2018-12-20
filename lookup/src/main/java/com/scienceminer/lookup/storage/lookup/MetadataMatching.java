@@ -23,6 +23,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -63,7 +64,8 @@ public class MetadataMatching {
                                         .setSocketTimeout(60000))
                         .setMaxRetryTimeoutMillis(120000));
 
-        this.esClient = new ESClientWrapper(esClient, configuration.getMaxAcceptedRequests());
+        final int poolSize = configuration.getMaxAcceptedRequests() < 1 ? Runtime.getRuntime().availableProcessors() : configuration.getMaxAcceptedRequests();
+        this.esClient = new ESClientWrapper(esClient, poolSize);
 
         this.metadataLookup = metadataLookup;
 
@@ -97,7 +99,7 @@ public class MetadataMatching {
     }
 
     public void retrieveByMetadataAsync(String title, String firstAuthor,
-                                                    Consumer<MatchingDocument> callback) {
+                                        Consumer<MatchingDocument> callback) {
         validateInput(title, firstAuthor);
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
@@ -120,15 +122,15 @@ public class MetadataMatching {
                                                String firstPage) {
 
         validateInput(title, volume, firstPage);
-        
+
         BoolQueryBuilder query = getQueryBuilderJournal(title, volume, firstPage);
 
         return executeQuery(query);
     }
 
     public void retrieveByMetadataAsync(String title, String volume,
-                                                    String firstPage,
-                                                    Consumer<MatchingDocument> callback) {
+                                        String firstPage,
+                                        Consumer<MatchingDocument> callback) {
 
         validateInput(title, volume, firstPage);
 
