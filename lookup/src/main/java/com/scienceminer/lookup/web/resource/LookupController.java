@@ -120,17 +120,18 @@ public class LookupController {
         }
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
-            asyncResponse.resume(storage.retrieveByArticleMetadata(atitle, firstAuthor, postValidate));
+            storage.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, asyncResponse::resume);
             return;
         }
 
         if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            asyncResponse.resume(storage.retrieveByJournalMetadata(jtitle, volume, firstPage));
+            storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, asyncResponse::resume);
             return;
         }
 
         if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            asyncResponse.resume(storage.retrieveByJournalMetadata(jtitle, volume, firstPage, firstAuthor));
+            storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, firstAuthor,
+                    asyncResponse::resume);
             return;
         }
 

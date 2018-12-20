@@ -20,13 +20,14 @@ public class ESClientWrapper {
     private final ExecutorService executorService;
     private RestHighLevelClient esClient;
 
-    final AtomicInteger counter = new AtomicInteger(200);
+    final AtomicInteger counter;
 
     public ESClientWrapper(RestHighLevelClient esClient, int poolSize) {
         this.esClient = esClient;
+        this.counter = new AtomicInteger(poolSize);
         this.executorService = new ThreadPoolExecutor(poolSize, poolSize,
                 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(200), (r, executor) -> {
+                new LinkedBlockingQueue<>(poolSize), (r, executor) -> {
             throw new ServiceException(503, "Rejected request, try later");
         });
 

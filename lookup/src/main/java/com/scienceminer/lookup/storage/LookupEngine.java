@@ -48,14 +48,43 @@ public class LookupEngine {
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
     }
 
+    public void retrieveByArticleMetadataAsync(String title, String firstAuthor, Boolean postValidate, Consumer<String> callback) {
+        metadataMatching.retrieveByMetadataAsync(title, firstAuthor, matchingDocument -> {
+            if (postValidate != null && postValidate) {
+                if (!areMetadataMatching(title, firstAuthor, matchingDocument)) {
+                    throw new NotFoundException("Article found but it didn't passed the post Validation.");
+                }
+            }
+
+            final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
+            callback.accept(s);
+        });
+    }
+
+
     public String retrieveByJournalMetadata(String title, String volume, String firstPage) {
         MatchingDocument outputData = metadataMatching.retrieveByMetadata(title, volume, firstPage);
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
     }
 
+    public void retrieveByJournalMetadataAsync(String title, String volume, String firstPage, Consumer<String> callback) {
+        metadataMatching.retrieveByMetadataAsync(title, volume, firstPage, matchingDocument -> {
+            final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
+            callback.accept(s);
+        });
+    }
+
     public String retrieveByJournalMetadata(String title, String volume, String firstPage, String firstAuthor) {
         MatchingDocument outputData = metadataMatching.retrieveByMetadata(title, volume, firstPage, firstAuthor);
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
+    }
+
+    public void retrieveByJournalMetadataAsync(String title, String volume, String firstPage, String firstAuthor,
+                                               Consumer<String> callback) {
+        metadataMatching.retrieveByMetadataAsync(title, volume, firstPage, firstAuthor, matchingDocument -> {
+            final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
+            callback.accept(s);
+        });
     }
 
     public String retrieveByDoi(String doi) {
@@ -85,7 +114,6 @@ public class LookupEngine {
 
     public String retrieveByIstexid(String istexid) {
         final IstexData istexData = istexLookup.retrieveByIstexId(istexid);
-
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi()) && isNotBlank(istexData.getDoi().get(0))) {
             final String doi = istexData.getDoi().get(0);
@@ -261,7 +289,7 @@ public class LookupEngine {
 
         if (istexData != null) {
             if (isNotBlank(istexData.getIstexId())) {
-                if(!first) {
+                if (!first) {
                     sb.append(", ");
                 } else {
                     first = false;
@@ -270,7 +298,7 @@ public class LookupEngine {
                 foundIstexData = true;
             }
             if (CollectionUtils.isNotEmpty(istexData.getArk())) {
-                if(!first) {
+                if (!first) {
                     sb.append(", ");
                 } else {
                     first = false;
@@ -279,7 +307,7 @@ public class LookupEngine {
                 foundIstexData = true;
             }
             if (CollectionUtils.isNotEmpty(istexData.getPmid())) {
-                if(!first) {
+                if (!first) {
                     sb.append(", ");
                 } else {
                     first = false;
@@ -289,7 +317,7 @@ public class LookupEngine {
                 foundIstexData = true;
             }
             if (CollectionUtils.isNotEmpty(istexData.getPmc())) {
-                if(!first) {
+                if (!first) {
                     sb.append(", ");
                 } else {
                     first = false;
@@ -299,7 +327,7 @@ public class LookupEngine {
                 foundIstexData = true;
             }
             if (CollectionUtils.isNotEmpty(istexData.getMesh())) {
-                if(!first) {
+                if (!first) {
                     sb.append(", ");
                 }
                 sb.append("\"mesh\":\"" + istexData.getMesh().get(0) + "\"");
@@ -311,7 +339,7 @@ public class LookupEngine {
             final PmidData pmidData = pmidLookup.retrieveIdsByDoi(doi);
             if (pmidData != null) {
                 if (isNotBlank(pmidData.getPmid()) && !pmid) {
-                    if(!first) {
+                    if (!first) {
                         sb.append(", ");
                     } else {
                         first = false;
@@ -321,7 +349,7 @@ public class LookupEngine {
                 }
 
                 if (isNotBlank(pmidData.getPmcid()) && !pmc) {
-                    if(!first) {
+                    if (!first) {
                         sb.append(", ");
                     } else {
                         first = false;

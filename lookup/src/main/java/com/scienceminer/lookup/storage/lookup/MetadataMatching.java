@@ -71,28 +71,25 @@ public class MetadataMatching {
 
     }
 
-    public void getSize() {
-        Map<String, Long> sizes = new HashMap<>();
-        sizes.put("elasticsearch", 0L);
-
+    public long getSize() {
         try {
             SearchRequest searchRequest = new SearchRequest(configuration.getElastic().getIndex());
 
             SearchResponse response = esClient.searchSync(searchRequest, RequestOptions.DEFAULT);
-            sizes.put("elasticsearch", response.getHits().getTotalHits());
+            return response.getHits().getTotalHits();
         } catch (IOException e) {
             LOGGER.error("Error while contacting Elasticsearch to fetch the size of "
                     + configuration.getElastic().getIndex() + " index.", e);
         }
+
+        return 0L;
     }
 
     /**
      * Lookup by title, firstAuthor
      **/
     public MatchingDocument retrieveByMetadata(String title, String firstAuthor) {
-        if (isBlank(title) || isBlank(firstAuthor)) {
-            throw new ServiceException(400, "Supplied title or firstAuthor are null.");
-        }
+        validateInput(title, firstAuthor);
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_TITLE, title))
@@ -101,26 +98,64 @@ public class MetadataMatching {
         return executeQuery(query);
     }
 
+    public void retrieveByMetadataAsync(String title, String firstAuthor,
+                                                    Consumer<MatchingDocument> callback) {
+        validateInput(title, firstAuthor);
+
+        final BoolQueryBuilder query = QueryBuilders.boolQuery()
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_TITLE, title))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
+
+        executeQueryAsync(query, callback);
+    }
+
+    private void validateInput(String title, String firstAuthor) {
+        if (isBlank(title) || isBlank(firstAuthor)) {
+            throw new ServiceException(400, "Supplied title or firstAuthor are null.");
+        }
+    }
+
     /**
      * Lookup by journal title, journal abbreviated title, volume, first page
      **/
     public MatchingDocument retrieveByMetadata(String title, String volume,
                                                String firstPage) {
 
+        validateInput(title, volume, firstPage);
+        
+        BoolQueryBuilder query = getQueryBuilderJournal(title, volume, firstPage);
+
+        return executeQuery(query);
+    }
+
+    public void retrieveByMetadataAsync(String title, String volume,
+                                                    String firstPage,
+                                                    Consumer<MatchingDocument> callback) {
+
+        validateInput(title, volume, firstPage);
+
+        BoolQueryBuilder query = getQueryBuilderJournal(title, volume, firstPage);
+
+        executeQueryAsync(query, callback);
+    }
+
+    private BoolQueryBuilder getQueryBuilderJournal(String title, String volume, String firstPage) {
+
+        return QueryBuilders.boolQuery()
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
+                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
+                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
+    }
+
+    private void validateInput(String title, String volume, String firstPage) {
         if (isBlank(title)
                 || isBlank(volume)
                 || isBlank(firstPage)) {
             throw new ServiceException(400, "Supplied journalTitle or abbr journal title or volume, or first page are null.");
         }
-
-        final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
-
-        return executeQuery(query);
     }
+
 
     /**
      * Lookup by journal title, journal abbreviated title, volume, first page
@@ -128,20 +163,40 @@ public class MetadataMatching {
     public MatchingDocument retrieveByMetadata(String title, String volume,
                                                String firstPage, String firstAuthor) {
 
+        validateInput(title, volume, firstPage, firstAuthor);
+
+        final BoolQueryBuilder query = getQueryBuilderJournal(title, volume, firstPage, firstAuthor);
+
+        return executeQuery(query);
+    }
+
+    private void validateInput(String title, String volume, String firstPage, String firstAuthor) {
         if (isBlank(title)
                 || isBlank(volume)
-                || isBlank(firstPage)) {
+                || isBlank(firstPage)
+                || isBlank(firstAuthor)) {
             throw new ServiceException(400, "Supplied journalTitle or abbr journal title or volume, or first page are null.");
         }
+    }
 
-        final BoolQueryBuilder query = QueryBuilders.boolQuery()
+    public void retrieveByMetadataAsync(String title, String volume,
+                                        String firstPage, String firstAuthor,
+                                        Consumer<MatchingDocument> callback) {
+
+        validateInput(title, volume, firstPage, firstAuthor);
+
+        final BoolQueryBuilder query = getQueryBuilderJournal(title, volume, firstPage, firstAuthor);
+
+        executeQueryAsync(query, callback);
+    }
+
+    private BoolQueryBuilder getQueryBuilderJournal(String title, String volume, String firstPage, String firstAuthor) {
+        return QueryBuilders.boolQuery()
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage))
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
-
-        return executeQuery(query);
     }
 
     public MatchingDocument retrieveByBiblio(String biblio) {
