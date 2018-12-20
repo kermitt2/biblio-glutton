@@ -46,14 +46,14 @@ public class ESClientWrapper {
             @Override
             public void onResponse(SearchResponse searchResponse) {
                 final int i = counter.incrementAndGet();
-                LOGGER.info("Got a response, freeing a spot: " + i);
+                LOGGER.debug("Got a response, freeing a spot: " + i);
                 callback.accept(searchResponse);
             }
 
             @Override
             public void onFailure(Exception e) {
                 final int i = counter.incrementAndGet();
-                LOGGER.info("Got an error, freeing a spot: " + i);
+                LOGGER.debug("Got an error, freeing a spot: " + i);
                 throw new ServiceException(503, "The request fail. Try again.", e);
             }
         };
@@ -62,7 +62,7 @@ public class ESClientWrapper {
                 throw new ServiceException(503, "Cannot get more requests");
             }
             final int i = counter.decrementAndGet();
-            LOGGER.info("Ready to call, occupying a spot: " + i);
+            LOGGER.debug("Ready to call, occupying a spot: " + i);
         }
         
         final CompletableFuture<Void> searchResponseCompletableFuture = CompletableFuture
