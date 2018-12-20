@@ -71,7 +71,7 @@ public class LookupController {
                 )
         );
         asyncResponse.setTimeout(60, TimeUnit.SECONDS);
-
+        
         asyncResponse.register((CompletionCallback) throwable -> {
             if (throwable != null) {
                 //Something happened with the client...
@@ -80,10 +80,8 @@ public class LookupController {
         });
 
 
-        new Thread(() -> {
-            getByQuery(doi, pmid, pmc, istexid, firstAuthor, atitle,
-                    postValidate, jtitle, volume, firstPage, biblio, asyncResponse);
-        }).start();
+        getByQuery(doi, pmid, pmc, istexid, firstAuthor, atitle,
+                postValidate, jtitle, volume, firstPage, biblio, asyncResponse);
     }
 
     private void getByQuery(

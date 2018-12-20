@@ -148,9 +148,12 @@ public class LookupEngine {
     }
 
     public void retrieveByBiblioAsync(String biblio, Consumer<String> callback) {
-        final MatchingDocument outputData = metadataMatching.retrieveByBiblio(biblio);
-        final String s = injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
-        callback.accept(s);
+        metadataMatching.retrieveByBiblioAsync(biblio, matchingDocument -> {
+            final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
+            callback.accept(s);
+        });
+
+
     }
 
     protected void setOaDoiLookup(OALookup oaDoiLookup) {

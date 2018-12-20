@@ -40,7 +40,7 @@ public class ESClientAsyncWrapperTest {
                                         .setSocketTimeout(60000))
                         .setMaxRetryTimeoutMillis(120000));
 
-        target = new ESClientWrapper(esClient, 2);
+        target = new ESClientWrapper(esClient, 2048);
     }
 
     @Test
@@ -62,10 +62,10 @@ public class ESClientAsyncWrapperTest {
 //        expect(mockEsClient.search(EasyMock.anyObject(), RequestOptions.DEFAULT)).andReturn(new SearchResponse());
 //        replay(mockEsClient);
 
-        final CompletableFuture<SearchResponse> searchResponseCompletableFuture = target.searchAsync(searchRequest, RequestOptions.DEFAULT,
-                searchResponse -> System.out.println(searchRequest.toString()));
+//        final CompletableFuture<SearchResponse> searchResponseCompletableFuture = target.searchAsync(searchRequest, RequestOptions.DEFAULT,
+//                searchResponse -> System.out.println(searchRequest.toString()));
 
-        System.out.println(searchResponseCompletableFuture.get());
+//        System.out.println(searchResponseCompletableFuture.get());
 
 
 //        verify(mockEsClient);

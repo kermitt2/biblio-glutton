@@ -65,7 +65,7 @@ public class MetadataMatching {
                                         .setSocketTimeout(60000))
                         .setMaxRetryTimeoutMillis(120000));
 
-        this.esClient = new ESClientWrapper(esClient, 2000);
+        this.esClient = new ESClientWrapper(esClient, 2);
 
         this.metadataLookup = metadataLookup;
 
@@ -161,7 +161,8 @@ public class MetadataMatching {
 
         final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
 
-        callback.accept(executeQuery(query));
+
+        executeQueryAsync(query, callback);
     }
 
     private MatchingDocument executeQuery(QueryBuilder query) {
@@ -182,24 +183,6 @@ public class MetadataMatching {
         SearchRequest searchRequest = prepareQueryExecution(query);
 
         esClient.searchAsync(searchRequest, RequestOptions.DEFAULT, response -> callback.accept(processResponse(response)));
-
-        /*final MatchingDocument matchingDocument = new MatchingDocument();
-
-        final ActionListener<SearchResponse> listener = new ActionListener<SearchResponse>() {
-            @Override
-            public void onResponse(SearchResponse searchResponse) {
-                final MatchingDocument matchingDocument1 = processResponse(searchResponse);
-                matchingDocument.fillFromMatchindDocument(matchingDocument1);
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                throw new ServiceException(503, "Elasticsearch server error. ", e);
-            }
-        };
-*/
-//        new Thread(() -> esClient.searchAsync(searchRequest, RequestOptions.DEFAULT, listener));
-//        return matchingDocument;
     }
 
     private SearchRequest prepareQueryExecution(QueryBuilder query) {

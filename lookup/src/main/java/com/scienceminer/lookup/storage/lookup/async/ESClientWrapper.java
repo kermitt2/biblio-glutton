@@ -1,25 +1,35 @@
 package com.scienceminer.lookup.storage.lookup.async;
 
 import com.scienceminer.lookup.exception.ServiceException;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class ESClientWrapper {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ESClientWrapper.class);
 
     private final ExecutorService executorService;
     private RestHighLevelClient esClient;
 
+    final AtomicInteger counter = new AtomicInteger(200);
+
     public ESClientWrapper(RestHighLevelClient esClient, int poolSize) {
         this.esClient = esClient;
-        this.executorService = Executors.newFixedThreadPool(poolSize);
+        this.executorService = new ThreadPoolExecutor(poolSize, poolSize,
+                0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(200), (r, executor) -> {
+            throw new ServiceException(503, "Rejected request, try later");
+        });
+
     }
 
     public SearchResponse searchSync(final SearchRequest request, final RequestOptions options) throws IOException {
@@ -27,19 +37,40 @@ public class ESClientWrapper {
     }
 
 
-    public CompletableFuture<SearchResponse> searchAsync(final SearchRequest request, final RequestOptions options, Consumer<SearchResponse> callback) {
+    public CompletableFuture<Void> searchAsync(final SearchRequest request, final RequestOptions options,
+                                               Consumer<SearchResponse> callback) {
 
-        final CompletableFuture<SearchResponse> searchResponseCompletableFuture = CompletableFuture
-                .supplyAsync(() -> {
-                    try {
-                        return esClient.search(request, options);
-                    } catch (IOException e) {
-                        throw new ServiceException(503, "Error when calling ElasticSearch");
-                    }
-                }, executorService);
+        ActionListener<SearchResponse> listener = new ActionListener<SearchResponse>() {
 
-//        searchResponseCompletableFuture.completeExceptionally(new ServiceException(503, "Error when completing the task"));
-        searchResponseCompletableFuture.thenAccept(callback::accept);
+            @Override
+            public void onResponse(SearchResponse searchResponse) {
+                final int i = counter.incrementAndGet();
+                LOGGER.info("Got a response, freeing a spot: " + i);
+                callback.accept(searchResponse);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                final int i = counter.incrementAndGet();
+                LOGGER.info("Got an error, freeing a spot: " + i);
+                throw new ServiceException(503, "The request fail. Try again.", e);
+            }
+        };
+        synchronized (counter) {
+            if (counter.get() <= 0) {
+                throw new ServiceException(503, "Cannot get more requests");
+            }
+            final int i = counter.decrementAndGet();
+            LOGGER.info("Ready to call, occupying a spot: " + i);
+        }
+        
+        final CompletableFuture<Void> searchResponseCompletableFuture = CompletableFuture
+                .runAsync(() -> esClient.searchAsync(request, options, listener), executorService);
+
+        searchResponseCompletableFuture.exceptionally(throwable -> {
+            throw new ServiceException(503, "Error when completing the task", throwable);
+        });
+//        searchResponseCompletableFuture.thenAccept(callback::accept);
 
         return searchResponseCompletableFuture;
     }
