@@ -11,6 +11,8 @@ ignoreCrossRefFields:
 # Loading batch size
 batchSize: 10000
 
+maxAcceptedRequests: 2048
+
 elastic:
   host: localhost:9200
   index: crossref_light

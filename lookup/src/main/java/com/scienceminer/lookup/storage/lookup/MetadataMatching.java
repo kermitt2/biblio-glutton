@@ -24,10 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -65,7 +63,7 @@ public class MetadataMatching {
                                         .setSocketTimeout(60000))
                         .setMaxRetryTimeoutMillis(120000));
 
-        this.esClient = new ESClientWrapper(esClient, 2);
+        this.esClient = new ESClientWrapper(esClient, configuration.getMaxAcceptedRequests());
 
         this.metadataLookup = metadataLookup;
 

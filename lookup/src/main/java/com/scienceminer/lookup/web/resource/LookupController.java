@@ -70,14 +70,14 @@ public class LookupController {
                         .build()
                 )
         );
-        asyncResponse.setTimeout(60, TimeUnit.SECONDS);
+        asyncResponse.setTimeout(2, TimeUnit.MINUTES);
         
-        asyncResponse.register((CompletionCallback) throwable -> {
+        /*asyncResponse.register((CompletionCallback) throwable -> {
             if (throwable != null) {
                 //Something happened with the client...
 //                lastException = throwable;
             }
-        });
+        });*/
 
 
         getByQuery(doi, pmid, pmc, istexid, firstAuthor, atitle,
