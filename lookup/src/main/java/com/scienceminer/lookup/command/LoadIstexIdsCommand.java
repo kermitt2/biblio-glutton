@@ -2,24 +2,22 @@ package com.scienceminer.lookup.command;
 
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
-import io.dropwizard.cli.ConfiguredCommand;
-import io.dropwizard.setup.Bootstrap;
+import com.scienceminer.lookup.configuration.LookupConfiguration;
+import com.scienceminer.lookup.reader.IstexIdsReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.storage.lookup.IstexIdsLookup;
-import com.scienceminer.lookup.reader.IstexIdsReader;
+import io.dropwizard.cli.ConfiguredCommand;
+import io.dropwizard.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.scienceminer.lookup.configuration.LookupConfiguration;
 
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
-
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
  * This class is responsible for loading data for the istex mappings, in particular

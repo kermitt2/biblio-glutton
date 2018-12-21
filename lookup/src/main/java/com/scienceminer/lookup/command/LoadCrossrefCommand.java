@@ -4,9 +4,7 @@ import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.reader.CrossrefJsonReader;
-import com.scienceminer.lookup.reader.IstexIdsReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
-import com.scienceminer.lookup.storage.lookup.IstexIdsLookup;
 import com.scienceminer.lookup.storage.lookup.MetadataLookup;
 import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
@@ -20,7 +18,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.GZIPInputStream;
 
 /**
  * This class is responsible for loading the crossref dump in lmdb

@@ -1,7 +1,5 @@
 package com.scienceminer.lookup.web.module;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.scienceminer.lookup.exception.ServiceException;
 
 import javax.ws.rs.core.MediaType;
@@ -16,10 +14,6 @@ public class ServiceExceptionMapper implements ExceptionMapper<ServiceException>
     @Override
     public Response toResponse(ServiceException exception) {
 
-//        ObjectMapper mapper = new ObjectMapper();
-//        ObjectNode root = mapper.createObjectNode();
-//        root.put("message", exception.getMessage());
-//        root.put("code", exception.getStatusCode());
         final HashMap<String, String> responseBody = new HashMap<>();
         responseBody.put("message", exception.getMessage());
         responseBody.put("code", String.valueOf(exception.getStatusCode()));

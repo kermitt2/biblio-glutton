@@ -2,8 +2,8 @@ package com.scienceminer.lookup.storage.lookup;
 
 import com.codahale.metrics.Meter;
 import com.scienceminer.lookup.reader.UnpayWallReader;
-import com.scienceminer.lookup.utils.BinarySerialiser;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
+import com.scienceminer.lookup.utils.BinarySerialiser;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.lmdbjava.*;

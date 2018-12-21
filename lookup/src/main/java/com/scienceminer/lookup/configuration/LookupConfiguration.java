@@ -1,7 +1,8 @@
 package com.scienceminer.lookup.configuration;
 
 import io.dropwizard.Configuration;
-import java.util.*;
+
+import java.util.List;
 
 public class LookupConfiguration extends Configuration {
 
