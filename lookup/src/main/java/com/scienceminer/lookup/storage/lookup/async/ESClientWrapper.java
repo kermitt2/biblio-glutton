@@ -54,12 +54,12 @@ public class ESClientWrapper {
             public void onFailure(Exception e) {
                 final int i = counter.incrementAndGet();
                 LOGGER.debug("Got an error, freeing a spot: " + i);
-                throw new ServiceException(503, "The request fail. Try again.", e);
+                throw new ServiceException(500, "Elasticsearch request failed.", e);
             }
         };
         synchronized (counter) {
             if (counter.get() <= 0) {
-                throw new ServiceException(503, "Cannot get more requests");
+                throw new ServiceException(503, "Cannot get more requests. Retry the request later.");
             }
             final int i = counter.decrementAndGet();
             LOGGER.debug("Ready to call, occupying a spot: " + i);
@@ -69,7 +69,7 @@ public class ESClientWrapper {
                 .runAsync(() -> esClient.searchAsync(request, options, listener), executorService);
 
         searchResponseCompletableFuture.exceptionally(throwable -> {
-            throw new ServiceException(503, "Error when completing the task", throwable);
+            throw new ServiceException(500, "Error when completing the task", throwable);
         });
 //        searchResponseCompletableFuture.thenAccept(callback::accept);
 

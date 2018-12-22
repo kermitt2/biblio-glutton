@@ -226,9 +226,9 @@ public class MetadataMatching {
             return processResponse(esClient.searchSync(request, RequestOptions.DEFAULT));
 
         } catch (IOException e) {
-            throw new ServiceException(503, "No response from Elasticsearch. ", e);
+            throw new ServiceException(500, "No response from Elasticsearch. ", e);
         } catch (Exception e) {
-            throw new ServiceException(503, "Elasticsearch server error. ", e);
+            throw new ServiceException(500, "Elasticsearch server error. ", e);
         }
     }
 
