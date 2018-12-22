@@ -1,6 +1,6 @@
-#storage: data/db
+storage: data/db
 #storage: /Volumes/SEAGATE1TB/scienceminer/glutter/lmdb
-storage: /Volumes/Lacie/workspace/crossref/lmdb
+#storage: /Volumes/Lacie/workspace/crossref/lmdb
 #storage: /media/lopez/T5/data/db
 version: version_placeholder
 ignoreCrossRefFields: 
@@ -16,7 +16,7 @@ maxAcceptedRequests: 2048
 
 elastic:
   host: localhost:9200
-  index: crossref_light
+  index: crossref
   type: work
 
 server:

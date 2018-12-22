@@ -59,7 +59,7 @@ public class LookupController {
             @Suspended final AsyncResponse asyncResponse) {
 
         asyncResponse.setTimeoutHandler(asyncResponse1 ->
-                asyncResponse1.resume(Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                asyncResponse1.resume(Response.status(Response.Status.REQUEST_TIMEOUT)
                         .entity("Operation time out.")
                         .build()
                 )
