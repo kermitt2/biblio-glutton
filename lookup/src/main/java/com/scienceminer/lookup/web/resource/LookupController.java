@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
+import com.scienceminer.lookup.data.MatchingDocument;
 import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.LookupEngine;
@@ -120,22 +121,14 @@ public class LookupController {
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
             storage.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, matchingDocument -> {
-                if (matchingDocument.isException()) {
-                    asyncResponse.resume(matchingDocument.getException());
-                } else {
-                    asyncResponse.resume(matchingDocument.getFinalJsonObject());
-                }
+                dispatchResponseOrException(asyncResponse, matchingDocument);
             });
             return;
         }
 
         if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
             storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, matchingDocument -> {
-                if (matchingDocument.isException()) {
-                    asyncResponse.resume(matchingDocument.getException());
-                } else {
-                    asyncResponse.resume(matchingDocument.getFinalJsonObject());
-                }
+                dispatchResponseOrException(asyncResponse, matchingDocument);
             });
             return;
         }
@@ -143,22 +136,14 @@ public class LookupController {
         if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
             storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, firstAuthor,
                     matchingDocument -> {
-                        if (matchingDocument.isException()) {
-                            asyncResponse.resume(matchingDocument.getException());
-                        } else {
-                            asyncResponse.resume(matchingDocument.getFinalJsonObject());
-                        }
+                        dispatchResponseOrException(asyncResponse, matchingDocument);
                     });
             return;
         }
 
         if (isNotBlank(biblio)) {
             storage.retrieveByBiblioAsync(biblio, matchingDocument -> {
-                if (matchingDocument.isException()) {
-                    asyncResponse.resume(matchingDocument.getException());
-                } else {
-                    asyncResponse.resume(matchingDocument.getFinalJsonObject());
-                }
+                dispatchResponseOrException(asyncResponse, matchingDocument);
             });
             return;
         }
@@ -166,6 +151,21 @@ public class LookupController {
         throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
     }
 
+    /**
+     * Dispatches the response or the exception according to the information contained in the matching document
+     * object. 
+     */
+    private void dispatchResponseOrException(AsyncResponse asyncResponse, MatchingDocument matchingDocument) {
+        if (matchingDocument.isException()) {
+            asyncResponse.resume(matchingDocument.getException());
+        } else {
+            asyncResponse.resume(matchingDocument.getFinalJsonObject());
+        }
+    }
+
+    /**
+     * Dispatch the response or throw a NotFoundException if the response is empty or blank
+     */
     private void dispatchEmptyResponse(AsyncResponse asyncResponse, String response) {
         if (isBlank(response)) {
             asyncResponse.resume(new NotFoundException("Cannot find records or mapping Ids for the input query."));
