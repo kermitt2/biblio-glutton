@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
+import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.LookupEngine;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
@@ -65,7 +66,7 @@ public class LookupController {
                 )
         );
         asyncResponse.setTimeout(2, TimeUnit.MINUTES);
-        
+
         asyncResponse.register((CompletionCallback) throwable -> {
             if (throwable != null) {
                 //Something happened with the client...
@@ -114,23 +115,47 @@ public class LookupController {
         }
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
-            storage.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, asyncResponse::resume);
+            storage.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, matchingDocument -> {
+                if (matchingDocument.isException()) {
+                    asyncResponse.resume(matchingDocument.getException());
+                } else {
+                    asyncResponse.resume(matchingDocument.getFinalJsonObject());
+                }
+            });
             return;
         }
 
         if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, asyncResponse::resume);
+            storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, matchingDocument -> {
+                if (matchingDocument.isException()) {
+                    asyncResponse.resume(matchingDocument.getException());
+                } else {
+                    asyncResponse.resume(matchingDocument.getFinalJsonObject());
+                }
+            });
             return;
         }
 
         if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
             storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, firstAuthor,
-                    asyncResponse::resume);
+                    matchingDocument -> {
+                        if (matchingDocument.isException()) {
+                            asyncResponse.resume(matchingDocument.getException());
+                        } else {
+                            asyncResponse.resume(matchingDocument.getFinalJsonObject());
+                        }
+                    });
             return;
         }
 
         if (isNotBlank(biblio)) {
-            storage.retrieveByBiblioAsync(biblio, asyncResponse::resume);
+            storage.retrieveByBiblioAsync(biblio, matchingDocument -> {
+                if (matchingDocument.isException()) {
+                    asyncResponse.resume(matchingDocument.getException());
+                } else {
+                    asyncResponse.resume(matchingDocument.getFinalJsonObject());
+                }
+            });
             return;
         }
 

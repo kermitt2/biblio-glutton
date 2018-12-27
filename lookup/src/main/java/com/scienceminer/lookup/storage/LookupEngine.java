@@ -48,16 +48,20 @@ public class LookupEngine {
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
     }
 
-    public void retrieveByArticleMetadataAsync(String title, String firstAuthor, Boolean postValidate, Consumer<String> callback) {
+    public void retrieveByArticleMetadataAsync(String title, String firstAuthor, Boolean postValidate, Consumer<MatchingDocument> callback) {
         metadataMatching.retrieveByMetadataAsync(title, firstAuthor, matchingDocument -> {
             if (postValidate != null && postValidate) {
                 if (!areMetadataMatching(title, firstAuthor, matchingDocument)) {
-                    throw new NotFoundException("Article found but it didn't passed the post Validation.");
+                    callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the post Validation.")));
+                    return;
                 }
             }
 
-            final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
-            callback.accept(s);
+            if(!matchingDocument.isException()) {
+                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
+                matchingDocument.setFinalJsonObject(s);
+            }
+            callback.accept(matchingDocument);
         });
     }
 
@@ -67,10 +71,13 @@ public class LookupEngine {
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
     }
 
-    public void retrieveByJournalMetadataAsync(String title, String volume, String firstPage, Consumer<String> callback) {
+    public void retrieveByJournalMetadataAsync(String title, String volume, String firstPage, Consumer<MatchingDocument> callback) {
         metadataMatching.retrieveByMetadataAsync(title, volume, firstPage, matchingDocument -> {
-            final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
-            callback.accept(s);
+            if(!matchingDocument.isException()) {
+                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
+                matchingDocument.setFinalJsonObject(s);
+            }
+            callback.accept(matchingDocument);
         });
     }
 
@@ -80,10 +87,13 @@ public class LookupEngine {
     }
 
     public void retrieveByJournalMetadataAsync(String title, String volume, String firstPage, String firstAuthor,
-                                               Consumer<String> callback) {
+                                               Consumer<MatchingDocument> callback) {
         metadataMatching.retrieveByMetadataAsync(title, volume, firstPage, firstAuthor, matchingDocument -> {
-            final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
-            callback.accept(s);
+            if(!matchingDocument.isException()) {
+                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
+                matchingDocument.setFinalJsonObject(s);
+            }
+            callback.accept(matchingDocument);
         });
     }
 
@@ -175,13 +185,14 @@ public class LookupEngine {
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
     }
 
-    public void retrieveByBiblioAsync(String biblio, Consumer<String> callback) {
+    public void retrieveByBiblioAsync(String biblio, Consumer<MatchingDocument> callback) {
         metadataMatching.retrieveByBiblioAsync(biblio, matchingDocument -> {
-            final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
-            callback.accept(s);
+            if (!matchingDocument.isException()) {
+                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
+                matchingDocument.setFinalJsonObject(s);
+            }
+            callback.accept(matchingDocument);
         });
-
-
     }
 
     protected void setOaDoiLookup(OALookup oaDoiLookup) {

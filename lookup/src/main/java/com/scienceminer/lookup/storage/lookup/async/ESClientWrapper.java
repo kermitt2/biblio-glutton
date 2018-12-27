@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 public class ESClientWrapper {
     private static final Logger LOGGER = LoggerFactory.getLogger(ESClientWrapper.class);
@@ -39,22 +39,22 @@ public class ESClientWrapper {
 
 
     public CompletableFuture<Void> searchAsync(final SearchRequest request, final RequestOptions options,
-                                               Consumer<SearchResponse> callback) {
+                                               BiConsumer<SearchResponse, Throwable> callback) {
 
         ActionListener<SearchResponse> listener = new ActionListener<SearchResponse>() {
 
             @Override
             public void onResponse(SearchResponse searchResponse) {
-                final int i = counter.incrementAndGet();
-                LOGGER.debug("Got a response, freeing a spot: " + i);
-                callback.accept(searchResponse);
+                    final int i = counter.incrementAndGet();
+                    LOGGER.debug("Got a response, freeing a spot: " + i);
+                    callback.accept(searchResponse, null);
             }
 
             @Override
             public void onFailure(Exception e) {
                 final int i = counter.incrementAndGet();
                 LOGGER.debug("Got an error, freeing a spot: " + i);
-                throw new ServiceException(500, "Elasticsearch request failed.", e);
+                callback.accept(null, e);
             }
         };
         synchronized (counter) {

@@ -10,9 +10,7 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.*;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -235,8 +233,17 @@ public class MetadataMatching {
 
     private void executeQueryAsync(QueryBuilder query, Consumer<MatchingDocument> callback) {
         SearchRequest searchRequest = prepareQueryExecution(query);
-
-        esClient.searchAsync(searchRequest, RequestOptions.DEFAULT, response -> callback.accept(processResponse(response)));
+        try {
+            esClient.searchAsync(searchRequest, RequestOptions.DEFAULT, (response, exception) -> {
+                if(exception == null) {
+                    callback.accept(processResponse(response));
+                } else {
+                    callback.accept(new MatchingDocument(exception));
+                }
+            });
+        } catch (Exception e) {
+            callback.accept(new MatchingDocument(e));
+        }
     }
 
     private SearchRequest prepareQueryExecution(QueryBuilder query) {
@@ -265,6 +272,7 @@ public class MetadataMatching {
     private MatchingDocument processResponse(SearchResponse response) {
         SearchHits hits = response.getHits();
         Iterator<SearchHit> it = hits.iterator();
+        final MatchingDocument matchingDocument = new MatchingDocument();
 
         while (it.hasNext()) {
             SearchHit hit = it.next();
@@ -277,17 +285,21 @@ public class MetadataMatching {
                 title = titles.get(0);
             }
 
-            final MatchingDocument matchingDocument = new MatchingDocument(DOI);
+            matchingDocument.setDOI(DOI);
             matchingDocument.setFirstAuthor(firstAuthor);
             matchingDocument.setTitle(title);
             final String jsonObject = metadataLookup.retrieveJsonDocument(DOI);
             if (jsonObject == null) {
-                throw new NotFoundException("The index returned a result but the body cannot be fetched. Doi: " + DOI);
+                matchingDocument.setException(new NotFoundException("The index returned a result but the body cannot be fetched. Doi: " + DOI));
+                return matchingDocument;
             }
             matchingDocument.setJsonObject(jsonObject);
 
             return matchingDocument;
         }
-        throw new NotFoundException("Cannot find records for the input query. ");
+
+        matchingDocument.setIsException(true);
+        matchingDocument.setException(new NotFoundException("Cannot find records for the input query."));
+        return matchingDocument;
     }
 }
