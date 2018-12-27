@@ -17,6 +17,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 
@@ -95,22 +96,26 @@ public class LookupController {
     ) {
 
         if (isNotBlank(doi)) {
-            asyncResponse.resume(storage.retrieveByDoi(doi));
+            final String response = storage.retrieveByDoi(doi);
+            dispatchResponse(asyncResponse, response);
             return;
         }
 
         if (isNotBlank(pmid)) {
-            asyncResponse.resume(storage.retrieveByPmid(pmid));
+            final String response = storage.retrieveByPmid(pmid);
+            dispatchResponse(asyncResponse, response);
             return;
         }
 
         if (isNotBlank(pmc)) {
-            asyncResponse.resume(storage.retrieveByPmid(pmc));
+            final String response = storage.retrieveByPmid(pmc);
+            dispatchResponse(asyncResponse, response);
             return;
         }
 
         if (isNotBlank(istexid)) {
-            asyncResponse.resume(storage.retrieveByIstexid(istexid));
+            final String response = storage.retrieveByIstexid(istexid);
+            dispatchResponse(asyncResponse, response);
             return;
         }
 
@@ -160,6 +165,14 @@ public class LookupController {
         }
 
         throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
+    }
+
+    private void dispatchResponse(AsyncResponse asyncResponse, String response) {
+        if (isBlank(response)) {
+            asyncResponse.resume(new NotFoundException("Cannot find records or mapping Ids for the input query."));
+        } else {
+            asyncResponse.resume(response);
+        }
     }
 
     @GET
