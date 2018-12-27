@@ -20,7 +20,7 @@ public class ESClientWrapper {
     private final ExecutorService executorService;
     private RestHighLevelClient esClient;
 
-    final AtomicInteger counter;
+    private final AtomicInteger counter;
 
     public ESClientWrapper(RestHighLevelClient esClient, int poolSize) {
         this.esClient = esClient;
