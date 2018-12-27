@@ -219,15 +219,26 @@ public class MetadataMatching {
 
     private MatchingDocument executeQuery(QueryBuilder query) {
         SearchRequest request = prepareQueryExecution(query);
-
+        final MatchingDocument matchingDocument;
         try {
-            return processResponse(esClient.searchSync(request, RequestOptions.DEFAULT));
+            final SearchResponse searchResponse = esClient.searchSync(request, RequestOptions.DEFAULT);
 
+            matchingDocument = processResponse(searchResponse);
+
+            if (matchingDocument.isException()) {
+                if(matchingDocument.getException() instanceof NotFoundException) {
+                    throw (NotFoundException) matchingDocument.getException();
+                }
+
+                throw (Exception) matchingDocument.getException();
+            }
         } catch (IOException e) {
             throw new ServiceException(500, "No response from Elasticsearch. ", e);
         } catch (Exception e) {
             throw new ServiceException(500, "Elasticsearch server error. ", e);
         }
+
+        return matchingDocument;
     }
 
 
@@ -235,7 +246,7 @@ public class MetadataMatching {
         SearchRequest searchRequest = prepareQueryExecution(query);
         try {
             esClient.searchAsync(searchRequest, RequestOptions.DEFAULT, (response, exception) -> {
-                if(exception == null) {
+                if (exception == null) {
                     callback.accept(processResponse(response));
                 } else {
                     callback.accept(new MatchingDocument(exception));

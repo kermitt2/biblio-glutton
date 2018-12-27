@@ -11,7 +11,6 @@ import com.scienceminer.lookup.storage.StorageEnvFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.CompletionCallback;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -68,12 +67,12 @@ public class LookupController {
         );
         asyncResponse.setTimeout(2, TimeUnit.MINUTES);
 
-        asyncResponse.register((CompletionCallback) throwable -> {
-            if (throwable != null) {
-                //Something happened with the client...
+//        asyncResponse.register((CompletionCallback) throwable -> {
+//            if (throwable != null) {
+//                Something happened with the client...
 //                lastException = throwable;
-            }
-        });
+//            }
+//        });
 
 
         getByQuery(doi, pmid, pmc, istexid, firstAuthor, atitle,
@@ -97,25 +96,25 @@ public class LookupController {
 
         if (isNotBlank(doi)) {
             final String response = storage.retrieveByDoi(doi);
-            dispatchResponse(asyncResponse, response);
+            dispatchEmptyResponse(asyncResponse, response);
             return;
         }
 
         if (isNotBlank(pmid)) {
             final String response = storage.retrieveByPmid(pmid);
-            dispatchResponse(asyncResponse, response);
+            dispatchEmptyResponse(asyncResponse, response);
             return;
         }
 
         if (isNotBlank(pmc)) {
             final String response = storage.retrieveByPmid(pmc);
-            dispatchResponse(asyncResponse, response);
+            dispatchEmptyResponse(asyncResponse, response);
             return;
         }
 
         if (isNotBlank(istexid)) {
             final String response = storage.retrieveByIstexid(istexid);
-            dispatchResponse(asyncResponse, response);
+            dispatchEmptyResponse(asyncResponse, response);
             return;
         }
 
@@ -167,7 +166,7 @@ public class LookupController {
         throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
     }
 
-    private void dispatchResponse(AsyncResponse asyncResponse, String response) {
+    private void dispatchEmptyResponse(AsyncResponse asyncResponse, String response) {
         if (isBlank(response)) {
             asyncResponse.resume(new NotFoundException("Cannot find records or mapping Ids for the input query."));
         } else {
