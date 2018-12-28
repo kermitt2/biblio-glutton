@@ -50,14 +50,14 @@ public class LookupEngine {
 
     public void retrieveByArticleMetadataAsync(String title, String firstAuthor, Boolean postValidate, Consumer<MatchingDocument> callback) {
         metadataMatching.retrieveByMetadataAsync(title, firstAuthor, matchingDocument -> {
-            if (postValidate != null && postValidate) {
-                if (!areMetadataMatching(title, firstAuthor, matchingDocument)) {
-                    callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the post Validation.")));
-                    return;
+            if (!matchingDocument.isException()) {
+                if (postValidate != null && postValidate) {
+                    if (!areMetadataMatching(title, firstAuthor, matchingDocument)) {
+                        callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the postValidation.")));
+                        return;
+                    }
                 }
-            }
 
-            if(!matchingDocument.isException()) {
                 final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
                 matchingDocument.setFinalJsonObject(s);
             }
@@ -73,7 +73,7 @@ public class LookupEngine {
 
     public void retrieveByJournalMetadataAsync(String title, String volume, String firstPage, Consumer<MatchingDocument> callback) {
         metadataMatching.retrieveByMetadataAsync(title, volume, firstPage, matchingDocument -> {
-            if(!matchingDocument.isException()) {
+            if (!matchingDocument.isException()) {
                 final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
                 matchingDocument.setFinalJsonObject(s);
             }
@@ -89,7 +89,7 @@ public class LookupEngine {
     public void retrieveByJournalMetadataAsync(String title, String volume, String firstPage, String firstAuthor,
                                                Consumer<MatchingDocument> callback) {
         metadataMatching.retrieveByMetadataAsync(title, volume, firstPage, firstAuthor, matchingDocument -> {
-            if(!matchingDocument.isException()) {
+            if (!matchingDocument.isException()) {
                 final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
                 matchingDocument.setFinalJsonObject(s);
             }

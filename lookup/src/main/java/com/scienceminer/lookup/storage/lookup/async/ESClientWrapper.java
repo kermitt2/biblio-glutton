@@ -45,16 +45,20 @@ public class ESClientWrapper {
 
             @Override
             public void onResponse(SearchResponse searchResponse) {
-                    final int i = counter.incrementAndGet();
-                    LOGGER.debug("Got a response, freeing a spot: " + i);
-                    callback.accept(searchResponse, null);
+                final int i = counter.incrementAndGet();
+                LOGGER.debug("Got a response, freeing a spot: " + i);
+                callback.accept(searchResponse, null);
             }
 
             @Override
             public void onFailure(Exception e) {
                 final int i = counter.incrementAndGet();
                 LOGGER.debug("Got an error, freeing a spot: " + i);
-                callback.accept(null, e);
+                Exception returnException = e;
+                if (e instanceof IOException) {
+                    returnException = new ServiceException(500, "Cannot connect to Elasticsearch", e);
+                }
+                callback.accept(null, returnException);
             }
         };
         synchronized (counter) {
@@ -64,7 +68,7 @@ public class ESClientWrapper {
             final int i = counter.decrementAndGet();
             LOGGER.debug("Ready to call, occupying a spot: " + i);
         }
-        
+
         final CompletableFuture<Void> searchResponseCompletableFuture = CompletableFuture
                 .runAsync(() -> esClient.searchAsync(request, options, listener), executorService);
 
