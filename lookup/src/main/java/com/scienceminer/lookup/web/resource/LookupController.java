@@ -4,8 +4,8 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
-import com.scienceminer.lookup.data.IstexData;
-import com.scienceminer.lookup.data.PmidData;
+import com.scienceminer.lookup.data.MatchingDocument;
+import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.LookupEngine;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
@@ -13,12 +13,11 @@ import com.scienceminer.lookup.storage.StorageEnvFactory;
 import javax.ws.rs.*;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
-import javax.ws.rs.container.TimeoutHandler;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 
@@ -46,8 +45,8 @@ public class LookupController {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/async")
-    public void asyncGetWithTimeout(
+    @Path("/")
+    public void getByQueryAsync(
             @QueryParam("doi") String doi,
             @QueryParam("pmid") String pmid,
             @QueryParam("pmc") String pmc,
@@ -60,72 +59,119 @@ public class LookupController {
             @QueryParam("firstPage") String firstPage,
             @QueryParam("biblio") String biblio,
             @Suspended final AsyncResponse asyncResponse) {
-        
+
         asyncResponse.setTimeoutHandler(asyncResponse1 ->
-                asyncResponse1.resume(Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                asyncResponse1.resume(Response.status(Response.Status.REQUEST_TIMEOUT)
                         .entity("Operation time out.")
                         .build()
                 )
         );
-        asyncResponse.setTimeout(60, TimeUnit.SECONDS);
+        asyncResponse.setTimeout(2, TimeUnit.MINUTES);
 
-        new Thread(() -> {
-            String result = getByQuery(doi, pmid, pmc, istexid, firstAuthor, atitle,
-                    postValidate, jtitle, volume, firstPage, biblio);
-            asyncResponse.resume(result);
-        }).start();
+//        asyncResponse.register((CompletionCallback) throwable -> {
+//            if (throwable != null) {
+//                Something happened with the client...
+//                lastException = throwable;
+//            }
+//        });
+
+
+        getByQuery(doi, pmid, pmc, istexid, firstAuthor, atitle,
+                postValidate, jtitle, volume, firstPage, biblio, asyncResponse);
     }
 
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/")
-    public String getByQuery(
-            @QueryParam("doi") String doi,
-            @QueryParam("pmid") String pmid,
-            @QueryParam("pmc") String pmc,
-            @QueryParam("istexid") String istexid,
-            @QueryParam("firstAuthor") String firstAuthor,
-            @QueryParam("atitle") String atitle,
-            @QueryParam("postValidate") Boolean postValidate,
-            @QueryParam("jtitle") String jtitle,
-            @QueryParam("volume") String volume,
-            @QueryParam("firstPage") String firstPage,
-            @QueryParam("biblio") String biblio
+    private void getByQuery(
+            String doi,
+            String pmid,
+            String pmc,
+            String istexid,
+            String firstAuthor,
+            String atitle,
+            Boolean postValidate,
+            String jtitle,
+            String volume,
+            String firstPage,
+            String biblio,
+            AsyncResponse asyncResponse
     ) {
 
         if (isNotBlank(doi)) {
-            return storage.retrieveByDoi(doi);
+            final String response = storage.retrieveByDoi(doi);
+            dispatchEmptyResponse(asyncResponse, response);
+            return;
         }
 
         if (isNotBlank(pmid)) {
-            return storage.retrieveByPmid(pmid);
+            final String response = storage.retrieveByPmid(pmid);
+            dispatchEmptyResponse(asyncResponse, response);
+            return;
         }
 
         if (isNotBlank(pmc)) {
-            return storage.retrieveByPmid(pmc);
+            final String response = storage.retrieveByPmid(pmc);
+            dispatchEmptyResponse(asyncResponse, response);
+            return;
         }
 
         if (isNotBlank(istexid)) {
-            return storage.retrieveByIstexid(istexid);
+            final String response = storage.retrieveByIstexid(istexid);
+            dispatchEmptyResponse(asyncResponse, response);
+            return;
         }
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
-            return storage.retrieveByArticleMetadata(atitle, firstAuthor, postValidate);
+            storage.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, matchingDocument -> {
+                dispatchResponseOrException(asyncResponse, matchingDocument);
+            });
+            return;
         }
 
         if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            return storage.retrieveByJournalMetadata(jtitle, volume, firstPage);
+            storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, matchingDocument -> {
+                dispatchResponseOrException(asyncResponse, matchingDocument);
+            });
+            return;
         }
 
         if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            return storage.retrieveByJournalMetadata(jtitle, volume, firstPage, firstAuthor);
+            storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, firstAuthor,
+                    matchingDocument -> {
+                        dispatchResponseOrException(asyncResponse, matchingDocument);
+                    });
+            return;
         }
 
         if (isNotBlank(biblio)) {
-            return storage.retrieveByBiblio(biblio);
+            storage.retrieveByBiblioAsync(biblio, matchingDocument -> {
+                dispatchResponseOrException(asyncResponse, matchingDocument);
+            });
+            return;
         }
 
         throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
+    }
+
+    /**
+     * Dispatches the response or the exception according to the information contained in the matching document
+     * object. 
+     */
+    private void dispatchResponseOrException(AsyncResponse asyncResponse, MatchingDocument matchingDocument) {
+        if (matchingDocument.isException()) {
+            asyncResponse.resume(matchingDocument.getException());
+        } else {
+            asyncResponse.resume(matchingDocument.getFinalJsonObject());
+        }
+    }
+
+    /**
+     * Dispatch the response or throw a NotFoundException if the response is empty or blank
+     */
+    private void dispatchEmptyResponse(AsyncResponse asyncResponse, String response) {
+        if (isBlank(response)) {
+            asyncResponse.resume(new NotFoundException("Cannot find records or mapping Ids for the input query."));
+        } else {
+            asyncResponse.resume(response);
+        }
     }
 
     @GET
@@ -155,7 +201,7 @@ public class LookupController {
     public String getByIstexid(@PathParam("istexid") String istexid) {
         return storage.retrieveByIstexid(istexid);
     }
-    
+
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.TEXT_PLAIN)

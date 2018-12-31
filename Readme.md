@@ -8,7 +8,7 @@ Framework dedicated to bibliographic information. It includes:
 - Open Access resolver: Integration of Open Access links via the Unpaywall dataset from Impactstory,
 - MeSH classes mapping for PubMed articles.
 
-The framework is designed both for speed (targeting more than 1,000 request per second) and matching accuracy. Benchmarking against the CrossRef API is work-in-progres. 
+The framework is designed both for speed (targeting more than 1,000 request per second for look-up) and matching accuracy. Benchmarking against the CrossRef API is work-in-progres. 
 
 ## The bibliographical look-up and matching REST API
 
@@ -128,13 +128,13 @@ Below is an overview of the biblio-glutton architecture. The biblio-glutton serv
 
 For building the database and index used by service, you will need these resources:
 
-* CrossRef metadata dump: available via the Crossref Metadata Plus subscription or at Internet Archive, see https://github.com/greenelab/crossref,
+* CrossRef metadata dump: available via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service or at Internet Archive, see https://github.com/greenelab/crossref,
 
-* DOI to PMID and PMC mapping: available at [Europe PMC](ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/),
+* DOI to PMID and PMC mapping: available at Europe PMC, see ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/,
 
-* the Unpaywall dataset, optionally, to get Open Access links aggregated with the bibliographical metadata,
+* optionally, the Unpaywall dataset, to get Open Access links aggregated with the bibliographical metadata,
 
-* for getting ISTEX identifier informations, optionally, you need to build the ISTEX ID mapping, see bellow. 
+* optionally, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see bellow. 
 
 The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
 

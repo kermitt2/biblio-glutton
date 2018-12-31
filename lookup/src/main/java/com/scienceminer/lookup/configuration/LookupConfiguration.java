@@ -1,7 +1,8 @@
 package com.scienceminer.lookup.configuration;
 
 import io.dropwizard.Configuration;
-import java.util.*;
+
+import java.util.List;
 
 public class LookupConfiguration extends Configuration {
 
@@ -16,6 +17,7 @@ public class LookupConfiguration extends Configuration {
     private Elastic elastic;
 
     private List<String> ignoreCrossRefFields;
+    private int maxAcceptedRequests;
 
     public String getStorage() {
         return storage;
@@ -55,6 +57,14 @@ public class LookupConfiguration extends Configuration {
 
     public void setIgnoreCrossRefFields(List<String> ignoreCrossRefFields) {
         this.ignoreCrossRefFields = ignoreCrossRefFields;
+    }
+
+    public int getMaxAcceptedRequests() {
+        return maxAcceptedRequests;
+    }
+
+    public void setMaxAcceptedRequests(int maxAcceptedRequests) {
+        this.maxAcceptedRequests = maxAcceptedRequests;
     }
 
     public class Source {

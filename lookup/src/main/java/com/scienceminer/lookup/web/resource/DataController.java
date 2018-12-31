@@ -7,11 +7,13 @@ import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.data.IstexData;
 import com.scienceminer.lookup.data.PmidData;
 import com.scienceminer.lookup.storage.DataEngine;
-import com.scienceminer.lookup.storage.LookupEngine;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import org.apache.commons.lang3.tuple.Pair;
 
-import javax.ws.rs.*;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;

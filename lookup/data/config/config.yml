@@ -11,6 +11,9 @@ ignoreCrossRefFields:
 # Loading batch size
 batchSize: 10000
 
+# when set to -1 it's using the number of processors available to the machine
+maxAcceptedRequests: 2048
+
 elastic:
   host: localhost:9200
   index: crossref
@@ -25,7 +28,9 @@ server:
   - type: http
     port: 8081
   registerDefaultExceptionMappers: false
-  acceptQueueSize: 1024
+  maxThreads: 2048
+  maxQueuedRequests: 2048
+  acceptQueueSize: 2048
 
 logging:
   level: INFO

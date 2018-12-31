@@ -36,7 +36,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         environment.jersey().register(new ServiceExceptionMapper());
         environment.jersey().register(new NotFoundExceptionMapper());
 
-        final LookupHealthCheck healthCheck = new LookupHealthCheck();
+        final LookupHealthCheck healthCheck = new LookupHealthCheck(lookupConfiguration);
         environment.healthChecks().register("HealthCheck", healthCheck);
     }
 

@@ -1,4 +1,4 @@
-biblioList.shuf.csvG. L. Peterson. A new solution to Lamport's concurrent programming problem using small shared variables.  ACM Transactions on Programming Languages Systems,  5(1):56-65,  1983.
+G. L. Peterson. A new solution to Lamport's concurrent programming problem using small shared variables.  ACM Transactions on Programming Languages Systems,  5(1):56-65,  1983.
 Transp Porous Med (2010) 85:841–865
 Simon H, Scatton B, Moal ML. Dopaminergic A10 neurones are involved in cognitive functions.  Nature 1980  286:150-151. 
 YIANNILOS, P.  1993.  Data structures algorithms for nearest neighbor search in general metric spaces.  In Proceedings of the ACM-SIAM Symposium on Discrete Algorithms,  ACM Press,  New York, NY,  311-321. 
