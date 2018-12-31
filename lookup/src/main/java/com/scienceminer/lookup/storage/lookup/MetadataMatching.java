@@ -215,7 +215,6 @@ public class MetadataMatching {
 
         final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
 
-
         executeQueryAsync(query, callback);
     }
 
