@@ -135,7 +135,7 @@ One glutton instance: 19,792,280 DOI lookup in 3156 seconds, ~ 6270 queries per 
  
 Processing time for matching 17,015 raw bibliographical reference strings to DOI:
 
-| number of ES cluster nodes | comment  | total runtime (second) | runtime per bib. ref. (second)   | queries per second |                |
+| number of ES cluster nodes | comment  | total runtime (second) | runtime per bib. ref. (second)   | queries per second |
 |----|---|---|---|---|
 |  1 | glutton and Elasticsearch node share the same machine   | 2625  | 0.154  |  6.5  |
 |  1 | glutton and Elasticsearch node on two separate machines   | 1990  | 0.117  |  8.5 |
@@ -267,7 +267,7 @@ Here is some evaluation on the bibliographical reference matching.
 
 ### Dataset
 
-We created a dataset of 17,015 bibliographical reference/DOI pairs with GROBID and the PMC 1943 sample (a set of 1943 PubMed Central articles from 1943 different journals with both PDF and XML NLM files available, see below). For the bibliographical references present in the NLM file with a DOI, we try to align the raw reference string extracted from the PDF by GROBID and the parsed XML present in the NLM file. Raw reference string are thus coming from the PDF, and we included additional metadata as extracted by GROBID from the PDF. 
+We created a dataset of [17,015 bibliographical reference/DOI pairs](doc/references-doi-matching.json.gz) with GROBID and the PMC 1943 sample (a set of 1943 PubMed Central articles from 1943 different journals with both PDF and XML NLM files available, see below). For the bibliographical references present in the NLM file with a DOI, we try to align the raw reference string extracted from the PDF by GROBID and the parsed XML present in the NLM file. Raw reference string are thus coming from the PDF, and we included additional metadata as extracted by GROBID from the PDF. 
 
 Example of the two first of the 17.015 entries: 
 
