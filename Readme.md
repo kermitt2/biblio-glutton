@@ -125,18 +125,17 @@ Below is an overview of the biblio-glutton architecture. The biblio-glutton serv
 
 #### Scaling evaluation
 
-*Metadata Lookup*
+1) *Metadata Lookup*
 
 One glutton instance: 19,792,280 DOI lookup in 3156 seconds, ~ 6270 queries per second. 
 
-*Bibliographical reference matching* 
+2) *Bibliographical reference matching* 
 
 *(to be completed with more nodes!)*
  
 Processing time for matching 17,015 raw bibliographical reference strings to DOI:
 
-| number of ES  | comment  | total runtime  | runtime per bib.  | queries per second |
-| cluster nodes |          | (second)       | ref. (second)     |                    |
+| number of ES cluster nodes | comment  | total runtime (second) | runtime per bib. ref. (second)   | queries per second |                |
 |----|---|---|---|---|
 |  1 | glutton and Elasticsearch node share the same machine   | 2625  | 0.154  |  6.5  |
 |  1 | glutton and Elasticsearch node on two separate machines   | 1990  | 0.117  |  8.5 |
