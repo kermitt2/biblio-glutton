@@ -97,9 +97,9 @@ function processDump(options, callback) {
                     });
                 }
             }).on('error', function(err) { // Handle errors
-                //console.log('error calling glutton service:', doi); 
+                console.log('error calling glutton service:', doi); 
                 // let's try again
-                var request = http.get(url, function(response) {
+                /*var request = http.get(url, function(response) {
                     //console.log(response.statusCode);
                     if (response.statusCode == 200) {
                         response.on("data", function(chunk) {
@@ -112,8 +112,8 @@ function processDump(options, callback) {
                         })
                     }
                 }).on('error', function(err) { // Handle errors
-                    //console.log('error calling glutton service:', doi); 
-                });
+                    console.log('error calling glutton service:', doi); 
+                });*/
             });
         }
     });

@@ -123,6 +123,26 @@ Below is an overview of the biblio-glutton architecture. The biblio-glutton serv
 
 ![Glutton architecture](doc/glutton-architecture.png) 
 
+#### Scaling evaluation
+
+*Metadata Lookup*
+
+One glutton instance: 19,792,280 DOI lookup in 3156 seconds, ~ 6270 queries per second. 
+
+*Bibliographical reference matching* 
+
+*(to be completed with more nodes!)*
+ 
+Processing time for matching 17,015 raw bibliographical reference strings to DOI:
+
+| number of ES  | comment  | total runtime  | runtime per bib.  | queries per second |
+| cluster nodes |          | (second)       | ref. (second)     |                    |
+|----|---|---|---|---|
+|  1 | glutton and Elasticsearch node share the same machine   | 2625  | 0.154  |  6.5  |
+|  1 | glutton and Elasticsearch node on two separate machines   | 1990  | 0.117  |  8.5 |
+|  2 | glutton and one of the Elasticsearch node sharing the same machine  |  1347  |  0.079  | 12.6  |
+
+Machines have the same configuration Intel i7 4-cores, 8 threads, 16GB memory on Ubuntu 16.04.
 
 ### Resources
 
@@ -242,6 +262,130 @@ node main -dump ~/tmp/crossref-works.2018-09-05.json.xz index
 Note than launching the above command will fully re-index the data, deleting existing index. The default name of the index is `crossref`, but this can be changed via the config file `matching/config.json`.
 
 
+## Matching accuracy
+
+Here is some evaluation on the bibliographical reference matching.
+
+### Dataset
+
+We created a dataset of 17,015 bibliographical reference/DOI pairs with GROBID and the PMC 1943 sample (a set of 1943 PubMed Central articles from 1943 different journals with both PDF and XML NLM files available, see below). For the bibliographical references present in the NLM file with a DOI, we try to align the raw reference string extracted from the PDF by GROBID and the parsed XML present in the NLM file. Raw reference string are thus coming from the PDF, and we included additional metadata as extracted by GROBID from the PDF. 
+
+Example of the two first of the 17.015 entries: 
+
+```json
+{"reference": "Classen M, Demling L. Endoskopishe shinkterotomie der papilla \nVateri und Stein extraction aus dem Duktus Choledochus [Ger-\nman]. Dtsch Med Wochenschr. 1974;99:496-7.", "doi": "10.1055/s-0028-1107790", "pmid": "4835515", "atitle": "Endoskopishe shinkterotomie der papilla Vateri und Stein extraction aus dem Duktus Choledochus [German]", "firstAuthor": "Classen", "jtitle": "Dtsch Med Wochenschr", "volume": "99", "firstPage": "496"},
+{"reference": "Kawai K, Akasaka Y, Murakami K. Endoscopic sphincterotomy \nof the ampulla of Vater. Gastrointest Endosc. 1974;20:148-51.", "doi": "10.1016/S0016-5107(74)73914-1", "pmid": "4825160", "atitle": "Endoscopic sphincterotomy of the ampulla of Vater", "firstAuthor": "Kawai", "jtitle": "Gastrointest Endosc", "volume": "20", "firstPage": "148"},
+```
+
+The goal of Glutton matching is to identify the right DOI from raw metadata. We compare the results with the CrossRef REST API, using the `query.bibliographic` field for raw reference string matching, and author/title field queries for first author lastname (`query.author`) plus title matching (`query.title`). 
+
+Limits: 
+
+- The DOI present in the NLM files are not always reliable (e.g. DOI not valid anymore following some updates in CrossRef). A large amount of the matching errors are actually not due to the matching service, but to NLM reference DOI data quality. However, errors will be the same for all matching services, so it's still valid for comparing them, although for this reason the resulting accuracy is clearly lower than what it should be.
+
+- GROBID extraction is not always reliable, as well the alignment mechanism with NLM (based on soft match), and some raw reference string might not be complete or include unexpected extra material from the PDF. However, this can be view as part of the matching challenge in real world conditions! 
+
+- the NLM references with DOI are usually simpler reference than in general: there are much fewer abbreviated references (without title nor authors) and references without titles as compared to general publications from non-medicine publishers. 
+
+
+
+### How to run the evaluation
+
+Creation of the dataset and evaluation are realized in GROBID:
+
+- [Install GROBID](https://grobid.readthedocs.io/en/latest/Install-Grobid/).
+
+- Download the [PMC 1943 sample](https://grobid.s3.amazonaws.com/PMC_sample_1943.zip) (around 1.5GB in size).
+
+- Create the evaluation dataset:
+
+> ./gradlew PrepareDOIMatching -Pp2t=ABS_PATH_TO_PMC/PMC_sample_1943 
+    
+- Launch an evaluation: 
+
+1) Select the matching method (`crossref` or `glutton`) in the `grobid-home/config/grobid.properties` file: 
+
+
+```
+#-------------------- consolidation --------------------
+# Define the bibliographical data consolidation service to be used, eiter "crossref" for CrossRef REST API or "glutton" for https://github.com/kermitt2/biblio-glutton
+#grobid.consolidation.service=crossref
+grobid.consolidation.service=glutton
+```
+
+2) If Glutton is setected, start the Glutton server as indicated above (we assume that it is running at `localhost:8080`).
+
+3) Launch from GROBID the evaluation: 
+
+> ./gradlew EvaluateDOIMatching -Pp2t=ABS_PATH_TO_PMC/PMC_sample_1943
+
+
+
+### Full raw bibliographical reference matching
+
+Runtime correspond to a processing on a single machine running Glutton REST API server, ElasticSearch and GROBID evaluation. In the case of CrossRef API, we use as much as possible the 50 queries per second allowed by the service with the GROBID CrossRef multithreaded client. 
+
+```
+======= GLUTTON API ======= 
+
+17015 bibliographical references processed in 2625.378 seconds, 0.15429785483397004 seconds per bibliographical reference.
+Found 15672 DOI
+
+precision:      0.9669474221541603
+recall: 0.8906259183073758
+f-score:        0.927218771988864
+```
+
+```
+======= CROSSREF API ======= 
+
+
+17015 bibliographical references processed in 780.838 seconds, 0.04589115486335586 seconds per bibliographical reference.
+Found 15610 DOI
+
+precision:      0.9628443305573351
+recall: 0.8833382309726712
+f-score:        0.9213793103448277
+```
+
+### First author lastname + title matching 
+
+```
+======= CROSSREF API ======= 
+
+17015 bibliographical references processed in 772.363 seconds, 0.045393064942697625 seconds per bibliographical reference.
+Found 14114 DOI
+
+precision:      0.9402012186481508
+recall: 0.7799000881575081
+f-score:        0.8525811943846574
+```
+
+```
+======= GLUTTON API ======= 
+
+17015 bibliographical references processed in 804.179 seconds, 0.04726294446076991 seconds per bibliographical reference.
+Found 15456 DOI
+
+precision:      0.9490812629399586
+recall: 0.8621216573611519
+f-score:        0.9035139047149764
+```
+
+### Mixed strategy
+
+We process bibliographical references with a first author lastname+title matching when these metadata are extracted by GROBID, and a full raw reference string matching otherwise. We get a much faster matching rate (3 times faster), at the cost of some accuracy loss (-1.59 f-score).
+
+```
+======= GLUTTON API ======= 
+
+17015 bibliographical references processed in 857.97 seconds, 0.05042433147223039 seconds per bibliographical reference.
+Found 15707 DOI
+
+precision:      0.9492582924810594
+recall: 0.8762856303261828
+f-score:        0.9113134893955137
+```
 
 ## ISTEX mapping
 
