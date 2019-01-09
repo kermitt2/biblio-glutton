@@ -31,7 +31,7 @@ public class StorageEnvFactory {
 
         environment = Env.create()
                 .setMapSize(300L * 1024L * 1024L * 1024L)
-                .setMaxReaders(126)
+                .setMaxReaders(configuration.getMaxAcceptedRequests())
                 .setMaxDbs(10)
                 .open(thePath, EnvFlags.MDB_NOTLS);
 

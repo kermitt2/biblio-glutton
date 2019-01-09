@@ -4,6 +4,7 @@ import com.codahale.metrics.Meter;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.data.MatchingDocument;
 import com.scienceminer.lookup.exception.ServiceException;
+import com.scienceminer.lookup.exception.ServiceOverloadedException;
 import com.scienceminer.lookup.reader.CrossrefJsonReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.utils.BinarySerialiser;
@@ -85,7 +86,7 @@ public class MetadataLookup {
             valBuffer.put(serializedValue).flip();
             db.put(tx, keyBuffer, valBuffer);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Cannot store the entry " + key + ", " + value, e);
         }
     }
 
@@ -94,6 +95,8 @@ public class MetadataLookup {
         Map<String, Long> sizes = new HashMap<>();
         try (final Txn<ByteBuffer> txn = this.environment.txnRead()) {
             sizes.put(NAME_CROSSREF_JSON, dbCrossrefJson.stat(txn).entries);
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         }
 
         return sizes;
@@ -109,6 +112,8 @@ public class MetadataLookup {
             if (cachedData != null) {
                 record = (String) BinarySerialiser.deserializeAndDecompress(cachedData);
             }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         } catch (Exception e) {
             LOGGER.error("Cannot retrieve Crossref document by DOI:  " + doi, e);
         }
@@ -158,6 +163,8 @@ public class MetadataLookup {
                     counter++;
                 }
             }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         }
 
         return values;

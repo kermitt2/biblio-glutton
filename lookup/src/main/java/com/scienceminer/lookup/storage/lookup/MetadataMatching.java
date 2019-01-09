@@ -63,8 +63,8 @@ public class MetadataMatching {
                                         .setSocketTimeout(60000))
                         .setMaxRetryTimeoutMillis(120000));
 
-        final int poolSize = configuration.getMaxAcceptedRequests() < 1 ? Runtime.getRuntime().availableProcessors() : configuration.getMaxAcceptedRequests();
-        this.esClient = new ESClientWrapper(esClient, poolSize);
+
+        this.esClient = new ESClientWrapper(esClient, configuration.getMaxAcceptedRequests());
 
         this.metadataLookup = metadataLookup;
 

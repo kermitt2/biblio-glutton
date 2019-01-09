@@ -2,6 +2,7 @@ package com.scienceminer.lookup.storage.lookup;
 
 import com.codahale.metrics.Meter;
 import com.scienceminer.lookup.data.IstexData;
+import com.scienceminer.lookup.exception.ServiceOverloadedException;
 import com.scienceminer.lookup.reader.IstexIdsReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.utils.BinarySerialiser;
@@ -127,6 +128,8 @@ public class IstexIdsLookup {
         try (final Txn<ByteBuffer> txn = this.environment.txnRead()) {
             size.put(NAME_DOI2IDS, dbDoiToIds.stat(txn).entries);
             size.put(NAME_ISTEX2IDS, dbIstexToIds.stat(txn).entries);
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         }
 
         return size;
@@ -156,6 +159,8 @@ public class IstexIdsLookup {
             if (cachedData != null) {
                 record = (IstexData) BinarySerialiser.deserialize(cachedData);
             }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         } catch (Exception e) {
             LOGGER.error("Cannot retrieve ISTEX identifiers by doi:  " + doi, e);
         }
@@ -174,6 +179,8 @@ public class IstexIdsLookup {
             if (cachedData != null) {
                 record = (IstexData) BinarySerialiser.deserialize(cachedData);
             }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         } catch (Exception e) {
             LOGGER.error("Cannot retrieve ISTEX identifiers by istexId:  " + istexId, e);
         }
@@ -210,6 +217,8 @@ public class IstexIdsLookup {
                     counter++;
                 }
             }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         }
 
         return values;
