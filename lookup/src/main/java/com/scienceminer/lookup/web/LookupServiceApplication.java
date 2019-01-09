@@ -13,6 +13,7 @@ import com.scienceminer.lookup.web.healthcheck.LookupHealthCheck;
 import com.scienceminer.lookup.web.module.LookupServiceModule;
 import com.scienceminer.lookup.web.module.NotFoundExceptionMapper;
 import com.scienceminer.lookup.web.module.ServiceExceptionMapper;
+import com.scienceminer.lookup.web.module.ServiceOverloadedExceptionMapper;
 import io.dropwizard.Application;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
@@ -35,6 +36,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         environment.jersey().setUrlPattern(RESOURCES + "/*");
         environment.jersey().register(new ServiceExceptionMapper());
         environment.jersey().register(new NotFoundExceptionMapper());
+        environment.jersey().register(new ServiceOverloadedExceptionMapper());
 
         final LookupHealthCheck healthCheck = new LookupHealthCheck(lookupConfiguration);
         environment.healthChecks().register("HealthCheck", healthCheck);

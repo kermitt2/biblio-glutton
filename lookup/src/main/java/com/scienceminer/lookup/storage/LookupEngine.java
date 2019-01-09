@@ -8,6 +8,7 @@ import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.storage.lookup.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.omg.CosNaming.NamingContextPackage.NotFound;
 import scala.Option;
 
 import java.util.function.Consumer;
@@ -157,7 +158,13 @@ public class LookupEngine {
 
     public String retrieveOAUrlByDoi(String doi) {
 
-        return oaDoiLookup.retrieveOALinkByDoi(doi);
+        final String output = oaDoiLookup.retrieveOALinkByDoi(doi);
+
+        if (isBlank(output)) {
+            throw new NotFoundException("Open Access URL was not found for DOI " + doi);
+        }
+
+        return output;
     }
 
     public String retrieveOAUrlByPmid(String pmid) {

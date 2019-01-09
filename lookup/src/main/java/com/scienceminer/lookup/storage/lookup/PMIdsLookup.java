@@ -2,6 +2,7 @@ package com.scienceminer.lookup.storage.lookup;
 
 import com.codahale.metrics.Meter;
 import com.scienceminer.lookup.data.PmidData;
+import com.scienceminer.lookup.exception.ServiceOverloadedException;
 import com.scienceminer.lookup.reader.PmidReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.utils.BinarySerialiser;
@@ -92,6 +93,8 @@ public class PMIdsLookup {
             if (cachedData != null) {
                 record = (PmidData) BinarySerialiser.deserialize(cachedData);
             }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         } catch (Exception e) {
             LOGGER.error("Cannot retrieve PubMed Ids by DOI: " + doi, e);
         }
@@ -109,6 +112,8 @@ public class PMIdsLookup {
             if (cachedData != null) {
                 record = (PmidData) BinarySerialiser.deserialize(cachedData);
             }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         } catch (Exception e) {
             LOGGER.error("Cannot retrieve PubMed Ids by PMID: " + pmid, e);
         }
@@ -126,6 +131,8 @@ public class PMIdsLookup {
             if (cachedData != null) {
                 record = (PmidData) BinarySerialiser.deserialize(cachedData);
             }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         } catch (Exception e) {
             LOGGER.error("Cannot retrieve PubMed Ids by PMC ID: " + pmc, e);
         }
@@ -186,6 +193,8 @@ public class PMIdsLookup {
                     counter++;
                 }
             }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         }
 
         return values;

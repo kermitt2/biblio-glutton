@@ -206,8 +206,14 @@ public class LookupController {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.TEXT_PLAIN)
     @Path("/")
-    public String getByBiblioStringWithPost(String biblio) {
-        return storage.retrieveByBiblio(biblio);
+    public void getByBiblioStringWithPost(String biblio, @Suspended final AsyncResponse asyncResponse) {
+        if (isNotBlank(biblio)) {
+            storage.retrieveByBiblioAsync(biblio, matchingDocument -> {
+                dispatchResponseOrException(asyncResponse, matchingDocument);
+            });
+            return;
+        }
+
+        throw new ServiceException(400, "Missing or empty biblio parameter. ");
     }
 }
-

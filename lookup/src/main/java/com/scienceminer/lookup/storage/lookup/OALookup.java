@@ -1,6 +1,7 @@
 package com.scienceminer.lookup.storage.lookup;
 
 import com.codahale.metrics.Meter;
+import com.scienceminer.lookup.exception.ServiceOverloadedException;
 import com.scienceminer.lookup.reader.UnpayWallReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.utils.BinarySerialiser;
@@ -49,6 +50,8 @@ public class OALookup {
         Map<String, Long> size = new HashMap<>();
         try (final Txn<ByteBuffer> txn = this.environment.txnRead()) {
             size.put(NAME_DOI_OA_URL, dbDoiOAUrl.stat(txn).entries);
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         }
 
         return size;
@@ -74,6 +77,8 @@ public class OALookup {
                     counter++;
                 }
             }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         }
         return values;
     }
@@ -89,6 +94,8 @@ public class OALookup {
             if (cachedData != null) {
                 record = (String) BinarySerialiser.deserialize(cachedData);
             }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         } catch (Exception e) {
             LOGGER.error("Cannot retrieve OA url having doi: " + doi, e);
         }
@@ -132,7 +139,7 @@ public class OALookup {
             valBuffer.put(serializedValue).flip();
             db.put(tx, keyBuffer, valBuffer);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Error when storing the entry " + key + ", " + value, e);
         }
     }
 }
