@@ -97,10 +97,16 @@ Matching with raw bibliographical reference string:
 curl "http://localhost:8080/service/lookup?biblio=Baltz,+R.,+Domon,+C.,+Pillay,+D.T.N.+and+Steinmetz,+A.+(1992)+Characterization+of+a+pollen-specific+cDNA+from+sunflower+encoding+a+zinc+finger+protein.+Plant+J.+2:+713-721"
 ```
 
-Bibliographical metadata lookup by PMID:
+Bibliographical metadata lookup by PMID (note that only the number is expected):
 
 ```sh
 curl http://localhost:8080/service/lookup?pmid=1605817
+```
+
+Bibliographical metadata lookup by PMC ID (note that the `PMC` prefix in the identifier is expected):
+
+```sh
+curl http://localhost:8080/service/lookup?pmc=PMC1017419
 ```
 
 Bibliographical metadata lookup by ISTEX ID:
