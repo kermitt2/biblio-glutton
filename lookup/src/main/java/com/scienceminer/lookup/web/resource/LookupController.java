@@ -108,7 +108,7 @@ public class LookupController {
         }
 
         if (isNotBlank(pmc)) {
-            final String response = storage.retrieveByPmid(pmc);
+            final String response = storage.retrieveByPmc(pmc);
             dispatchEmptyResponse(asyncResponse, response);
             return;
         }
