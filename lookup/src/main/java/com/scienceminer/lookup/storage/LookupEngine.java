@@ -114,8 +114,11 @@ public class LookupEngine {
     }
 
     public String retrieveByPmc(String pmc) {
+        if (!StringUtils.startsWithIgnoreCase(pmc, "pmc")) {
+            pmc = "PMC" + pmc;
+        }
+        
         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
-
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
             return retrieveByDoi(pmidData.getDoi());
         }
