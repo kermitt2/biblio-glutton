@@ -1,5 +1,9 @@
 package com.scienceminer.lookup.storage;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.rockymadden.stringmetric.similarity.RatcliffObershelpMetric;
 import com.scienceminer.lookup.data.IstexData;
 import com.scienceminer.lookup.data.MatchingDocument;
@@ -8,7 +12,6 @@ import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.storage.lookup.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.omg.CosNaming.NamingContextPackage.NotFound;
 import scala.Option;
 
 import java.util.function.Consumer;
@@ -98,37 +101,86 @@ public class LookupEngine {
         });
     }
 
-    public String retrieveByDoi(String doi) {
+    public String retrieveByDoi(String doi, Boolean postValidate, String firstAuthor, String atitle) {
         MatchingDocument outputData = metadataLookup.retrieveByMetadata(doi);
+        outputData = validateJsonBody(postValidate, firstAuthor, atitle, outputData);
+
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
     }
 
-    public String retrieveByPmid(String pmid) {
+    private MatchingDocument validateJsonBody(Boolean postValidate, String firstAuthor, String atitle, MatchingDocument outputData) {
+        if (isBlank(outputData.getJsonObject())) {
+            throw new NotFoundException("Article not found");
+        }
+
+        if (postValidate != null && postValidate) {
+            outputData = extractTitleAndFirstAuthorFromJson(outputData);
+
+            if (!areMetadataMatching(atitle, firstAuthor, outputData)) {
+                throw new NotFoundException("Article found but it didn't passed the post Validation.");
+            }
+        }
+        return outputData;
+    }
+
+    private MatchingDocument extractTitleAndFirstAuthorFromJson(MatchingDocument outputData) {
+        JsonElement jelement = new JsonParser().parse(outputData.getJsonObject());
+        JsonObject jobject = jelement.getAsJsonObject();
+
+        final JsonArray titlesFromJson = jobject.get("title").getAsJsonArray();
+        if (titlesFromJson != null && titlesFromJson.size() > 0) {
+            String titleFromJson = titlesFromJson.get(0).getAsString();
+            outputData.setTitle(titleFromJson);
+        }
+
+        final JsonArray authorsFromJson = jobject.get("author").getAsJsonArray();
+        if (authorsFromJson != null && authorsFromJson.size() > 0) {
+
+            String firstAuthorFromJson = "";
+            for (int i = 0; i < authorsFromJson.size(); i++) {
+                final JsonObject currentAuthor = authorsFromJson.get(i).getAsJsonObject();
+                if (currentAuthor.has("sequence")
+                        && StringUtils.equals(currentAuthor.get("sequence").getAsString(), "first")) {
+                    firstAuthorFromJson = currentAuthor.get("family").getAsString();
+                    outputData.setFirstAuthor(firstAuthorFromJson);
+                    break;
+                }
+            }
+        }
+
+        return outputData;
+    }
+
+    public String retrieveByPmid(String pmid, Boolean postValidate, String firstAuthor, String atitle) {
         final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
-            return retrieveByDoi(pmidData.getDoi());
+            return retrieveByDoi(pmidData.getDoi(), postValidate, firstAuthor, atitle);
         }
 
         throw new NotFoundException("Cannot find record by PMID " + pmid);
     }
 
-    public String retrieveByPmc(String pmc) {
+    public String retrieveByPmc(String pmc, Boolean postValidate, String firstAuthor, String atitle) {
+        if (!StringUtils.startsWithIgnoreCase(pmc, "pmc")) {
+            pmc = "PMC" + pmc;
+        }
         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
-            return retrieveByDoi(pmidData.getDoi());
+            return retrieveByDoi(pmidData.getDoi(), postValidate, firstAuthor, atitle);
         }
 
         throw new NotFoundException("Cannot find record by PMC ID " + pmc);
     }
 
-    public String retrieveByIstexid(String istexid) {
+    public String retrieveByIstexid(String istexid, Boolean postValidate, String firstAuthor, String atitle) {
         final IstexData istexData = istexLookup.retrieveByIstexId(istexid);
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi()) && isNotBlank(istexData.getDoi().get(0))) {
             final String doi = istexData.getDoi().get(0);
             MatchingDocument outputData = metadataLookup.retrieveByMetadata(doi);
+            outputData = validateJsonBody(postValidate, firstAuthor, atitle, outputData);
             return injectIdsByIstexData(outputData.getJsonObject(), doi, istexData);
         }
 
@@ -246,7 +298,7 @@ public class LookupEngine {
         boolean valid = true;
 
         // check main metadata available in source with fuzzy matching
-        if (!StringUtils.isBlank(title) && !StringUtils.isBlank(title)) {
+        if (StringUtils.isNotBlank(title) && StringUtils.isNotBlank(result.getTitle())) {
             if (ratcliffObershelpDistance(title, result.getTitle(), false) < 0.8)
                 return false;
         }

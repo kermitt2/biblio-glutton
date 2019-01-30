@@ -9,6 +9,7 @@ import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.LookupEngine;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
+import org.omg.CosNaming.NamingContextPackage.NotFound;
 
 import javax.ws.rs.*;
 import javax.ws.rs.container.AsyncResponse;
@@ -96,32 +97,77 @@ public class LookupController {
     ) {
 
         if (isNotBlank(doi)) {
-            final String response = storage.retrieveByDoi(doi);
-            dispatchEmptyResponse(asyncResponse, response);
-            return;
+            try {
+                final String response = storage.retrieveByDoi(doi, postValidate, firstAuthor, atitle);
+
+                if (isNotBlank(response)) {
+                    asyncResponse.resume(response);
+                    return;
+                }
+
+            } catch (NotFoundException e) {
+                // validation wasn't successful or not found
+            }
         }
 
         if (isNotBlank(pmid)) {
-            final String response = storage.retrieveByPmid(pmid);
-            dispatchEmptyResponse(asyncResponse, response);
-            return;
+            try {
+                final String response = storage.retrieveByPmid(pmid, postValidate, firstAuthor, atitle);
+
+                if (isNotBlank(response)) {
+                    asyncResponse.resume(response);
+                    return;
+                }
+            } catch (NotFoundException e) {
+                // validation wasn't successful or not found
+            }
         }
 
         if (isNotBlank(pmc)) {
-            final String response = storage.retrieveByPmid(pmc);
-            dispatchEmptyResponse(asyncResponse, response);
-            return;
+            try {
+                final String response = storage.retrieveByPmid(pmc, postValidate, firstAuthor, atitle);
+                if (isNotBlank(response)) {
+                    asyncResponse.resume(response);
+                    return;
+                }
+
+            } catch (NotFoundException e) {
+                // validation wasn't successful or not found
+            }
         }
 
         if (isNotBlank(istexid)) {
-            final String response = storage.retrieveByIstexid(istexid);
-            dispatchEmptyResponse(asyncResponse, response);
-            return;
+            try {
+                final String response = storage.retrieveByIstexid(istexid, postValidate, firstAuthor, atitle);
+
+                if (isNotBlank(response)) {
+                    asyncResponse.resume(response);
+                    return;
+                }
+
+            } catch (NotFoundException e) {
+                // validation wasn't successful or not found
+            }
         }
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
             storage.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, matchingDocument -> {
-                dispatchResponseOrException(asyncResponse, matchingDocument);
+                if (matchingDocument.isException()) {
+                    if (isNotBlank(biblio)) {
+                        storage.retrieveByBiblioAsync(biblio, matchingDocument2 -> {
+                            if (matchingDocument2.isException()) {
+                                asyncResponse.resume(matchingDocument2.getException());
+                            } else {
+                                asyncResponse.resume(matchingDocument2.getFinalJsonObject());
+                            }
+                        });
+                        return;
+                    } else {
+                        asyncResponse.resume(matchingDocument.getException());
+                    }
+                } else {
+                    asyncResponse.resume(matchingDocument.getFinalJsonObject());
+                }
             });
             return;
         }
@@ -153,7 +199,7 @@ public class LookupController {
 
     /**
      * Dispatches the response or the exception according to the information contained in the matching document
-     * object. 
+     * object.
      */
     private void dispatchResponseOrException(AsyncResponse asyncResponse, MatchingDocument matchingDocument) {
         if (matchingDocument.isException()) {
@@ -165,6 +211,8 @@ public class LookupController {
 
     /**
      * Dispatch the response or throw a NotFoundException if the response is empty or blank
+     *
+     * @Return true if the response can be dispatched back
      */
     private void dispatchEmptyResponse(AsyncResponse asyncResponse, String response) {
         if (isBlank(response)) {
@@ -178,28 +226,28 @@ public class LookupController {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/doi/{doi}")
     public String getByDoi(@PathParam("doi") String doi) {
-        return storage.retrieveByDoi(doi);
+        return storage.retrieveByDoi(doi, false, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/pmid/{pmid}")
     public String getByPmid(@PathParam("pmid") String pmid) {
-        return storage.retrieveByPmid(pmid);
+        return storage.retrieveByPmid(pmid, false, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/pmc/{pmc}")
     public String getByPmc(@PathParam("pmc") String pmc) {
-        return storage.retrieveByPmc(pmc);
+        return storage.retrieveByPmc(pmc, false, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/istexid/{istexid}")
     public String getByIstexid(@PathParam("istexid") String istexid) {
-        return storage.retrieveByIstexid(istexid);
+        return storage.retrieveByIstexid(istexid, false, null, null);
     }
 
     @POST
