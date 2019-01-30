@@ -9,6 +9,8 @@ import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.LookupEngine;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.container.AsyncResponse;
@@ -35,6 +37,7 @@ public class LookupController {
     private LookupEngine storage = null;
     private LookupConfiguration configuration;
     private final StorageEnvFactory storageEnvFactory;
+    private static final Logger LOGGER = LoggerFactory.getLogger(LookupController.class);
 
     @Inject
     public LookupController(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) {
@@ -95,21 +98,28 @@ public class LookupController {
             AsyncResponse asyncResponse
     ) {
 
+        boolean processed = false;
+        StringBuilder messagesSb = new StringBuilder();
+
         if (isNotBlank(doi)) {
+            processed = true;
             try {
                 final String response = storage.retrieveByDoi(doi, postValidate, firstAuthor, atitle);
 
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
                     return;
+
                 }
 
             } catch (NotFoundException e) {
-                // validation wasn't successful or not found
+                messagesSb.append(e.getMessage());
+                LOGGER.warn("DOI not matched, keep going if enough additional information. ", e);
             }
         }
 
         if (isNotBlank(pmid)) {
+            processed = true;
             try {
                 final String response = storage.retrieveByPmid(pmid, postValidate, firstAuthor, atitle);
 
@@ -118,11 +128,12 @@ public class LookupController {
                     return;
                 }
             } catch (NotFoundException e) {
-                // validation wasn't successful or not found
+                LOGGER.warn("PMID not matched, keep going if enough additional information. ", e);
             }
         }
 
         if (isNotBlank(pmc)) {
+            processed = true;
             try {
                 final String response = storage.retrieveByPmid(pmc, postValidate, firstAuthor, atitle);
                 if (isNotBlank(response)) {
@@ -131,11 +142,12 @@ public class LookupController {
                 }
 
             } catch (NotFoundException e) {
-                // validation wasn't successful or not found
+                LOGGER.warn("PMC not matched, keep going if enough additional information. ", e);
             }
         }
 
         if (isNotBlank(istexid)) {
+            processed = true;
             try {
                 final String response = storage.retrieveByIstexid(istexid, postValidate, firstAuthor, atitle);
 
@@ -145,23 +157,26 @@ public class LookupController {
                 }
 
             } catch (NotFoundException e) {
-                // validation wasn't successful or not found
+                LOGGER.warn("ISTEXID not matched, keep going if enough additional information. ", e);
             }
         }
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
+            processed = true;
             storage.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
-
+                    // error with article info - trying to match with journal infos (without first Page)
                     if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
                         storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, matchingDocumentJournal -> {
                             if (matchingDocumentJournal.isException()) {
+
+                                //error with journal info - trying to match biblio
                                 if (isNotBlank(biblio)) {
-                                    storage.retrieveByBiblioAsync(biblio, matchingDocument2 -> {
-                                        if (matchingDocument2.isException()) {
-                                            asyncResponse.resume(matchingDocument2.getException());
+                                    storage.retrieveByBiblioAsync(biblio, MatchingDocumentBiblio -> {
+                                        if (MatchingDocumentBiblio.isException()) {
+                                            asyncResponse.resume(MatchingDocumentBiblio.getException());
                                         } else {
-                                            asyncResponse.resume(matchingDocument2.getFinalJsonObject());
+                                            asyncResponse.resume(MatchingDocumentBiblio.getFinalJsonObject());
                                         }
                                     });
                                     return;
@@ -175,15 +190,18 @@ public class LookupController {
                         return;
                     }
 
+                    // error with article info - trying to match with journal infos (with first Page)
                     if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage) && isNotBlank(firstAuthor)) {
                         storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, firstAuthor, matchingDocumentJournal -> {
                             if (matchingDocumentJournal.isException()) {
+
+                                //error with journal info - trying to match biblio
                                 if (isNotBlank(biblio)) {
-                                    storage.retrieveByBiblioAsync(biblio, matchingDocument2 -> {
-                                        if (matchingDocument2.isException()) {
-                                            asyncResponse.resume(matchingDocument2.getException());
+                                    storage.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
+                                        if (matchingDocumentBiblio.isException()) {
+                                            asyncResponse.resume(matchingDocumentBiblio.getException());
                                         } else {
-                                            asyncResponse.resume(matchingDocument2.getFinalJsonObject());
+                                            asyncResponse.resume(matchingDocumentBiblio.getFinalJsonObject());
                                         }
                                     });
                                     return;
@@ -197,12 +215,14 @@ public class LookupController {
                         return;
                     }
 
+                    // error with article info - and no journal information provided -
+                    // trying to match with journal infos (with first Page)
                     if (isNotBlank(biblio)) {
-                        storage.retrieveByBiblioAsync(biblio, matchingDocument2 -> {
-                            if (matchingDocument2.isException()) {
-                                asyncResponse.resume(matchingDocument2.getException());
+                        storage.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
+                            if (matchingDocumentBiblio.isException()) {
+                                asyncResponse.resume(matchingDocumentBiblio.getException());
                             } else {
-                                asyncResponse.resume(matchingDocument2.getFinalJsonObject());
+                                asyncResponse.resume(matchingDocumentBiblio.getFinalJsonObject());
                             }
                         });
                         return;
@@ -217,28 +237,66 @@ public class LookupController {
         }
 
         if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
+            processed = true;
             storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, matchingDocument -> {
-                dispatchResponseOrException(asyncResponse, matchingDocument);
+                if (matchingDocument.isException()) {
+                    //error with journal info - trying to match biblio
+                    if (isNotBlank(biblio)) {
+                        storage.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
+                            if (matchingDocumentBiblio.isException()) {
+                                asyncResponse.resume(matchingDocumentBiblio.getException());
+                            } else {
+                                asyncResponse.resume(matchingDocumentBiblio.getFinalJsonObject());
+                            }
+                        });
+                        return;
+                    } else {
+                        asyncResponse.resume(matchingDocument.getException());
+                    }
+                } else {
+                    asyncResponse.resume(matchingDocument.getFinalJsonObject());
+                }
             });
             return;
         }
 
         if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, firstAuthor,
-                    matchingDocument -> {
-                        dispatchResponseOrException(asyncResponse, matchingDocument);
-                    });
+            processed = true;
+            storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, firstAuthor, matchingDocument -> {
+                if (matchingDocument.isException()) {
+                    //error with journal info - trying to match biblio
+                    if (isNotBlank(biblio)) {
+                        storage.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
+                            if (matchingDocumentBiblio.isException()) {
+                                asyncResponse.resume(matchingDocumentBiblio.getException());
+                            } else {
+                                asyncResponse.resume(matchingDocumentBiblio.getFinalJsonObject());
+                            }
+                        });
+                        return;
+                    } else {
+                        asyncResponse.resume(matchingDocument.getException());
+                    }
+                } else {
+                    asyncResponse.resume(matchingDocument.getFinalJsonObject());
+                }
+            });
             return;
         }
 
         if (isNotBlank(biblio)) {
+            processed = true;
             storage.retrieveByBiblioAsync(biblio, matchingDocument -> {
                 dispatchResponseOrException(asyncResponse, matchingDocument);
             });
             return;
         }
 
-        throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
+        if (!processed) {
+            throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
+        } else {
+            throw new ServiceException(404, messagesSb.toString());
+        }
     }
 
     /**
