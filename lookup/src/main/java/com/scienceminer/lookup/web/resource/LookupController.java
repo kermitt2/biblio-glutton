@@ -152,6 +152,51 @@ public class LookupController {
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
             storage.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
+
+                    if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
+                        storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, matchingDocumentJournal -> {
+                            if (matchingDocumentJournal.isException()) {
+                                if (isNotBlank(biblio)) {
+                                    storage.retrieveByBiblioAsync(biblio, matchingDocument2 -> {
+                                        if (matchingDocument2.isException()) {
+                                            asyncResponse.resume(matchingDocument2.getException());
+                                        } else {
+                                            asyncResponse.resume(matchingDocument2.getFinalJsonObject());
+                                        }
+                                    });
+                                    return;
+                                } else {
+                                    asyncResponse.resume(matchingDocument.getException());
+                                }
+                            } else {
+                                asyncResponse.resume(matchingDocumentJournal.getFinalJsonObject());
+                            }
+                        });
+                        return;
+                    }
+
+                    if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage) && isNotBlank(firstAuthor)) {
+                        storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, firstAuthor, matchingDocumentJournal -> {
+                            if (matchingDocumentJournal.isException()) {
+                                if (isNotBlank(biblio)) {
+                                    storage.retrieveByBiblioAsync(biblio, matchingDocument2 -> {
+                                        if (matchingDocument2.isException()) {
+                                            asyncResponse.resume(matchingDocument2.getException());
+                                        } else {
+                                            asyncResponse.resume(matchingDocument2.getFinalJsonObject());
+                                        }
+                                    });
+                                    return;
+                                } else {
+                                    asyncResponse.resume(matchingDocument.getException());
+                                }
+                            } else {
+                                asyncResponse.resume(matchingDocumentJournal.getFinalJsonObject());
+                            }
+                        });
+                        return;
+                    }
+
                     if (isNotBlank(biblio)) {
                         storage.retrieveByBiblioAsync(biblio, matchingDocument2 -> {
                             if (matchingDocument2.isException()) {
