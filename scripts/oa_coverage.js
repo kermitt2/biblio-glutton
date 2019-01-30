@@ -97,7 +97,7 @@ function processDump(options, callback) {
                     });
                 }
             }).on('error', function(err) { // Handle errors
-                console.log('error calling glutton service:', doi); 
+                console.error('error calling glutton service:', doi); 
                 // let's try again
                 /*var request = http.get(url, function(response) {
                     //console.log(response.statusCode);
@@ -119,7 +119,7 @@ function processDump(options, callback) {
     });
     rstream.on('finish', function (err) {
         if (err) { 
-            console.log('error reading istex dump file', err)
+            console.error('error reading istex dump file', err)
         } 
 
         console.log("open access ratio: " + total_oa / total);

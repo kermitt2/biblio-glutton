@@ -9,7 +9,6 @@ import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.LookupEngine;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
-import org.omg.CosNaming.NamingContextPackage.NotFound;
 
 import javax.ws.rs.*;
 import javax.ws.rs.container.AsyncResponse;
