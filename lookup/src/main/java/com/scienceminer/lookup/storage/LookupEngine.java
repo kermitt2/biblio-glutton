@@ -8,7 +8,6 @@ import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.storage.lookup.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.omg.CosNaming.NamingContextPackage.NotFound;
 import scala.Option;
 
 import java.util.function.Consumer;
@@ -117,7 +116,7 @@ public class LookupEngine {
         if (!StringUtils.startsWithIgnoreCase(pmc, "pmc")) {
             pmc = "PMC" + pmc;
         }
-        
+
         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
             return retrieveByDoi(pmidData.getDoi());
@@ -132,7 +131,10 @@ public class LookupEngine {
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi()) && isNotBlank(istexData.getDoi().get(0))) {
             final String doi = istexData.getDoi().get(0);
             MatchingDocument outputData = metadataLookup.retrieveByMetadata(doi);
-            return injectIdsByIstexData(outputData.getJsonObject(), doi, istexData);
+
+            final String oaLink = oaDoiLookup.retrieveOALinkByDoi(doi);
+
+            return injectIdsByIstexData(outputData.getJsonObject(), doi, istexData, oaLink);
         }
 
         throw new NotFoundException("Cannot find record by Istex ID " + istexid);
@@ -289,16 +291,19 @@ public class LookupEngine {
     protected String injectIdsByDoi(String jsonobj, String doi) {
         final IstexData istexData = istexLookup.retrieveByDoi(doi);
 
-        return injectIdsByIstexData(jsonobj, doi, istexData);
+        final String oaLink = oaDoiLookup.retrieveOALinkByDoi(doi);
+
+        return injectIdsByIstexData(jsonobj, doi, istexData, oaLink);
     }
 
 
-    protected String injectIdsByIstexData(String jsonobj, String doi, IstexData istexData) {
+    protected String injectIdsByIstexData(String jsonobj, String doi, IstexData istexData, String oaLink) {
         boolean pmid = false;
         boolean pmc = false;
         boolean foundIstexData = false;
         boolean foundPmidData = false;
         boolean first = false;
+        boolean foundOaLink = false;
 
         StringBuilder sb = new StringBuilder();
         if (isBlank(jsonobj)) {
@@ -381,7 +386,18 @@ public class LookupEngine {
             }
         }
 
-        if (foundIstexData || foundPmidData) {
+        if (isNotBlank(oaLink)) {
+            if (!first) {
+                sb.append(", ");
+            } else {
+                first = false;
+            }
+            sb.append("\"oaLink\":\"" + oaLink + "\"");
+            foundOaLink = true;
+
+        }
+
+        if (foundIstexData || foundPmidData || foundOaLink) {
             sb.append("}");
             return sb.toString();
         } else {
