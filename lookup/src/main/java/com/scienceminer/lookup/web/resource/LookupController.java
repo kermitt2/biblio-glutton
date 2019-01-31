@@ -34,16 +34,20 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @Singleton
 public class LookupController {
 
-    private LookupEngine storage = null;
+    private LookupEngine lookupEngine = null;
+
     private LookupConfiguration configuration;
-    private final StorageEnvFactory storageEnvFactory;
+
+    private StorageEnvFactory storageEnvFactory;
     private static final Logger LOGGER = LoggerFactory.getLogger(LookupController.class);
+    protected LookupController() {
+    }
 
     @Inject
     public LookupController(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) {
         this.configuration = configuration;
         this.storageEnvFactory = storageEnvFactory;
-        this.storage = new LookupEngine(storageEnvFactory);
+        this.lookupEngine = new LookupEngine(storageEnvFactory);
     }
 
     @GET
@@ -83,7 +87,7 @@ public class LookupController {
                 postValidate, jtitle, volume, firstPage, biblio, asyncResponse);
     }
 
-    private void getByQuery(
+    protected void getByQuery(
             String doi,
             String pmid,
             String pmc,
@@ -104,7 +108,7 @@ public class LookupController {
         if (isNotBlank(doi)) {
             processed = true;
             try {
-                final String response = storage.retrieveByDoi(doi, postValidate, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByDoi(doi, postValidate, firstAuthor, atitle);
 
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
@@ -121,7 +125,7 @@ public class LookupController {
         if (isNotBlank(pmid)) {
             processed = true;
             try {
-                final String response = storage.retrieveByPmid(pmid, postValidate, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByPmid(pmid, postValidate, firstAuthor, atitle);
 
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
@@ -135,7 +139,7 @@ public class LookupController {
         if (isNotBlank(pmc)) {
             processed = true;
             try {
-                final String response = storage.retrieveByPmid(pmc, postValidate, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByPmid(pmc, postValidate, firstAuthor, atitle);
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
                     return;
@@ -149,7 +153,7 @@ public class LookupController {
         if (isNotBlank(istexid)) {
             processed = true;
             try {
-                final String response = storage.retrieveByIstexid(istexid, postValidate, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByIstexid(istexid, postValidate, firstAuthor, atitle);
 
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
@@ -163,16 +167,16 @@ public class LookupController {
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
             processed = true;
-            storage.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, matchingDocument -> {
+            lookupEngine.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
                     // error with article info - trying to match with journal infos (without first Page)
                     if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-                        storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, matchingDocumentJournal -> {
+                        lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, matchingDocumentJournal -> {
                             if (matchingDocumentJournal.isException()) {
 
                                 //error with journal info - trying to match biblio
                                 if (isNotBlank(biblio)) {
-                                    storage.retrieveByBiblioAsync(biblio, MatchingDocumentBiblio -> {
+                                    lookupEngine.retrieveByBiblioAsync(biblio, MatchingDocumentBiblio -> {
                                         if (MatchingDocumentBiblio.isException()) {
                                             asyncResponse.resume(MatchingDocumentBiblio.getException());
                                         } else {
@@ -192,12 +196,12 @@ public class LookupController {
 
                     // error with article info - trying to match with journal infos (with first Page)
                     if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage) && isNotBlank(firstAuthor)) {
-                        storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, firstAuthor, matchingDocumentJournal -> {
+                        lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, firstAuthor, matchingDocumentJournal -> {
                             if (matchingDocumentJournal.isException()) {
 
                                 //error with journal info - trying to match biblio
                                 if (isNotBlank(biblio)) {
-                                    storage.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
+                                    lookupEngine.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
                                         if (matchingDocumentBiblio.isException()) {
                                             asyncResponse.resume(matchingDocumentBiblio.getException());
                                         } else {
@@ -218,7 +222,7 @@ public class LookupController {
                     // error with article info - and no journal information provided -
                     // trying to match with journal infos (with first Page)
                     if (isNotBlank(biblio)) {
-                        storage.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
+                        lookupEngine.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
                             if (matchingDocumentBiblio.isException()) {
                                 asyncResponse.resume(matchingDocumentBiblio.getException());
                             } else {
@@ -238,11 +242,11 @@ public class LookupController {
 
         if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
             processed = true;
-            storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, matchingDocument -> {
+            lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, matchingDocument -> {
                 if (matchingDocument.isException()) {
                     //error with journal info - trying to match biblio
                     if (isNotBlank(biblio)) {
-                        storage.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
+                        lookupEngine.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
                             if (matchingDocumentBiblio.isException()) {
                                 asyncResponse.resume(matchingDocumentBiblio.getException());
                             } else {
@@ -262,11 +266,11 @@ public class LookupController {
 
         if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
             processed = true;
-            storage.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, firstAuthor, matchingDocument -> {
+            lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, firstAuthor, matchingDocument -> {
                 if (matchingDocument.isException()) {
                     //error with journal info - trying to match biblio
                     if (isNotBlank(biblio)) {
-                        storage.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
+                        lookupEngine.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
                             if (matchingDocumentBiblio.isException()) {
                                 asyncResponse.resume(matchingDocumentBiblio.getException());
                             } else {
@@ -286,7 +290,7 @@ public class LookupController {
 
         if (isNotBlank(biblio)) {
             processed = true;
-            storage.retrieveByBiblioAsync(biblio, matchingDocument -> {
+            lookupEngine.retrieveByBiblioAsync(biblio, matchingDocument -> {
                 dispatchResponseOrException(asyncResponse, matchingDocument);
             });
             return;
@@ -328,28 +332,28 @@ public class LookupController {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/doi/{doi}")
     public String getByDoi(@PathParam("doi") String doi) {
-        return storage.retrieveByDoi(doi, false, null, null);
+        return lookupEngine.retrieveByDoi(doi, false, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/pmid/{pmid}")
     public String getByPmid(@PathParam("pmid") String pmid) {
-        return storage.retrieveByPmid(pmid, false, null, null);
+        return lookupEngine.retrieveByPmid(pmid, false, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/pmc/{pmc}")
     public String getByPmc(@PathParam("pmc") String pmc) {
-        return storage.retrieveByPmc(pmc, false, null, null);
+        return lookupEngine.retrieveByPmc(pmc, false, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/istexid/{istexid}")
     public String getByIstexid(@PathParam("istexid") String istexid) {
-        return storage.retrieveByIstexid(istexid, false, null, null);
+        return lookupEngine.retrieveByIstexid(istexid, false, null, null);
     }
 
     @POST
@@ -358,12 +362,16 @@ public class LookupController {
     @Path("/")
     public void getByBiblioStringWithPost(String biblio, @Suspended final AsyncResponse asyncResponse) {
         if (isNotBlank(biblio)) {
-            storage.retrieveByBiblioAsync(biblio, matchingDocument -> {
+            lookupEngine.retrieveByBiblioAsync(biblio, matchingDocument -> {
                 dispatchResponseOrException(asyncResponse, matchingDocument);
             });
             return;
         }
 
         throw new ServiceException(400, "Missing or empty biblio parameter. ");
+    }
+
+    protected void setLookupEngine(LookupEngine lookupEngine) {
+        this.lookupEngine = lookupEngine;
     }
 }
