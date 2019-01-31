@@ -23,11 +23,12 @@ import static org.apache.commons.lang3.StringUtils.*;
 public class LookupEngine {
 
     private OALookup oaDoiLookup = null;
+
     private IstexIdsLookup istexLookup = null;
+
     private MetadataLookup metadataLookup = null;
     private MetadataMatching metadataMatching = null;
     private PMIdsLookup pmidLookup = null;
-
     public static Pattern DOIPattern = Pattern.compile("\"DOI\"\\s?:\\s?\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
 
     public LookupEngine() {
@@ -188,6 +189,7 @@ public class LookupEngine {
     }
 
     // Intermediate lookups
+
     public PmidData retrievePMidsByDoi(String doi) {
         return pmidLookup.retrieveIdsByDoi(doi);
     }
@@ -252,22 +254,6 @@ public class LookupEngine {
             }
             callback.accept(matchingDocument);
         });
-    }
-
-    protected void setOaDoiLookup(OALookup oaDoiLookup) {
-        this.oaDoiLookup = oaDoiLookup;
-    }
-
-    protected void setIstexLookup(IstexIdsLookup istexLookup) {
-        this.istexLookup = istexLookup;
-    }
-
-    protected void setMetadataLookup(MetadataLookup metadataLookup) {
-        this.metadataLookup = metadataLookup;
-    }
-
-    protected void setPmidLookup(PMIdsLookup pmidLookup) {
-        this.pmidLookup = pmidLookup;
     }
 
     public String fetchDOI(String input) {
@@ -436,6 +422,26 @@ public class LookupEngine {
         } else {
             return jsonobj;
         }
+    }
+
+    public void setMetadataMatching(MetadataMatching metadataMatching) {
+        this.metadataMatching = metadataMatching;
+    }
+
+    public void setOaDoiLookup(OALookup oaDoiLookup) {
+        this.oaDoiLookup = oaDoiLookup;
+    }
+
+    public void setIstexLookup(IstexIdsLookup istexLookup) {
+        this.istexLookup = istexLookup;
+    }
+
+    public void setMetadataLookup(MetadataLookup metadataLookup) {
+        this.metadataLookup = metadataLookup;
+    }
+
+    public void setPmidLookup(PMIdsLookup pmidLookup) {
+        this.pmidLookup = pmidLookup;
     }
 
 }
