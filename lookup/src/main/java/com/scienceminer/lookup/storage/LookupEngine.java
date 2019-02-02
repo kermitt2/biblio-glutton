@@ -10,6 +10,8 @@ import com.scienceminer.lookup.data.MatchingDocument;
 import com.scienceminer.lookup.data.PmidData;
 import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.storage.lookup.*;
+import com.scienceminer.lookup.utils.grobid.GrobidClient;
+import com.scienceminer.lookup.utils.grobid.GrobidResponseStaxHandler;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import scala.Option;
@@ -30,6 +32,7 @@ public class LookupEngine {
     private MetadataMatching metadataMatching = null;
     private PMIdsLookup pmidLookup = null;
     public static Pattern DOIPattern = Pattern.compile("\"DOI\"\\s?:\\s?\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
+    private GrobidClient grobidClient = null;
 
     public LookupEngine() {
     }
@@ -246,6 +249,37 @@ public class LookupEngine {
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
     }
 
+    public void retrieveByBiblioAsync(String biblio, Boolean postValidate, String firstAuthor, String title, Boolean parseReference, Consumer<MatchingDocument> callback) {
+        metadataMatching.retrieveByBiblioAsync(biblio, matchingDocument -> {
+            if (!matchingDocument.isException()) {
+                if (postValidate != null && postValidate) {
+                    //no title and author, extract with grobid. if grobid unavailable... it will fail.
+                    if(isBlank(title) && isBlank(firstAuthor) && parseReference) {
+                        try {
+                            GrobidResponseStaxHandler.GrobidResponse response = grobidClient.processCitation(biblio, "0");
+                            if (!areMetadataMatching(response.getAtitle(), response.getFirstAuthor(), matchingDocument)) {
+                                callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the postValidation.")));
+                                return;
+                            }
+                        } catch (Exception e) {
+                            callback.accept(new MatchingDocument(new NotFoundException("Article found but it could not be postValidated. No title and first Author provided for validation and " +
+                                    "Grobid wasn't available.", e)));
+                        }
+                    } else {
+                        if (!areMetadataMatching(title, firstAuthor, matchingDocument)) {
+                            callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the postValidation.")));
+                            return;
+                        }
+                    }
+                }
+
+                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
+                matchingDocument.setFinalJsonObject(s);
+            }
+            callback.accept(matchingDocument);
+        });
+    }
+
     public void retrieveByBiblioAsync(String biblio, Consumer<MatchingDocument> callback) {
         metadataMatching.retrieveByBiblioAsync(biblio, matchingDocument -> {
             if (!matchingDocument.isException()) {
@@ -444,4 +478,7 @@ public class LookupEngine {
         this.pmidLookup = pmidLookup;
     }
 
+    public void setGrobidClient(GrobidClient grobidClient) {
+        this.grobidClient = grobidClient;
+    }
 }

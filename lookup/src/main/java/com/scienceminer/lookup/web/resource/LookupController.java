@@ -9,6 +9,10 @@ import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.LookupEngine;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
+import com.scienceminer.lookup.utils.grobid.GrobidClient;
+import io.dropwizard.client.HttpClientBuilder;
+import io.dropwizard.setup.Environment;
+import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +43,9 @@ public class LookupController {
     private LookupConfiguration configuration;
 
     private StorageEnvFactory storageEnvFactory;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(LookupController.class);
+
     protected LookupController() {
     }
 
@@ -48,6 +54,7 @@ public class LookupController {
         this.configuration = configuration;
         this.storageEnvFactory = storageEnvFactory;
         this.lookupEngine = new LookupEngine(storageEnvFactory);
+        this.lookupEngine.setGrobidClient(new GrobidClient(configuration.getGrobidPath()));
     }
 
     @GET
@@ -65,6 +72,7 @@ public class LookupController {
             @QueryParam("volume") String volume,
             @QueryParam("firstPage") String firstPage,
             @QueryParam("biblio") String biblio,
+            @QueryParam("parseReference") Boolean parseReference,
             @Suspended final AsyncResponse asyncResponse) {
 
         asyncResponse.setTimeoutHandler(asyncResponse1 ->
@@ -83,8 +91,12 @@ public class LookupController {
 //        });
 
 
+        //DEFAULTS
+        if (postValidate == null) postValidate = Boolean.TRUE;
+        if (parseReference == null) parseReference = Boolean.TRUE;
+
         getByQuery(doi, pmid, pmc, istexid, firstAuthor, atitle,
-                postValidate, jtitle, volume, firstPage, biblio, asyncResponse);
+                postValidate, jtitle, volume, firstPage, biblio, parseReference, asyncResponse);
     }
 
     protected void getByQuery(
@@ -94,11 +106,12 @@ public class LookupController {
             String istexid,
             String firstAuthor,
             String atitle,
-            Boolean postValidate,
+            final Boolean postValidate,
             String jtitle,
             String volume,
             String firstPage,
             String biblio,
+            final Boolean parseReference,
             AsyncResponse asyncResponse
     ) {
 
@@ -176,7 +189,7 @@ public class LookupController {
 
                                 //error with journal info - trying to match biblio
                                 if (isNotBlank(biblio)) {
-                                    lookupEngine.retrieveByBiblioAsync(biblio, MatchingDocumentBiblio -> {
+                                    lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, MatchingDocumentBiblio -> {
                                         if (MatchingDocumentBiblio.isException()) {
                                             asyncResponse.resume(MatchingDocumentBiblio.getException());
                                         } else {
@@ -195,13 +208,13 @@ public class LookupController {
                     }
 
                     // error with article info - trying to match with journal infos (with first Page)
-                    if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage) && isNotBlank(firstAuthor)) {
+                    if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
                         lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, firstAuthor, matchingDocumentJournal -> {
                             if (matchingDocumentJournal.isException()) {
 
                                 //error with journal info - trying to match biblio
                                 if (isNotBlank(biblio)) {
-                                    lookupEngine.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
+                                    lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
                                         if (matchingDocumentBiblio.isException()) {
                                             asyncResponse.resume(matchingDocumentBiblio.getException());
                                         } else {

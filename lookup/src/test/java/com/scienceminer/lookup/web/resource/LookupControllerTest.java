@@ -54,7 +54,7 @@ public class LookupControllerTest {
         final String atitle = "atitle";
         final String firstAuthor = "firstAuthor";
 
-        final String jsonOutput = "{\"DOI\":\""+myDOI+"\",\"title\":[\""+atitle+"\"],\"author\":[{\"given\":\"Alexander Yu\",\"family\":\""+firstAuthor+"\",\"sequence\":\"first\",\"affiliation\":[]}]}";
+        final String jsonOutput = "{\"DOI\":\"" + myDOI + "\",\"title\":[\"" + atitle + "\"],\"author\":[{\"given\":\"Alexander Yu\",\"family\":\"" + firstAuthor + "\",\"sequence\":\"first\",\"affiliation\":[]}]}";
 
         final MatchingDocument response = new MatchingDocument(myDOI, jsonOutput);
         expect(mockMetadataLookup.retrieveByMetadata(myDOI)).andReturn(response);
@@ -64,7 +64,7 @@ public class LookupControllerTest {
 
         replay(mockMetadataLookup, mockedAsyncResponse, mockPmidsLookup, mockOALookup, mockIstexLookup, mockMetadataMatching);
         target.getByQuery(myDOI, null, null, null, firstAuthor, atitle,
-                postValidate, null, null, null, null, mockedAsyncResponse);
+                postValidate, null, null, null, null, null, mockedAsyncResponse);
 
         verify(mockMetadataLookup, mockedAsyncResponse, mockPmidsLookup, mockOALookup, mockIstexLookup, mockMetadataMatching);
     }
@@ -80,9 +80,9 @@ public class LookupControllerTest {
         final String atitle = "atitle";
         final String firstAuthor = "firstAuthor";
 
-        final String jsonOutput = "{\"DOI\":\""+myDOI+"\",\"title\":[\""+atitle+"12312312313\"],\"author\":[{\"given\":\"Alexander Yu\",\"family\":\""+firstAuthor+"\",\"sequence\":\"first\",\"affiliation\":[]}]}";
+        final String jsonOutput = "{\"DOI\":\"" + myDOI + "\",\"title\":[\"" + atitle + "12312312313\"],\"author\":[{\"given\":\"Alexander Yu\",\"family\":\"" + firstAuthor + "\",\"sequence\":\"first\",\"affiliation\":[]}]}";
         final MatchingDocument response = new MatchingDocument(myDOI, jsonOutput);
-        
+
         expect(mockMetadataLookup.retrieveByMetadata(myDOI)).andReturn(response);
         mockMetadataMatching.retrieveByMetadataAsync(eq(atitle), eq(firstAuthor), anyObject());
 //        expect(mockIstexLookup.retrieveByDoi(myDOI)).andReturn(null);
@@ -96,7 +96,7 @@ public class LookupControllerTest {
 
         replay(mockMetadataLookup, mockedAsyncResponse, mockPmidsLookup, mockOALookup, mockIstexLookup, mockMetadataMatching);
         target.getByQuery(myDOI, null, null, null, firstAuthor, atitle,
-                postValidate, null, null, null, null, mockedAsyncResponse);
+                postValidate, null, null, null, null, null, mockedAsyncResponse);
 
         verify(mockMetadataLookup, mockedAsyncResponse, mockPmidsLookup, mockOALookup, mockIstexLookup, mockMetadataMatching);
     }
@@ -112,7 +112,7 @@ public class LookupControllerTest {
         final String atitle = "atitle";
         final String firstAuthor = "firstAuthor";
 
-        final String jsonOutput = "{\"DOI\":\""+myDOI+"\",\"title\":[\""+atitle+"12312312313\"],\"author\":[{\"given\":\"Alexander Yu\",\"family\":\""+firstAuthor+"\",\"sequence\":\"first\",\"affiliation\":[]}]}";
+        final String jsonOutput = "{\"DOI\":\"" + myDOI + "\",\"title\":[\"" + atitle + "12312312313\"],\"author\":[{\"given\":\"Alexander Yu\",\"family\":\"" + firstAuthor + "\",\"sequence\":\"first\",\"affiliation\":[]}]}";
         final MatchingDocument response = new MatchingDocument(myDOI, jsonOutput);
 
         expect(mockMetadataLookup.retrieveByMetadata(myDOI)).andReturn(new MatchingDocument());
@@ -120,7 +120,7 @@ public class LookupControllerTest {
 
         replay(mockMetadataLookup, mockedAsyncResponse, mockPmidsLookup, mockOALookup, mockIstexLookup, mockMetadataMatching);
         target.getByQuery(myDOI, null, null, null, firstAuthor, atitle,
-                postValidate, null, null, null, null, mockedAsyncResponse);
+                postValidate, null, null, null, null, null, mockedAsyncResponse);
 
         verify(mockMetadataLookup, mockedAsyncResponse, mockPmidsLookup, mockOALookup, mockIstexLookup, mockMetadataMatching);
     }

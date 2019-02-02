@@ -1,0 +1,18 @@
+<biblStruct>
+    <analytic>
+        <title level="a" type="main">This si the end of the world</title>
+        <author>
+            <persName
+                xmlns="http://www.tei-c.org/ns/1.0">
+                <forename type="first">Luca</forename>
+                <surname>Foppiano</surname>
+            </persName>
+        </author>
+    </analytic>
+    <monogr>
+        <title level="j">Journal of applieed science</title>
+        <imprint>
+            <date type="published" when="2016" />
+        </imprint>
+    </monogr>
+</biblStruct>

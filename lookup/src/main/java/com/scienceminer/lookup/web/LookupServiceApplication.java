@@ -9,15 +9,18 @@ import com.scienceminer.lookup.command.LoadIstexIdsCommand;
 import com.scienceminer.lookup.command.LoadPMIDCommand;
 import com.scienceminer.lookup.command.LoadUnpayWallCommand;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
+import com.scienceminer.lookup.utils.grobid.GrobidClient;
 import com.scienceminer.lookup.web.healthcheck.LookupHealthCheck;
 import com.scienceminer.lookup.web.module.LookupServiceModule;
 import com.scienceminer.lookup.web.module.NotFoundExceptionMapper;
 import com.scienceminer.lookup.web.module.ServiceExceptionMapper;
 import com.scienceminer.lookup.web.module.ServiceOverloadedExceptionMapper;
 import io.dropwizard.Application;
+import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.apache.http.client.HttpClient;
 
 import java.util.List;
 
@@ -31,14 +34,14 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
     }
 
     @Override
-    public void run(LookupConfiguration lookupConfiguration, Environment environment) throws Exception {
+    public void run(LookupConfiguration configuration, Environment environment) throws Exception {
 
         environment.jersey().setUrlPattern(RESOURCES + "/*");
         environment.jersey().register(new ServiceExceptionMapper());
         environment.jersey().register(new NotFoundExceptionMapper());
         environment.jersey().register(new ServiceOverloadedExceptionMapper());
 
-        final LookupHealthCheck healthCheck = new LookupHealthCheck(lookupConfiguration);
+        final LookupHealthCheck healthCheck = new LookupHealthCheck(configuration);
         environment.healthChecks().register("HealthCheck", healthCheck);
     }
 
