@@ -254,10 +254,10 @@ public class LookupEngine {
             if (!matchingDocument.isException()) {
                 if (postValidate != null && postValidate) {
                     //no title and author, extract with grobid. if grobid unavailable... it will fail.
-                    if(isBlank(title) && isBlank(firstAuthor) && parseReference) {
+                    if (isBlank(firstAuthor) && parseReference) {
                         try {
                             GrobidResponseStaxHandler.GrobidResponse response = grobidClient.processCitation(biblio, "0");
-                            if (!areMetadataMatching(response.getAtitle(), response.getFirstAuthor(), matchingDocument)) {
+                            if (!areMetadataMatching(response.getAtitle(), response.getFirstAuthor(), matchingDocument, false)) {
                                 callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the postValidation.")));
                                 return;
                             }
@@ -266,7 +266,7 @@ public class LookupEngine {
                                     "Grobid wasn't available.", e)));
                         }
                     } else {
-                        if (!areMetadataMatching(title, firstAuthor, matchingDocument)) {
+                        if (!areMetadataMatching(title, firstAuthor, matchingDocument, true)) {
                             callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the postValidation.")));
                             return;
                         }
@@ -314,23 +314,27 @@ public class LookupEngine {
      * against the (incomplete) source bibliographic item to block
      * inconsistent results.
      */
-    private boolean areMetadataMatching(String title, String firstAuthor, MatchingDocument result) {
+    private boolean areMetadataMatching(String title, String firstAuthor, MatchingDocument result, boolean onlyAuthor) {
         boolean valid = true;
 
-        // check main metadata available in source with fuzzy matching
-        if (StringUtils.isNotBlank(title) && StringUtils.isNotBlank(result.getTitle())) {
-            if (ratcliffObershelpDistance(title, result.getTitle(), false) < 0.8)
-                return false;
+        if (onlyAuthor) {
+            if (isNotBlank(title)) {
+                if (ratcliffObershelpDistance(title, result.getTitle(), false) < 0.8)
+                    return false;
+            }
         }
 
-        if (StringUtils.isNotBlank(firstAuthor) &&
-                StringUtils.isNotBlank(result.getFirstAuthor())) {
-            if (ratcliffObershelpDistance(firstAuthor, result.getFirstAuthor(), false) < 0.8)
-                return false;
-        }
+        if (ratcliffObershelpDistance(firstAuthor, result.getFirstAuthor(), false) < 0.8)
+            return false;
 
         return valid;
     }
+
+    /** default version checking title and authors **/
+    private boolean areMetadataMatching(String title, String firstAuthor, MatchingDocument result) {
+        return areMetadataMatching(title, firstAuthor, result, false);
+    }
+
 
     private double ratcliffObershelpDistance(String string1, String string2, boolean caseDependent) {
         if (StringUtils.isBlank(string1) || StringUtils.isBlank(string2))

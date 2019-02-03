@@ -235,7 +235,7 @@ public class LookupController {
                     // error with article info - and no journal information provided -
                     // trying to match with journal infos (with first Page)
                     if (isNotBlank(biblio)) {
-                        lookupEngine.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
+                        lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
                             if (matchingDocumentBiblio.isException()) {
                                 asyncResponse.resume(matchingDocumentBiblio.getException());
                             } else {
@@ -259,7 +259,7 @@ public class LookupController {
                 if (matchingDocument.isException()) {
                     //error with journal info - trying to match biblio
                     if (isNotBlank(biblio)) {
-                        lookupEngine.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
+                        lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
                             if (matchingDocumentBiblio.isException()) {
                                 asyncResponse.resume(matchingDocumentBiblio.getException());
                             } else {
@@ -283,7 +283,7 @@ public class LookupController {
                 if (matchingDocument.isException()) {
                     //error with journal info - trying to match biblio
                     if (isNotBlank(biblio)) {
-                        lookupEngine.retrieveByBiblioAsync(biblio, matchingDocumentBiblio -> {
+                        lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
                             if (matchingDocumentBiblio.isException()) {
                                 asyncResponse.resume(matchingDocumentBiblio.getException());
                             } else {
