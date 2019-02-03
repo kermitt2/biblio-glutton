@@ -79,8 +79,25 @@ public class LookupEngine {
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
     }
 
-    public void retrieveByJournalMetadataAsync(String title, String volume, String firstPage, Consumer<MatchingDocument> callback) {
-        metadataMatching.retrieveByMetadataAsync(title, volume, firstPage, matchingDocument -> {
+    public void retrieveByJournalMetadataAsync(String jtitle, String volume, String firstPage, String atitle, String firstAuthor, Boolean postValidate, Consumer<MatchingDocument> callback) {
+        metadataMatching.retrieveByMetadataAsync(jtitle, volume, firstPage, matchingDocument -> {
+            if (!matchingDocument.isException()) {
+                if (postValidate != null && postValidate) {
+                    if (!areMetadataMatching(atitle, firstAuthor, matchingDocument, true)) {
+                        callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the postValidation.")));
+                        return;
+                    }
+                }
+
+                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
+                matchingDocument.setFinalJsonObject(s);
+            }
+            callback.accept(matchingDocument);
+        });
+    }
+
+    public void retrieveByJournalMetadataAsync(String jtitle, String volume, String firstPage, Consumer<MatchingDocument> callback) {
+        metadataMatching.retrieveByMetadataAsync(jtitle, volume, firstPage, matchingDocument -> {
             if (!matchingDocument.isException()) {
                 final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
                 matchingDocument.setFinalJsonObject(s);
@@ -117,10 +134,10 @@ public class LookupEngine {
             throw new NotFoundException("Article not found");
         }
 
-        if (postValidate != null && postValidate) {
+        if (postValidate != null && postValidate && isNotBlank(firstAuthor)) {
             outputData = extractTitleAndFirstAuthorFromJson(outputData);
 
-            if (!areMetadataMatching(atitle, firstAuthor, outputData)) {
+            if (!areMetadataMatching(atitle, firstAuthor, outputData, true)) {
                 throw new NotFoundException("Article found but it didn't passed the post Validation.");
             }
         }
@@ -256,6 +273,7 @@ public class LookupEngine {
                     //no title and author, extract with grobid. if grobid unavailable... it will fail.
                     if (isBlank(firstAuthor) && parseReference) {
                         try {
+                            grobidClient.ping();
                             GrobidResponseStaxHandler.GrobidResponse response = grobidClient.processCitation(biblio, "0");
                             if (!areMetadataMatching(response.getAtitle(), response.getFirstAuthor(), matchingDocument, false)) {
                                 callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the postValidation.")));
@@ -314,10 +332,10 @@ public class LookupEngine {
      * against the (incomplete) source bibliographic item to block
      * inconsistent results.
      */
-    private boolean areMetadataMatching(String title, String firstAuthor, MatchingDocument result, boolean onlyAuthor) {
+    private boolean areMetadataMatching(String title, String firstAuthor, MatchingDocument result, boolean ignoreTitleIfNotPresent) {
         boolean valid = true;
 
-        if (onlyAuthor) {
+        if (ignoreTitleIfNotPresent) {
             if (isNotBlank(title)) {
                 if (ratcliffObershelpDistance(title, result.getTitle(), false) < 0.8)
                     return false;
@@ -330,7 +348,9 @@ public class LookupEngine {
         return valid;
     }
 
-    /** default version checking title and authors **/
+    /**
+     * default version checking title and authors
+     **/
     private boolean areMetadataMatching(String title, String firstAuthor, MatchingDocument result) {
         return areMetadataMatching(title, firstAuthor, result, false);
     }
