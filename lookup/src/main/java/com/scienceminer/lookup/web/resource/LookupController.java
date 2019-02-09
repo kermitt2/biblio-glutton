@@ -259,8 +259,8 @@ public class LookupController {
             return;
         }
 
-        if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            LOGGER.debug("Match with journal string (without first page)");
+        if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
+            LOGGER.debug("Match with journal string (with first page)");
 //            processed = true;
             lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
@@ -284,8 +284,8 @@ public class LookupController {
             return;
         }
 
-        if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            LOGGER.debug("Match with journal string (with first page)");
+        if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
+            LOGGER.debug("Match with journal string (without first author)");
 //            processed = true;
             lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
