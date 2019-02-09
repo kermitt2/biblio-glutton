@@ -13,6 +13,7 @@ import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.events.XMLEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.trim;
@@ -31,10 +32,14 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
     private int indentLevel = 0;
 
     private boolean fetchText = false;
-    private boolean firstAuthor = false;
+    private boolean firstAuthorArticle = false;
+    private boolean firstAuthorMonograph = false;
     private StaxTag title = new StaxTag("title", "/biblStruct/analytic/title");
+
     private StaxTag firstAuthorSurname = new StaxTag("surname", "/biblStruct/analytic/author/persName/surname");
     private StaxTag firstAuthorForename = new StaxTag("forename", "/biblStruct/analytic/author/persName/forename");
+    private StaxTag firstAuthorSurnameMonograph = new StaxTag("surname", "/biblStruct/monogr/author/persName/surname");
+    private StaxTag firstAuthorForenameMonograph = new StaxTag("forename", "/biblStruct/monogr/author/persName/forename");
 
     @Override
     public void onStartDocument(XMLStreamReader2 reader) {
@@ -58,8 +63,13 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
             fetchText = true;
         } else if (currentTag.equals(firstAuthorForename) &&
                 getAttributeValue(reader, "type").equals("first")) {
-            firstAuthor = true;
-        } else if (currentTag.equals(firstAuthorSurname) && firstAuthor) {
+            firstAuthorArticle = true;
+        } else if (currentTag.equals(firstAuthorSurname) && firstAuthorArticle) {
+            fetchText = true;
+        } else if (currentTag.equals(firstAuthorForenameMonograph) &&
+                getAttributeValue(reader, "type").equals("first")) {
+            firstAuthorMonograph = true;
+        } else if (currentTag.equals(firstAuthorSurnameMonograph) && firstAuthorMonograph) {
             fetchText = true;
         }
 
@@ -79,7 +89,13 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
             } else if(firstAuthorSurname.equals(currentTag)) {
                 response.setFirstAuthor(accumulator.toString());
                 accumulator = new StringBuffer();
-                firstAuthor = false; 
+                firstAuthorArticle = false;
+            } else if (firstAuthorForenameMonograph.equals(currentTag)) {
+                accumulator = new StringBuffer();
+            } else if(firstAuthorSurnameMonograph.equals(currentTag)) {
+                response.setFirstAuthorMonograph(accumulator.toString());
+                accumulator = new StringBuffer();
+                firstAuthorMonograph = false;
             }
             fetchText = false;
         }
@@ -143,7 +159,7 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
                 return false;
             }
 
-            if (tagName != null ? !tagName.equals(staxTag.tagName) : staxTag.tagName != null) {
+            if (!Objects.equals(tagName, staxTag.tagName)) {
                 return false;
             }
 
@@ -183,6 +199,8 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
 
         private String firstAuthor;
 
+        private String firstAuthorMonograph;
+
         public GrobidResponse(String firstAuthor, String atitle) {
             this.firstAuthor = firstAuthor;
             this.atitle = atitle;
@@ -206,6 +224,14 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
 
         public void setAtitle(String atitle) {
             this.atitle = atitle;
+        }
+
+        public void setFirstAuthorMonograph(String firstAuthorMonograph) {
+            this.firstAuthorMonograph = firstAuthorMonograph;
+        }
+
+        public String getFirstAuthorMonograph() {
+            return firstAuthorMonograph;
         }
     }
 

@@ -11,7 +11,6 @@ import com.scienceminer.lookup.data.PmidData;
 import com.scienceminer.lookup.exception.NotFoundException;
 import com.scienceminer.lookup.storage.lookup.*;
 import com.scienceminer.lookup.utils.grobid.GrobidClient;
-import com.scienceminer.lookup.utils.grobid.GrobidResponseStaxHandler;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import scala.Option;
@@ -274,11 +273,13 @@ public class LookupEngine {
                     if (isBlank(firstAuthor) && parseReference) {
                         try {
                             grobidClient.ping();
-                            GrobidResponseStaxHandler.GrobidResponse response = grobidClient.processCitation(biblio, "0");
-                            if (!areMetadataMatching(response.getAtitle(), response.getFirstAuthor(), matchingDocument, false)) {
-                                callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the postValidation.")));
-                                return;
-                            }
+                            grobidClient.processCitation(biblio, "0", response -> {
+                                final String firstAuthor1 = isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph();
+                                if (!areMetadataMatching(response.getAtitle(), firstAuthor1, matchingDocument, true)) {
+                                    callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the postValidation.")));
+                                    return;
+                                }
+                            });
                         } catch (Exception e) {
                             callback.accept(new MatchingDocument(new NotFoundException("Article found but it could not be postValidated. No title and first Author provided for validation and " +
                                     "Grobid wasn't available.", e)));
