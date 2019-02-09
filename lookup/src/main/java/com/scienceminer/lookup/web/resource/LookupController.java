@@ -179,15 +179,18 @@ public class LookupController {
         }
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
+            LOGGER.debug("Match with article infos");
 //            processed = true;
             lookupEngine.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
-                    // error with article info - trying to match with journal infos (without first Page)
+                    // error with article info - trying to match with journal infos (without first author)
+                    LOGGER.debug("Error in article info, trying to match with journal infos (no first author)");
                     if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
                         lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocumentJournal -> {
                             if (matchingDocumentJournal.isException()) {
 
                                 //error with journal info - trying to match biblio
+                                LOGGER.debug("Error in journal info, trying to match with biblio string");
                                 if (isNotBlank(biblio)) {
                                     lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, MatchingDocumentBiblio -> {
                                         if (MatchingDocumentBiblio.isException()) {
@@ -207,12 +210,14 @@ public class LookupController {
                         return;
                     }
 
-                    // error with article info - trying to match with journal infos (with first Page)
+                    // error with article info - trying to match with journal infos (with first Author)
+                    LOGGER.debug("Error in article info, trying to match with journal infos (with first author)");
                     if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
                         lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocumentJournal -> {
                             if (matchingDocumentJournal.isException()) {
 
                                 //error with journal info - trying to match biblio
+                                LOGGER.debug("Error in journal info, trying to match with biblio string");
                                 if (isNotBlank(biblio)) {
                                     lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
                                         if (matchingDocumentBiblio.isException()) {
@@ -234,6 +239,7 @@ public class LookupController {
 
                     // error with article info - and no journal information provided -
                     // trying to match with journal infos (with first Page)
+                    LOGGER.debug("Error in article info, trying to match with biblio string");
                     if (isNotBlank(biblio)) {
                         lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
                             if (matchingDocumentBiblio.isException()) {
@@ -254,6 +260,7 @@ public class LookupController {
         }
 
         if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
+            LOGGER.debug("Match with journal string (without first page)");
 //            processed = true;
             lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
@@ -278,6 +285,7 @@ public class LookupController {
         }
 
         if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
+            LOGGER.debug("Match with journal string (with first page)");
 //            processed = true;
             lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
@@ -302,6 +310,7 @@ public class LookupController {
         }
 
         if (isNotBlank(biblio)) {
+            LOGGER.debug("Match with biblio string");
 //            processed = true;
             lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
                 if (matchingDocumentBiblio.isException()) {
