@@ -77,7 +77,7 @@ public class LookupController {
 
         asyncResponse.setTimeoutHandler(asyncResponse1 ->
                 asyncResponse1.resume(Response.status(Response.Status.REQUEST_TIMEOUT)
-                        .entity("Operation time out.")
+                        .entity("Operation time out")
                         .build()
                 )
         );
@@ -131,7 +131,7 @@ public class LookupController {
 
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("DOI not matched, keep going if enough additional information. ", e);
+                LOGGER.warn("DOI did not matched, move to additional metadata");
             }
         }
 
@@ -145,7 +145,7 @@ public class LookupController {
                     return;
                 }
             } catch (NotFoundException e) {
-                LOGGER.warn("PMID not matched, keep going if enough additional information. ", e);
+                LOGGER.warn("PMID did not matched, move to additional metadata");
             }
         }
 
@@ -159,7 +159,7 @@ public class LookupController {
                 }
 
             } catch (NotFoundException e) {
-                LOGGER.warn("PMC not matched, keep going if enough additional information. ", e);
+                LOGGER.warn("PMC ID did not matched, move to additional metadata");
             }
         }
 
@@ -174,23 +174,23 @@ public class LookupController {
                 }
 
             } catch (NotFoundException e) {
-                LOGGER.warn("ISTEXID not matched, keep going if enough additional information. ", e);
+                LOGGER.warn("ISTEX ID did not matched, move to additional metadata");
             }
         }
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
-            LOGGER.debug("Match with article infos");
+            LOGGER.debug("Match with metadata");
 //            processed = true;
             lookupEngine.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
                     // error with article info - trying to match with journal infos (without first author)
-                    LOGGER.debug("Error in article info, trying to match with journal infos (no first author)");
+                    LOGGER.debug("Error with title/first author, trying to match with journal infos (no first author)");
                     if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
                         lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocumentJournal -> {
                             if (matchingDocumentJournal.isException()) {
 
                                 //error with journal info - trying to match biblio
-                                LOGGER.debug("Error in journal info, trying to match with biblio string");
+                                LOGGER.debug("Error with journal title, trying to match with biblio string");
                                 if (isNotBlank(biblio)) {
                                     lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, MatchingDocumentBiblio -> {
                                         if (MatchingDocumentBiblio.isException()) {
@@ -211,13 +211,13 @@ public class LookupController {
                     }
 
                     // error with article info - trying to match with journal infos (with first Author)
-                    LOGGER.debug("Error in article info, trying to match with journal infos (with first author)");
+                    LOGGER.debug("Error with title/first author, trying to match with journal infos (with first author)");
                     if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
                         lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocumentJournal -> {
                             if (matchingDocumentJournal.isException()) {
 
                                 //error with journal info - trying to match biblio
-                                LOGGER.debug("Error in journal info, trying to match with biblio string");
+                                LOGGER.debug("Error with journal info, trying to match with biblio string");
                                 if (isNotBlank(biblio)) {
                                     lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
                                         if (matchingDocumentBiblio.isException()) {
@@ -239,7 +239,7 @@ public class LookupController {
 
                     // error with article info - and no journal information provided -
                     // trying to match with journal infos (with first Page)
-                    LOGGER.debug("Error in article info, trying to match with biblio string");
+                    LOGGER.debug("Error with title/first author, trying to match with biblio string");
                     if (isNotBlank(biblio)) {
                         lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
                             if (matchingDocumentBiblio.isException()) {
@@ -260,7 +260,7 @@ public class LookupController {
         }
 
         if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            LOGGER.debug("Match with journal string (with first page)");
+            LOGGER.debug("Match with journal title and first page");
 //            processed = true;
             lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
@@ -285,7 +285,7 @@ public class LookupController {
         }
 
         if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            LOGGER.debug("Match with journal string (without first author)");
+            LOGGER.debug("Match with journal title without first author");
 //            processed = true;
             lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
@@ -348,7 +348,7 @@ public class LookupController {
      */
     private void dispatchEmptyResponse(AsyncResponse asyncResponse, String response) {
         if (isBlank(response)) {
-            asyncResponse.resume(new NotFoundException("Cannot find records or mapping Ids for the input query."));
+            asyncResponse.resume(new NotFoundException("Cannot find bibliographical records or map ID for the input query"));
         } else {
             asyncResponse.resume(response);
         }
@@ -394,7 +394,7 @@ public class LookupController {
             return;
         }
 
-        throw new ServiceException(400, "Missing or empty biblio parameter. ");
+        throw new ServiceException(400, "Missing or empty biblio parameter");
     }
 
     protected void setLookupEngine(LookupEngine lookupEngine) {

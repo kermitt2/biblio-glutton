@@ -49,7 +49,7 @@ public class LookupEngine {
         MatchingDocument outputData = metadataMatching.retrieveByMetadata(title, firstAuthor);
         if (postValidate != null && postValidate) {
             if (!areMetadataMatching(title, firstAuthor, outputData)) {
-                throw new NotFoundException("Article found but it didn't passed the post Validation.");
+                throw new NotFoundException("Best bibliographical record did not passed the post-validation");
             }
         }
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
@@ -60,7 +60,7 @@ public class LookupEngine {
             if (!matchingDocument.isException()) {
                 if (postValidate != null && postValidate) {
                     if (!areMetadataMatching(title, firstAuthor, matchingDocument)) {
-                        callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the postValidation.")));
+                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
                         return;
                     }
                 }
@@ -83,7 +83,7 @@ public class LookupEngine {
             if (!matchingDocument.isException()) {
                 if (postValidate != null && postValidate) {
                     if (!areMetadataMatching(atitle, firstAuthor, matchingDocument, true)) {
-                        callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the postValidation.")));
+                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
                         return;
                     }
                 }
@@ -130,14 +130,14 @@ public class LookupEngine {
 
     private MatchingDocument validateJsonBody(Boolean postValidate, String firstAuthor, String atitle, MatchingDocument outputData) {
         if (isBlank(outputData.getJsonObject())) {
-            throw new NotFoundException("Article not found");
+            throw new NotFoundException("No bibliographical record found");
         }
 
         if (postValidate != null && postValidate && isNotBlank(firstAuthor)) {
             outputData = extractTitleAndFirstAuthorFromJson(outputData);
 
             if (!areMetadataMatching(atitle, firstAuthor, outputData, true)) {
-                throw new NotFoundException("Article found but it didn't passed the post Validation.");
+                throw new NotFoundException("Best bibliographical record did not passed the post-validation");
             }
         }
         return outputData;
@@ -178,7 +178,7 @@ public class LookupEngine {
             return retrieveByDoi(pmidData.getDoi(), postValidate, firstAuthor, atitle);
         }
 
-        throw new NotFoundException("Cannot find record by PMID " + pmid);
+        throw new NotFoundException("Cannot find bibliographical record with PMID " + pmid);
     }
 
     public String retrieveByPmc(String pmc, Boolean postValidate, String firstAuthor, String atitle) {
@@ -191,7 +191,7 @@ public class LookupEngine {
             return retrieveByDoi(pmidData.getDoi(), postValidate, firstAuthor, atitle);
         }
 
-        throw new NotFoundException("Cannot find record by PMC ID " + pmc);
+        throw new NotFoundException("Cannot find bibliographical record with PMC ID " + pmc);
     }
 
     public String retrieveByIstexid(String istexid, Boolean postValidate, String firstAuthor, String atitle) {
@@ -204,7 +204,7 @@ public class LookupEngine {
             return injectIdsByIstexData(outputData.getJsonObject(), doi, istexData);
         }
 
-        throw new NotFoundException("Cannot find record by Istex ID " + istexid);
+        throw new NotFoundException("Cannot find bibliographical record with ISTEX ID " + istexid);
     }
 
     // Intermediate lookups
@@ -276,17 +276,17 @@ public class LookupEngine {
                             grobidClient.processCitation(biblio, "0", response -> {
                                 final String firstAuthor1 = isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph();
                                 if (!areMetadataMatching(response.getAtitle(), firstAuthor1, matchingDocument, true)) {
-                                    callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the postValidation.")));
+                                    callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
                                     return;
                                 }
                             });
                         } catch (Exception e) {
-                            callback.accept(new MatchingDocument(new NotFoundException("Article found but it could not be postValidated. No title and first Author provided for validation and " +
-                                    "Grobid wasn't available.", e)));
+                            callback.accept(new MatchingDocument(new NotFoundException("Post-validation not possible, no title/first author provided for validation and " +
+                                    "GROBID is not available.", e)));
                         }
                     } else {
                         if (!areMetadataMatching(title, firstAuthor, matchingDocument, true)) {
-                            callback.accept(new MatchingDocument(new NotFoundException("Article found but it didn't passed the postValidation.")));
+                            callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
                             return;
                         }
                     }
