@@ -115,11 +115,11 @@ public class LookupController {
             AsyncResponse asyncResponse
     ) {
 
-//        boolean processed = false;
+        boolean areParametersEnoughToLookup = false;
         StringBuilder messagesSb = new StringBuilder();
 
         if (isNotBlank(doi)) {
-//            processed = true;
+            areParametersEnoughToLookup = true;
             try {
                 final String response = lookupEngine.retrieveByDoi(doi, postValidate, firstAuthor, atitle);
 
@@ -136,7 +136,7 @@ public class LookupController {
         }
 
         if (isNotBlank(pmid)) {
-//            processed = true;
+            areParametersEnoughToLookup = true;
             try {
                 final String response = lookupEngine.retrieveByPmid(pmid, postValidate, firstAuthor, atitle);
 
@@ -150,7 +150,7 @@ public class LookupController {
         }
 
         if (isNotBlank(pmc)) {
-//            processed = true;
+            areParametersEnoughToLookup = true;
             try {
                 final String response = lookupEngine.retrieveByPmid(pmc, postValidate, firstAuthor, atitle);
                 if (isNotBlank(response)) {
@@ -164,7 +164,7 @@ public class LookupController {
         }
 
         if (isNotBlank(istexid)) {
-//            processed = true;
+            areParametersEnoughToLookup = true;
             try {
                 final String response = lookupEngine.retrieveByIstexid(istexid, postValidate, firstAuthor, atitle);
 
@@ -180,7 +180,6 @@ public class LookupController {
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
             LOGGER.debug("Match with metadata");
-//            processed = true;
             lookupEngine.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
                     // error with article info - trying to match with journal infos (without first author)
@@ -261,7 +260,6 @@ public class LookupController {
 
         if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
             LOGGER.debug("Match with journal title and first page");
-//            processed = true;
             lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
                     //error with journal info - trying to match biblio
@@ -286,7 +284,6 @@ public class LookupController {
 
         if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
             LOGGER.debug("Match with journal title without first author");
-//            processed = true;
             lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
                     //error with journal info - trying to match biblio
@@ -311,7 +308,6 @@ public class LookupController {
 
         if (isNotBlank(biblio)) {
             LOGGER.debug("Match with biblio string");
-//            processed = true;
             lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
                 if (matchingDocumentBiblio.isException()) {
                     asyncResponse.resume(matchingDocumentBiblio.getException());
@@ -322,11 +318,11 @@ public class LookupController {
             return;
         }
 
-//        if (processed) {
-//            throw new ServiceException(404, messagesSb.toString());
-//        } else {
+        if (areParametersEnoughToLookup) {
+            throw new ServiceException(404, messagesSb.toString());
+        } else {
             throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
-//        }
+        }
     }
 
     /**
