@@ -1,7 +1,11 @@
 package com.scienceminer.lookup.configuration;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
+import io.dropwizard.client.HttpClientConfiguration;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 public class LookupConfiguration extends Configuration {
@@ -16,7 +20,24 @@ public class LookupConfiguration extends Configuration {
 
     private Elastic elastic;
 
+    private String grobidPath;
+
+    @Valid
+    @NotNull
+    private HttpClientConfiguration httpClient = new HttpClientConfiguration();
+
+    @JsonProperty("httpClient")
+    public HttpClientConfiguration getHttpClientConfiguration() {
+        return httpClient;
+    }
+
+    @JsonProperty("httpClient")
+    public void setHttpClientConfiguration(HttpClientConfiguration httpClient) {
+        this.httpClient = httpClient;
+    }
+
     private List<String> ignoreCrossRefFields;
+
     private int maxAcceptedRequests;
 
     public String getStorage() {
@@ -68,7 +89,16 @@ public class LookupConfiguration extends Configuration {
         this.maxAcceptedRequests = maxAcceptedRequests;
     }
 
+    public String getGrobidPath() {
+        return grobidPath;
+    }
+
+    public void setGrobidPath(String grobidPath) {
+        this.grobidPath = grobidPath;
+    }
+
     public class Source {
+
         private String unpaywall;
         private String istex;
 
@@ -88,12 +118,13 @@ public class LookupConfiguration extends Configuration {
             this.istex = istex;
         }
     }
-
+    
     public class Elastic {
+
         private String host;
         private String index;
-        private String type;
 
+        private String type;
 
         public String getHost() {
             return host;
@@ -118,5 +149,6 @@ public class LookupConfiguration extends Configuration {
         public void setType(String type) {
             this.type = type;
         }
+
     }
 }

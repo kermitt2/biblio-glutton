@@ -1,0 +1,15 @@
+<biblStruct >
+    <monogr>
+        <author>
+            <persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><forename type="middle">K</forename><surname>Gupta</surname></persName>
+        </author>
+        <title level="m">Physics of Particles, Nuclei and Materials-Recent Trends</title>
+        <editor>R.K. Gupta</editor>
+        <meeting><address><addrLine>New Delhi</addrLine></address></meeting>
+        <imprint>
+            <publisher>Narosa Publishing House</publisher>
+            <date type="published" when="2002" />
+            <biblScope unit="page">118</biblScope>
+        </imprint>
+    </monogr>
+</biblStruct>
