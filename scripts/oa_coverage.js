@@ -43,6 +43,7 @@ function processDump(options, callback) {
     rstream.on('line', function(line) {
         var doi;
         var pmid;
+        var pmcid;
         if (options.istex_path) {
             total++;
             var json = JSON.parse(line);
@@ -54,7 +55,7 @@ function processDump(options, callback) {
                 // PMID,PMCID,DOI
                 var pieces = line.split(",");
                 pmid = pieces[0]
-                var pmcid = pieces[1]
+                pmcid = pieces[1]
                 doi = pieces[2]
                 if (pmid && pmid.length > 0) {
                     total++;
@@ -89,8 +90,14 @@ function processDump(options, callback) {
                 if (response.statusCode == 200) {
                     response.on("data", function(chunk) {
                         //console.log("[OA]: " + chunk);
-                        if (pmid)
-                            console.log('{ "doi":"' + doi + '", "pmid": "' + pmid + '", "best_oa_location" : { "url_for_pdf": "' + chunk + '"} }');
+                        if (pmid) {
+                            if (pmcid) {
+                                console.log('{ "doi":"' + doi + '", "pmid": "' + pmid + '", "pmcid": "' + pmcid + 
+                                    '", "best_oa_location" : { "url_for_pdf": "' + chunk + '"} }');
+                            }
+                            else 
+                                console.log('{ "doi":"' + doi + '", "pmid": "' + pmid + '", "best_oa_location" : { "url_for_pdf": "' + chunk + '"} }');
+                        }
                         else
                             console.log('{ "doi":"' + doi + '", "best_oa_location" : { "url_for_pdf": "' + chunk + '"} }');                            
                         total_oa++;
@@ -129,28 +136,6 @@ function processDump(options, callback) {
     });
 }
 
-
-function callGlutton(doi, callback) {
-    var request = https.get(pdf_url, function(response) {
-        response.pipe(file);
-        file.on('finish', function() {
-            file.close(callGROBID(options, istexId, callback));  
-            // close() is async, call grobid after close completes.
-        });
-    }).on('error', function(err) { // Handle errors
-        fs.unlink(dest, function(err2) { if (err2) { 
-                return console.log('error removing downloaded PDF file'); 
-            } 
-        }); 
-        // delete the file async
-        if (callback) 
-            callback(err.message);
-    });
-
-    if (callback)
-        callback();
-}
-
 /**
  * Init the main object with paths passed with the command line
  */
@@ -164,7 +149,7 @@ function init() {
 
     // default service is full text processing
     var attribute; // name of the passed parameter
-    // get the path to the PDF to be processed
+    // get the path to the DOIs to be processed
     for (var i = 2, len = process.argv.length; i < len; i++) {
         if (process.argv[i-1] == "-dump") {
             options.dump_path = process.argv[i];
