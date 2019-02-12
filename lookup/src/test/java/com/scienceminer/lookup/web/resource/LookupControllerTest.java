@@ -60,6 +60,7 @@ public class LookupControllerTest {
         expect(mockMetadataLookup.retrieveByMetadata(myDOI)).andReturn(response);
         expect(mockIstexLookup.retrieveByDoi(myDOI)).andReturn(null);
         expect(mockPmidsLookup.retrieveIdsByDoi(myDOI)).andReturn(null);
+        expect(mockOALookup.retrieveOALinkByDoi(myDOI)).andReturn(null);
         expect(mockedAsyncResponse.resume(response.getJsonObject())).andReturn(true);
 
         replay(mockMetadataLookup, mockedAsyncResponse, mockPmidsLookup, mockOALookup, mockIstexLookup, mockMetadataMatching);
