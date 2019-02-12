@@ -328,7 +328,7 @@ public class LookupEngine {
      */
 
     /**
-     * The new public CrossRef API is a search API, and thus returns
+     * The bibliographical matching service is a search API, and thus returns
      * many false positives. It is necessary to validate return results
      * against the (incomplete) source bibliographic item to block
      * inconsistent results.
