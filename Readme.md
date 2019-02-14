@@ -64,12 +64,18 @@ The last parameter is the path where your configuration file is located - the de
     - `GET host:port/service/lookup?jtitle=JOURNAL_TITLE&volume=VOLUME&firstPage=FIRST_PAGE&firstAuthor=FIRST_AUTHOR_SURNAME`
 
 - match record by raw citation string 
-    - `GET host:port/service/lookup?biblio=BIBLIO_STRING`
+    - `GET host:port/service/lookup?biblio=BIBLIO_STRING&`
     - `POST host:port/service/lookup/biblio` with `ContentType=text/plain` 
 
-Any combinations of these metadata and full raw citation string is supported, for instance: 
+Any combinations of these metadata and full raw citation string is possible, for instance: 
 
+    - `GET host:port/service/lookup?biblio=BIBLIO_STRING&atitle=ARTICLE_TITLE&firstAuthor=FIRST_AUTHOR_SURNAME[?postValidate=true]`
 
+or:
+
+    - `GET host:port/service/lookup?jtitle=JOURNAL_TITLE&volume=VOLUME&firstPage=FIRST_PAGE&firstAuthor=FIRST_AUTHOR_SURNAME&atitle=ARTICLE_TITLE`
+
+biblio-glutton will make the best use of all the parameters sent to retrieve in the fastest way a record and to post-validate it to avoid false positive. See [#12](https://github.com/kermitt2/biblio-glutton/issues/12). So it is advised to send as much metadata as possible to try to optimize the DOI matching in term of speed and accuracy.  
 
 In case you are only interested by the Open Access URL for a bibliographical object, the open Access resolver API returns the OA PDF link (URL) only via an identifier: 
 
@@ -366,12 +372,12 @@ Evaluation produced on 13.02.2019.
 ```
 ======= GLUTTON API ======= 
 
-17015 bibliographical references processed in 695.437 seconds, 0.04087199529826624 seconds per bibliographical reference.
-Found 16021 DOI
+17015 bibliographical references processed in 673.698 seconds, 0.039594357919482806 seconds per bibliographical reference.
+Found 16165 DOI
 
-precision:      0.9466325447849697
-recall: 0.8913311783720247
-f-score:        0.9181498970819711
+precision:      0.9466749149396845
+recall: 0.8993828974434322
+f-score:        0.9224231464737793
 
 ```
 
