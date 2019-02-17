@@ -149,8 +149,8 @@ public class MetadataMatching {
         return QueryBuilders.boolQuery()
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
+                .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
+                .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
     }
 
     private void validateInput(String title, String volume, String firstPage) {
@@ -199,8 +199,8 @@ public class MetadataMatching {
         return QueryBuilders.boolQuery()
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage))
+                .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
+                .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage))
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
     }
 
