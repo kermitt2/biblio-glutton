@@ -341,12 +341,14 @@ public class LookupEngine {
     private boolean areMetadataMatching(String title, String firstAuthor, MatchingDocument result, boolean ignoreTitleIfNotPresent) {
         boolean valid = true;
 
-        /*if (ignoreTitleIfNotPresent) {
-            if (isNotBlank(title)) {
-                if (ratcliffObershelpDistance(title, result.getTitle(), false) < 0.8)
-                    return false;
-            }
-        }*/
+        
+        if (isNotBlank(title)) {
+            if (ratcliffObershelpDistance(title, result.getTitle(), false) < 0.7)
+                return false;
+        } else if (!ignoreTitleIfNotPresent) {
+            return false;
+        }
+        
 
         if (ratcliffObershelpDistance(firstAuthor, result.getFirstAuthor(), false) < 0.7)
             return false;
