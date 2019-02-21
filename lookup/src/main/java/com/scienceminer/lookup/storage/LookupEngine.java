@@ -301,6 +301,10 @@ public class LookupEngine {
                         matchingDocument.setFinalJsonObject(s);
                         callback.accept(matchingDocument);
                     }
+                } else {
+                    final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
+                    matchingDocument.setFinalJsonObject(s);
+                    callback.accept(matchingDocument);
                 }
             }
         });
