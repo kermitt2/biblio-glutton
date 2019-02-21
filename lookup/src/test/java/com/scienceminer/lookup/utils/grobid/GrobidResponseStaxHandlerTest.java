@@ -48,4 +48,17 @@ public class GrobidResponseStaxHandlerTest {
 //        assertThat(structures.getAtitle(), is("Physics of Particles, Nuclei and Materials-Recent Trends, Narosa Publishing House"));
         assertThat(structures.getFirstAuthorMonograph(), is("Gupta"));
     }
+
+    @Test
+    public void testParsingPublication3_shouldWork() throws Exception {
+        InputStream inputStream = this.getClass().getResourceAsStream("/sample.grobid-3.xml");
+        XMLStreamReader2 reader = (XMLStreamReader2) inputFactory.createXMLStreamReader(inputStream);
+
+        StaxUtils.traverse(reader, target);
+
+        GrobidResponseStaxHandler.GrobidResponse structures = target.getResponse();
+
+        assertThat(structures.getAtitle(), is("This si the end of the world"));
+        assertThat(structures.getFirstAuthor(), is("Foppiano"));
+    }
 }
