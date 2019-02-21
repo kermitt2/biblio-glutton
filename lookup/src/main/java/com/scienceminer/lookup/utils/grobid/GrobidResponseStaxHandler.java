@@ -82,18 +82,21 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
         final StaxTag currentTag = new StaxTag(localName, stackTags.toString());
         if (fetchText) {
             if (title.equals(currentTag)) {
-                response.setAtitle(accumulator.toString());
+                if (response.getAtitle() == null)
+                   response.setAtitle(accumulator.toString());
                 accumulator = new StringBuffer();
             } else if (firstAuthorForename.equals(currentTag)) {
                 accumulator = new StringBuffer();
             } else if(firstAuthorSurname.equals(currentTag)) {
-                response.setFirstAuthor(accumulator.toString());
+                if (response.getFirstAuthor() == null)
+                   response.setFirstAuthor(accumulator.toString());
                 accumulator = new StringBuffer();
                 firstAuthorArticle = false;
             } else if (firstAuthorForenameMonograph.equals(currentTag)) {
                 accumulator = new StringBuffer();
             } else if(firstAuthorSurnameMonograph.equals(currentTag)) {
-                response.setFirstAuthorMonograph(accumulator.toString());
+                if (response.getFirstAuthorMonograph() == null)
+                    response.setFirstAuthorMonograph(accumulator.toString());
                 accumulator = new StringBuffer();
                 firstAuthorMonograph = false;
             }
