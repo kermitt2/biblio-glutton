@@ -74,7 +74,7 @@ public class LookupControllerTest {
      * DOI correspond to a document, postValidation is not passing
      * -> returning the json corresponding to to the result of title + first author
      */
-    //@Test
+    @Test
     public void getByQuery_DOIexists_NotPassingPostValidation_shouldReturnJSONFromTitleFirstAuthor() {
         final String myDOI = "myDOI";
         final boolean postValidate = true;

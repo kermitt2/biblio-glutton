@@ -284,6 +284,9 @@ public class LookupEngine {
                                     callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
                                     return;
                                 }
+                                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
+                                matchingDocument.setFinalJsonObject(s);
+                                callback.accept(matchingDocument);
                             });
                         } catch (Exception e) {
                             callback.accept(new MatchingDocument(new NotFoundException("Post-validation not possible, no title/first author provided for validation and " +
@@ -294,13 +297,12 @@ public class LookupEngine {
                             callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
                             return;
                         }
+                        final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
+                        matchingDocument.setFinalJsonObject(s);
+                        callback.accept(matchingDocument);
                     }
                 }
-
-                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
-                matchingDocument.setFinalJsonObject(s);
             }
-            callback.accept(matchingDocument);
         });
     }
 
@@ -341,14 +343,14 @@ public class LookupEngine {
     private boolean areMetadataMatching(String title, String firstAuthor, MatchingDocument result, boolean ignoreTitleIfNotPresent) {
         boolean valid = true;
 
-        
+
         if (isNotBlank(title)) {
             if (ratcliffObershelpDistance(title, result.getTitle(), false) < 0.7)
                 return false;
         } else if (!ignoreTitleIfNotPresent) {
             return false;
         }
-        
+
 
         if (ratcliffObershelpDistance(firstAuthor, result.getFirstAuthor(), false) < 0.7)
             return false;
