@@ -37,7 +37,8 @@ The last parameter is the path where your configuration file is located - the de
 To check if it works, you can view a report of the data used by the service at `host:port/service/data`. For instance:
 
 > curl localhost:8080/service/data
-'''json
+
+```json
 {
     "Metadata Lookup Crossref size": "{crossref_Jsondoc=96491709}",
     "Metadata Matching Crossref size": "96450728",
@@ -45,7 +46,7 @@ To check if it works, you can view a report of the data used by the service at `
     "Pmid lookup size": "{pmid_doi2ids=19648024, pmid_pmc2ids=4991296, pmid_pmid2ids=29010455}",
     "Istex size": "{istex_doi2ids=20999895, istex_istex2ids=21073367}"
 }
-'''
+```
 
 ### REST API
 
