@@ -48,6 +48,26 @@ To check if it works, you can view a report of the data used by the service at `
 }
 ```
 
+### Running with Docker
+
+A Docker Compose file is included to make it easier to spin up biblio-glutton, Elasticsearch, and GROBID.
+
+First, [install Docker](https://docs.docker.com/install/).
+
+Then, run this command to spin everything up:
+
+    $ docker-compose up --build -d
+
+You can run this command to see aggregated log output:
+
+    $ docker-compose logs
+
+Once everything has booted up, biblio-glutton will be running at http://localhost:8080 and GROBID will be at http://localhost:8070.
+
+To load data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. For example, this command will load Crossref data (as described in more detail below):
+
+    $ docker-compose run biblio java -jar lookup/build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input data/crossref-works.2018-09-05.json.xz lookup/data/config/config.yml
+
 ### REST API
 
 - match record by DOI
