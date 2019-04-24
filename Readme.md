@@ -264,6 +264,8 @@ Note: see bellow how to create this mapping file `istexIds.all.gz`.
 
 ### Build the Elasticsearch index
 
+Elasticsearch 6 is required. It is not compatible with Elasticsearch >=7.
+
 A node.js utility under the subdirectory `matching/` is used to build the Elasticsearch index. It will take a couple of hours for the 100M crossref entries.
 
 #### Install and configure
