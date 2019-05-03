@@ -93,6 +93,8 @@ public class MatchingDocument {
     }
 
     public String getFinalJsonObject() {
+        if (finalJsonObject != null)
+            finalJsonObject = finalJsonObject.replace("\n", "")
         return finalJsonObject;
     }
 }

@@ -38,7 +38,7 @@ public class GrobidClient {
     private CloseableHttpAsyncClient httpClient;
     private String grobidPath;
     private WstxInputFactory inputFactory = new WstxInputFactory();
-    private GrobidResponseStaxHandler grobidResponseStaxHandler = new GrobidResponseStaxHandler();
+    //private GrobidResponseStaxHandler grobidResponseStaxHandler = new GrobidResponseStaxHandler();
 
     public GrobidClient(String grobidPath) {
         this.grobidPath = grobidPath;
@@ -76,6 +76,7 @@ public class GrobidClient {
                 } else {
                     try {
                         XMLStreamReader2 reader = (XMLStreamReader2) inputFactory.createXMLStreamReader(response.getEntity().getContent());
+                        GrobidResponseStaxHandler grobidResponseStaxHandler = new GrobidResponseStaxHandler();
 
                         StaxUtils.traverse(reader, grobidResponseStaxHandler);
 
