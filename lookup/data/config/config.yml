@@ -36,17 +36,17 @@ server:
   type: custom
   applicationConnectors:
   - type: http
-    port: 8080
+    port: 8090
   adminConnectors:
   - type: http
-    port: 8081
+    port: 8091
   registerDefaultExceptionMappers: false
   maxThreads: 2048
   maxQueuedRequests: 2048
   acceptQueueSize: 2048
 
 logging:
-  level: INFO
+  level: TRACE
   appenders:
   - type: console
     threshold: INFO
