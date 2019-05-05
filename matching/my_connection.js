@@ -2,7 +2,7 @@ var elasticsearch = require('elasticsearch');
 
 var client = new elasticsearch.Client( {
     // hosts: ['localhost:9200', 'localhost:9201'],
-    host: 'http://localhost:9200/',
+    host: 'http://elasticsearch:9200/',
     keepAlive: false,
     log: "error",
     requestTimeout: 1000000,  //to give more time for indexing
