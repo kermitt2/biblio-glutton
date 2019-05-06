@@ -48,7 +48,20 @@ To check if it works, you can view a report of the data used by the service at `
 }
 ```
 
-### Running with Docker
+### Start optional additional GROBID service
+
+biblio-glutton takes advantage of GROBID for parsing raw bibliographical references. This permits faster and more accurate bibliographical record matching. To use GROBID service:
+
+* first download and install GROBID as indicated in the [documentation](https://grobid.readthedocs.io/en/latest/Install-Grobid/)
+
+* start the service as documented [here](https://grobid.readthedocs.io/en/latest/Grobid-service/). You can change the `port` used by GROBID by updating the service config file under `grobid/grobid-service/config/config.yaml`  
+
+* update if necessary the host and port information of GROBID in the biblio-glutton config file under `data/config/config.yml` (parameter `grobidPath`).
+
+While GROBID is not required for running biblio-glutton, in particular if it is used only for bibliographical look-up, it is recommended for performing bibliographical record matching. 
+
+
+### Running with Docker
 
 A Docker Compose file is included to make it easier to spin up biblio-glutton, Elasticsearch, and GROBID.
 
@@ -64,9 +77,14 @@ You can run this command to see aggregated log output:
 
 Once everything has booted up, biblio-glutton will be running at http://localhost:8080 and GROBID will be at http://localhost:8070.
 
-To load data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. For example, this command will load Crossref data (as described in more detail below):
+To load data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. For example, this command will load Crossref data (as described in more detail [below](https://github.com/kermitt2/biblio-glutton#resources)):
 
     $ docker-compose run biblio java -jar lookup/build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input data/crossref-works.2018-09-05.json.xz lookup/data/config/config.yml
+
+You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources). 
+
+__Important Note__: this Docker is a way to test and play with the biblio-glutton service, because all the service components are bundled into one container. It might also fit simple needs. However, it is not a solution for scaling and deploying a service requiring high performance bibliographic matching, see [this section](https://github.com/kermitt2/biblio-glutton#building-the-bibliographical-data-look-up-and-matching-databases) for more information. 
+
 
 ### REST API
 
