@@ -85,15 +85,15 @@ dependencies {
     compile "com.fasterxml.jackson.module:jackson-module-afterburner:2.9.5"
 }
 
-/*distributions {
+distributions {
     shadow {
         contents {
-            from(new File(rootProject.rootDir, "data")) {
-                into "data"
+            from(new File(rootProject.rootDir, "data/config")) {
+                into "data/config"
             }
         }
     }
-}*/
+}
 
 shadowJar {
     classifier = 'onejar'
@@ -104,8 +104,12 @@ shadowJar {
     }
 }
 
+distTar.enabled = false
+distZip.enabled = false
+shadowDistTar.enabled = false
+
 artifacts {
     archives shadowJar
-    //archives shadowDistZip
-    //archives shadowDistTar
+    archives shadowDistZip
+//    archives shadowDistTar
 }

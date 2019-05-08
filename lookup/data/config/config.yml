@@ -46,14 +46,14 @@ server:
   acceptQueueSize: 2048
 
 logging:
-  level: TRACE
+  level: INFO
   appenders:
   - type: console
-    threshold: INFO
+    threshold: WARN
     timeZone: UTC
   - type: file
     currentLogFilename: logs/lookup-service.log
-    threshold: ALL
+    threshold: INFO
     archive: true
     archivedLogFilenamePattern: logs/lookup-service-%d.log
     archivedFileCount: 5
