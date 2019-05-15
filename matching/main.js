@@ -234,14 +234,21 @@ function index(options) {
                     obj.year = data.issued['date-parts'][0][0]
                 }
             }
-            if (!obj.year && data.created) {
-                if (data.created['date-parts']) {
-                    obj.year = data.created['date-parts'][0][0]
-                }
-            }
             if (!obj.year && data['published-online']) {
                 if (data['published-online']['date-parts']) {
                     obj.year = data['published-online']['date-parts'][0][0]
+                }
+            }
+            if (!obj.year && data['published-print']) {
+                if (data['published-print']['date-parts']) {
+                    obj.year = data['published-print']['date-parts'][0][0]
+                }
+            }
+            // this is deposit date, normally we will never use it, but it will ensure 
+            // that we always have a date as conservative fallback
+            if (!obj.year && data.created) {
+                if (data.created['date-parts']) {
+                    obj.year = data.created['date-parts'][0][0]
                 }
             }
             //console.log(obj.year);
