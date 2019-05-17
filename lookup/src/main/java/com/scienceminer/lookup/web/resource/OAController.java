@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
+import com.scienceminer.lookup.data.OAResource;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.storage.LookupEngine;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
@@ -32,22 +33,22 @@ public class OAController {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/")
-    public String getDoiByMetadataDoi(
+    public OAResource getDoiByMetadataDoi(
             @QueryParam("doi") String doi,
             @QueryParam("pmid") String pmid,
             @QueryParam("pmc") String pmc
 
     ) {
         if (isNotBlank(doi)) {
-            return storage.retrieveOAUrlByDoi(doi);
+            return new OAResource(storage.retrieveOAUrlByDoi(doi));
         }
 
         if (isNotBlank(pmid)) {
-            return storage.retrieveOAUrlByPmid(pmid);
+            return new OAResource(storage.retrieveOAUrlByPmid(pmid));
         }
 
         if (isNotBlank(pmc)) {
-            return storage.retrieveOAUrlByPmc(pmc);
+            return new OAResource(storage.retrieveOAUrlByPmc(pmc));
         }
 
         throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
@@ -57,21 +58,21 @@ public class OAController {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/doi/{doi}")
-    public String getDoiByMetadataDoi(@PathParam("doi") String doi) {
-        return storage.retrieveOAUrlByDoi(doi);
+    public OAResource getDoiByMetadataDoi(@PathParam("doi") String doi) {
+        return new OAResource(storage.retrieveOAUrlByDoi(doi));
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/pmid/{pmid}")
-    public String getDoiByMetadataPmid(@PathParam("pmid") String pmid) {
-        return storage.retrieveOAUrlByPmid(pmid);
+    public OAResource getDoiByMetadataPmid(@PathParam("pmid") String pmid) {
+        return new OAResource(storage.retrieveOAUrlByPmid(pmid));
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/pmc/{pmc}")
-    public String getDoiByMetadataPmc(@PathParam("pmc") String pmc) {
-        return storage.retrieveOAUrlByPmc(pmc);
+    public OAResource getDoiByMetadataPmc(@PathParam("pmc") String pmc) {
+        return new OAResource(storage.retrieveOAUrlByPmc(pmc));
     }
 }
