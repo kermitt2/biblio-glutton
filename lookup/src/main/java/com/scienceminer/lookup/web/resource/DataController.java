@@ -61,6 +61,13 @@ public class DataController {
     public List<Pair<String, IstexData>> getIstexData_istexIdToIds(@QueryParam("total") Integer total) {
         return storage.retrieveIstexRecords_istexToIds(total);
     }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/istex/pii")
+    public List<Pair<String, IstexData>> getIstexData_istexpiiToIds(@QueryParam("total") Integer total) {
+        return storage.retrieveIstexRecords_piiToIds(total);
+    }
     
     @GET
     @Produces(MediaType.APPLICATION_JSON)

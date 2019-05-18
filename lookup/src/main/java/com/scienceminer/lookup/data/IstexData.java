@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
 import java.util.List;
 
-@JsonIgnoreProperties({"pii"})
 public class IstexData implements Serializable {
     private String corpusName;
 
@@ -20,6 +19,8 @@ public class IstexData implements Serializable {
     private List<String> pmc;
 
     private List<String> mesh;
+
+    private List<String> pii;
 
     public String getIstexId() {
         return istexId;
@@ -75,5 +76,13 @@ public class IstexData implements Serializable {
 
     public void setMesh(List<String> mesh) {
         this.mesh = mesh;
+    }
+
+    public List<String> getPii() {
+        return pii;
+    }
+
+    public void setPii(List<String> pii) {
+        this.pii = pii;
     }
 }

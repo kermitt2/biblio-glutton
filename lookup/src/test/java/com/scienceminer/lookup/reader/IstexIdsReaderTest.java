@@ -21,7 +21,7 @@ public class IstexIdsReaderTest {
 
     @Test
     public void test() throws Exception {
-        IstexData metadata = target.fromJson("{\"corpusName\":\"bmj\",\"istexId\":\"052DFBD14E0015CA914E28A0A561675D36FFA2CC\",\"ark\":[\"ark:/67375/NVC-W015BZV5-Q\"],\"doi\":[\"10.1136/sti.53.1.56\"],\"pmid\":[\"557360\"],\"pii\":[]}");
+        IstexData metadata = target.fromJson("{\"corpusName\":\"bmj\",\"istexId\":\"052DFBD14E0015CA914E28A0A561675D36FFA2CC\",\"ark\":[\"ark:/67375/NVC-W015BZV5-Q\"],\"doi\":[\"10.1136/sti.53.1.56\"],\"pmid\":[\"557360\"],\"pii\":[\"123\"]}");
 
         assertThat(metadata, is(not(nullValue())));
         assertThat(metadata.getCorpusName(), is("bmj"));
@@ -34,6 +34,9 @@ public class IstexIdsReaderTest {
 
         assertThat(metadata.getPmid(), hasSize(1));
         assertThat(metadata.getPmid().get(0), is("557360"));
+
+        assertThat(metadata.getPii(), hasSize(1));
+        assertThat(metadata.getPii().get(0), is("123"));
     }
 
     @Test
