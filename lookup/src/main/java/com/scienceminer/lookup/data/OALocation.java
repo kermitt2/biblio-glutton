@@ -1,6 +1,8 @@
 package com.scienceminer.lookup.data;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * {"url": "https://pdfs.journals.lww.com",
@@ -14,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * "url_for_pdf": "https://pdfs.journals.lww.com/",
  * "url_for_landing_page": "https://doi.org/10.1097/00007890-201007272-00675"}]
  */
+@JsonIgnoreProperties({"endpoint_id"})
 public class OALocation {
 
     private String url;

@@ -68,6 +68,9 @@ public class UnpayWallMetadata {
     @JsonProperty("best_oa_location")
     private OALocation bestOALocation;
 
+    @JsonProperty("oa_status")
+    private String oa_status;
+
     public String getDoi() {
         return doi;
     }
@@ -203,4 +206,12 @@ public class UnpayWallMetadata {
     public void setBestOALocation(OALocation bestOALocation) {
         this.bestOALocation = bestOALocation;
     }
+
+    public String getOaStatus() {
+        return this.oa_status;
+    }
+
+    public void setOaStatus(String status) {
+        this.oa_status = status;
+    } 
 }
