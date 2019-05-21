@@ -11,6 +11,12 @@ Framework dedicated to bibliographic information. It includes:
 The framework is designed both for speed (with several thousands request per second for look-up) and matching accuracy. It can be [scaled](https://github.com/kermitt2/biblio-glutton#architecture) horizontally as needed. 
 Benchmarking against the CrossRef REST API is presented [below](https://github.com/kermitt2/biblio-glutton#matching-accuracy). 
 
+In the Glutton family, the following complementary tools are available for taking advantage of Open Access resources: 
+
+* [biblio-glutton-harvester](https://github.com/kermitt2/biblio-glutton-harvester): A robust, fault tolerant, Python utility for harvesting efficiently (multi-threaded) a large Open Access collection of PDF (Unpaywall, PubMed Central), with the possibility to upload content on Amazon S3.
+
+* [biblio-glutton-extension](https://github.com/kermitt2/biblio-glutton-extension): A browser extension (Firefox & Chrome) for providing bibliographical services, like identifying dynamically Open Access resources on web pages and providing contextual citation services,
+
 ## The bibliographical look-up and matching REST API
 
 Once the databases and index are built, the bibliographical REST API can be started. For building the databases and index, see the next sections below. 
