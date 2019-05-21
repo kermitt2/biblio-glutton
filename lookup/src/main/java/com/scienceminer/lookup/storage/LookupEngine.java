@@ -499,7 +499,7 @@ public class LookupEngine {
                 } else {
                     first = false;
                 }
-                sb.append("\"pii\":\"" + istexData.getPii() + "\"");
+                sb.append("\"pii\":\"" + istexData.getPii().get(0) + "\"");
                 foundIstexData = true;
             }
         }

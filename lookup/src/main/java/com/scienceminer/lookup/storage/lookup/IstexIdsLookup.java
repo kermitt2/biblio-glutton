@@ -207,7 +207,7 @@ public class IstexIdsLookup {
         ByteBuffer cachedData = null;
         IstexData record = null;
         try (Txn<ByteBuffer> tx = environment.txnRead()) {
-            keyBuffer.put(BinarySerialiser.serialize(pii)).flip();
+            keyBuffer.put(BinarySerialiser.serialize(lowerCase(pii))).flip();
             cachedData = dbPiiToIds.get(tx, keyBuffer);
             if (cachedData != null) {
                 record = (IstexData) BinarySerialiser.deserialize(cachedData);
