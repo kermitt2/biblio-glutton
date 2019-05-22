@@ -86,7 +86,7 @@ Here a brief description of the API:
     - match IDs (istexID, ark, etc...) by DOI: 
         - `GET host:port/service/lookup/istex/id?istexid=ISTEXID` for a given ISTEX ID returns the mapping IDs: ark, pmid, etc.. 
         - `GET host:port/service/lookup/istex/id/{ISTEXID}` for a given ISTEX ID returns the mapping IDs: ark, pmid, etc..
-                
+    
 
 - Open Access API returns the OA pdf link by doi: 
     - `GET host:port/service/lookup/oa/url?doi=doi` return the best Open Accss PDF url for a given DOI 
@@ -150,6 +150,10 @@ For simplification, the API only does look-up of full metadata records (crossref
     - match record by PMC ID
         - `GET host:port/service/lookup?pmc=PMC`
         - `GET host:port/service/lookup/pmc/{PMC}`
+        
+    - match record by Elsevier ID
+        - `GET host:port/service/lookup?pii=PII`
+        - `GET host:port/service/lookup/pii/{PII}`    
 
     - match record by ISTEX ID
         - `GET host:port/service/lookup?istexid=ISTEXID`
@@ -175,6 +179,7 @@ Open Access API returns the OA pdf link (url) by identifier:
         - `GET host:port/service/oa?doi=DOI` return the best Open Accss PDF url for a given DOI 
         - `GET host:port/service/oa?pmid=PMID` return the best Open Accss PDF url for a given PMID 
         - `GET host:port/service/oa?pmc=PMC` return the best Open Accss PDF url for a given PMC ID
+        - `GET host:port/service/oa?pii=PII` return the best Open Accss PDF url for a given Elsevier ID
 
 
 

@@ -212,6 +212,24 @@ public class LookupEngine {
         throw new NotFoundException("Cannot find bibliographical record with ISTEX ID " + istexid);
     }
 
+    public String retrieveByPii(String pii, Boolean postValidate, String firstAuthor, String atitle) {
+        final IstexData istexData = istexLookup.retrieveByPii(pii);
+
+        if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi()) && isNotBlank(istexData.getDoi().get(0))) {
+            final String doi = istexData.getDoi().get(0);
+            MatchingDocument outputData = metadataLookup.retrieveByMetadata(doi);
+
+            outputData = validateJsonBody(postValidate, firstAuthor, atitle, outputData);
+            //return injectIdsByIstexData(outputData.getJsonObject(), doi, istexData);
+
+            final String oaLink = oaDoiLookup.retrieveOALinkByDoi(doi);
+            return injectIdsByIstexData(outputData.getJsonObject(), doi, istexData, oaLink);
+        }
+
+        throw new NotFoundException("Cannot find bibliographical record by PII " + pii);
+    }
+
+
     // Intermediate lookups
 
     public PmidData retrievePMidsByDoi(String doi) {
@@ -264,6 +282,17 @@ public class LookupEngine {
 
         throw new NotFoundException("Open Access URL was not found for PM ID " + pmc);
     }
+
+    public String retrieveOAUrlByPii(String pii) {
+        final IstexData istexData = istexLookup.retrieveByPii(pii);
+
+        if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi())) {
+            return oaDoiLookup.retrieveOALinkByDoi(istexData.getDoi().get(0));
+        }
+
+        throw new NotFoundException("Open Access URL was not found for pii " + pii);
+    }
+
 
     public String retrieveByBiblio(String biblio) {
         final MatchingDocument outputData = metadataMatching.retrieveByBiblio(biblio);
@@ -462,6 +491,15 @@ public class LookupEngine {
                     sb.append(", ");
                 }
                 sb.append("\"mesh\":\"" + istexData.getMesh().get(0) + "\"");
+                foundIstexData = true;
+            }
+            if (CollectionUtils.isNotEmpty(istexData.getPii())) {
+                if (!first) {
+                    sb.append(", ");
+                } else {
+                    first = false;
+                }
+                sb.append("\"pii\":\"" + istexData.getPii().get(0) + "\"");
                 foundIstexData = true;
             }
         }

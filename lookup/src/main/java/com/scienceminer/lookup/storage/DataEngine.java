@@ -68,7 +68,12 @@ public class DataEngine {
         return metadataLookup.retrieveList(total);
     }
 
+    public List<Pair<String, IstexData>> retrieveIstexRecords_piiToIds(Integer total) {
+        return istexLookup.retrieveList_piiToIds(total);
+    }
+    
     //Setters
+
     protected void setOaDoiLookup(OALookup oaDoiLookup) {
         this.oaDoiLookup = oaDoiLookup;
     }
@@ -84,5 +89,4 @@ public class DataEngine {
     protected void setPmidLookup(PMIdsLookup pmidLookup) {
         this.pmidLookup = pmidLookup;
     }
-
 }

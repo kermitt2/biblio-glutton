@@ -36,7 +36,8 @@ public class OAController {
     public OAResource getDoiByMetadataDoi(
             @QueryParam("doi") String doi,
             @QueryParam("pmid") String pmid,
-            @QueryParam("pmc") String pmc
+            @QueryParam("pmc") String pmc,
+            @QueryParam("pii") String pii
 
     ) {
         if (isNotBlank(doi)) {
@@ -49,6 +50,10 @@ public class OAController {
 
         if (isNotBlank(pmc)) {
             return new OAResource(storage.retrieveOAUrlByPmc(pmc));
+        }
+
+        if (isNotBlank(pii)) {
+            return new OAResource(storage.retrieveOAUrlByPii(pii));
         }
 
         throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
@@ -74,5 +79,12 @@ public class OAController {
     @Path("/pmc/{pmc}")
     public OAResource getDoiByMetadataPmc(@PathParam("pmc") String pmc) {
         return new OAResource(storage.retrieveOAUrlByPmc(pmc));
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/pii/{pii}")
+    public OAResource getDoiByMetadataPii(@PathParam("pii") String pii) {
+        return new OAResource(storage.retrieveOAUrlByPii(pii));
     }
 }

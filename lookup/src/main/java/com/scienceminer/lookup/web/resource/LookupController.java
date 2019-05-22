@@ -64,6 +64,7 @@ public class LookupController {
             @QueryParam("doi") String doi,
             @QueryParam("pmid") String pmid,
             @QueryParam("pmc") String pmc,
+            @QueryParam("pii") String pii,
             @QueryParam("istexid") String istexid,
             @QueryParam("firstAuthor") String firstAuthor,
             @QueryParam("atitle") String atitle,
@@ -95,7 +96,7 @@ public class LookupController {
         if (postValidate == null) postValidate = Boolean.TRUE;
         if (parseReference == null) parseReference = Boolean.TRUE;
 
-        getByQuery(doi, pmid, pmc, istexid, firstAuthor, atitle,
+        getByQuery(doi, pmid, pmc, pii, istexid, firstAuthor, atitle,
                 postValidate, jtitle, volume, firstPage, biblio, parseReference, asyncResponse);
     }
 
@@ -103,6 +104,7 @@ public class LookupController {
             String doi,
             String pmid,
             String pmc,
+            String pii, 
             String istexid,
             String firstAuthor,
             String atitle,
@@ -160,6 +162,20 @@ public class LookupController {
 
             } catch (NotFoundException e) {
                 LOGGER.warn("PMC ID did not matched, move to additional metadata");
+            }
+        }
+
+        if (isNotBlank(pii)) {
+            areParametersEnoughToLookup = true;
+            try {
+                final String response = lookupEngine.retrieveByPii(pii, postValidate, firstAuthor, atitle);
+                if (isNotBlank(response)) {
+                    asyncResponse.resume(response);
+                    return;
+                }
+
+            } catch (NotFoundException e) {
+                LOGGER.warn("PII ID did not matched, move to additional metadata");
             }
         }
 
@@ -362,6 +378,13 @@ public class LookupController {
     @Path("/pmid/{pmid}")
     public String getByPmid(@PathParam("pmid") String pmid) {
         return lookupEngine.retrieveByPmid(pmid, false, null, null);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/pii/{pii}")
+    public String getByPii(@PathParam("pii") String pii) {
+        return lookupEngine.retrieveByPii(pii, false, null, null);
     }
 
     @GET

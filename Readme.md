@@ -109,6 +109,10 @@ __Important Note__: this Docker is a way to test and play with the biblio-glutto
 - match record by ISTEX ID
     - `GET host:port/service/lookup?istexid=ISTEXID`
     - `GET host:port/service/lookup/istexid/{ISTEXID}`
+            
+- match record by Elsevier ID
+    - `GET host:port/service/lookup?pii=PII`
+    - `GET host:port/service/lookup/pii/{PII}`   
 
 - match record by article title and first author lastname
     - `GET host:port/service/lookup?atitle=ARTICLE_TITLE&firstAuthor=FIRST_AUTHOR_SURNAME[?postValidate=true]`
@@ -141,6 +145,7 @@ In case you are only interested by the Open Access URL for a bibliographical obj
     - `GET host:port/service/oa?doi=DOI` return the best Open Accss PDF url for a given DOI 
     - `GET host:port/service/oa?pmid=PMID` return the best Open Accss PDF url for a given PMID 
     - `GET host:port/service/oa?pmc=PMC` return the best Open Accss PDF url for a given PMC ID
+    - `GET host:port/service/oa?pii=PII` return the best Open Accss PDF url for a given Elsevier ID
 
 ### cURL examples
 
@@ -178,6 +183,12 @@ Bibliographical metadata lookup by PMC ID (note that the `PMC` prefix in the ide
 curl http://localhost:8080/service/lookup?pmc=PMC1017419
 ```
 
+Bibliographical metadata lookup by Elsevier ID:
+
+```sh
+curl http://localhost:8080/service/lookup?pii=
+```
+
 Bibliographical metadata lookup by ISTEX ID:
 
 ```sh
@@ -189,6 +200,8 @@ Open Access resolver by DOI:
 ```sh
 curl "http://localhost:8080/service/oa?doi=10.1038/nature12373"
 ```
+
+
 
 ## Building the bibliographical data look-up and matching databases
 

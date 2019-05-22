@@ -64,7 +64,7 @@ public class LookupControllerTest {
         expect(mockedAsyncResponse.resume(response.getJsonObject())).andReturn(true);
 
         replay(mockMetadataLookup, mockedAsyncResponse, mockPmidsLookup, mockOALookup, mockIstexLookup, mockMetadataMatching);
-        target.getByQuery(myDOI, null, null, null, firstAuthor, atitle,
+        target.getByQuery(myDOI, null, null, null, null, firstAuthor, atitle,
                 postValidate, null, null, null, null, null, mockedAsyncResponse);
 
         verify(mockMetadataLookup, mockedAsyncResponse, mockPmidsLookup, mockOALookup, mockIstexLookup, mockMetadataMatching);
@@ -96,7 +96,7 @@ public class LookupControllerTest {
 //        expect(mockedAsyncResponse.resume(response)).andReturn(true);
 
         replay(mockMetadataLookup, mockedAsyncResponse, mockPmidsLookup, mockOALookup, mockIstexLookup, mockMetadataMatching);
-        target.getByQuery(myDOI, null, null, null, firstAuthor, atitle,
+        target.getByQuery(myDOI, null, null, null, null, firstAuthor, atitle,
                 postValidate, null, null, null, null, null, mockedAsyncResponse);
 
         verify(mockMetadataLookup, mockedAsyncResponse, mockPmidsLookup, mockOALookup, mockIstexLookup, mockMetadataMatching);
@@ -120,7 +120,7 @@ public class LookupControllerTest {
         mockMetadataMatching.retrieveByMetadataAsync(eq(atitle), eq(firstAuthor), anyObject());
 
         replay(mockMetadataLookup, mockedAsyncResponse, mockPmidsLookup, mockOALookup, mockIstexLookup, mockMetadataMatching);
-        target.getByQuery(myDOI, null, null, null, firstAuthor, atitle,
+        target.getByQuery(myDOI, null, null, null, null, firstAuthor, atitle,
                 postValidate, null, null, null, null, null, mockedAsyncResponse);
 
         verify(mockMetadataLookup, mockedAsyncResponse, mockPmidsLookup, mockOALookup, mockIstexLookup, mockMetadataMatching);

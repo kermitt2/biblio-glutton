@@ -1,6 +1,7 @@
 package com.scienceminer.lookup.storage.lookup;
 
 import com.codahale.metrics.Meter;
+import com.google.inject.servlet.ServletScopes;
 import com.scienceminer.lookup.data.IstexData;
 import com.scienceminer.lookup.exception.ServiceOverloadedException;
 import com.scienceminer.lookup.reader.IstexIdsReader;
@@ -26,9 +27,10 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 /**
- * Lookup:
+ * Lookups:
  * - doi -> istex ID, pmid, ark, etc...
  * - istexID -> doi, pmid, ark, etc...
+ * - pii -> doi, istex ID, pmid, ark, etc...
  */
 public class IstexIdsLookup {
 
@@ -37,11 +39,13 @@ public class IstexIdsLookup {
     protected Env<ByteBuffer> environment;
     protected Dbi<ByteBuffer> dbDoiToIds;
     protected Dbi<ByteBuffer> dbIstexToIds;
+    protected Dbi<ByteBuffer> dbPiiToIds;
 
     public static final String ENV_NAME = "istex";
 
     public static final String NAME_DOI2IDS = ENV_NAME + "_doi2ids";
     public static final String NAME_ISTEX2IDS = ENV_NAME + "_istex2ids";
+    public static final String NAME_PII2IDS = ENV_NAME + "_pii2ids";
 
     private final int batchSize;
 
@@ -51,6 +55,7 @@ public class IstexIdsLookup {
 
         dbDoiToIds = this.environment.openDbi(NAME_DOI2IDS, DbiFlags.MDB_CREATE);
         dbIstexToIds = this.environment.openDbi(NAME_ISTEX2IDS, DbiFlags.MDB_CREATE);
+        dbPiiToIds = this.environment.openDbi(NAME_PII2IDS, DbiFlags.MDB_CREATE);
     }
 
     public void loadFromFile(InputStream is, IstexIdsReader reader, Meter metric) {
@@ -72,11 +77,19 @@ public class IstexIdsLookup {
                         }
                     }
 
+                    // unwrapping list of pii    pii -> ids
+                    for (String pii : istexData.getPii()) {
+                        if (isNotBlank(pii)) {
+                            store(dbPiiToIds, lowerCase(pii), istexData, transactionWrapper.tx);
+                        }
+                    }
+
                     // istex id -> ids (no need to unwrap)
                     if (isNotBlank(istexData.getIstexId())) {
                         store(dbIstexToIds, istexData.getIstexId(), istexData, transactionWrapper.tx);
 
                     }
+
                     metric.mark();
                     counter.incrementAndGet();
                 }
@@ -128,6 +141,7 @@ public class IstexIdsLookup {
         try (final Txn<ByteBuffer> txn = this.environment.txnRead()) {
             size.put(NAME_DOI2IDS, dbDoiToIds.stat(txn).entries);
             size.put(NAME_ISTEX2IDS, dbIstexToIds.stat(txn).entries);
+            size.put(NAME_PII2IDS, dbPiiToIds.stat(txn).entries);
         } catch (Env.ReadersFullException e) {
             throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         }
@@ -186,12 +200,34 @@ public class IstexIdsLookup {
         }
 
         return record;
+    }
 
+    public IstexData retrieveByPii(String pii) {
+        final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
+        ByteBuffer cachedData = null;
+        IstexData record = null;
+        try (Txn<ByteBuffer> tx = environment.txnRead()) {
+            keyBuffer.put(BinarySerialiser.serialize(lowerCase(pii))).flip();
+            cachedData = dbPiiToIds.get(tx, keyBuffer);
+            if (cachedData != null) {
+                record = (IstexData) BinarySerialiser.deserialize(cachedData);
+            }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
+        } catch (Exception e) {
+            LOGGER.error("Cannot retrieve ISTEX identifiers by pii:  " + pii, e);
+        }
+
+        return record;
     }
 
     public List<Pair<String, IstexData>> retrieveList_doiToIds(Integer total) {
         return retrieveList(total, dbDoiToIds);
 
+    }
+
+    public List<Pair<String, IstexData>> retrieveList_piiToIds(Integer total) {
+        return retrieveList(total, dbPiiToIds);
     }
 
     public List<Pair<String, IstexData>> retrieveList_istexToIds(Integer total) {
