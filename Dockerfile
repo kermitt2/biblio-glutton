@@ -26,12 +26,12 @@ RUN cd /app/glutton-source/lookup && ./gradlew clean assemble --no-daemon
 # build runtime image
 # -------------------
 FROM openjdk:8-jre-slim
-RUN apt-get update -qq && apt-get -qy install curl
+RUN apt-get update -qq && apt-get -qy install curl build-essential unzip
 
 RUN mkdir -p /app
 WORKDIR /app
 
-RUN curl -sL https://deb.nodesource.com/setup_11.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
 RUN apt-get update -qq && apt-get -y install nodejs
 COPY --from=builder /app/glutton-source/matching /app/matching
 RUN cd matching; npm install
