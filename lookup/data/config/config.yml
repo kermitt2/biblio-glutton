@@ -12,13 +12,13 @@ ignoreCrossRefFields:
 batchSize: 10000
 
 # Grobid URL
-grobidPath: http://localhost:8070/api
+grobidPath: http://grobid:8070/api
 
 # when set to -1 it's using the number of processors available to the machine
 maxAcceptedRequests: 2048
 
 elastic:
-  host: localhost:9200
+  host: elasticsearch:9200
   index: crossref
   type: work
 
