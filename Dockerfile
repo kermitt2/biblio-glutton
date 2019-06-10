@@ -7,10 +7,6 @@ FROM openjdk:8-jdk as builder
 
 USER root
 
-RUN apt-get update
-#&& \
-#    apt-get -y --no-install-recommends install
-
 WORKDIR /app/glutton-source
 
 RUN mkdir -p .gradle
