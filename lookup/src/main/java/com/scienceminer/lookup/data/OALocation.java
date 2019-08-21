@@ -16,7 +16,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * "url_for_pdf": "https://pdfs.journals.lww.com/",
  * "url_for_landing_page": "https://doi.org/10.1097/00007890-201007272-00675"}]
  */
-@JsonIgnoreProperties({"endpoint_id"})
+@JsonIgnoreProperties({"endpoint_id", "repository_institution"})
 public class OALocation {
 
     private String url;
