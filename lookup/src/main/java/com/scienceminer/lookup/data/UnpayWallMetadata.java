@@ -20,7 +20,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
  * "journal_is_oa": false, "journal_issns": null, "published_date": "2013-12-01", "best_oa_location": null,
  * "journal_is_in_doaj": false}
  */
-@JsonIgnoreProperties({"z_authors", "x_reported_noncompliant_copies", "x_error"})
+@JsonIgnoreProperties({"z_authors", "x_reported_noncompliant_copies", "x_error", "journal_issn_l"})
 public class UnpayWallMetadata {
 
     private String doi;
@@ -213,5 +213,5 @@ public class UnpayWallMetadata {
 
     public void setOaStatus(String status) {
         this.oa_status = status;
-    } 
+    }
 }
