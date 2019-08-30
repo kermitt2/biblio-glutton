@@ -335,6 +335,9 @@ public class LookupEngine {
                     matchingDocument.setFinalJsonObject(s);
                     callback.accept(matchingDocument);
                 }
+            } else {
+                // got an exception; propagate it
+                callback.accept(matchingDocument);
             }
         });
     }
