@@ -380,7 +380,7 @@ Limits:
 
 ### How to run the evaluation
 
-Creation of the dataset and evaluation are realized in GROBID:
+You can use the DOI matching evaluation set (with 17,015 bibliographical reference/DOI pairs) from the indicated above address ([here](doc/references-doi-matching.json.gz)) or recreate this dataset with GROBID as follow:
 
 - [Install GROBID](https://grobid.readthedocs.io/en/latest/Install-Grobid/).
 
@@ -390,7 +390,9 @@ Creation of the dataset and evaluation are realized in GROBID:
 
 > ./gradlew PrepareDOIMatching -Pp2t=ABS_PATH_TO_PMC/PMC_sample_1943 
     
-- Launch an evaluation: 
+The evaluation dataset will be saved under `ABS_PATH_TO_PMC/PMC_sample_1943` with the name `references-doi-matching.json`
+
+- For launching an evaluation: 
 
 1) Select the matching method (`crossref` or `glutton`) in the `grobid-home/config/grobid.properties` file: 
 
@@ -404,7 +406,7 @@ grobid.consolidation.service=glutton
 
 2) If Glutton is setected, start the Glutton server as indicated above (we assume that it is running at `localhost:8080`).
 
-3) Launch from GROBID the evaluation: 
+3) Launch from GROBID the evaluation, indicating the path where the evaluation dataset has been created - here we suppose that the file `references-doi-matching.json` has been saved under `ABS_PATH_TO_PMC/PMC_sample_1943`: 
 
 > ./gradlew EvaluateDOIMatching -Pp2t=ABS_PATH_TO_PMC/PMC_sample_1943
 
@@ -481,7 +483,6 @@ Found 16546 DOI
 precision:      0.9469962528707845
 recall: 0.9208933294152218
 f-score:        0.9337624027889514
-
 
 ```
 
