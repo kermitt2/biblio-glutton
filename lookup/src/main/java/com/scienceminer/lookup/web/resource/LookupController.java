@@ -154,7 +154,7 @@ public class LookupController {
         if (isNotBlank(pmc)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByPmid(pmc, postValidate, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByPmc(pmc, postValidate, firstAuthor, atitle);
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
                     return;
