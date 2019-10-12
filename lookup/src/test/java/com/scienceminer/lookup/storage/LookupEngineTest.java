@@ -70,7 +70,7 @@ public class LookupEngineTest {
         expect(mockIstexLookup.retrieveByDoi(doi)).andReturn(fakeIstexData);
         final PmidData pmidData = new PmidData("pmid2", "", "10.1070/rc1998v067n04abeh000372");
         expect(mockPmidLookup.retrieveIdsByDoi(doi)).andReturn(pmidData);
-        expect(mockOALookup.retrieveOALinkByDoi(doi)).andReturn(fakeOAurl);
+        expect(mockOALookup.retrieveOaLinkByDoi(doi)).andReturn(fakeOAurl);
 
         replay(mockIstexLookup, mockPmidLookup, mockOALookup);
         String output = target.injectIdsByDoi(input, doi);
@@ -94,7 +94,7 @@ public class LookupEngineTest {
         fakeIstexData.setArk(Collections.singletonList("ark1"));
         fakeIstexData.setPmid(Collections.singletonList("pmid1"));
         expect(mockIstexLookup.retrieveByDoi(doi)).andReturn(fakeIstexData);
-        expect(mockOALookup.retrieveOALinkByDoi(doi)).andReturn(null);
+        expect(mockOALookup.retrieveOaLinkByDoi(doi)).andReturn(null);
 
         replay(mockIstexLookup, mockOALookup);
         String output = target.injectIdsByDoi(input, doi);
@@ -115,7 +115,7 @@ public class LookupEngineTest {
         expect(mockIstexLookup.retrieveByDoi(doi)).andReturn(null);
         final PmidData pmidData = new PmidData("pmid1", "", "10.1070/rc1998v067n04abeh000372");
         expect(mockPmidLookup.retrieveIdsByDoi(doi)).andReturn(pmidData);
-        expect(mockOALookup.retrieveOALinkByDoi(doi)).andReturn(null);
+        expect(mockOALookup.retrieveOaLinkByDoi(doi)).andReturn(null);
 
 
         replay(mockPmidLookup, mockOALookup);
@@ -136,7 +136,7 @@ public class LookupEngineTest {
 
         expect(mockIstexLookup.retrieveByDoi(doi)).andReturn(null);
         expect(mockPmidLookup.retrieveIdsByDoi(doi)).andReturn(null);
-        expect(mockOALookup.retrieveOALinkByDoi(doi)).andReturn(fakeOAurl);
+        expect(mockOALookup.retrieveOaLinkByDoi(doi)).andReturn(fakeOAurl);
 
 
         replay(mockPmidLookup, mockOALookup);
@@ -156,7 +156,7 @@ public class LookupEngineTest {
         expect(mockIstexLookup.retrieveByDoi(doi)).andReturn(null);
 //        final PmidData pmidData = new PmidData("pmid1", "", "10.1070/rc1998v067n04abeh000372");
         expect(mockPmidLookup.retrieveIdsByDoi(doi)).andReturn(null);
-        expect(mockOALookup.retrieveOALinkByDoi(doi)).andReturn(null);
+        expect(mockOALookup.retrieveOaLinkByDoi(doi)).andReturn(null);
 
         replay(mockPmidLookup, mockIstexLookup, mockOALookup);
         String output = target.injectIdsByDoi(input, doi);
