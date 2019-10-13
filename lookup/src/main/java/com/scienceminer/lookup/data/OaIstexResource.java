@@ -1,7 +1,9 @@
 package com.scienceminer.lookup.data;
 
 import org.apache.commons.lang3.tuple.Pair;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class OaIstexResource {
 
     private String oaLink;
@@ -25,11 +27,11 @@ public class OaIstexResource {
         this.oaLink = oaLink;
     }
 
-    public String getOaIstexLink() {
+    public String getIstexLink() {
         return istexLink;
     }
 
-    public void setOaIstexLink(String istexLink) {
+    public void setIstexLink(String istexLink) {
         this.istexLink = istexLink;
     }    
 }

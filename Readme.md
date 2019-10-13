@@ -207,7 +207,11 @@ Open Access resolver by DOI:
 curl "http://localhost:8080/service/oa?doi=10.1038/nature12373"
 ```
 
+Combination of Open Access resolver and ISTEX identifier by DOI:
 
+```sh
+curl "http://localhost:8080/service/oa_istex?doi=10.1038/nature12373"
+```
 
 ## Building the bibliographical data look-up and matching databases
 
