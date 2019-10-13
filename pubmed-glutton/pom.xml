@@ -16,7 +16,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lmdbjni.version>0.4.6</lmdbjni.version>
-        <jackson.version>2.9.0.pr3</jackson.version>
+        <jackson.version>2.9.10</jackson.version>
     </properties>
 
     <licenses>
