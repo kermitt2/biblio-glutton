@@ -48,9 +48,9 @@ To check if it works, you can view a report of the data used by the service at `
 {
     "Metadata Lookup Crossref size": "{crossref_Jsondoc=96491709}",
     "Metadata Matching Crossref size": "96450728",
-    "Doi OA size": "{unpayWall_doiOAUrl=20246280}",
-    "Pmid lookup size": "{pmid_doi2ids=19648024, pmid_pmc2ids=4991296, pmid_pmid2ids=29010455}",
-    "Istex size": "{istex_doi2ids=20999895, istex_istex2ids=21073367}"
+    "DOI OA size": "{unpayWall_doiOAUrl=20246280}",
+    "PMID lookup size": "{pmid_doi2ids=19648024, pmid_pmc2ids=4991296, pmid_pmid2ids=29010455}",
+    "ISTEX size": "{istex_doi2ids=20999895, istex_istex2ids=21073367}"
 }
 ```
 
@@ -110,7 +110,7 @@ __Important Note__: this Docker is a way to test and play with the biblio-glutto
     - `GET host:port/service/lookup?istexid=ISTEXID`
     - `GET host:port/service/lookup/istexid/{ISTEXID}`
             
-- match record by Elsevier ID
+- match record by PII ID
     - `GET host:port/service/lookup?pii=PII`
     - `GET host:port/service/lookup/pii/{PII}`   
 
@@ -141,11 +141,17 @@ biblio-glutton will make the best use of all the parameters sent to retrieve in 
 
 In case you are only interested by the Open Access URL for a bibliographical object, the open Access resolver API returns the OA PDF link (URL) only via an identifier: 
 
-- return best Open Access URL 
+- return the best Open Access URL if available
     - `GET host:port/service/oa?doi=DOI` return the best Open Accss PDF url for a given DOI 
     - `GET host:port/service/oa?pmid=PMID` return the best Open Accss PDF url for a given PMID 
     - `GET host:port/service/oa?pmc=PMC` return the best Open Accss PDF url for a given PMC ID
-    - `GET host:port/service/oa?pii=PII` return the best Open Accss PDF url for a given Elsevier ID
+    - `GET host:port/service/oa?pii=PII` return the best Open Accss PDF url for a given PII ID
+
+- return the best Open Access URL and ISTEX PDF URL if available
+    - `GET host:port/service/oa_istex?doi=DOI` return the best Open Accss PDF url and ISTEX PDF url for a given DOI 
+    - `GET host:port/service/oa_istex?pmid=PMID` return the best Open Accss PDF url and ISTEX PDF url for a given PMID 
+    - `GET host:port/service/oa_istex?pmc=PMC` return the best Open Accss PDF url and ISTEX PDF url for a given PMC ID
+    - `GET host:port/service/oa_istex?pii=PII` return the best Open Accss PDF url and ISTEX PDF url for a given PII ID
 
 ### cURL examples
 
@@ -183,7 +189,7 @@ Bibliographical metadata lookup by PMC ID (note that the `PMC` prefix in the ide
 curl http://localhost:8080/service/lookup?pmc=PMC1017419
 ```
 
-Bibliographical metadata lookup by Elsevier ID:
+Bibliographical metadata lookup by PII ID:
 
 ```sh
 curl http://localhost:8080/service/lookup?pii=
