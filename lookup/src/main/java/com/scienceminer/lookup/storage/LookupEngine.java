@@ -13,6 +13,7 @@ import com.scienceminer.lookup.storage.lookup.*;
 import com.scienceminer.lookup.utils.grobid.GrobidClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import scala.Option;
 
 import java.util.function.Consumer;
@@ -32,6 +33,8 @@ public class LookupEngine {
     private PMIdsLookup pmidLookup = null;
     public static Pattern DOIPattern = Pattern.compile("\"DOI\"\\s?:\\s?\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
     private GrobidClient grobidClient = null;
+
+    private static String ISTEX_BASE = "https://api.istex.fr/document/";
 
     public LookupEngine() {
     }
@@ -205,7 +208,7 @@ public class LookupEngine {
             outputData = validateJsonBody(postValidate, firstAuthor, atitle, outputData);
             //return injectIdsByIstexData(outputData.getJsonObject(), doi, istexData);
 
-            final String oaLink = oaDoiLookup.retrieveOALinkByDoi(doi);
+            final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
             return injectIdsByIstexData(outputData.getJsonObject(), doi, istexData, oaLink);
         }
 
@@ -222,7 +225,7 @@ public class LookupEngine {
             outputData = validateJsonBody(postValidate, firstAuthor, atitle, outputData);
             //return injectIdsByIstexData(outputData.getJsonObject(), doi, istexData);
 
-            final String oaLink = oaDoiLookup.retrieveOALinkByDoi(doi);
+            final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
             return injectIdsByIstexData(outputData.getJsonObject(), doi, istexData, oaLink);
         }
 
@@ -254,7 +257,7 @@ public class LookupEngine {
 
     public String retrieveOAUrlByDoi(String doi) {
 
-        final String output = oaDoiLookup.retrieveOALinkByDoi(doi);
+        final String output = oaDoiLookup.retrieveOaLinkByDoi(doi);
 
         if (isBlank(output)) {
             throw new NotFoundException("Open Access URL was not found for DOI " + doi);
@@ -263,36 +266,118 @@ public class LookupEngine {
         return output;
     }
 
+    public Pair<String,String> retrieveOaIstexUrlByDoi(String doi) {
+
+        final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
+        final IstexData istexRecord = istexLookup.retrieveByDoi(doi);
+        String url = null;
+
+        if (isBlank(oaLink) && istexRecord == null) {
+            throw new NotFoundException("Open Access and Istex URL were not found for DOI " + doi);
+        }        
+
+        if (istexRecord != null) {
+            String istexId = istexRecord.getIstexId();
+            url = ISTEX_BASE + istexId + "/fulltext/pdf";
+        }
+
+        return Pair.of(oaLink, url);
+    }
+
     public String retrieveOAUrlByPmid(String pmid) {
         final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
-            return oaDoiLookup.retrieveOALinkByDoi(pmidData.getDoi());
+            return oaDoiLookup.retrieveOaLinkByDoi(pmidData.getDoi());
         }
 
         throw new NotFoundException("Open Access URL was not found for PM ID " + pmid);
+    }
+
+    public Pair<String,String> retrieveOaIstexUrlByPmid(String pmid) {
+
+        final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
+
+        if (pmidData == null || isBlank(pmidData.getDoi())) {
+            throw new NotFoundException("Open Access and Istex URL were not found for PMID " + pmid);
+        }        
+
+        final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(pmidData.getDoi());
+        final IstexData istexRecord = istexLookup.retrieveByDoi(pmidData.getDoi());
+        String url = null;
+
+        if (isBlank(oaLink) && istexRecord == null) {
+            throw new NotFoundException("Open Access and Istex URL were not found for PMID " + pmid);
+        }        
+
+        if (istexRecord != null) {
+            String istexId = istexRecord.getIstexId();
+            url = ISTEX_BASE + istexId + "/fulltext/pdf";
+        }
+
+        return Pair.of(oaLink, url);
     }
 
     public String retrieveOAUrlByPmc(String pmc) {
         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
-            return oaDoiLookup.retrieveOALinkByDoi(pmidData.getDoi());
+            return oaDoiLookup.retrieveOaLinkByDoi(pmidData.getDoi());
         }
 
-        throw new NotFoundException("Open Access URL was not found for PM ID " + pmc);
+        throw new NotFoundException("Open Access URL was not found for PMC ID " + pmc);
+    }
+
+    public Pair<String,String> retrieveOaIstexUrlByPmc(String pmc) {
+
+        final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
+
+        if (pmidData == null || isBlank(pmidData.getDoi())) {
+            throw new NotFoundException("Open Access and Istex URL were not found for PMC " + pmc);
+        }        
+
+        final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(pmidData.getDoi());
+        final IstexData istexRecord = istexLookup.retrieveByDoi(pmidData.getDoi());
+        String url = null;
+
+        if (isBlank(oaLink) && istexRecord == null) {
+            throw new NotFoundException("Open Access and Istex URL were not found for PMC " + pmc);
+        }        
+
+        if (istexRecord != null) {
+            String istexId = istexRecord.getIstexId();
+            url = ISTEX_BASE + istexId + "/fulltext/pdf";
+        }
+
+        return Pair.of(oaLink, url);
     }
 
     public String retrieveOAUrlByPii(String pii) {
         final IstexData istexData = istexLookup.retrieveByPii(pii);
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi())) {
-            return oaDoiLookup.retrieveOALinkByDoi(istexData.getDoi().get(0));
+            // TBD: we might want to iterate to several DOI
+            return oaDoiLookup.retrieveOaLinkByDoi(istexData.getDoi().get(0));
         }
 
         throw new NotFoundException("Open Access URL was not found for pii " + pii);
     }
 
+    public Pair<String,String> retrieveOaIstexUrlByPii(String pii) {
+
+        final IstexData istexData = istexLookup.retrieveByPii(pii);
+
+        if (istexData == null || istexData.getDoi() == null || istexData.getDoi().size() == 0) {
+            throw new NotFoundException("Open Access and Istex URL were not found for PII " + pii);
+        }        
+
+        // TBD: we might want to iterate to several DOI
+        final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(istexData.getDoi().get(0));
+        String istexId = istexData.getIstexId();
+        String url = ISTEX_BASE + istexId + "/fulltext/pdf";
+
+        return Pair.of(oaLink, url);
+    }
 
     public String retrieveByBiblio(String biblio) {
         final MatchingDocument outputData = metadataMatching.retrieveByBiblio(biblio);
@@ -428,7 +513,7 @@ public class LookupEngine {
     protected String injectIdsByDoi(String jsonobj, String doi) {
         final IstexData istexData = istexLookup.retrieveByDoi(doi);
 
-        final String oaLink = oaDoiLookup.retrieveOALinkByDoi(doi);
+        final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
 
         return injectIdsByIstexData(jsonobj, doi, istexData, oaLink);
     }

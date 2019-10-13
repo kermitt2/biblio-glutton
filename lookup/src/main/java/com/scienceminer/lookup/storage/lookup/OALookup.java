@@ -57,7 +57,7 @@ public class OALookup {
         return size;
     }
 
-    public List<Pair<String, String>> retrieveOAUrlSampleList(Integer total) {
+    public List<Pair<String, String>> retrieveOaUrlSampleList(Integer total) {
         if (total == null || total == 0) {
             total = DEFAULT_MAX_SIZE_LIST;
         }
@@ -84,7 +84,7 @@ public class OALookup {
     }
 
 
-    public String retrieveOALinkByDoi(String doi) {
+    public String retrieveOaLinkByDoi(String doi) {
         final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
         ByteBuffer cachedData = null;
         String record = null;
