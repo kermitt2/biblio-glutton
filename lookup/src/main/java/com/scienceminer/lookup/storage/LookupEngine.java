@@ -34,7 +34,7 @@ public class LookupEngine {
     public static Pattern DOIPattern = Pattern.compile("\"DOI\"\\s?:\\s?\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
     private GrobidClient grobidClient = null;
 
-    private static String ISTEX_BASE = "https://www.istex.fr/";
+    private static String ISTEX_BASE = "https://api.istex.fr/document/";
 
     public LookupEngine() {
     }
