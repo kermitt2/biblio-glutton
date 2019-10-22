@@ -85,7 +85,7 @@ Once everything has booted up, biblio-glutton will be running at http://localhos
 
 To load data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. For example, this command will load Crossref data (as described in more detail [below](https://github.com/kermitt2/biblio-glutton#resources)):
 
-    $ docker-compose run biblio java -jar lookup/build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input data/crossref-works.2018-09-05.json.xz lookup/data/config/config.yml
+    $ docker-compose run biblio java -jar lookup/build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input data/crossref-works.2019-09-09.json.xz lookup/data/config/config.yml
 
 You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources). 
 
@@ -245,7 +245,7 @@ Machines have the same configuration Intel i7 4-cores, 8 threads, 16GB memory, S
 
 For building the database and index used by service, you will need these resources:
 
-* CrossRef metadata dump: available via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service or at Internet Archive, see https://github.com/greenelab/crossref,
+* CrossRef metadata dump: available via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service or at Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909),
 
 * DOI to PMID and PMC mapping: available at Europe PMC, see ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/,
 
@@ -279,7 +279,7 @@ java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /pa
 Example (XZ files will be streamed directly from the compressed versions): 
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2018-09-05.json.xz data/config/config.yml
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2019-09-09.json.xz data/config/config.yml
 ```
 
 **Note:** by default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk  space. The `reference` field is often particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `data/config/config.yml`, by editing the lines:
@@ -312,7 +312,7 @@ java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input /p
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2018-09-24T232615.jsonl.gz data/config/config.yml 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2019-04-19T193256.jsonl.gz data/config/config.yml 
 ```
 
 #### ISTEX
@@ -355,7 +355,7 @@ node main -dump *PATH_TO_THE_CROSSREF_JSON_DUMP* index
 Example:
 
 ```sh
-node main -dump ~/tmp/crossref-works.2018-09-05.json.xz index
+node main -dump ~/tmp/crossref-works.2019-09-09.json.xz index
 ```
 
 Note than launching the above command will fully re-index the data, deleting existing index. The default name of the index is `crossref`, but this can be changed via the config file `matching/config.json`.
