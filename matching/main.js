@@ -407,13 +407,9 @@ function index(options) {
                     throw resp;
                 } else {
                     console.log('Completed crossref indexing.');
-                    next();
                 }
             });
-        } else {
-            next();
         }
-
         batch = [];
     });
 }
