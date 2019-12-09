@@ -85,7 +85,7 @@ Once everything has booted up, biblio-glutton will be running at http://localhos
 
 To load data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. For example, this command will load Crossref data (as described in more detail [below](https://github.com/kermitt2/biblio-glutton#resources)):
 
-    $ docker-compose run biblio java -jar lookup/build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input data/crossref-works.2018-09-05.json.xz lookup/data/config/config.yml
+    $ docker-compose run biblio java -jar lib/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input ../../data/crossref-works.2018-09-05.json.xz data/config/config.yml
 
 You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources). 
 
