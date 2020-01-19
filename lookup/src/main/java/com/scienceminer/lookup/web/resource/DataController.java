@@ -72,8 +72,8 @@ public class DataController {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/oa")
-    public List<Pair<String, String>> getDoiByMetadata(@QueryParam("total") Integer total) {
-        return storage.retrieveOaRecords(total);
+    public List<Pair<String, String>> getOaUrlByMetadata(@QueryParam("total") Integer total) {
+        return storage.retrieveOaUrl(total);
     }
 
     @GET
