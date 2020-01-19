@@ -48,9 +48,9 @@ To check if it works, you can view a report of the data used by the service at `
 {
     "Metadata Lookup Crossref size": "{crossref_Jsondoc=96491709}",
     "Metadata Matching Crossref size": "96450728",
-    "Doi OA size": "{unpayWall_doiOAUrl=20246280}",
-    "Pmid lookup size": "{pmid_doi2ids=19648024, pmid_pmc2ids=4991296, pmid_pmid2ids=29010455}",
-    "Istex size": "{istex_doi2ids=20999895, istex_istex2ids=21073367}"
+    "DOI OA size": "{unpayWall_doiOAUrl=20246280}",
+    "PMID lookup size": "{pmid_doi2ids=19648024, pmid_pmc2ids=4991296, pmid_pmid2ids=29010455}",
+    "ISTEX size": "{istex_doi2ids=20999895, istex_istex2ids=21073367}"
 }
 ```
 
@@ -85,7 +85,7 @@ Once everything has booted up, biblio-glutton will be running at http://localhos
 
 To load data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. For example, this command will load Crossref data (as described in more detail [below](https://github.com/kermitt2/biblio-glutton#resources)):
 
-    $ docker-compose run biblio java -jar lookup/build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input data/crossref-works.2018-09-05.json.xz lookup/data/config/config.yml
+    $ docker-compose run biblio java -jar lookup/build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input data/crossref-works.2019-09-09.json.xz lookup/data/config/config.yml
 
 You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources). 
 
@@ -110,7 +110,7 @@ __Important Note__: this Docker is a way to test and play with the biblio-glutto
     - `GET host:port/service/lookup?istexid=ISTEXID`
     - `GET host:port/service/lookup/istexid/{ISTEXID}`
             
-- match record by Elsevier ID
+- match record by PII ID
     - `GET host:port/service/lookup?pii=PII`
     - `GET host:port/service/lookup/pii/{PII}`   
 
@@ -141,11 +141,17 @@ biblio-glutton will make the best use of all the parameters sent to retrieve in 
 
 In case you are only interested by the Open Access URL for a bibliographical object, the open Access resolver API returns the OA PDF link (URL) only via an identifier: 
 
-- return best Open Access URL 
+- return the best Open Access URL if available
     - `GET host:port/service/oa?doi=DOI` return the best Open Accss PDF url for a given DOI 
     - `GET host:port/service/oa?pmid=PMID` return the best Open Accss PDF url for a given PMID 
     - `GET host:port/service/oa?pmc=PMC` return the best Open Accss PDF url for a given PMC ID
-    - `GET host:port/service/oa?pii=PII` return the best Open Accss PDF url for a given Elsevier ID
+    - `GET host:port/service/oa?pii=PII` return the best Open Accss PDF url for a given PII ID
+
+- return the best Open Access URL and ISTEX PDF URL if available
+    - `GET host:port/service/oa_istex?doi=DOI` return the best Open Accss PDF url and ISTEX PDF url for a given DOI 
+    - `GET host:port/service/oa_istex?pmid=PMID` return the best Open Accss PDF url and ISTEX PDF url for a given PMID 
+    - `GET host:port/service/oa_istex?pmc=PMC` return the best Open Accss PDF url and ISTEX PDF url for a given PMC ID
+    - `GET host:port/service/oa_istex?pii=PII` return the best Open Accss PDF url and ISTEX PDF url for a given PII ID
 
 ### cURL examples
 
@@ -183,7 +189,7 @@ Bibliographical metadata lookup by PMC ID (note that the `PMC` prefix in the ide
 curl http://localhost:8080/service/lookup?pmc=PMC1017419
 ```
 
-Bibliographical metadata lookup by Elsevier ID:
+Bibliographical metadata lookup by PII ID:
 
 ```sh
 curl http://localhost:8080/service/lookup?pii=
@@ -201,7 +207,11 @@ Open Access resolver by DOI:
 curl "http://localhost:8080/service/oa?doi=10.1038/nature12373"
 ```
 
+Combination of Open Access resolver and ISTEX identifier by DOI:
 
+```sh
+curl "http://localhost:8080/service/oa_istex?doi=10.1038/nature12373"
+```
 
 ## Building the bibliographical data look-up and matching databases
 
@@ -235,7 +245,7 @@ Machines have the same configuration Intel i7 4-cores, 8 threads, 16GB memory, S
 
 For building the database and index used by service, you will need these resources:
 
-* CrossRef metadata dump: available via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service or at Internet Archive, see https://github.com/greenelab/crossref,
+* CrossRef metadata dump: available via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service or at Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909),
 
 * DOI to PMID and PMC mapping: available at Europe PMC, see ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/,
 
@@ -269,7 +279,7 @@ java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /pa
 Example (XZ files will be streamed directly from the compressed versions): 
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2018-09-05.json.xz data/config/config.yml
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2019-09-09.json.xz data/config/config.yml
 ```
 
 **Note:** by default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk  space. The `reference` field is often particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `data/config/config.yml`, by editing the lines:
@@ -302,7 +312,7 @@ java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input /p
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2018-09-24T232615.jsonl.gz data/config/config.yml 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2019-04-19T193256.jsonl.gz data/config/config.yml 
 ```
 
 #### ISTEX
@@ -345,7 +355,7 @@ node main -dump *PATH_TO_THE_CROSSREF_JSON_DUMP* index
 Example:
 
 ```sh
-node main -dump ~/tmp/crossref-works.2018-09-05.json.xz index
+node main -dump ~/tmp/crossref-works.2019-09-09.json.xz index
 ```
 
 Note than launching the above command will fully re-index the data, deleting existing index. The default name of the index is `crossref`, but this can be changed via the config file `matching/config.json`.
