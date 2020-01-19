@@ -47,6 +47,36 @@ public final class DateUtils {
 		return builder.toString();
 	}
 
+	/** Prints a partial date in yyyy-MM-dd format, where dd and MM are optional. */
+	public static String formatYearMonthDay(Partial date) {
+		if (date == null) {
+			return null;
+		}
+
+		StringBuilder builder = new StringBuilder(12);
+
+		if (date.isSupported(DateTimeFieldType.year())) {
+			builder.append(date.get(DateTimeFieldType.year()));
+
+			if (date.isSupported(DateTimeFieldType.monthOfYear())) {
+				builder.append('-');
+				String theMonth = String.valueOf(date.get(DateTimeFieldType.monthOfYear()));
+				if (theMonth.length() == 1) 
+					theMonth = "0" + theMonth;
+				builder.append(theMonth);
+
+				if (date.isSupported(DateTimeFieldType.dayOfMonth())) {
+					builder.append('-');
+					String theDay = String.valueOf(date.get(DateTimeFieldType.dayOfMonth())); 
+					if (theDay.length() == 1) 
+						theDay = "0" + theDay;
+					builder.append(theDay);
+				}
+			}
+		}
+		return builder.toString();
+	}
+
 	/** To convert a partial date to a full java.util.Date, we need to fill in any missing fields. */
 	public static Date asDate(Partial partialDate) {
 		if (partialDate == null || !partialDate.isSupported(DateTimeFieldType.year())) {

@@ -16,6 +16,8 @@ import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections.Transformer;
 import org.apache.commons.lang3.StringUtils;
 
+import com.fasterxml.jackson.core.io.*;
+
 import org.joda.time.Partial;
 
 /**
@@ -129,10 +131,15 @@ public class MeSHClass extends ClassificationClass implements Serializable {
 
 	public String toJson() {
 		StringBuilder json = new StringBuilder();
+		JsonStringEncoder encoder = JsonStringEncoder.getInstance();
 		json.append("{");
 		if ( (descriptorName != null) && (descriptorName.length() > 0) ) {
 			json.append("\"descriptor\":{");
-			json.append("\"term\":\"").append(descriptorName).append("\"");
+
+			byte[] encodedDescriptorName = encoder.quoteAsUTF8(descriptorName);
+            String outputDescriptorName  = new String(encodedDescriptorName);
+
+			json.append("\"term\":\"").append(outputDescriptorName).append("\"");
 			if ( (descriptorUI != null) && (descriptorUI.length() > 0) ) {
 				json.append(",\"meshId\":\"").append(descriptorUI).append("\"");
 			}
@@ -144,7 +151,11 @@ public class MeSHClass extends ClassificationClass implements Serializable {
 					if (i !=0 ) 
 						json.append(",");
 					json.append("{\"qualifier\":{");
-					json.append("\"term\":\"").append(qualifierNames.get(i)).append("\"");
+
+					byte[] encodedQualifierName = encoder.quoteAsUTF8(qualifierNames.get(i));
+            		String outputQualifierName  = new String(encodedQualifierName);
+
+					json.append("\"term\":\"").append(outputQualifierName).append("\"");
 					if ( (qualifierUIs != null) && (qualifierUIs.size() > i) ) {
 						json.append(", \"meshId\":\"").append(qualifierUIs.get(i)).append("\"");
 					}
@@ -157,7 +168,11 @@ public class MeSHClass extends ClassificationClass implements Serializable {
 			}
 		} else if ( (chemicalNameOfSubstance != null) && (chemicalNameOfSubstance.length() > 0) ) {
 			json.append("\"chemical\":{");
-			json.append("\"term\":\"").append(chemicalNameOfSubstance).append("\"");
+
+			byte[] encodedChemicalNameOfSubstance = encoder.quoteAsUTF8(chemicalNameOfSubstance);
+            String outputChemicalNameOfSubstance  = new String(encodedChemicalNameOfSubstance);
+
+			json.append("\"term\":\"").append(outputChemicalNameOfSubstance).append("\"");
 			if ( (chemicalUI != null) && (chemicalUI.length() > 0) ) {
 				json.append(", \"meshId\":\"").append(chemicalUI).append("\"");
 			}

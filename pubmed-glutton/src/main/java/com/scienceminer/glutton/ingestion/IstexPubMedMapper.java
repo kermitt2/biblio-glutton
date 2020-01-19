@@ -22,12 +22,12 @@ import com.fasterxml.jackson.core.io.*;
 import org.fusesource.lmdbjni.*;
 import static org.fusesource.lmdbjni.Constants.*;
 
-public class IstexIngester {
+public class IstexPubMedMapper {
 
 	private GluttonConfig conf = null;
 	private KBStagingEnvironment env = null;
 
-	public IstexIngester(KBStagingEnvironment env) {
+	public IstexPubMedMapper(KBStagingEnvironment env) {
 		this.env = env;
 	}
 

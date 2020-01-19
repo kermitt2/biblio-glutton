@@ -1,0 +1,17 @@
+mobility,walking_aids,crutches,D003446
+mobility,walking_aids,canes,D002183
+mobility,walking_aids,walkers,D014853
+mobility,wheelchairs,wheelchairs,D014910
+mobility,mobility_accessories,self_helping_devices,D012656
+mobility,body,moving_and_lifting_patients,D055805
+mobility,orthoses,orthotic_devices,D009989
+mobility,protheses,artificial_limbs,D001186
+mobility,protheses,arthroplasty_replacement_hip,D019644
+mobility,protheses,prostheses_and_implants,D019736
+mobility,protheses,dental_prosthesis,D017266
+hearing,hearing_aids,hearing_aids,D006310
+hearing,hearing_aids,auditory_brain_stem_implants,D038262
+hearing,hearing_aids,cochlear_implants,D003054
+hearing,hearing_aids,ossicular_prosthesis,D009998
+hearing,communication_products,communication_aids_for_disabled,D003143
+hearing,communication_products,sensory_aids,D012682

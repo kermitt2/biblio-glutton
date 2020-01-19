@@ -53,6 +53,11 @@ public class Biblio implements Serializable {
 		return result == null ? "" : result;
 	}
 
+	public static String dateISODisplayFormat(Partial date) {
+		String result = DateUtils.formatYearMonthDay(date);
+		return result == null ? "" : result;
+	}
+
 	public static String duplicateDateInDisplayFormat(String date) {
 		String result = DateUtils.formatDuplicateOrdinalDate(date);
 		return result == null ? "" : result;

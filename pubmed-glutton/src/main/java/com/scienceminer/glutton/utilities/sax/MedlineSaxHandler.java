@@ -204,6 +204,7 @@ public class MedlineSaxHandler extends DefaultHandler {
     		if ( (qualifierNames != null) && (qualifierNames.size() > 0) )
     			mesh.setQualifierNames(qualifierNames);
     		mesh.setMajorTopicQualifiers(majorTopicQualifiers);
+            mesh.setMajorTopicDescriptor(majorTopicDescriptor);
 
     		if ( (descriptorUI != null) && (descriptorUI.length() > 0) )
     			biblio.addClass(mesh);

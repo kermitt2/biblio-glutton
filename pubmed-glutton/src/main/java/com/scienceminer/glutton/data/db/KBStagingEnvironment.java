@@ -53,6 +53,9 @@ public class KBStagingEnvironment extends KBEnvironment {
 	// map DOI to PMC
 	private KBDatabase<String,Integer> dbDOI2PMC = null;
 
+	// map PMID to DOI
+	private KBDatabase<Integer, String> dbPMID2DOI = null;
+
 	// map ISTEX ids to all the available external ids encoded in JSON
 	private KBDatabase<String,String> dbISTEX2IDs = null;
 
@@ -92,6 +95,13 @@ public class KBStagingEnvironment extends KBEnvironment {
 	 */
 	public KBDatabase<String,Integer> getDbDOI2PMID() {
 		return dbDOI2PMID;
+	}
+
+	/**
+	 * Returns the {@link DatabaseType#identifier} database
+	 */
+	public KBDatabase<Integer,String> getDbPMID2DOI() {
+		return dbPMID2DOI;
 	}
 
 	/**
@@ -166,6 +176,14 @@ public class KBStagingEnvironment extends KBEnvironment {
 		theBases.add(dbDOI2PMID);
 		databasesByType.put(DatabaseType.identifier, theBases);
 
+		dbPMID2DOI = buildDbPMID2DOIDatabase();
+		theBases = databasesByType.get(DatabaseType.identifier);
+		if (theBases == null) {
+			theBases = new ArrayList<KBDatabase>();
+		}
+		theBases.add(dbPMID2DOI);
+		databasesByType.put(DatabaseType.identifier, theBases);
+
 		dbDOI2PMC = buildDbDOI2PMCDatabase();
 		theBases = databasesByType.get(DatabaseType.identifier);
 		if (theBases == null) {
@@ -198,13 +216,13 @@ public class KBStagingEnvironment extends KBEnvironment {
 		theBases.add(dbCore2Biblio);
 		databasesByType.put(DatabaseType.biblio, theBases);	*/
 
-		dbRepository = buildRepositoryDatabase();
+		/*dbRepository = buildRepositoryDatabase();
 		theBases = databasesByType.get(DatabaseType.repository);
 		if (theBases == null) {
 			theBases = new ArrayList<KBDatabase>();
 		}
 		theBases.add(dbRepository);
-		databasesByType.put(DatabaseType.repository, theBases);
+		databasesByType.put(DatabaseType.repository, theBases);*/
 
 		dbPMID2Biblio = buildPMID2BiblioDatabase();
 		theBases = databasesByType.get(DatabaseType.biblio);
@@ -247,6 +265,9 @@ public class KBStagingEnvironment extends KBEnvironment {
 		//System.out.println("Building dbDOI2PMID");
 		dbDOI2PMID.loadFromFile(pmcDOIData, overwrite);
 
+		//System.out.println("Building dbPMID2DOI");
+		dbPMID2DOI.loadFromFile(pmcDOIData, overwrite);
+
 		//System.out.println("Building dbDOI2PMC");
 		dbDOI2PMC.loadFromFile(pmcDOIData, overwrite);
 		System.out.println(dbDOI2PMID.getDatabaseSize() + " DOI/PMID mappings.");
@@ -268,7 +289,7 @@ public class KBStagingEnvironment extends KBEnvironment {
 
 		System.out.println("Building dbPMID2Biblio");
 		dbPMID2Biblio.loadFromFile(pubmedDirectory, overwrite);		
-		System.out.println(dbRepository.getDatabaseSize() + " repository objects.");
+		System.out.println(dbPMID2Biblio.getDatabaseSize() + " pubmed biblio objects.");
 
 		System.out.println("Environment built");
 	}
@@ -376,6 +397,87 @@ System.out.println("isLoaded: " + isLoaded);
 			}
 		};
 	}
+
+	/**
+	 * Create a database associating a PMID to a DOI
+	 */
+	private KBDatabase<Integer,String> buildDbPMID2DOIDatabase() {
+		return new KBDatabase<Integer,String>(this, DatabaseType.identifier, "PMID2DOI") {
+			
+			/**
+			 * Builds the persistent database from a file.
+			 * 
+			 * @param dataFile the file (here a text file with fields separated by a tabulation) containing data to be loaded
+			 * @param overwrite true if the existing database should be overwritten, otherwise false
+			 * @throws IOException if there is a problem reading or deserialising the given data file.
+			 */
+			public void loadFromFile(File dataFile, boolean overwrite) throws IOException  {
+//System.out.println("input file: " + dataFile.getPath());
+System.out.println("isLoaded: " + isLoaded);
+				if (isLoaded && !overwrite)
+					return;
+				System.out.println("Building " + name + " database");
+
+				InputStream fileStream = new FileInputStream(dataFile);
+				InputStream gzipStream = new GZIPInputStream(fileStream);
+				BufferedReader input = new BufferedReader(new InputStreamReader(gzipStream, "UTF-8"));
+				String line = null;
+				int nbToAdd = 0;
+				Transaction tx = environment.createWriteTransaction();
+				boolean first = true;
+				while ((line=input.readLine()) != null) {
+					// first line to ignore 
+					if (first) {
+						first = false;
+						continue; 
+					}
+ 
+					// format is PMID,PMCID,"DOI"
+					// PMID is a number, PMCID is a number with PMC as prefix, 
+					// DOI is a doi (will be lowercased) with the "https://doi.org/" prefix to be removed
+					if (nbToAdd == 10000) {
+						tx.commit();
+						tx.close();
+						nbToAdd = 0;
+						tx = environment.createWriteTransaction();
+					}
+
+					String[] pieces = line.split(",");
+					if (pieces.length != 3)
+						continue;
+					// only PMID interests us here
+					if (pieces[0].trim().length() == 0)
+						continue;
+					Integer keyVal = null;
+					try {
+						keyVal = Integer.parseInt(pieces[0]);
+					} catch(Exception e) {
+						e.printStackTrace();
+					}
+					if (keyVal == null)
+						continue;
+					String doi = pieces[2].substring(1,pieces[2].length()-1);
+					doi = doi.replace("https://doi.org/", "").toLowerCase();
+					if (doi.trim().length() == 0)
+						continue;
+					KBEntry<Integer,String> entry = new KBEntry<Integer,String>(keyVal, doi);
+					if (entry != null) {
+						try {
+							db.put(tx, KBEnvironment.serialize(entry.getKey()), KBEnvironment.serialize(entry.getValue()));
+							nbToAdd++;
+						} catch(Exception e) {
+							e.printStackTrace();
+						}
+					}
+				}
+				tx.commit();
+				tx.close();
+				input.close();
+				isLoaded = true;
+			}
+		};
+	}
+
 
 	/**
 	 * Create a database associating a DOI to a PMC

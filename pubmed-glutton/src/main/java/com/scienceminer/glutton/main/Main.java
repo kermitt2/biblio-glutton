@@ -6,8 +6,11 @@ import com.scienceminer.glutton.utilities.GluttonConfig;
 import com.scienceminer.glutton.data.db.KBEnvironment;
 import com.scienceminer.glutton.data.db.KBStagingEnvironment;
 import com.scienceminer.glutton.data.db.KBServiceEnvironment;
-import com.scienceminer.glutton.ingestion.IstexIngester;
-import com.scienceminer.glutton.ingestion.CoreIngester;
+import com.scienceminer.glutton.ingestion.IstexPubMedMapper;
+import com.scienceminer.glutton.ingestion.PubMedIndexer;
+import com.scienceminer.glutton.export.PubMedExporter;
+import com.scienceminer.glutton.export.PubMedExporter.Format;
+//import com.scienceminer.glutton.ingestion.CoreIngester;
 
 import java.io.*;
 import java.util.*;
@@ -22,7 +25,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  */
 public class Main {
 
-    private static List<String> availableCommands = Arrays.asList("istexPMID");
+    private static List<String> availableCommands = Arrays.asList("istexPMID", "pubmed", "pubmedExport");
 
     /**
      * Arguments of the command.
@@ -47,7 +50,7 @@ public class Main {
         help.append("HELP biblio glutton\n");
         help.append("-h: displays help\n");
         help.append("-tdata: gives the path to an input directory - if required.\n");
-		help.append("-out: directory path for the result files if required\n");
+		help.append("-out: directory path for the result files - if required\n");
         help.append("-exe: gives the command to execute. The value should be one of these:\n");
         help.append("\t" + availableCommands + "\n");
         return help.toString();
@@ -141,6 +144,7 @@ public class Main {
         GluttonConfig conf = mapper.readValue(confFile, GluttonConfig.class);
 
         if (processArgs(args) && (gbdArgs.getProcessMethodName() != null)) {
+
             if (gbdArgs.getProcessMethodName().equals("istexpmid")) {
                 System.out.println("Mapping ISTEX ID to PMID");
                 KBStagingEnvironment env = null;
@@ -148,13 +152,42 @@ public class Main {
                     env = new KBStagingEnvironment(conf);
                     env.buildEnvironment(false);
 
-                    IstexIngester istexIngester = new IstexIngester(env);
-                    istexIngester.addPMID(gbdArgs.getResultDirectoryPath(), gbdArgs.getAddMeSH());
+                    IstexPubMedMapper istex = new IstexPubMedMapper(env);
+                    istex.addPMID(gbdArgs.getResultDirectoryPath(), gbdArgs.getAddMeSH());
                 } finally {
                     if (env != null)  
                         env.close();
                 }
-            } /*else if (gbdArgs.getProcessMethodName().equals("coreharvesting")) {
+            } else if (gbdArgs.getProcessMethodName().equals("pubmed")) {
+                System.out.println("Indexing PubMed data with indexing of MeSH classification");
+                KBStagingEnvironment env = null;
+                try {
+                    env = new KBStagingEnvironment(conf);
+                    env.buildEnvironment(false);
+
+                    PubMedIndexer pubmed = new PubMedIndexer(env, conf);
+                    pubmed.process();
+                } finally {
+                    if (env != null)  
+                        env.close();
+                }
+            } else if (gbdArgs.getProcessMethodName().equals("pubmedexport")) {
+                System.out.println("Export PubMed data based on MeSH classification");
+                KBStagingEnvironment env = null;
+                try {
+                    env = new KBStagingEnvironment(conf);
+                    env.buildEnvironment(false);
+
+                    PubMedExporter pubmed = new PubMedExporter(env, conf);
+                    pubmed.export(gbdArgs.getPathInputDirectory(), gbdArgs.getResultDirectoryPath(), Format.CSV);
+                } finally {
+                    if (env != null)  
+                        env.close();
+                }
+            } 
+
+
+            /*else if (gbdArgs.getProcessMethodName().equals("coreharvesting")) {
                 System.out.println("Harvesting CORE data");
                 KBStagingEnvironment env1 = null;
                 KBServiceEnvironment env2 = null;

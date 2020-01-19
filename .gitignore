@@ -25,3 +25,4 @@ lookup/build
 **/out
 **/package-lock.json
 lookup/data/db/*
+pubmed-glutton/build/*
