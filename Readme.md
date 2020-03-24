@@ -48,7 +48,7 @@ To check if it works, you can view a report of the data used by the service at `
 {
     "Metadata Lookup Crossref size": "{crossref_Jsondoc=96491709}",
     "Metadata Matching Crossref size": "96450728",
-    "DOI OA size": "{unpayWall_doiOAUrl=20246280}",
+    "DOI OA size": "{unpayWall_doiOAUrl=24056982}",
     "PMID lookup size": "{pmid_doi2ids=19648024, pmid_pmc2ids=4991296, pmid_pmid2ids=29010455}",
     "ISTEX size": "{istex_doi2ids=20999895, istex_istex2ids=21073367}"
 }
@@ -249,7 +249,7 @@ For building the database and index used by service, you will need these resourc
 
 * DOI to PMID and PMC mapping: available at Europe PMC, see ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/,
 
-* optionally, the Unpaywall dataset, to get Open Access links aggregated with the bibliographical metadata,
+* optionally, the Unpaywall dataset, to get Open Access links aggregated with the bibliographical metadata, see [here](http://unpaywall.org/products/snapshot) to get the latest database snapshot. 
 
 * optionally, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see bellow. 
 
@@ -312,7 +312,7 @@ java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input /p
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2019-04-19T193256.jsonl.gz data/config/config.yml 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2019-11-22T074546.jsonl.gz data/config/config.yml 
 ```
 
 #### ISTEX
