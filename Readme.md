@@ -48,7 +48,7 @@ To check if it works, you can view a report of the data used by the service at `
 {
     "Metadata Lookup Crossref size": "{crossref_Jsondoc=96491709}",
     "Metadata Matching Crossref size": "96450728",
-    "DOI OA size": "{unpayWall_doiOAUrl=24056982}",
+    "DOI OA size": "{unpayWall_doiOAUrl=25215243}",
     "PMID lookup size": "{pmid_doi2ids=19648024, pmid_pmc2ids=4991296, pmid_pmid2ids=29010455}",
     "ISTEX size": "{istex_doi2ids=20999895, istex_istex2ids=21073367}"
 }
@@ -312,7 +312,7 @@ java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input /p
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2019-11-22T074546.jsonl.gz data/config/config.yml 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2020-04-27T153236.jsonl.gz data/config/config.yml 
 ```
 
 #### ISTEX
