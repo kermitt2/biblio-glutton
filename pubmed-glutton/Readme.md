@@ -40,7 +40,7 @@ To index the PubMed data, run:
 > java -Xmx1024m -jar build/libs/com.scienceminer.glutton-0.1-SNAPSHOT-onejar.jar -exe pubmed 
 ```
 
-### MEDLINE/PubMed Export 
+### MEDLINE/PubMed/PubMed Central Export 
 
 After the launch of the above extraction and indexing, it is possible to export the PubMed records according to a selection of MeSH class descriptors. 
 
@@ -50,8 +50,11 @@ To export a sub-corpus of PubMed records, run:
 > java -Xmx1024m -jar build/libs/com.scienceminer.glutton-0.1-SNAPSHOT-onejar.jar -exe pubmedExport -tdata src/test/resources/classes-mesh.csv -out ~/tmp/mesh/
 ```
 
+In case you are only interested in PubMed Central entries (e.g. for exploiting full text with text mining), use `pmcExport` as `-exe` action: 
 
-
+```bash
+> java -Xmx1024m -jar build/libs/com.scienceminer.glutton-0.1-SNAPSHOT-onejar.jar -exe pmcExport -tdata src/test/resources/classes-mesh.csv -out ~/tmp/mesh/
+```
 
 ### ISTEX to PubMed mapping
 

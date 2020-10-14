@@ -25,7 +25,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  */
 public class Main {
 
-    private static List<String> availableCommands = Arrays.asList("istexPMID", "pubmed", "pubmedExport");
+    private static List<String> availableCommands = Arrays.asList("istexPMID", "pubmed", "pubmedExport", "pmcExport");
 
     /**
      * Arguments of the command.
@@ -179,7 +179,20 @@ public class Main {
                     env.buildEnvironment(false);
 
                     PubMedExporter pubmed = new PubMedExporter(env, conf);
-                    pubmed.export(gbdArgs.getPathInputDirectory(), gbdArgs.getResultDirectoryPath(), Format.CSV);
+                    pubmed.export(gbdArgs.getPathInputDirectory(), gbdArgs.getResultDirectoryPath(), Format.CSV, false);
+                } finally {
+                    if (env != null)  
+                        env.close();
+                }
+            } else if (gbdArgs.getProcessMethodName().equals("pmcexport")) {
+                System.out.println("Export PubMed Central data based on MeSH classification");
+                KBStagingEnvironment env = null;
+                try {
+                    env = new KBStagingEnvironment(conf);
+                    env.buildEnvironment(false);
+
+                    PubMedExporter pubmed = new PubMedExporter(env, conf);
+                    pubmed.export(gbdArgs.getPathInputDirectory(), gbdArgs.getResultDirectoryPath(), Format.CSV, true);
                 } finally {
                     if (env != null)  
                         env.close();

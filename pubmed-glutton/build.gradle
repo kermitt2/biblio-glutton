@@ -10,6 +10,7 @@ buildscript {
     }
 }
 
+
 apply plugin: 'application'
 apply plugin: 'java'
 apply plugin: 'maven'
@@ -79,9 +80,10 @@ shadowJar {
 distTar.enabled = false
 distZip.enabled = false
 shadowDistTar.enabled = false
+shadowDistZip.enabled = false
 
 artifacts {
     archives shadowJar
-    archives shadowDistZip
-//    archives shadowDistTar
+//    archives shadowDistZip
+    archives shadowDistTar
 }
