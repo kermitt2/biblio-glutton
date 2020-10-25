@@ -14,8 +14,8 @@
   ],
   "dependencies": {
     "@elastic/elasticsearch": "^6.8.8",
-    "event-stream": "3.3.4",
-    "lzma-native": "^4.0.2"
+    "event-stream": "^4.0.1",
+    "lzma-native": "^6.0.1"
   },
   "devDependencies": {
     "@types/event-stream": "^3.3.34",
