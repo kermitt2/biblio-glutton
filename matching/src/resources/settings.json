@@ -1,0 +1,50 @@
+{
+  "settings": {
+    "index": {
+      "number_of_replicas": 0,
+      "refresh_interval": -1,
+      "codec": "best_compression"
+    },
+    "analysis": {
+      "filter": {
+        "my_stop": {
+          "type": "stop",
+          "stopwords": "_english_"
+
+        }
+      },
+      "analyzer": {
+        "case_insensitive_keyword": {
+          "type": "custom",
+          "tokenizer": "keyword",
+          "filter": "lowercase"
+        },
+        "case_insensitive_folding_keyword": {
+          "type": "custom",
+          "tokenizer": "keyword",
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        },
+        "case_insensitive_folding_text": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        },
+        "case_insensitive_folding_text_stopwords": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "asciifolding",
+            "my_stop"
+          ]
+        }
+      }
+    }
+  }
+}

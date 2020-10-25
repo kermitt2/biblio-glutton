@@ -1,0 +1,55 @@
+    {
+      "_all": {
+        "enabled": false
+      },
+      "properties": {
+        "DOI": {
+          "type": "text",
+          "analyzer": "case_insensitive_keyword"
+        },
+        "title": {
+          "type": "text",
+          "analyzer": "case_insensitive_folding_text_stopwords"
+        },
+        "first_author": {
+          "type": "text",
+          "analyzer": "case_insensitive_folding_keyword"
+        },
+        "author": {
+          "type": "text",
+          "analyzer": "case_insensitive_folding_text"
+        },
+        "first_page": {
+          "type": "text",
+          "analyzer": "case_insensitive_folding_keyword"
+        },
+        "journal": {
+          "type": "text",
+          "analyzer": "case_insensitive_folding_text_stopwords"
+        },
+        "abbreviated_journal": {
+          "type": "text",
+          "analyzer": "case_insensitive_folding_keyword"
+        },
+        "volume": {
+          "type": "text",
+          "analyzer": "case_insensitive_folding_keyword"
+        },
+        "issue": {
+          "type": "text",
+          "analyzer": "case_insensitive_folding_keyword"
+        },
+        "year": {
+          "type": "text",
+          "analyzer": "case_insensitive_folding_keyword"
+        },
+        "query": {
+          "type": "text",
+          "analyzer": "case_insensitive_folding_text"
+        },
+        "bibliographic": {
+          "type": "text",
+          "analyzer": "case_insensitive_folding_text_stopwords"
+        }
+      }
+    }
