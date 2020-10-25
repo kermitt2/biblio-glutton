@@ -31,15 +31,20 @@ RUN apt-get update -qq && apt-get -qy install curl build-essential unzip
 RUN mkdir -p /app
 WORKDIR /app
 
-RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
 RUN apt-get update -qq && apt-get -y install nodejs
 COPY --from=builder /app/glutton-source/matching /app/matching
-RUN cd matching; npm install
+
+# Compile typescript, delete dev-dependencies and only install prod dependencies
+RUN cd matching; npm install && \
+	npm run build && \
+	rm -rf node_modules && \ 
+	npm install --only=production
 
 COPY --from=builder /app/glutton-source/lookup/build/distributions/lookup-service-shadow-*.zip ./lookup-service.zip
 
 RUN unzip -o ./lookup-service.zip -d ./lookup && \
-    mv ./lookup/lookup-service-* ./lookup/lookup-service
+	mv ./lookup/lookup-service-* ./lookup/lookup-service
 
 RUN rm *.zip
 
