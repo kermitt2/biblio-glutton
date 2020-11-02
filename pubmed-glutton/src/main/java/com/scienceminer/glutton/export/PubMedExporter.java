@@ -76,8 +76,10 @@ public class PubMedExporter {
      * MeSH descriptors per class are given by the input file as csv table. One class is defined 
      * by one or several MeSH descriptors.
      * Output path gives the repository were to write the export files, one file per class.
+     *
+     * If onlyPMC parameter is true, we only export entries having a PMC identifier.
      */
-    public void export(String inputPathDescriptors, String outputPath, Format outputFormat) {
+    public void export(String inputPathDescriptors, String outputPath, Format outputFormat, boolean onlyPMC) {
         List<String> allLevel2 = new ArrayList<String>();
         List<String> allLevel1 = new ArrayList<String>();
         try (BufferedReader reader = new BufferedReader(new FileReader(inputPathDescriptors))) {
@@ -120,8 +122,8 @@ public class PubMedExporter {
                 }
                 allLevel1.add(level1);
 
-                export(descriptor, null, true, writerLevel2, outputFormat);
-                export(descriptor, null, true, writerLevel1, outputFormat);
+                export(descriptor, null, true, writerLevel2, outputFormat, onlyPMC);
+                export(descriptor, null, true, writerLevel1, outputFormat, onlyPMC);
 
                 writerLevel2.close();
                 writerLevel1.close();
@@ -138,7 +140,12 @@ public class PubMedExporter {
      * Boolean majorTopic indicates if the MeSH descriptor must be a major topic or 
      * not for the candidate documents.  
      */
-    public void export(String meshId, String term, boolean majorTopic, CSVWriter writer, Format outputFormat) throws IOException {
+    public void export(String meshId, 
+                       String term, 
+                       boolean majorTopic, 
+                       CSVWriter writer, 
+                       Format outputFormat, 
+                       boolean onlyPMC) throws IOException {
 
         /**
         Example ES search query to retrieve document identifiers from a MeSH id descriptor
@@ -210,6 +217,9 @@ public class PubMedExporter {
                         pmc = pmcNode.textValue();
                     }
 
+                    if (pmc == null && onlyPMC)
+                        continue;
+
                 } catch(Exception e){
                     e.printStackTrace();
                 }
@@ -239,7 +249,6 @@ public class PubMedExporter {
                 }
 
             }
-
         }
 
         ClearScrollRequest clearScrollRequest = new ClearScrollRequest(); 
