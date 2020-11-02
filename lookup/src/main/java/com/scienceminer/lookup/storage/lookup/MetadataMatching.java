@@ -13,6 +13,7 @@ import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.WarningsHandler;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -252,7 +253,10 @@ public class MetadataMatching {
     private void executeQueryAsync(QueryBuilder query, Consumer<MatchingDocument> callback) {
         SearchRequest searchRequest = prepareQueryExecution(query);
         try {
-            esClient.searchAsync(searchRequest, RequestOptions.DEFAULT, (response, exception) -> {
+            RequestOptions options = RequestOptions.DEFAULT;
+            RequestOptions.Builder builder = options.toBuilder();
+            builder.setWarningsHandler(WarningsHandler.PERMISSIVE);
+            esClient.searchAsync(searchRequest, builder.build(), (response, exception) -> {
                 if (exception == null) {
                     callback.accept(processResponse(response));
                 } else {
