@@ -18,6 +18,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -41,43 +43,47 @@ public class CrossrefJsonReader {
 
     }
 
-    public void load(InputStream input, Consumer<JsonNode> closure) {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(input))) {
-
-            //br returns as stream and convert it into a List
-            br.lines().forEach(line -> {
-                final JsonNode crossrefData = fromJson(line);
-                if (crossrefData == null) {
-                    return;
-                }
-                
-                //Ignoring empty DOI
-                if (crossrefData.get("DOI") == null || isBlank(crossrefData.get("DOI").asText())) {
-                    return;
-                }
-
-                //Ignoring document of type component
-                if (crossrefData.get("type") != null
-                        && StringUtils.equals(crossrefData.get("type").asText(), "component")) {
-                    return;
-                }
-
-                ObjectNode object = (ObjectNode) crossrefData;
-                if (configuration != null && configuration.getIgnoreCrossRefFields() != null) {
-                    for(String field : configuration.getIgnoreCrossRefFields()) {
-                        object.remove(field);
+    public void load(String filepath, InputStream input, Consumer<JsonNode> closure) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+            mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+            final JsonNode jsonMap = mapper.readTree(input);
+            if(jsonMap.get("items") != null){
+                for(JsonNode crossrefData : jsonMap.get("items")) {
+                    if (crossrefData == null) {
+                        return;
                     }
-                    /*object.remove("reference");
-                    object.remove("abstract");
-                    object.remove("indexed");*/
-                }
-                object.remove("_id");
 
-                closure.accept(crossrefData);
-            });
+                    //Ignoring empty DOI
+                    if (crossrefData.get("DOI") == null || isBlank(crossrefData.get("DOI").asText())) {
+                        return;
+                    }
 
+                    //Ignoring document of type component
+                    if (crossrefData.get("type") != null
+                            && StringUtils.equals(crossrefData.get("type").asText(), "component")) {
+                        return;
+                    }
+
+                    ObjectNode object = (ObjectNode) crossrefData;
+                    if (configuration != null && configuration.getIgnoreCrossRefFields() != null) {
+                        for(String field : configuration.getIgnoreCrossRefFields()) {
+                            object.remove(field);
+                        }
+                        /*object.remove("reference");
+                        object.remove("abstract");
+                        object.remove("indexed");*/
+                    }
+                    object.remove("_id");
+
+                    closure.accept(crossrefData);
+                };
+            }
+        } catch (JsonGenerationException | JsonMappingException e) {
+            LOGGER.error("The file cannot be processed\n " + filepath + "\n ", e);
         } catch (IOException e) {
-            LOGGER.error("Some serious error when processing the input Crossref file.", e);
+            LOGGER.error("Some serious error when deserialize the JSON object from this file: \n" + filepath, e);
         }
     }
 

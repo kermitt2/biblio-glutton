@@ -14,10 +14,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tukaani.xz.XZInputStream;
 
+import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
 
 /**
  * This class is responsible for loading the crossref dump in lmdb
@@ -58,20 +60,29 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
         MetadataLookup metadataLookup = new MetadataLookup(storageEnvFactory);
         long start = System.nanoTime();
-        final String crossrefFilePath = namespace.get(CROSSREF_SOURCE);
+        final String crossrefDirPath = namespace.get(CROSSREF_SOURCE);
 
-        LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefFilePath);
+        LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefDirPath);
 
-        // Istex IDs
-        InputStream inputStreamCrossref = Files.newInputStream(Paths.get(crossrefFilePath));
-        if (crossrefFilePath.endsWith(".xz")) {
-            inputStreamCrossref = new XZInputStream(inputStreamCrossref);
+        File directory = new File(crossrefDirPath);
+
+        // Get all files from a directory.
+        File[] fList = directory.listFiles();
+        if(fList != null){
+            for (File file : fList) {
+                if (file.isFile() && file.getAbsolutePath().endsWith(".gz")) {
+
+                    InputStream inputStreamCrossref = Files.newInputStream(Paths.get(file.getAbsolutePath()));
+                    inputStreamCrossref = new GZIPInputStream(inputStreamCrossref);
+                    metadataLookup.loadFromFile(file.getAbsolutePath(), inputStreamCrossref, new CrossrefJsonReader(configuration),
+                            metrics.meter("crossrefLookup"));
+                }
+            }
+            LOGGER.info("Crossref lookup loaded " + metadataLookup.getSize() + " records. ");
+
+            LOGGER.info("Finished in " +
+                    TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
         }
-        metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefJsonReader(configuration),
-                metrics.meter("crossrefLookup"));
-        LOGGER.info("Crossref lookup loaded " + metadataLookup.getSize() + " records. ");
 
-        LOGGER.info("Finished in " +
-                TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
     }
 }
