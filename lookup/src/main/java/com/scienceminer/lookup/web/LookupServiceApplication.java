@@ -13,6 +13,7 @@ import com.scienceminer.lookup.web.module.NotFoundExceptionMapper;
 import com.scienceminer.lookup.web.module.ServiceExceptionMapper;
 import com.scienceminer.lookup.web.module.ServiceOverloadedExceptionMapper;
 import io.dropwizard.Application;
+import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
@@ -52,6 +53,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         GuiceBundle<LookupConfiguration> guiceBundle = GuiceBundle.defaultBuilder(LookupConfiguration.class)
                 .modules(getGuiceModules())
                 .build();
+        bootstrap.addBundle(new AssetsBundle("/assets/", "/", "index.html", "static"));
         bootstrap.addBundle(guiceBundle);
         bootstrap.addBundle(new MultiPartBundle());
         bootstrap.addCommand(new LoadUnpayWallCommand());
@@ -59,6 +61,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         bootstrap.addCommand(new LoadPMIDCommand());
         bootstrap.addCommand(new LoadCrossrefCommand());
         bootstrap.addCommand(new IndexCrossrefCommand());
+        bootstrap.addCommand(new UpdateCrossrefCommand());
     }
 
     // ========== static ==========

@@ -14,6 +14,12 @@ batchSize: 10000
 # Grobid URL
 grobidPath: http://localhost:8070/api
 
+# crossref API
+crossref:
+  host: https://api.crossref.org
+  rows: 1000 # 1000 is the max value
+  mailTo: foo.bar@gmail.com
+
 # when set to -1 it's using the number of processors available to the machine
 maxAcceptedRequests: 2048
 

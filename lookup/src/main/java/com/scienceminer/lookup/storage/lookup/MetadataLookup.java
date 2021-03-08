@@ -1,6 +1,7 @@
 package com.scienceminer.lookup.storage.lookup;
 
 import com.codahale.metrics.Meter;
+import com.scienceminer.lookup.command.IndexCrossrefCommand;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.data.MatchingDocument;
 import com.scienceminer.lookup.exception.ServiceException;
@@ -10,13 +11,21 @@ import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.utils.BinarySerialiser;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.lmdbjava.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,9 +61,34 @@ public class MetadataLookup {
         dbCrossrefJson = this.environment.openDbi(NAME_CROSSREF_JSON, DbiFlags.MDB_CREATE);
     }
 
-    public void loadFromFile(String filepath, InputStream is, CrossrefJsonReader reader, Meter meter) {
+    public void loadAndIndexFromJson(String jsonString, CrossrefJsonReader reader, Meter meter) {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counter = new AtomicInteger(0);
+        String indexname = configuration.getElastic().getIndex();
+        try {
+            reader.loadFromJson(jsonString, crossrefData -> {
+
+                if (counter.get() == batchSize) {
+                    transactionWrapper.tx.commit();
+                    transactionWrapper.tx.close();
+                    transactionWrapper.tx = environment.txnWrite();
+                    counter.set(0);
+                }
+                String key = lowerCase(crossrefData.get("DOI").asText());
+
+                store(key, crossrefData.toString(), dbCrossrefJson, transactionWrapper.tx);
+                meter.mark();
+                counter.incrementAndGet();
+
+            }, true);
+            LOGGER.info("Cross checking number of records processed: " + meter.getCount());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            transactionWrapper.tx.commit();
+            transactionWrapper.tx.close();
+        }
+    }
 
     public void loadFromJson(String jsonString, CrossrefJsonReader reader, Meter meter, boolean isAPI) {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());

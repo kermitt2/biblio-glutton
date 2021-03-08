@@ -22,6 +22,12 @@ public class LookupConfiguration extends Configuration {
 
     private String grobidPath;
 
+    public Crossref getCrossref() {
+        return crossref;
+    }
+
+    private Crossref crossref;
+
     @Valid
     @NotNull
     private HttpClientConfiguration httpClient = new HttpClientConfiguration();
@@ -148,6 +154,39 @@ public class LookupConfiguration extends Configuration {
 
         public void setType(String type) {
             this.type = type;
+        }
+
+    }
+
+    public class Crossref {
+
+        private String host;
+        private String rows;
+        private String mailTo;
+
+
+        public String getHost() {
+            return host;
+        }
+
+        public void setHost(String host) {
+            this.host = host;
+        }
+
+        public int getRows() {
+            return Integer.parseInt(rows);
+        }
+
+        public void setRows(String rows) {
+            this.rows = rows;
+        }
+
+        public String getMailTo() {
+            return mailTo;
+        }
+
+        public void setMailTo(String mailTo) {
+            this.mailTo = mailTo;
         }
 
     }
