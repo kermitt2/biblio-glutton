@@ -56,21 +56,25 @@ public class MetadataLookup {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counter = new AtomicInteger(0);
 
-        reader.load(filepath, is, crossrefData -> {
+    public void loadFromJson(String jsonString, CrossrefJsonReader reader, Meter meter, boolean isAPI) {
+        final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
+        final AtomicInteger counter = new AtomicInteger(0);
+
+        reader.loadFromJson(jsonString, crossrefData -> {
             if (counter.get() == batchSize) {
                 transactionWrapper.tx.commit();
                 transactionWrapper.tx.close();
                 transactionWrapper.tx = environment.txnWrite();
                 counter.set(0);
             }
-            String key = lowerCase(crossrefData.get("DOI").asText());
 
+            String key = lowerCase(crossrefData.get("DOI").asText());
             store(key, crossrefData.toString(), dbCrossrefJson, transactionWrapper.tx);
             meter.mark();
             counter.incrementAndGet();
 
 
-        });
+        }, isAPI);
         transactionWrapper.tx.commit();
         transactionWrapper.tx.close();
 

@@ -43,48 +43,9 @@ public class CrossrefJsonReader {
 
     }
 
-    public void load(String filepath, InputStream input, Consumer<JsonNode> closure) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
-            mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
-            final JsonNode jsonMap = mapper.readTree(input);
-            if(jsonMap.get("items") != null){
-                for(JsonNode crossrefData : jsonMap.get("items")) {
-                    if (crossrefData == null) {
-                        return;
-                    }
-
-                    //Ignoring empty DOI
-                    if (crossrefData.get("DOI") == null || isBlank(crossrefData.get("DOI").asText())) {
-                        return;
-                    }
-
-                    //Ignoring document of type component
-                    if (crossrefData.get("type") != null
-                            && StringUtils.equals(crossrefData.get("type").asText(), "component")) {
-                        return;
-                    }
-
-                    ObjectNode object = (ObjectNode) crossrefData;
-                    if (configuration != null && configuration.getIgnoreCrossRefFields() != null) {
-                        for(String field : configuration.getIgnoreCrossRefFields()) {
-                            object.remove(field);
-                        }
-                        /*object.remove("reference");
-                        object.remove("abstract");
-                        object.remove("indexed");*/
-                    }
-                    object.remove("_id");
-
-                    closure.accept(crossrefData);
-                };
-            }
-        } catch (JsonGenerationException | JsonMappingException e) {
-            LOGGER.error("The file cannot be processed\n " + filepath + "\n ", e);
-        } catch (IOException e) {
-            LOGGER.error("Some serious error when deserialize the JSON object from this file: \n" + filepath, e);
-        }
+    public void loadFromJson(String inputLine, Consumer<JsonNode> closure, boolean isAPI) {
+        final JsonNode jsonMap = fromJson(inputLine);
+        processJson(jsonMap, closure, isAPI);
     }
 
     public JsonNode fromJson(String inputLine) {
@@ -100,4 +61,50 @@ public class CrossrefJsonReader {
         }
         return null;
     }
+
+    public void processJson(JsonNode json, Consumer<JsonNode> closure, boolean isAPI){
+        if(isAPI){
+            if(json.get("message") != null && json.get("status").asText().equals("ok")){
+                JsonNode message = json.get("message");
+                processItems(message, closure);
+            }
+        }else
+            processItems(json, closure);
+    }
+
+    private void processItems(JsonNode json, Consumer<JsonNode> closure){
+        if(json.get("items") != null) {
+            for (JsonNode crossrefData : json.get("items")) {
+                processItem(crossrefData, closure);
+            }
+        }
+    }
+
+    private void processItem(JsonNode crossrefData, Consumer<JsonNode> closure){
+        if (crossrefData == null) {
+            return;
+        }
+
+        //Ignoring empty DOI
+        if (crossrefData.get("DOI") == null || isBlank(crossrefData.get("DOI").asText())) {
+            return;
+        }
+
+        //Ignoring document of type component
+        if (crossrefData.get("type") != null
+                && StringUtils.equals(crossrefData.get("type").asText(), "component")) {
+            return;
+        }
+
+        ObjectNode object = (ObjectNode) crossrefData;
+        if (configuration != null && configuration.getIgnoreCrossRefFields() != null) {
+            for (String field : configuration.getIgnoreCrossRefFields()) {
+                object.remove(field);
+            }
+        }
+        object.remove("_id");
+
+        closure.accept(crossrefData);
+    }
+
 }

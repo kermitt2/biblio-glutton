@@ -10,12 +10,13 @@ import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tukaani.xz.XZInputStream;
 
-import java.io.File;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
@@ -60,29 +61,35 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
         MetadataLookup metadataLookup = new MetadataLookup(storageEnvFactory);
         long start = System.nanoTime();
-        final String crossrefDirPath = namespace.get(CROSSREF_SOURCE);
+        final String crossrefFilePath = namespace.get(CROSSREF_SOURCE);
 
-        LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefDirPath);
-
-        File directory = new File(crossrefDirPath);
-
-        // Get all files from a directory.
-        File[] fList = directory.listFiles();
-        if(fList != null){
-            for (File file : fList) {
-                if (file.isFile() && file.getAbsolutePath().endsWith(".gz")) {
-
-                    InputStream inputStreamCrossref = Files.newInputStream(Paths.get(file.getAbsolutePath()));
-                    inputStreamCrossref = new GZIPInputStream(inputStreamCrossref);
-                    metadataLookup.loadFromFile(file.getAbsolutePath(), inputStreamCrossref, new CrossrefJsonReader(configuration),
-                            metrics.meter("crossrefLookup"));
+        LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefFilePath);
+        File crossrefFile = new File(crossrefFilePath);
+        if (crossrefFile.exists() && crossrefFile.isFile() && crossrefFile.getAbsolutePath().endsWith(".tar.gz")) {
+            TarArchiveInputStream tarInput = new TarArchiveInputStream(new GzipCompressorInputStream(new FileInputStream(crossrefFile)));
+            TarArchiveEntry currentEntry = tarInput.getNextTarEntry();
+            BufferedReader br = null;
+            StringBuilder sb = new StringBuilder();
+            while (currentEntry != null) {
+                br = new BufferedReader(new InputStreamReader(tarInput)); // Read directly from tarInput
+                System.out.println("processing file " + currentEntry.getName());
+                StringBuffer content = new StringBuffer();
+                if (currentEntry.getName().endsWith(".json")) {
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        content.append(line);
+                    }
+                    metadataLookup.loadFromJson(content.toString(), new CrossrefJsonReader(configuration),
+                            metrics.meter("crossrefLookup"), false);
                 }
+                currentEntry = tarInput.getNextTarEntry(); // You forgot to iterate to the next file
             }
             LOGGER.info("Crossref lookup loaded " + metadataLookup.getSize() + " records. ");
 
             LOGGER.info("Finished in " +
                     TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
-        }
+        } else
+            LOGGER.error("crossref snapshot file is not found");
 
     }
 }
