@@ -4,10 +4,7 @@ package com.scienceminer.lookup.web;
 import com.google.common.collect.Lists;
 import com.google.inject.Module;
 import com.hubspot.dropwizard.guicier.GuiceBundle;
-import com.scienceminer.lookup.command.LoadCrossrefCommand;
-import com.scienceminer.lookup.command.LoadIstexIdsCommand;
-import com.scienceminer.lookup.command.LoadPMIDCommand;
-import com.scienceminer.lookup.command.LoadUnpayWallCommand;
+import com.scienceminer.lookup.command.*;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.utils.grobid.GrobidClient;
 import com.scienceminer.lookup.web.healthcheck.LookupHealthCheck;
@@ -61,6 +58,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         bootstrap.addCommand(new LoadIstexIdsCommand());
         bootstrap.addCommand(new LoadPMIDCommand());
         bootstrap.addCommand(new LoadCrossrefCommand());
+        bootstrap.addCommand(new IndexCrossrefCommand());
     }
 
     // ========== static ==========
