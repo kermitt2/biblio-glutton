@@ -10,14 +10,21 @@ import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tukaani.xz.XZInputStream;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
 
 /**
  * This class is responsible for loading the crossref dump in lmdb
@@ -58,20 +65,42 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
         MetadataLookup metadataLookup = new MetadataLookup(storageEnvFactory);
         long start = System.nanoTime();
-        final String crossrefFilePath = namespace.get(CROSSREF_SOURCE);
+        final String crossrefFilePathString = namespace.get(CROSSREF_SOURCE);
+        Path crossrefFilePath = Paths.get(crossrefFilePathString);
+        LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefFilePathString);
 
-        LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefFilePath);
+        if (Files.isDirectory(crossrefFilePath)) {
+            List<Path> dumpFiles = Files.walk(crossrefFilePath, 1)
+                    .filter(path -> Files.isRegularFile(path)
+                            && (StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".gz") ||
+                            StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".xz")))
+                    .collect(Collectors.toList());
 
-        // Istex IDs
-        InputStream inputStreamCrossref = Files.newInputStream(Paths.get(crossrefFilePath));
-        if (crossrefFilePath.endsWith(".xz")) {
-            inputStreamCrossref = new XZInputStream(inputStreamCrossref);
+            for (Path dumpFile : dumpFiles) {
+                InputStream inputStreamCrossref = Files.newInputStream(dumpFile);
+                inputStreamCrossref = selectStream(dumpFile, inputStreamCrossref);
+                metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefJsonReader(configuration),
+                        metrics.meter("crossrefLookup"));
+            }
+        } else {
+            InputStream inputStreamCrossref = Files.newInputStream(crossrefFilePath);
+
+            inputStreamCrossref = selectStream(crossrefFilePath, inputStreamCrossref);
+            metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefJsonReader(configuration),
+                    metrics.meter("crossrefLookup"));
         }
-        metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefJsonReader(configuration),
-                metrics.meter("crossrefLookup"));
         LOGGER.info("Crossref lookup loaded " + metadataLookup.getSize() + " records. ");
 
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
+    }
+
+    private InputStream selectStream(Path crossrefFilePath, InputStream inputStreamCrossref) throws IOException {
+        if (crossrefFilePath.getFileName().toString().endsWith(".xz")) {
+            inputStreamCrossref = new XZInputStream(inputStreamCrossref);
+        } else if(crossrefFilePath.getFileName().toString().endsWith(".gz")) {
+            inputStreamCrossref = new GZIPInputStream(inputStreamCrossref);
+        }
+        return inputStreamCrossref;
     }
 }
