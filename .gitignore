@@ -18,6 +18,7 @@ data/pmc
 data/db
 scripts/dump.json
 scripts/dump.json.gz
+scripts/node_modules
 lookup/build
 .gradle
 *.mdb

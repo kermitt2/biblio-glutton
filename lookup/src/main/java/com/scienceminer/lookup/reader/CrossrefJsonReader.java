@@ -18,6 +18,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -42,15 +44,12 @@ public class CrossrefJsonReader {
     }
 
     public void load(InputStream input, Consumer<JsonNode> closure) {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(input))) {
-
-            //br returns as stream and convert it into a List
-            br.lines().forEach(line -> {
-                final JsonNode crossrefData = fromJson(line);
+        final JsonNode jsonMap = fromJson(input);
+        if (jsonMap != null && jsonMap.get("items") != null) {
+            for (JsonNode crossrefData : jsonMap.get("items")) {
                 if (crossrefData == null) {
                     return;
                 }
-                
                 //Ignoring empty DOI
                 if (crossrefData.get("DOI") == null || isBlank(crossrefData.get("DOI").asText())) {
                     return;
@@ -64,33 +63,30 @@ public class CrossrefJsonReader {
 
                 ObjectNode object = (ObjectNode) crossrefData;
                 if (configuration != null && configuration.getIgnoreCrossRefFields() != null) {
-                    for(String field : configuration.getIgnoreCrossRefFields()) {
+                    for (String field : configuration.getIgnoreCrossRefFields()) {
                         object.remove(field);
                     }
-                    /*object.remove("reference");
-                    object.remove("abstract");
-                    object.remove("indexed");*/
+                        /*object.remove("reference");
+                        object.remove("abstract");
+                        object.remove("indexed");*/
                 }
                 object.remove("_id");
 
                 closure.accept(crossrefData);
-            });
-
-        } catch (IOException e) {
-            LOGGER.error("Some serious error when processing the input Crossref file.", e);
+            }
         }
     }
 
-    public JsonNode fromJson(String inputLine) {
+    public JsonNode fromJson(InputStream inputLine) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
             mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
             return mapper.readTree(inputLine);
         } catch (JsonGenerationException | JsonMappingException e) {
-            LOGGER.error("The input line cannot be processed\n " + inputLine + "\n ", e);
+            LOGGER.error("The input cannot be deserialised. ", e);
         } catch (IOException e) {
-            LOGGER.error("Some serious error when deserialize the JSON object: \n" + inputLine, e);
+            LOGGER.error("Some serious error when deserialize the JSON object", e);
         }
         return null;
     }

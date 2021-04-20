@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tukaani.xz.XZInputStream;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -77,10 +76,14 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
                     .collect(Collectors.toList());
 
             for (Path dumpFile : dumpFiles) {
-                InputStream inputStreamCrossref = Files.newInputStream(dumpFile);
-                inputStreamCrossref = selectStream(dumpFile, inputStreamCrossref);
-                metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefJsonReader(configuration),
-                        metrics.meter("crossrefLookup"));
+                try {
+                    InputStream inputStreamCrossref = Files.newInputStream(dumpFile);
+                    inputStreamCrossref = selectStream(dumpFile, inputStreamCrossref);
+                    metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefJsonReader(configuration),
+                            metrics.meter("crossrefLookup"));
+                } catch (Exception e) {
+
+                }
             }
         } else {
             InputStream inputStreamCrossref = Files.newInputStream(crossrefFilePath);
@@ -90,9 +93,6 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
                     metrics.meter("crossrefLookup"));
         }
         LOGGER.info("Crossref lookup loaded " + metadataLookup.getSize() + " records. ");
-
-        LOGGER.info("Finished in " +
-                TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
     }
 
     private InputStream selectStream(Path crossrefFilePath, InputStream inputStreamCrossref) throws IOException {
