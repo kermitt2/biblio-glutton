@@ -5,6 +5,7 @@ import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.data.MatchingDocument;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.exception.ServiceOverloadedException;
+import com.scienceminer.lookup.reader.CrossrefGreenlabJsonReader;
 import com.scienceminer.lookup.reader.CrossrefJsonReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.utils.BinarySerialiser;
@@ -52,11 +53,11 @@ public class MetadataLookup {
         dbCrossrefJson = this.environment.openDbi(NAME_CROSSREF_JSON, DbiFlags.MDB_CREATE);
     }
 
-    public void loadFromFile(String filepath, InputStream is, CrossrefJsonReader reader, Meter meter) {
+    public void loadFromFile(InputStream is, CrossrefJsonReader reader, Meter meter) {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counter = new AtomicInteger(0);
 
-        reader.load(filepath, is, crossrefData -> {
+        reader.load(is, crossrefData -> {
             if (counter.get() == batchSize) {
                 transactionWrapper.tx.commit();
                 transactionWrapper.tx.close();
