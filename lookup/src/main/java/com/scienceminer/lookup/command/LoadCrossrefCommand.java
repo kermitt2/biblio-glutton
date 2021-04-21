@@ -77,30 +77,30 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
                     .collect(Collectors.toList());
 
             for (Path dumpFile : dumpFiles) {
-                try {
-                    InputStream inputStreamCrossref = Files.newInputStream(dumpFile);
-                    inputStreamCrossref = selectStream(dumpFile, inputStreamCrossref);
+                try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
                     metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefTorrentJsonReader(configuration),
                             metrics.meter("crossrefLookup"));
                 } catch (Exception e) {
-
+                    LOGGER.error("Error while processing " + dumpFile.toAbsolutePath().toString(), e);
                 }
             }
         } else {
-            InputStream inputStreamCrossref = Files.newInputStream(crossrefFilePath);
-
-            inputStreamCrossref = selectStream(crossrefFilePath, inputStreamCrossref);
-            metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefGreenlabJsonReader(configuration),
-                    metrics.meter("crossrefLookup"));
+            try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
+                metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefGreenlabJsonReader(configuration),
+                        metrics.meter("crossrefLookup"));
+            } catch (Exception e) {
+                LOGGER.error("Error while processing " + crossrefFilePath, e);
+            }
         }
         LOGGER.info("Crossref lookup loaded " + metadataLookup.getSize() + " records. ");
     }
 
-    private InputStream selectStream(Path crossrefFilePath, InputStream inputStreamCrossref) throws IOException {
+    private InputStream selectStream(Path crossrefFilePath) throws IOException {
+        InputStream inputStreamCrossref = Files.newInputStream(crossrefFilePath);
         if (crossrefFilePath.getFileName().toString().endsWith(".xz")) {
-            inputStreamCrossref = new XZInputStream(inputStreamCrossref);
-        } else if(crossrefFilePath.getFileName().toString().endsWith(".gz")) {
-            inputStreamCrossref = new GZIPInputStream(inputStreamCrossref);
+            inputStreamCrossref = new XZInputStream(Files.newInputStream(crossrefFilePath));
+        } else if (crossrefFilePath.getFileName().toString().endsWith(".gz")) {
+            inputStreamCrossref = new GZIPInputStream(Files.newInputStream(crossrefFilePath));
         }
         return inputStreamCrossref;
     }
