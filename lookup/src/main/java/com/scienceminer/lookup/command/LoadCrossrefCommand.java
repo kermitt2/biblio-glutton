@@ -18,12 +18,14 @@ import org.tukaani.xz.XZInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -70,20 +72,21 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefFilePathString);
 
         if (Files.isDirectory(crossrefFilePath)) {
-            List<Path> dumpFiles = Files.walk(crossrefFilePath, 1)
-                    .filter(path -> Files.isRegularFile(path)
-                            && (StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".gz") ||
-                            StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".xz")))
-                    .collect(Collectors.toList());
-
-            for (Path dumpFile : dumpFiles) {
-                try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
-                    metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefTorrentJsonReader(configuration),
-                            metrics.meter("crossrefLookup"));
-                } catch (Exception e) {
-                    LOGGER.error("Error while processing " + dumpFile.toAbsolutePath().toString(), e);
-                }
+            try (Stream<Path> stream = Files.walk(crossrefFilePath, 1)) {
+                stream.filter(path -> Files.isRegularFile(path) && Files.isReadable(path)
+                        && (StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".gz") ||
+                        StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".xz")))
+                        .forEach(dumpFile -> {
+                                    try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
+                                        metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefTorrentJsonReader(configuration),
+                                                metrics.meter("crossrefLookup"));
+                                    } catch (Exception e) {
+                                        LOGGER.error("Error while processing " + dumpFile.toAbsolutePath().toString(), e);
+                                    }
+                                }
+                        );
             }
+
         } else {
             try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
                 metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefGreenlabJsonReader(configuration),
