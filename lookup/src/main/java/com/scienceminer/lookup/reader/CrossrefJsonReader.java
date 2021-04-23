@@ -1,5 +1,6 @@
 package com.scienceminer.lookup.reader;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -21,7 +22,7 @@ public abstract class CrossrefJsonReader {
         this.configuration = configuration;
     }
 
-    public abstract void load(InputStream input, Meter meter, Consumer<JsonNode> closure);
+    public abstract void load(InputStream input, Counter counter, Consumer<JsonNode> closure);
 
     public boolean isRecordIncomplete(JsonNode crossrefData) {
         if (crossrefData == null) {

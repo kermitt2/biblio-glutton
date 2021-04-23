@@ -1,5 +1,6 @@
 package com.scienceminer.lookup.reader;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParser;
@@ -29,12 +30,12 @@ public class CrossrefTorrentJsonReader extends CrossrefJsonReader {
         this.configuration = configuration;
     }
 
-    public void load(InputStream input, Meter meterInvalidRecords, Consumer<JsonNode> closure) {
+    public void load(InputStream input, Counter counterInvalidRecords, Consumer<JsonNode> closure) {
         final JsonNode jsonMap = fromJson(input);
         if (jsonMap != null && jsonMap.get("items") != null) {
             for (JsonNode crossrefRawData : jsonMap.get("items")) {
                 if (isRecordIncomplete(crossrefRawData)) {
-                    meterInvalidRecords.mark();
+                    counterInvalidRecords.inc();
                     return;
                 }
                 final JsonNode crossrefData = postProcessRecord(crossrefRawData);
