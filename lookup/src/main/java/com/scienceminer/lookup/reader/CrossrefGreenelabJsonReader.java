@@ -1,5 +1,6 @@
 package com.scienceminer.lookup.reader;
 
+import com.codahale.metrics.Meter;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -24,16 +25,14 @@ public class CrossrefGreenelabJsonReader extends CrossrefJsonReader{
         this.configuration = configuration;
     }
 
-    public void load(InputStream input, Consumer<JsonNode> closure) {
+    public void load(InputStream input, Meter meterInvalidRecords, Consumer<JsonNode> closure) {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(input))) {
 
             //br returns as stream and convert it into a List
             br.lines().forEach(line -> {
                 final JsonNode crossrefRawData = fromJson(line);
                 if (isRecordIncomplete(crossrefRawData)) {
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Incomplete record will be ignored: \n" + line);
-                    }
+                    meterInvalidRecords.mark();
                     return;
                 }
                 final JsonNode crossrefData = postProcessRecord(crossrefRawData);

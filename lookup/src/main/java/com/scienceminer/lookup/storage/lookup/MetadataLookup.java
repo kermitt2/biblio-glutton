@@ -52,11 +52,11 @@ public class MetadataLookup {
         dbCrossrefJson = this.environment.openDbi(NAME_CROSSREF_JSON, DbiFlags.MDB_CREATE);
     }
 
-    public void loadFromFile(InputStream is, CrossrefJsonReader reader, Meter meter) {
+    public void loadFromFile(InputStream is, CrossrefJsonReader reader, Meter meterValidRecord, Meter meterInvalidRecords) {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counter = new AtomicInteger(0);
 
-        reader.load(is, crossrefData -> {
+        reader.load(is, meterInvalidRecords, crossrefData -> {
             if (counter.get() == batchSize) {
                 transactionWrapper.tx.commit();
                 transactionWrapper.tx.close();
@@ -66,7 +66,7 @@ public class MetadataLookup {
             String key = lowerCase(crossrefData.get("DOI").asText());
 
             store(key, crossrefData.toString(), dbCrossrefJson, transactionWrapper.tx);
-            meter.mark();
+            meterValidRecord.mark();
             counter.incrementAndGet();
 
 

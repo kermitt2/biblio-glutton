@@ -70,6 +70,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefFilePathString);
 
         final Meter meter = metrics.meter("crossrefLookup");
+        final Meter meterInvalidRecords = metrics.meter("crossrefLookup_invalidRecords");
         if (Files.isDirectory(crossrefFilePath)) {
             try (Stream<Path> stream = Files.walk(crossrefFilePath, 1)) {
                 CrossrefTorrentJsonReader reader = new CrossrefTorrentJsonReader(configuration);
@@ -79,7 +80,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
                         StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".xz")))
                         .forEach(dumpFile -> {
                                     try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
-                                        metadataLookup.loadFromFile(inputStreamCrossref, reader, meter);
+                                        metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, meterInvalidRecords);
                                     } catch (Exception e) {
                                         LOGGER.error("Error while processing " + dumpFile.toAbsolutePath(), e);
                                     }
@@ -89,7 +90,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         } else {
             try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
                 metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefGreenelabJsonReader(configuration),
-                        meter);
+                        meter, meterInvalidRecords);
             } catch (Exception e) {
                 LOGGER.error("Error while processing " + crossrefFilePath, e);
             }

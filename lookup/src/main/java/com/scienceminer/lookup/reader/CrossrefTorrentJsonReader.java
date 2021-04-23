@@ -1,5 +1,6 @@
 package com.scienceminer.lookup.reader;
 
+import com.codahale.metrics.Meter;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -20,7 +21,7 @@ import java.nio.file.Paths;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-public class CrossrefTorrentJsonReader extends CrossrefJsonReader{
+public class CrossrefTorrentJsonReader extends CrossrefJsonReader {
     private static final Logger LOGGER = LoggerFactory.getLogger(CrossrefTorrentJsonReader.class);
 
     public CrossrefTorrentJsonReader(LookupConfiguration configuration) {
@@ -28,24 +29,20 @@ public class CrossrefTorrentJsonReader extends CrossrefJsonReader{
         this.configuration = configuration;
     }
 
-    public void load(InputStream input, Consumer<JsonNode> closure) {
+    public void load(InputStream input, Meter meterInvalidRecords, Consumer<JsonNode> closure) {
         final JsonNode jsonMap = fromJson(input);
         if (jsonMap != null && jsonMap.get("items") != null) {
             for (JsonNode crossrefRawData : jsonMap.get("items")) {
                 if (isRecordIncomplete(crossrefRawData)) {
-                    if (LOGGER.isDebugEnabled()) {
-                        try {
-                            LOGGER.debug("Incomplete record will be ignored: \n" + IOUtils.toString(input, StandardCharsets.UTF_8));
-                        } catch (IOException e) {
-                            LOGGER.debug("Incomplete record will be ignored. An exception occurred while output the record");
-                        }
-                    }
+                    meterInvalidRecords.mark();
                     return;
                 }
                 final JsonNode crossrefData = postProcessRecord(crossrefRawData);
 
                 closure.accept(crossrefData);
             }
+        } else {
+            LOGGER.error("Null/empty content. The whole file will be ignored. ");
         }
     }
 
