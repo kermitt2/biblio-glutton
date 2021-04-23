@@ -9,18 +9,15 @@ import com.scienceminer.lookup.command.LoadIstexIdsCommand;
 import com.scienceminer.lookup.command.LoadPMIDCommand;
 import com.scienceminer.lookup.command.LoadUnpayWallCommand;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
-import com.scienceminer.lookup.utils.grobid.GrobidClient;
 import com.scienceminer.lookup.web.healthcheck.LookupHealthCheck;
 import com.scienceminer.lookup.web.module.LookupServiceModule;
 import com.scienceminer.lookup.web.module.NotFoundExceptionMapper;
 import com.scienceminer.lookup.web.module.ServiceExceptionMapper;
 import com.scienceminer.lookup.web.module.ServiceOverloadedExceptionMapper;
 import io.dropwizard.Application;
-import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import org.apache.http.client.HttpClient;
 
 import java.util.List;
 

@@ -1,6 +1,7 @@
 package com.scienceminer.lookup.command;
 
 import com.codahale.metrics.ConsoleReporter;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.reader.CrossrefGreenlabJsonReader;
@@ -66,36 +67,38 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
         MetadataLookup metadataLookup = new MetadataLookup(storageEnvFactory);
-        long start = System.nanoTime();
+
         final String crossrefFilePathString = namespace.get(CROSSREF_SOURCE);
         Path crossrefFilePath = Paths.get(crossrefFilePathString);
         LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefFilePathString);
 
+        final Meter meter = metrics.meter("crossrefLookup");
         if (Files.isDirectory(crossrefFilePath)) {
             try (Stream<Path> stream = Files.walk(crossrefFilePath, 1)) {
+                CrossrefTorrentJsonReader reader = new CrossrefTorrentJsonReader(configuration);
+
                 stream.filter(path -> Files.isRegularFile(path) && Files.isReadable(path)
                         && (StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".gz") ||
                         StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".xz")))
                         .forEach(dumpFile -> {
                                     try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
-                                        metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefTorrentJsonReader(configuration),
-                                                metrics.meter("crossrefLookup"));
+                                        metadataLookup.loadFromFile(inputStreamCrossref, reader, meter);
                                     } catch (Exception e) {
-                                        LOGGER.error("Error while processing " + dumpFile.toAbsolutePath().toString(), e);
+                                        LOGGER.error("Error while processing " + dumpFile.toAbsolutePath(), e);
                                     }
                                 }
                         );
             }
-
         } else {
             try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
                 metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefGreenlabJsonReader(configuration),
-                        metrics.meter("crossrefLookup"));
+                        meter);
             } catch (Exception e) {
                 LOGGER.error("Error while processing " + crossrefFilePath, e);
             }
         }
-        LOGGER.info("Crossref lookup loaded " + metadataLookup.getSize() + " records. ");
+        LOGGER.info("Number of Crossref records processed: " + meter.getCount());
+        LOGGER.info("Crossref lookup size " + metadataLookup.getSize() + " records.");
     }
 
     private InputStream selectStream(Path crossrefFilePath) throws IOException {

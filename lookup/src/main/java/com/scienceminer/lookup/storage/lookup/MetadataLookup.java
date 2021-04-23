@@ -74,8 +74,6 @@ public class MetadataLookup {
         });
         transactionWrapper.tx.commit();
         transactionWrapper.tx.close();
-
-        LOGGER.info("Cross checking number of records processed: " + meter.getCount());
     }
 
     private void store(String key, String value, Dbi<ByteBuffer> db, Txn<ByteBuffer> tx) {
