@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,16 +26,6 @@ public class CrossrefTorrentJsonReader extends CrossrefJsonReader{
     public CrossrefTorrentJsonReader(LookupConfiguration configuration) {
         super(configuration);
         this.configuration = configuration;
-    }
-
-    public void load(String input, Consumer<String> closure) {
-        try (Stream<String> stream = Files.lines(Paths.get(input))) {
-
-            stream.forEach(line -> closure.accept(line));
-        } catch (IOException e) {
-            LOGGER.error("Some serious error when processing the input Crossref file.", e);
-        }
-
     }
 
     public void load(InputStream input, Consumer<JsonNode> closure) {

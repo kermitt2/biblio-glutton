@@ -4,7 +4,7 @@ import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
-import com.scienceminer.lookup.reader.CrossrefGreenlabJsonReader;
+import com.scienceminer.lookup.reader.CrossrefGreenelabJsonReader;
 import com.scienceminer.lookup.reader.CrossrefTorrentJsonReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.storage.lookup.MetadataLookup;
@@ -19,13 +19,10 @@ import org.tukaani.xz.XZInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
@@ -91,7 +88,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
             }
         } else {
             try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
-                metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefGreenlabJsonReader(configuration),
+                metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefGreenelabJsonReader(configuration),
                         meter);
             } catch (Exception e) {
                 LOGGER.error("Error while processing " + crossrefFilePath, e);

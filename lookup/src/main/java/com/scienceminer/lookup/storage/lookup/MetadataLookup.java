@@ -5,7 +5,6 @@ import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.data.MatchingDocument;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.exception.ServiceOverloadedException;
-import com.scienceminer.lookup.reader.CrossrefGreenlabJsonReader;
 import com.scienceminer.lookup.reader.CrossrefJsonReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.utils.BinarySerialiser;

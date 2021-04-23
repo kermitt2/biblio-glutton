@@ -14,27 +14,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
-public class CrossrefGreenlabJsonReader extends CrossrefJsonReader{
-    private static final Logger LOGGER = LoggerFactory.getLogger(CrossrefGreenlabJsonReader.class);
+public class CrossrefGreenelabJsonReader extends CrossrefJsonReader{
+    private static final Logger LOGGER = LoggerFactory.getLogger(CrossrefGreenelabJsonReader.class);
 
-    public CrossrefGreenlabJsonReader(LookupConfiguration configuration) {
+    public CrossrefGreenelabJsonReader(LookupConfiguration configuration) {
         super(configuration);
         this.configuration = configuration;
-    }
-
-    public void load(String input, Consumer<String> closure) {
-        try (Stream<String> stream = Files.lines(Paths.get(input))) {
-
-            stream.forEach(line -> closure.accept(line));
-        } catch (IOException e) {
-            LOGGER.error("Some serious error when processing the input Crossref file.", e);
-        }
-
     }
 
     public void load(InputStream input, Consumer<JsonNode> closure) {

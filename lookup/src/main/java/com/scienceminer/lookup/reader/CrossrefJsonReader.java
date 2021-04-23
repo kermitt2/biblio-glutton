@@ -19,8 +19,6 @@ public abstract class CrossrefJsonReader {
         this.configuration = configuration;
     }
 
-    public abstract void load(String input, Consumer<String> closure);
-
     public abstract void load(InputStream input, Consumer<JsonNode> closure);
 
     public boolean isRecordIncomplete(JsonNode crossrefData) {
