@@ -39,6 +39,10 @@ public abstract class CrossrefJsonReader {
             return true;
         }
 
+        return false;
+    }
+
+    public JsonNode postProcessRecord(JsonNode crossrefData) {
         ObjectNode object = (ObjectNode) crossrefData;
         if (configuration != null && configuration.getIgnoreCrossRefFields() != null) {
             for(String field : configuration.getIgnoreCrossRefFields()) {
@@ -50,6 +54,6 @@ public abstract class CrossrefJsonReader {
         }
         object.remove("_id");
 
-        return false;
+        return object;
     }
 }

@@ -6,9 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,8 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import static org.apache.commons.lang3.StringUtils.isBlank;
 
 public class CrossrefGreenlabJsonReader extends CrossrefJsonReader{
     private static final Logger LOGGER = LoggerFactory.getLogger(CrossrefGreenlabJsonReader.class);
@@ -46,8 +42,14 @@ public class CrossrefGreenlabJsonReader extends CrossrefJsonReader{
 
             //br returns as stream and convert it into a List
             br.lines().forEach(line -> {
-                final JsonNode crossrefData = fromJson(line);
-                if (isRecordIncomplete(crossrefData)) return;
+                final JsonNode crossrefRawData = fromJson(line);
+                if (isRecordIncomplete(crossrefRawData)) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Incomplete record will be ignored: \n" + line);
+                    }
+                    return;
+                }
+                final JsonNode crossrefData = postProcessRecord(crossrefRawData);
 
                 closure.accept(crossrefData);
             });
