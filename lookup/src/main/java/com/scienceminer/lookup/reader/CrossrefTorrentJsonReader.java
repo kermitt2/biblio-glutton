@@ -36,11 +36,10 @@ public class CrossrefTorrentJsonReader extends CrossrefJsonReader {
             for (JsonNode crossrefRawData : jsonMap.get("items")) {
                 if (isRecordIncomplete(crossrefRawData)) {
                     counterInvalidRecords.inc();
-                    return;
+                } else {
+                    final JsonNode crossrefData = postProcessRecord(crossrefRawData);
+                    closure.accept(crossrefData);
                 }
-                final JsonNode crossrefData = postProcessRecord(crossrefRawData);
-
-                closure.accept(crossrefData);
             }
         } else {
             LOGGER.error("Null/empty content. The whole file will be ignored. ");

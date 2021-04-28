@@ -34,11 +34,10 @@ public class CrossrefGreenelabJsonReader extends CrossrefJsonReader{
                 final JsonNode crossrefRawData = fromJson(line);
                 if (isRecordIncomplete(crossrefRawData)) {
                     counterInvalidRecords.inc();
-                    return;
+                } else {
+                    final JsonNode crossrefData = postProcessRecord(crossrefRawData);
+                    closure.accept(crossrefData);
                 }
-                final JsonNode crossrefData = postProcessRecord(crossrefRawData);
-
-                closure.accept(crossrefData);
             });
 
         } catch (IOException e) {
