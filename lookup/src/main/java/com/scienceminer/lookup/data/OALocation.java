@@ -40,6 +40,9 @@ public class OALocation {
 
     private String version;
 
+    @JsonProperty("oa_date")
+    private String date;
+
     public String getUrl() {
         return url;
     }
@@ -119,5 +122,12 @@ public class OALocation {
     public void setVersion(String version) {
         this.version = version;
     }
-    
+
+    public String getDate() {
+        return date;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
+    }
 }

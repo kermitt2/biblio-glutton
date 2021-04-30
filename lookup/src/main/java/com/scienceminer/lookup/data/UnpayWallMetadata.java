@@ -68,6 +68,15 @@ public class UnpayWallMetadata {
     @JsonProperty("best_oa_location")
     private OALocation bestOALocation;
 
+    @JsonProperty("first_oa_location")
+    private OALocation firstOALocation;
+
+    @JsonProperty("oa_locations_embargoed")
+    private List<OALocation> embargoedOALocations = new ArrayList<>();
+
+    @JsonProperty("oa_date")
+    private String date;
+
     @JsonProperty("oa_status")
     private String oa_status;
 
@@ -213,5 +222,29 @@ public class UnpayWallMetadata {
 
     public void setOaStatus(String status) {
         this.oa_status = status;
-    } 
+    }
+
+    public OALocation getFirstOALocation() {
+        return firstOALocation;
+    }
+
+    public void setFirstOALocation(OALocation firstOALocation) {
+        this.firstOALocation = firstOALocation;
+    }
+
+    public List<OALocation> getEmbargoedOALocations() {
+        return embargoedOALocations;
+    }
+
+    public void setEmbargoedOALocations(List<OALocation> embargoedOALocations) {
+        this.embargoedOALocations = embargoedOALocations;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
+    }
 }
