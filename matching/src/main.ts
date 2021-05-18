@@ -167,7 +167,7 @@ const index = async (options: Options, client: Client) => {
   const path = require('path');
 
   if (options.dumpType === 'directory') {
-    await (async () => {
+    (async () => {
       try {
         const files = await fs.promises.readdir(options.dump);
 
@@ -176,6 +176,9 @@ const index = async (options: Options, client: Client) => {
         let batch: (ElasticIndexHeader | BiblObj)[] = [];
 
         for (const file of files) {
+          if (!file.endsWith(".gz")) {
+            continue
+          }
           const file_path = path.join(options.dump, file);
           const readStream = fs.createReadStream(file_path)
             .pipe(createDecompressor())
