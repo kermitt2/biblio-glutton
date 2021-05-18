@@ -175,16 +175,21 @@ const index = async (options: Options, client: Client) => {
         let indexed = 0;
         let batch: (ElasticIndexHeader | BiblObj)[] = [];
 
+        // Iterate on files
         for (const file of files) {
           if (!file.endsWith(".gz")) {
             continue
           }
           const file_path = path.join(options.dump, file);
-          const readStream = fs.createReadStream(file_path)
+          const readStream = fs
+            .createReadStream(file_path)
             .pipe(createDecompressor())
             .pipe(
               map((rawData: any, cb: any) => {
-                cb(null, createBiblObj(massage(rawData)));
+                for (const doc of massage(rawData)) {
+                  cb(null, createBiblObj(doc));
+                }
+
               })
             )
             .on("error", (error: string) => console.error("Error occurred: " + error))
@@ -234,7 +239,7 @@ const index = async (options: Options, client: Client) => {
           });
 
           // When the stream ends write the remaining records
-          await readStream.on("end", async () => {
+          readStream.on("end", async () => {
             if (batch.length > 0) {
               console.log("Loaded %s records", batch.length);
               await sendBulk(batch, "true", client);
