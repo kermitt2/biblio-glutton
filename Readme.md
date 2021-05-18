@@ -339,7 +339,7 @@ A node.js utility under the subdirectory `matching/` is used to build the Elasti
 
 You need first to install and start ElasticSearch, latest version. Replace placeholder in the file `my_connection.js` to set the host name and port of the Elasticsearch server. 
 
-Install the node.js module:
+Install the dependencies:
 
 ```sh
 cd matching/
@@ -349,13 +349,13 @@ npm install
 #### Build the index 
 
 ```sh
-node main -dump *PATH_TO_THE_CROSSREF_JSON_DUMP* index
+tsc & node dist/main index -dump *PATH_TO_THE_CROSSREF_JSON_DUMP*
 ```
 
 Example:
 
 ```sh
-node main -dump ~/tmp/crossref-works.2019-09-09.json.xz index
+tsc & node dist/main index -dump ~/tmp/crossref-works.2019-09-09.json.xz index
 ```
 
 Note than launching the above command will fully re-index the data, deleting existing index. The default name of the index is `crossref`, but this can be changed via the config file `matching/config.json`.
