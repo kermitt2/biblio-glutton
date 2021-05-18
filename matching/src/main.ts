@@ -5,11 +5,11 @@ import * as analyzers from "./resources/settings.json";
 import * as mapping from "./resources/crossref_mapping.json";
 import * as fs from "fs";
 import client from "./my_connection";
-import { Client } from "@elastic/elasticsearch";
-import { createDecompressor } from "lzma-native";
-import { split, map } from "event-stream";
-import { BiblObj, ElasticIndexHeader, Options, RawCrossrefData } from "./index";
-import { filterType, massage, round, sleep } from "./helpers";
+import {Client} from "@elastic/elasticsearch";
+import {createDecompressor} from "lzma-native";
+import {map, split} from "event-stream";
+import {BiblObj, ElasticIndexHeader, Options, RawCrossrefData} from "./index";
+import {filterType, massage, round, sleep} from "./helpers";
 
 const red = "\x1b[31m";
 const reset = "\x1b[0m";
@@ -20,7 +20,8 @@ const getHealth = async (client: Client): Promise<void> => {
 };
 
 const indexData = async (options: Options, client: Client) => {
-  const { body: indexExists } = await client.indices
+
+  const {body: indexExists} = await client.indices
     .exists({
       index: options.indexName,
     })
@@ -31,7 +32,7 @@ const indexData = async (options: Options, client: Client) => {
 
   if (indexExists) {
     // remove previous index if it exists
-    await client.indices.delete({ index: options.indexName }).catch((err) => {
+    await client.indices.delete({index: options.indexName}).catch((err) => {
       console.error("Index deletion failed");
       throw err;
     });
@@ -39,7 +40,7 @@ const indexData = async (options: Options, client: Client) => {
   }
 
   await client.indices
-    .create({ index: options.indexName, body: analyzers })
+    .create({index: options.indexName, body: analyzers})
     .catch((err) => {
       console.error("Index deletion failed");
       throw err;
@@ -103,7 +104,7 @@ const createBiblObj = (data: RawCrossrefData): BiblObj => {
   };
 
   if (data.author?.length > 0) {
-    const { authors, firstAuthorName } = data.author.reduce(
+    const {authors, firstAuthorName} = data.author.reduce(
       (acc, author) => {
         if (author.sequence === "first") {
           acc.firstAuthorName = author.family;
@@ -111,7 +112,7 @@ const createBiblObj = (data: RawCrossrefData): BiblObj => {
         acc.authors.push(author.family);
         return acc;
       },
-      { authors: [] as string[], firstAuthorName: "" }
+      {authors: [] as string[], firstAuthorName: ""}
     );
 
     obj.first_author = firstAuthorName;
@@ -162,74 +163,170 @@ const getYear = (data: RawCrossrefData): number => {
 };
 
 const index = async (options: Options, client: Client) => {
-  const readStream = fs
-    .createReadStream(options.dump)
-    .pipe(createDecompressor())
-    .pipe(split())
-    .pipe(
-      map((rawData: any, cb: any) => {
-        cb(null, createBiblObj(massage(rawData)));
-      })
-    )
-    .on("error", (error) => console.error("Error occurred: " + error))
-    .on("finish", () => {
-      console.log("Finished. ");
-      const execTime = Date.now() - options.start.getTime();
-      console.info("Execution time: %dms", execTime);
-    });
+  const fs = require('fs');
+  const path = require('path');
 
-  let i = 0;
-  let indexed = 0;
-  let batch: (ElasticIndexHeader | BiblObj)[] = [];
+  if (options.dumpType === 'directory') {
+    await (async () => {
+      try {
+        const files = await fs.promises.readdir(options.dump);
 
-  readStream.on("data", async (doc: BiblObj) => {
-    // filter some type of DOI not corresponding to a publication (e.g. component
-    // of a publication)
-    if (filterType(doc)) {
-      return;
+        let i = 0;
+        let indexed = 0;
+        let batch: (ElasticIndexHeader | BiblObj)[] = [];
+
+        for (const file of files) {
+          const file_path = path.join(options.dump, file);
+          const readStream = fs.createReadStream(file_path)
+            .pipe(createDecompressor())
+            .pipe(
+              map((rawData: any, cb: any) => {
+                cb(null, createBiblObj(massage(rawData)));
+              })
+            )
+            .on("error", (error: string) => console.error("Error occurred: " + error))
+            .on("finish", () => {
+              console.log("Finished. ");
+              const execTime = Date.now() - options.start.getTime();
+              console.info("Execution time: %dms", execTime);
+            });
+
+          readStream.on("data", async (doc: BiblObj) => {
+            // filter some type of DOI not corresponding to a publication (e.g. component
+            // of a publication)
+            if (filterType(doc)) {
+              return;
+            }
+
+            delete doc._id;
+            delete doc.type;
+
+            batch.push({
+              index: {
+                _index: options.indexName,
+                _type: options.docType,
+              },
+            });
+
+            batch.push(doc);
+            i++;
+
+            if (i % options.batchSize === 0) {
+              const previousStart = new Date();
+              const endTime = await sendBulk(batch, "false", client);
+
+              let total_time = (endTime - options.start.getTime()) / 1000;
+              let speed = round(
+                options.batchSize / ((endTime - previousStart.getTime()) / 1000)
+              );
+
+              indexed += options.batchSize;
+              console.log(
+                `Loaded ${indexed} records in ${total_time} s (${speed} record/s)`
+              );
+
+              batch = [];
+              i = 0;
+            }
+          });
+
+          // When the stream ends write the remaining records
+          await readStream.on("end", async () => {
+            if (batch.length > 0) {
+              console.log("Loaded %s records", batch.length);
+              await sendBulk(batch, "true", client);
+              console.log("Completed crossref indexing.");
+            }
+            batch = [];
+          });
+        }
+      } catch (e) {
+        console.error("We've thrown! Whoops!", e);
+      }
+
+    })();
+
+  } else {
+    let readStream = null;
+    if (options.dumpType === 'json') {
+      readStream = fs.createReadStream(options.dump)
+        .pipe(split());
+
+    } else if (options.dumpType === 'xz') {
+      readStream = fs.createReadStream(options.dump)
+        .pipe(createDecompressor())
+        .pipe(split());
     }
 
-    delete doc._id;
-    delete doc.type;
+    if (readStream == null) {
+      throw new Error("The Crossref dump wasn't loaded correctly. ");
+    }
+    readStream = readStream
+      .pipe(
+        map((rawData: any, cb: any) => {
+          cb(null, createBiblObj(massage(rawData)));
+        })
+      )
+      .on("error", (error: string) => console.error("Error occurred: " + error))
+      .on("finish", () => {
+        console.log("Finished. ");
+        const execTime = Date.now() - options.start.getTime();
+        console.info("Execution time: %dms", execTime);
+      });
 
-    batch.push({
-      index: {
-        _index: options.indexName,
-        _type: options.docType,
-      },
+    let i = 0;
+    let indexed = 0;
+    let batch: (ElasticIndexHeader | BiblObj)[] = [];
+
+    readStream.on("data", async (doc: BiblObj) => {
+      // filter some type of DOI not corresponding to a publication (e.g. component
+      // of a publication)
+      if (filterType(doc)) {
+        return;
+      }
+
+      delete doc._id;
+      delete doc.type;
+
+      batch.push({
+        index: {
+          _index: options.indexName,
+          _type: options.docType,
+        },
+      });
+
+      batch.push(doc);
+      i++;
+
+      if (i % options.batchSize === 0) {
+        const previousStart = new Date();
+        const endTime = await sendBulk(batch, "false", client);
+
+        let total_time = (endTime - options.start.getTime()) / 1000;
+        let speed = round(
+          options.batchSize / ((endTime - previousStart.getTime()) / 1000)
+        );
+
+        indexed += options.batchSize;
+        console.log(
+          `Loaded ${indexed} records in ${total_time} s (${speed} record/s)`
+        );
+
+        batch = [];
+        i = 0;
+      }
     });
 
-    batch.push(doc);
-    i++;
-
-    if (i % options.batchSize === 0) {
-      const previousStart = new Date();
-      const endTime = await sendBulk(batch, "false", client);
-
-      let total_time = (endTime - options.start.getTime()) / 1000;
-      let speed = round(
-        options.batchSize / ((endTime - previousStart.getTime()) / 1000)
-      );
-
-      indexed += options.batchSize;
-      console.log(
-        `Loaded ${indexed} records in ${total_time} s (${speed} record/s)`
-      );
-
+    // When the stream ends write the remaining records
+    readStream.on("end", async () => {
+      if (batch.length > 0) {
+        console.log("Loaded %s records", batch.length);
+        await sendBulk(batch, "true", client);
+        console.log("Completed crossref indexing.");
+      }
       batch = [];
-      i = 0;
-    }
-  });
-
-  // When the stream ends write the remaining records
-  readStream.on("end", async () => {
-    if (batch.length > 0) {
-      console.log("Loaded %s records", batch.length);
-      await sendBulk(batch, "true", client);
-      console.log("Completed crossref indexing.");
-    }
-    batch = [];
-  });
+    });
+  }
 };
 
 const sendBulk = async (
@@ -239,7 +336,7 @@ const sendBulk = async (
   doOver = false
 ): Promise<number> => {
   try {
-    const { body: bulkResponse } = await client.bulk({ refresh, body });
+    const {body: bulkResponse} = await client.bulk({refresh, body});
 
     if (bulkResponse.errors) {
       if (doOver) {
@@ -269,11 +366,13 @@ const sendBulk = async (
 async function init(): Promise<Options> {
   const options: Options = {
     action: "health",
+    dumpType: null,
     concurrency: 100,
     start: new Date(),
     ...config,
   };
 
+  //TODO: use yargs
   for (let i = 2, len = process.argv.length; i < len; i++) {
     if (process.argv[i - 1] === "-dump") {
       options.dump = process.argv[i];
@@ -287,9 +386,17 @@ async function init(): Promise<Options> {
   if (options.dump) {
     const stats = fs.lstatSync(options.dump);
     if (stats.isDirectory()) {
-      throw new Error("CrossRef dump path must be a file, not a directory");
-    } else if (!stats.isFile()) {
-      throw new Error("CrossRef dump path must be a valid file");
+      options.dumpType = "directory"
+    } else if (stats.isFile()) {
+      if (options.dump.endsWith(".json")) {
+        options.dumpType = "json"
+      } else if (options.dump.endsWith(".xz")) {
+        options.dumpType = "xz"
+      } else {
+        throw new Error("The format is not recognised ");
+      }
+    } else {
+      throw new Error("CrossRef dump path must be a valid file or directory");
     }
   }
 

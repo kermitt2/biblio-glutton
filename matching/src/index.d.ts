@@ -3,6 +3,7 @@ export type Options = {
   docType: string;
   indexName: string;
   dump?: string;
+  dumpType: string;
   concurrency: number;
   action: string;
   start: Date;

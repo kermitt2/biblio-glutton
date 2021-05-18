@@ -26,3 +26,4 @@ lookup/build
 **/package-lock.json
 lookup/data/db/*
 pubmed-glutton/build/*
+matching/dist/
