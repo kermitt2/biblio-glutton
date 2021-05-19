@@ -10,6 +10,7 @@ import {createDecompressor} from "lzma-native";
 import {map, split} from "event-stream";
 import {BiblObj, ElasticIndexHeader, Options, RawCrossrefData} from "./index";
 import {filterType, massage, round, sleep} from "./helpers";
+import * as zlib from "zlib";
 
 const red = "\x1b[31m";
 const reset = "\x1b[0m";
@@ -167,92 +168,90 @@ const index = async (options: Options, client: Client) => {
   const path = require('path');
 
   if (options.dumpType === 'directory') {
-    (async () => {
-      try {
-        const files = await fs.promises.readdir(options.dump);
 
-        let i = 0;
-        let indexed = 0;
-        let batch: (ElasticIndexHeader | BiblObj)[] = [];
+    try {
+      const files = await fs.promises.readdir(options.dump);
 
-        // Iterate on files
-        for (const file of files) {
-          if (!file.endsWith(".gz")) {
-            continue
-          }
-          const file_path = path.join(options.dump, file);
-          const readStream = fs
-            .createReadStream(file_path)
-            .pipe(createDecompressor())
-            .pipe(
-              map((rawData: any, cb: any) => {
-                for (const doc of massage(rawData)) {
-                  cb(null, createBiblObj(doc));
-                }
+      let i = 0;
+      let indexed = 0;
+      let batch: (ElasticIndexHeader | BiblObj)[] = [];
 
-              })
-            )
-            .on("error", (error: string) => console.error("Error occurred: " + error))
-            .on("finish", () => {
-              console.log("Finished. ");
-              const execTime = Date.now() - options.start.getTime();
-              console.info("Execution time: %dms", execTime);
-            });
-
-          readStream.on("data", async (doc: BiblObj) => {
-            // filter some type of DOI not corresponding to a publication (e.g. component
-            // of a publication)
-            if (filterType(doc)) {
-              return;
-            }
-
-            delete doc._id;
-            delete doc.type;
-
-            batch.push({
-              index: {
-                _index: options.indexName,
-                _type: options.docType,
-              },
-            });
-
-            batch.push(doc);
-            i++;
-
-            if (i % options.batchSize === 0) {
-              const previousStart = new Date();
-              const endTime = await sendBulk(batch, "false", client);
-
-              let total_time = (endTime - options.start.getTime()) / 1000;
-              let speed = round(
-                options.batchSize / ((endTime - previousStart.getTime()) / 1000)
-              );
-
-              indexed += options.batchSize;
-              console.log(
-                `Loaded ${indexed} records in ${total_time} s (${speed} record/s)`
-              );
-
-              batch = [];
-              i = 0;
-            }
-          });
-
-          // When the stream ends write the remaining records
-          readStream.on("end", async () => {
-            if (batch.length > 0) {
-              console.log("Loaded %s records", batch.length);
-              await sendBulk(batch, "true", client);
-              console.log("Completed crossref indexing.");
-            }
-            batch = [];
-          });
+      // Iterate on files
+      for (const file of files) {
+        if (!file.endsWith(".gz")) {
+          continue
         }
-      } catch (e) {
-        console.error("We've thrown! Whoops!", e);
-      }
+        const file_path = path.join(options.dump, file);
+        const readStream = fs
+          .createReadStream(file_path)
+          .pipe(zlib.createGunzip())
+          .pipe(
+            map((rawData: any, cb: any) => {
+              for (const doc of massage(rawData)) {
+                cb(null, createBiblObj(doc));
+              }
 
-    })();
+            })
+          )
+          .on("error", (error: string) => console.error("Error occurred: " + error))
+          .on("finish", () => {
+            console.log("Finished. ");
+            const execTime = Date.now() - options.start.getTime();
+            console.info("Execution time: %dms", execTime);
+          });
+
+        readStream.on("data", async (doc: BiblObj) => {
+          // filter some type of DOI not corresponding to a publication (e.g. component
+          // of a publication)
+          if (filterType(doc)) {
+            return;
+          }
+
+          delete doc._id;
+          delete doc.type;
+
+          batch.push({
+            index: {
+              _index: options.indexName,
+              _type: options.docType,
+            },
+          });
+
+          batch.push(doc);
+          i++;
+
+          if (i % options.batchSize === 0) {
+            const previousStart = new Date();
+            const endTime = await sendBulk(batch, "false", client);
+
+            let total_time = (endTime - options.start.getTime()) / 1000;
+            let speed = round(
+              options.batchSize / ((endTime - previousStart.getTime()) / 1000)
+            );
+
+            indexed += options.batchSize;
+            console.log(
+              `Loaded ${indexed} records in ${total_time} s (${speed} record/s)`
+            );
+
+            batch = [];
+            i = 0;
+          }
+        });
+
+        // When the stream ends write the remaining records
+        readStream.on("end", async () => {
+          if (batch.length > 0) {
+            console.log("Loaded %s records", batch.length);
+            await sendBulk(batch, "true", client);
+            console.log("Completed crossref indexing.");
+          }
+          batch = [];
+        });
+      }
+    } catch (e) {
+      console.error("We've thrown! Whoops!", e);
+    }
 
   } else {
     let readStream = null;
