@@ -245,7 +245,10 @@ Machines have the same configuration Intel i7 4-cores, 8 threads, 16GB memory, S
 
 For building the database and index used by service, you will need these resources:
 
-* CrossRef metadata dump: available via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service or at Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909),
+* CrossRef metadata dump, available at:  
+  - the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service, or
+  - Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909), or   
+  - [this blog post to get the latest publicly made CrossRef dump](https://www.crossref.org/blog/free-public-data-file-of-112-million-crossref-records/)
 
 * DOI to PMID and PMC mapping: available at Europe PMC, see ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/,
 

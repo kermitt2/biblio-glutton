@@ -7,7 +7,7 @@ import org.junit.Test;
 import java.util.zip.GZIPInputStream;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class UnpaidWallReaderTest {
 

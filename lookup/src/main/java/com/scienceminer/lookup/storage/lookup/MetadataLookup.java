@@ -1,5 +1,6 @@
 package com.scienceminer.lookup.storage.lookup;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.data.MatchingDocument;
@@ -52,11 +53,11 @@ public class MetadataLookup {
         dbCrossrefJson = this.environment.openDbi(NAME_CROSSREF_JSON, DbiFlags.MDB_CREATE);
     }
 
-    public void loadFromFile(InputStream is, CrossrefJsonReader reader, Meter meter) {
+    public void loadFromFile(InputStream is, CrossrefJsonReader reader, Meter meterValidRecord, Counter counterInvalidRecords) {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counter = new AtomicInteger(0);
 
-        reader.load(is, crossrefData -> {
+        reader.load(is, counterInvalidRecords, crossrefData -> {
             if (counter.get() == batchSize) {
                 transactionWrapper.tx.commit();
                 transactionWrapper.tx.close();
@@ -66,15 +67,13 @@ public class MetadataLookup {
             String key = lowerCase(crossrefData.get("DOI").asText());
 
             store(key, crossrefData.toString(), dbCrossrefJson, transactionWrapper.tx);
-            meter.mark();
+            meterValidRecord.mark();
             counter.incrementAndGet();
 
 
         });
         transactionWrapper.tx.commit();
         transactionWrapper.tx.close();
-
-        LOGGER.info("Cross checking number of records processed: " + meter.getCount());
     }
 
     private void store(String key, String value, Dbi<ByteBuffer> db, Txn<ByteBuffer> tx) {
@@ -147,8 +146,8 @@ public class MetadataLookup {
         int counter = 0;
 
         try (Txn<ByteBuffer> txn = environment.txnRead()) {
-            try (CursorIterator<ByteBuffer> it = db.iterate(txn, KeyRange.all())) {
-                for (final CursorIterator.KeyVal<ByteBuffer> kv : it.iterable()) {
+            try (CursorIterable<ByteBuffer> it = db.iterate(txn, KeyRange.all())) {
+                for (final CursorIterable.KeyVal<ByteBuffer> kv : it) {
                     String key = null;
                     try {
                         key = (String) BinarySerialiser.deserialize(kv.key());

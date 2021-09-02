@@ -1,23 +1,31 @@
 package com.scienceminer.lookup.command;
 
 import com.codahale.metrics.ConsoleReporter;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
-import com.scienceminer.lookup.reader.CrossrefJsonReader;
+import com.scienceminer.lookup.reader.CrossrefGreenelabJsonReader;
+import com.scienceminer.lookup.reader.CrossrefTorrentJsonReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.storage.lookup.MetadataLookup;
 import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tukaani.xz.XZInputStream;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 
 /**
  * This class is responsible for loading the crossref dump in lmdb
@@ -57,21 +65,48 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
         MetadataLookup metadataLookup = new MetadataLookup(storageEnvFactory);
-        long start = System.nanoTime();
-        final String crossrefFilePath = namespace.get(CROSSREF_SOURCE);
 
-        LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefFilePath);
+        final String crossrefFilePathString = namespace.get(CROSSREF_SOURCE);
+        Path crossrefFilePath = Paths.get(crossrefFilePathString);
+        LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefFilePathString);
 
-        // Istex IDs
-        InputStream inputStreamCrossref = Files.newInputStream(Paths.get(crossrefFilePath));
-        if (crossrefFilePath.endsWith(".xz")) {
-            inputStreamCrossref = new XZInputStream(inputStreamCrossref);
+        final Meter meter = metrics.meter("crossrefLookup");
+        final Counter counterInvalidRecords = metrics.counter("crossrefLookup_invalidRecords");
+        if (Files.isDirectory(crossrefFilePath)) {
+            try (Stream<Path> stream = Files.walk(crossrefFilePath, 1)) {
+                CrossrefTorrentJsonReader reader = new CrossrefTorrentJsonReader(configuration);
+
+                stream.filter(path -> Files.isRegularFile(path) && Files.isReadable(path)
+                        && (StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".gz") ||
+                        StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".xz")))
+                        .forEach(dumpFile -> {
+                                    try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
+                                        metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
+                                    } catch (Exception e) {
+                                        LOGGER.error("Error while processing " + dumpFile.toAbsolutePath(), e);
+                                    }
+                                }
+                        );
+            }
+        } else {
+            try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
+                metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefGreenelabJsonReader(configuration),
+                        meter, counterInvalidRecords);
+            } catch (Exception e) {
+                LOGGER.error("Error while processing " + crossrefFilePath, e);
+            }
         }
-        metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefJsonReader(configuration),
-                metrics.meter("crossrefLookup"));
-        LOGGER.info("Crossref lookup loaded " + metadataLookup.getSize() + " records. ");
+        LOGGER.info("Number of Crossref records processed: " + meter.getCount());
+        LOGGER.info("Crossref lookup size " + metadataLookup.getSize() + " records.");
+    }
 
-        LOGGER.info("Finished in " +
-                TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
+    private InputStream selectStream(Path crossrefFilePath) throws IOException {
+        InputStream inputStreamCrossref = Files.newInputStream(crossrefFilePath);
+        if (crossrefFilePath.getFileName().toString().endsWith(".xz")) {
+            inputStreamCrossref = new XZInputStream(Files.newInputStream(crossrefFilePath));
+        } else if (crossrefFilePath.getFileName().toString().endsWith(".gz")) {
+            inputStreamCrossref = new GZIPInputStream(Files.newInputStream(crossrefFilePath));
+        }
+        return inputStreamCrossref;
     }
 }
