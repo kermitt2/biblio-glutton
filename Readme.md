@@ -245,24 +245,24 @@ Machines have the same configuration Intel i7 4-cores, 8 threads, 16GB memory, S
 
 For building the database and index used by service, you will need these resources:
 
-* CrossRef metadata dump, available at:  
-  - the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service, or
-  - Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909), or   
-  - [this blog post to get the latest publicly made CrossRef dump](https://www.crossref.org/blog/free-public-data-file-of-112-million-crossref-records/)
+* CrossRef metadata dump, available:  
+  - via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service for a current snapshot, or
+  - [public CrossRef dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (January, 7, 2021 for the latest version) 
+  - Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909).  
+  
+* DOI to PMID and PMC mapping: available at Europe PMC and regularly updated, see ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/,
 
-* DOI to PMID and PMC mapping: available at Europe PMC, see ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/,
+* optionally, but advised, the Unpaywall dataset, to get Open Access links aggregated with the bibliographical metadata, see [here](http://unpaywall.org/products/snapshot) to get the latest database snapshot. 
 
-* optionally, the Unpaywall dataset, to get Open Access links aggregated with the bibliographical metadata, see [here](http://unpaywall.org/products/snapshot) to get the latest database snapshot. 
+* optionally, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see below. 
 
-* optionally, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see bellow. 
-
-The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
+The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for blocking via text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
 
 The databases and elasticsearch index must first be built from the resource files. The full service needs around 300GB of space for building these index and it is highly recommended to use SSD for best performance.
 
 ### Build the embedded LMDB databases
 
-Resource dumps will be compiled in high performance LMDB databases. The system can read compressed or plain text files files (`gzip` or `.xz`), so in practice you do not need to uncompress anything.
+Resource dumps will be compiled in high performance LMDB databases. The system can read compressed (`gzip` or `.xz`) or plain text files (`json`), so in practice you do not need to uncompress anything.
 
 #### Build the data loader 
 
@@ -336,11 +336,11 @@ Note: see bellow how to create this mapping file `istexIds.all.gz`.
 
 Elasticsearch 6 is required. It is not compatible with Elasticsearch >=7.
 
-A node.js utility under the subdirectory `matching/` is used to build the Elasticsearch index. It will take a couple of hours for the 100M crossref entries.
+A node.js utility under the subdirectory `matching/` is used to build the Elasticsearch index. It will take a couple of hours for the >110M crossref entries.
 
 #### Install and configure
 
-You need first to install and start ElasticSearch, latest version. Replace placeholder in the file `my_connection.js` to set the host name and port of the Elasticsearch server. 
+You need first to install and start ElasticSearch, version `6.*`. Replace placeholder in the file `my_connection.js` to set the host name and port of the Elasticsearch server. 
 
 Install the node.js module:
 
