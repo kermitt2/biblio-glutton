@@ -6,10 +6,10 @@ var client = new elasticsearch.Client( {
     keepAlive: false,
     log: "error",
     requestTimeout: 1000000,  //to give more time for indexing
-    sniffOnStart: true,      //discover the rest of the cluster at startup
+    sniffOnStart: true       //discover the rest of the cluster at startup
     // sniffOnConnectionFault: true,
     // sniffInterval: 300,
-    suggestCompression: true
+    //suggestCompression: true
 });
 
 module.exports = client;

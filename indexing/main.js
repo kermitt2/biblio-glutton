@@ -459,6 +459,10 @@ function indexFile(options, dumpFile) {
 
 function refreshIndex(e) {
     var options = init();
+
+    if (options.action === "health")
+        process.exit(); 
+
     // final refresh of the index, to be called just before leaving
     client.indices.refresh( { index:options.indexName }, function (err, resp) {
         if (err) {

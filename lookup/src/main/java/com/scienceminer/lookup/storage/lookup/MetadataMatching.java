@@ -21,6 +21,8 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.apache.lucene.search.TotalHits;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,9 +69,10 @@ public class MetadataMatching {
                         .setRequestConfigCallback(
                                 requestConfigBuilder -> requestConfigBuilder
                                         .setConnectTimeout(30000)
-                                        .setSocketTimeout(60000))
-                        .setMaxRetryTimeoutMillis(120000));
-
+                                        .setSocketTimeout(60000)));
+        // note: maxRetryTimeoutMillis is deprecated in ES 7 due to implementation issue 
+        // https://github.com/elastic/elasticsearch/pull/38085
+        //                .setMaxRetryTimeoutMillis(120000));
 
         this.esClient = new ESClientWrapper(esClient, configuration.getMaxAcceptedRequests());
 
@@ -82,7 +85,11 @@ public class MetadataMatching {
             SearchRequest searchRequest = new SearchRequest(configuration.getElastic().getIndex());
 
             SearchResponse response = esClient.searchSync(searchRequest, RequestOptions.DEFAULT);
-            return response.getHits().getTotalHits();
+
+            SearchHits hits = response.getHits();
+            TotalHits totalHits = hits.getTotalHits();
+
+            return totalHits.value;
         } catch (IOException e) {
             LOGGER.error("Error while contacting Elasticsearch to fetch the size of "
                     + configuration.getElastic().getIndex() + " index.", e);

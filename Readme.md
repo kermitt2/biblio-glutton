@@ -279,13 +279,24 @@ All the following commands need to be launched under the subdirectory `lookup/`.
 java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file /path/to/your/configuration
 ```
 
-Example (XZ files will be streamed directly from the compressed versions): 
+Example with CrossRef dump Academic Torrent file (path to a repository of `*.json.gz` files):
+
+
+```sh
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input ~/tmp/crossref_public_data_file_2021_01 data/config/config.yml
+```
+
+
+Example with xz-compressed file: 
 
 ```sh
 java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2019-09-09.json.xz data/config/config.yml
 ```
 
-**Note:** by default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk  space. The `reference` field is often particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `data/config/config.yml`, by editing the lines:
+
+
+
+**Note:** By default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk  space. The `reference` field is often particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `data/config/config.yml`, by editing the lines:
 
 ```
 ignoreCrossRefFields:                                                   
@@ -351,6 +362,8 @@ npm install
 
 #### Build the index 
 
+Usage information for indexing:
+
 ```sh
 node main -dump *PATH_TO_THE_CROSSREF_DUMP* index
 ```
@@ -369,6 +382,11 @@ node main -dump ~/tmp/crossref-works.2019-09-09.json.xz index
 
 Note that launching the above command will fully re-index the data, deleting existing index. The default name of the index is `crossref`, but this can be changed via the config file `indexing/config.json`.
 
+For getting health check information about the selected ElasticSearch cluster:
+
+```sh
+node main health
+```
 
 ## Matching accuracy
 

@@ -32,6 +32,17 @@ node main -dump ~/tmp/crossref-works.2019-09-09.json.xz index
 
 Note that launching the above command will fully re-index the data, deleting existing index. The default name of the index is `crossref`, but this can be changed via the config file `indexing/config.json`.
 
+For getting health check information about the selected ElasticSearch cluster:
+
+```sh
+node main health
+```
+
+## Settings
+
+Default connection parameters can be found in the file `indexing/my_connection.js` (ElaticSearch node and port information).
+
+In `indexing/config.json`, it is possible to specify the name of the index and the batch size of the bulk indexing. 
 
 ## License
 
