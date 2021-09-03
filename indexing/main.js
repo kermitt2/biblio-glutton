@@ -23,11 +23,12 @@ const reset = '\x1b[0m';
 const settingsPath = "resources/settings.json";
 const mappingPath = "resources/crossref_mapping.json";
 
-// js closure to implement a counter for the nb fo indexed documents 
-const index_count = (function (amount) {
-  let counter = 0;
-  return function () {counter += amount; return counter}
-})();
+// basic global counter
+var indexed = 0;
+function incrementIndexed(amount) {
+    indexed += amount;
+    return indexed;
+};
 
 function processAction(options) {
     if (options.action === "health") {
@@ -334,7 +335,6 @@ function indexFile(options, dumpFile) {
         return;
 
     var i = 0;
-    var indexed = 0;
     var batch = [];
     var previous_end = start;
 
@@ -367,7 +367,6 @@ function indexFile(options, dumpFile) {
         i++;
 
         if (i % options.batchSize === 0) {
-            //console.log("sending batch to ES...")
             var previous_start = new Date();
 
             async.waterfall([
@@ -420,8 +419,8 @@ function indexFile(options, dumpFile) {
                     let total_time = (end - start) / 1000;
                     let intermediate_time = (end - previous_start) / 1000;
 
-                    indexed += options.batchSize;
-                    console.log('Loaded %s records in %d s (%d record/s)', indexed, total_time, options.batchSize / intermediate_time);
+                    console.log('Loaded %s records in %d s (%d record/s)', incrementIndexed(options.batchSize), 
+                        total_time, options.batchSize / intermediate_time);
                     return callback(null, total_time);
                 }
             ],
@@ -439,9 +438,8 @@ function indexFile(options, dumpFile) {
     readStream.on("end", function () {
         if (batch.length > 0) {
             //console.log('Loaded %s records', batch.length);
-            indexed += batch.length;
             client.bulk({
-                refresh: "false", // refreshing is done afterwards given that we can have multiple files in the crossref dump
+                refresh: "false", // refreshing is done at the very end given that we can have multiple files in the crossref dump
                 body: batch
             }, function (err, resp) {
                 if (err) {
@@ -451,7 +449,7 @@ function indexFile(options, dumpFile) {
                     console.log(resp.errors, 'Failed to build index');
                     throw resp;
                 } else {
-                    console.log('Completed indexing of CrossRef dump file, %d record', indexed);
+                    console.log('Completed indexing of CrossRef dump file, %d record', incrementIndexed(options.length));
                 }
             });
         } 
@@ -530,7 +528,7 @@ function end() {
 
 var start;
 
-// an exit function that ensure that the index is refreshed and functional just before leaving...
+// an pre-exit function that ensure that the index is refreshed and functional just before leaving...
 process.on('beforeExit', refreshIndex);
 
 function main() {

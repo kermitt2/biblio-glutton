@@ -247,8 +247,8 @@ For building the database and index used by service, you will need these resourc
 
 * CrossRef metadata dump, available:  
   - via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service for a current snapshot, or
-  - [public CrossRef dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (January, 7, 2021 for the latest version) 
-  - Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909).  
+  - [public CrossRef dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (2021-01-07 for the latest version), 
+  - Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909) (2019-09).   
   
 * DOI to PMID and PMC mapping: available at Europe PMC and regularly updated, see ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/,
 
@@ -334,34 +334,40 @@ Note: see bellow how to create this mapping file `istexIds.all.gz`.
 
 ### Build the Elasticsearch index
 
-Elasticsearch 6 is required. It is not compatible with Elasticsearch >=7.
+Elasticsearch `7.*` is required. `node.js` version 10 or more should work fine. 
 
-A node.js utility under the subdirectory `matching/` is used to build the Elasticsearch index. It will take a couple of hours for the >110M crossref entries.
+A node.js utility under the subdirectory `indexing/` is used to build the Elasticsearch index. It will take a couple of hours for the >110M crossref entries.
 
 #### Install and configure
 
-You need first to install and start ElasticSearch, version `6.*`. Replace placeholder in the file `my_connection.js` to set the host name and port of the Elasticsearch server. 
+You need first to install and start ElasticSearch, version `7.*`. Replace placeholder in the file `my_connection.js` to set the host name and port of the Elasticsearch server. 
 
 Install the node.js module:
 
 ```sh
-cd matching/
+cd indexing/
 npm install
 ```
 
 #### Build the index 
 
 ```sh
-node main -dump *PATH_TO_THE_CROSSREF_JSON_DUMP* index
+node main -dump *PATH_TO_THE_CROSSREF_DUMP* index
 ```
 
-Example:
+Example with CrossRef dump Academic Torrent file (path to a repository of `*.json.gz` files):
+
+```sh
+node main -dump ~/tmp/crossref_public_data_file_2021_01 index
+```
+
+Example with GreeneLab/Internet Archive dump file:
 
 ```sh
 node main -dump ~/tmp/crossref-works.2019-09-09.json.xz index
 ```
 
-Note than launching the above command will fully re-index the data, deleting existing index. The default name of the index is `crossref`, but this can be changed via the config file `matching/config.json`.
+Note that launching the above command will fully re-index the data, deleting existing index. The default name of the index is `crossref`, but this can be changed via the config file `indexing/config.json`.
 
 
 ## Matching accuracy
