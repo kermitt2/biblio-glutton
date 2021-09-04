@@ -30,7 +30,7 @@ Be sure to have the full Medline data downloaded (see https://www.nlm.nih.gov/da
 pubmedDirectory: /mnt/data/biblio/medline2020
 ```
 
-At first launch, the data will be parsed and stored in the LMDB database for fast access and manipulation. This is only done one time and takesa few hours (around 3 hours) with SSD.   
+At first launch, the data will be parsed and stored in the LMDB database for fast access and manipulation. This is only done one time and takes a few hours (around 3 hours) with SSD.   
 
 Be also sure to have the PMID and PMCID mapping to DOI, available at Euro PMC saved under your pmcDirectory path indicated in `config/glutton.yaml` (by default `data/pmc`). As of September 2018, the mapping was still available [there](ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/). Medline records will then be aggregated with DOI identifiers. 
 

@@ -46,6 +46,9 @@ server:
 logging:
   level: INFO
   appenders:
+  - type: console
+    threshold: INFO
+    timeZone: UTC
   - type: file
     currentLogFilename: logs/lookup-service.log
     threshold: INFO
@@ -53,6 +56,3 @@ logging:
     archivedLogFilenamePattern: logs/lookup-service-%d.log
     archivedFileCount: 5
     timeZone: UTC
-#  - type: console
-#    threshold: WARN
-#    timeZone: UTC
