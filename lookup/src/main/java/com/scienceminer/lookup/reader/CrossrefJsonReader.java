@@ -49,9 +49,6 @@ public abstract class CrossrefJsonReader {
             for(String field : configuration.getIgnoreCrossRefFields()) {
                 object.remove(field);
             }
-            /*object.remove("reference");
-            object.remove("abstract");
-            object.remove("indexed");*/
         }
         object.remove("_id");
 

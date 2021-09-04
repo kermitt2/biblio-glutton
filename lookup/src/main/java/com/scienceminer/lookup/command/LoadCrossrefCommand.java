@@ -20,6 +20,7 @@ import org.tukaani.xz.XZInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -78,7 +79,8 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
 
                 stream.filter(path -> Files.isRegularFile(path) && Files.isReadable(path)
                         && (StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".gz") ||
-                        StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".xz")))
+                        StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".xz") ||
+                        StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".json")))
                         .forEach(dumpFile -> {
                                     try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
                                         metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
@@ -106,6 +108,8 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
             inputStreamCrossref = new XZInputStream(Files.newInputStream(crossrefFilePath));
         } else if (crossrefFilePath.getFileName().toString().endsWith(".gz")) {
             inputStreamCrossref = new GZIPInputStream(Files.newInputStream(crossrefFilePath));
+        } else if (crossrefFilePath.getFileName().toString().endsWith(".json")) {
+            inputStreamCrossref = Files.newInputStream(crossrefFilePath);
         }
         return inputStreamCrossref;
     }
