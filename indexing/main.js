@@ -264,196 +264,207 @@ function filterType(doc) {
     return false;
 }
 
-function index(options) {
+async function index(options) {
     if (options.dumpType === 'directory') {
         const files = fs.readdirSync(options.dump)
         console.log(orange, 'total of '+files.length+' files to be indexed\n', reset);
+        //for (let index = 0; index < files.length; index++) {
+        //    let file = files[index];
         for (const file of files) {
-
+            console.log(file);
             if (!file.endsWith(".gz")) {
                 console.log(orange, path.basename(file) + " is not an expected *.json.gz file, skipping...", reset);
                 continue;
             }
             const file_path = path.join(options.dump, file);
-            indexFile(options, file_path);
+            await indexFile(options, file_path);
         }
     } else {
-        indexFile(options, options.dump);
+        await indexFile(options, options.dump);
     }
 }
 
 function indexFile(options, dumpFile) {
-    // look at the dump
-    var readStream = null;
-    if (options.dumpType === 'xz') {
-        readStream = fs.createReadStream(dumpFile)
-            .pipe(lzma.createDecompressor())
-            .pipe(es.split())
-            .pipe(es.map(createBiblObj))
-            .on('error',
-                function (error) {
-                    console.log("Error occurred: " + error);
+    
+    return new Promise((resolve, reject) => {
+
+        // look at the dump
+        var readStream = null;
+
+        if (options.dumpType === 'xz') {
+            readStream = fs.createReadStream(dumpFile)
+                .pipe(lzma.createDecompressor())
+                .pipe(es.split())
+                .pipe(es.map(createBiblObj))
+                .on('error',
+                    function (error) {
+                        console.log("Error occurred: " + error);
+                    }
+                );
+        } else if (options.dumpType === 'gz') {
+            readStream = fs.createReadStream(dumpFile)
+                .pipe(zlib.createGunzip())
+                .pipe(es.split())
+                .pipe(es.map(createBiblObj))
+                .on('error',
+                    function (error) {
+                        console.log("Error occurred: " + error);
+                    }
+                );
+        } else if (options.dumpType === 'json') {
+            // we assume here it's a jsonl file, not a mega huge array
+            readStream = fs.createReadStream(options.dump)
+                .pipe(es.split())
+                .pipe(es.map(function (data, cb) {
+                    createBiblObj(data, cb);
+                }))
+                .on('error',
+                    function (error) {
+                        console.log("Error occurred: " + error);
+                    }
+                );
+        } else if (options.dumpType === 'directory') {
+            // note: it's not jsonl, we have a json on each line, but in a global array 
+            readStream = fs.createReadStream(dumpFile)
+                .pipe(zlib.createGunzip())
+                .pipe(es.split(",\n"))
+                .pipe(es.map(createBiblObj))
+                .on('error',
+                    function (error) {
+                        console.log("Error occurred: " + error);
+                    });
+        } else {
+            console.log('Unsupported dump format: must be uncompressed json, compressed json file (xz, gzip) or directory of *.json.gz files.');
+        }
+
+        if (readStream == null)
+            return resolve();
+
+        var i = 0;
+        var batch = [];
+        var previous_end = start;
+
+        readStream.on("data", function (doc) {
+            //console.log("indexing %s", doc.id);
+
+            // filter some type of DOI not corresponding to a publication (e.g. component of a publication)
+            if (doc == null || filterType(doc))
+                return;
+
+            var localId = doc.DOI.toLowerCase();
+            if ("_id" in doc) {
+                localId = doc._id;
+                delete doc._id;
+            }
+            delete doc.type;
+
+            batch.push({
+                index: {
+                    _index: options.indexName,
+                    _id: localId
                 }
-            );
-    } else if (options.dumpType === 'gz') {
-        readStream = fs.createReadStream(dumpFile)
-            .pipe(zlib.createGunzip())
-            .pipe(es.split())
-            .pipe(es.map(createBiblObj))
-            .on('error',
-                function (error) {
-                    console.log("Error occurred: " + error);
-                }
-            );
-    } else if (options.dumpType === 'json') {
-        // we assume here it's a jsonl file, not a mega huge array
-        readStream = fs.createReadStream(options.dump)
-            .pipe(es.split())
-            .pipe(es.map(function (data, cb) {
-                createBiblObj(data, cb);
-            }))
-            .on('error',
-                function (error) {
-                    console.log("Error occurred: " + error);
-                }
-            );
-    } else if (options.dumpType === 'directory') {
-        // note: it's not jsonl, we have a json on each line, but in a global array 
-        readStream = fs.createReadStream(dumpFile)
-            .pipe(zlib.createGunzip())
-            .pipe(es.split(",\n"))
-            .pipe(es.map(createBiblObj))
-            .on('error',
-                function (error) {
-                    console.log("Error occurred: " + error);
+            });
+
+            batch.push(doc);
+            i++;
+
+            if (i % options.batchSize === 0) {
+                var previous_start = new Date();
+
+                async.waterfall([
+                    function (callback) {
+                        client.bulk(
+                            {
+                                refresh: "false", //we do refresh only at the end
+                                //requestTimeout: 200000,
+                                body: batch
+                            },
+                            function (err, resp) { 
+                                if (err) { 
+                                    console.log(err.message);
+                                    throw err;
+                                } else if (resp.errors) {
+                                    console.log('Bulk is rejected... let\'s medidate 10 seconds about the illusion of time and consciousness');
+                                    // let's just wait and re-send the bulk request with increased
+                                    // timeout to be on the safe side
+                                    console.log("Waiting for 10 seconds");
+                                    sleep.msleep(20000); // -> this is blocking... time for elasticsearch to do whatever it does
+                                    // and be in a better mood to accept this bulk
+                                    client.bulk(
+                                        {
+                                            refresh: "false",
+                                            //requestTimeout: 200000,
+                                            body: batch
+                                        },
+                                        function (err, resp) { 
+                                            if (err) { 
+                                                console.log(err.message);
+                                                throw err;
+                                            } else if (resp.errors) {
+                                                console.log(resp);
+                                                // at this point it's hopeless ?
+                                                throw resp;
+                                                // alternative would be to block again and resend
+                                                // propagate that in a next function of the async to have something less ugly?
+                                            }
+                                            console.log("bulk is finally ingested...");
+                                            let theEnd = new Date();
+                                            return callback(null, theEnd);
+                                        });
+                                } else {
+                                    let theEnd = new Date();
+                                    return callback(null, theEnd);
+                                }
+                            });
+                    },
+                    function(end, callback) {
+                        let total_time = (end - start) / 1000;
+                        let intermediate_time = (end - previous_start) / 1000;
+
+                        console.log('Loaded %s records in %d s (%d record/s)', incrementIndexed(options.batchSize), 
+                            total_time, options.batchSize / intermediate_time);
+                        return callback(null, total_time);
+                    }
+                ],
+                function (err, total_time) {
+                    if (err)
+                        console.log(err);
                 });
-    } else {
-        console.log('Unsupported dump format: must be uncompressed json, compressed json file (xz, gzip) or directory of *.json.gz files.');
-    }
 
-    if (readStream == null)
-        return;
-
-    var i = 0;
-    var batch = [];
-    var previous_end = start;
-
-    readStream.on("data", function (doc) {
-        //console.log("indexing %s", doc.id);
-
-        if (doc == null)
-            return;
-
-        // filter some type of DOI not corresponding to a publication (e.g. component of a publication)
-        if (filterType(doc)) {
-            return;
-        }
-        
-        var localId = doc.DOI.toLowerCase();
-        if ("_id" in doc) {
-            localId = doc._id;
-            delete doc._id;
-        }
-        delete doc.type;
-
-        batch.push({
-            index: {
-                _index: options.indexName,
-                _id: localId
+                batch = [];
+                i = 0;
             }
         });
 
-        batch.push(doc);
-        i++;
+        // When the stream ends write the remaining records
+        readStream.on("end", function () {
+            if (batch.length > 0) {
+                //console.log('Loaded %s records', batch.length);
+                client.bulk({
+                    refresh: "false", // refreshing is done at the very end given that we can have multiple files in the crossref dump
+                    body: batch
+                }, function (err, resp) {
+                    if (err) {
+                        console.log(err, 'Failed to build index');
+                        throw err;
+                    } else if (resp.errors) {
+                        console.log(resp.errors, 'Failed to build index');
+                        throw resp;
+                    } else {
+                        console.log('Completed indexing of CrossRef dump file, %d record', incrementIndexed(options.length));
+                        batch = [];
+                        return resolve();
+                    }
+                });
+            } else {
+                return resolve();
+            }
+        });
 
-        if (i % options.batchSize === 0) {
-            var previous_start = new Date();
-
-            async.waterfall([
-                function (callback) {
-                    client.bulk(
-                        {
-                            refresh: "false", //we do refresh only at the end
-                            //requestTimeout: 200000,
-                            body: batch
-                        },
-                        function (err, resp) { 
-                            if (err) { 
-                                console.log(err.message);
-                                throw err;
-                            } else if (resp.errors) {
-                                console.log('Bulk is rejected... let\'s medidate 10 seconds about the illusion of time and consciousness');
-                                // let's just wait and re-send the bulk request with increased
-                                // timeout to be on the safe side
-                                console.log("Waiting for 10 seconds");
-                                sleep.msleep(20000); // -> this is blocking... time for elasticsearch to do whatever it does
-                                // and be in a better mood to accept this bulk
-                                client.bulk(
-                                    {
-                                        refresh: "false",
-                                        //requestTimeout: 200000,
-                                        body: batch
-                                    },
-                                    function (err, resp) { 
-                                        if (err) { 
-                                            console.log(err.message);
-                                            throw err;
-                                        } else if (resp.errors) {
-                                            console.log(resp);
-                                            // at this point it's hopeless ?
-                                            throw resp;
-                                            // alternative would be to block again and resend
-                                            // propagate that in a next function of the async to have something less ugly?
-                                        }
-                                        console.log("bulk is finally ingested...");
-                                        let theEnd = new Date();
-                                        return callback(null, theEnd);
-                                    });
-                            } else {
-                                let theEnd = new Date();
-                                return callback(null, theEnd);
-                            }
-                        });
-                },
-                function(end, callback) {
-                    let total_time = (end - start) / 1000;
-                    let intermediate_time = (end - previous_start) / 1000;
-
-                    console.log('Loaded %s records in %d s (%d record/s)', incrementIndexed(options.batchSize), 
-                        total_time, options.batchSize / intermediate_time);
-                    return callback(null, total_time);
-                }
-            ],
-            function (err, total_time) {
-                if (err)
-                    console.log(err);
-            });
-
-            batch = [];
-            i = 0;
-        }
-    });
-
-    // When the stream ends write the remaining records
-    readStream.on("end", function () {
-        if (batch.length > 0) {
-            //console.log('Loaded %s records', batch.length);
-            client.bulk({
-                refresh: "false", // refreshing is done at the very end given that we can have multiple files in the crossref dump
-                body: batch
-            }, function (err, resp) {
-                if (err) {
-                    console.log(err, 'Failed to build index');
-                    throw err;
-                } else if (resp.errors) {
-                    console.log(resp.errors, 'Failed to build index');
-                    throw resp;
-                } else {
-                    console.log('Completed indexing of CrossRef dump file, %d record', incrementIndexed(options.length));
-                }
-            });
-        } 
-        batch = [];
+        readStream.on("error", function(err) {
+            console.error('Error when reading file', err);
+            return reject();
+        });
     });
 }
 
