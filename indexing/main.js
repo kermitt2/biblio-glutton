@@ -6,7 +6,6 @@ var client = require('./my_connection.js'),
     lzma = require('lzma-native'),
     es = require('event-stream'),
     async = require("async"),
-    sleep = require('sleep'),
     zlib = require('zlib'),
     process = require('process');
 
@@ -28,6 +27,12 @@ var indexed = 0;
 function incrementIndexed(amount) {
     indexed += amount;
     return indexed;
+};
+
+const round = (n) => Number.parseFloat(n).toFixed(2);
+
+const sleep = async (ms) => {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 function processAction(options) {
@@ -261,6 +266,7 @@ function filterType(doc) {
     if (doc.type === "component") {
         return true;
     }
+    // add other DOI type to be ignored here
     return false;
 }
 
@@ -268,12 +274,10 @@ async function index(options) {
     if (options.dumpType === 'directory') {
         const files = fs.readdirSync(options.dump)
         console.log(orange, 'total of '+files.length+' files to be indexed\n', reset);
-        //for (let index = 0; index < files.length; index++) {
-        //    let file = files[index];
         for (const file of files) {
-            console.log(file);
-            if (!file.endsWith(".gz")) {
-                console.log(orange, path.basename(file) + " is not an expected *.json.gz file, skipping...", reset);
+            //console.log(file);
+            if (!file.endsWith(".json.gz") && !file.endsWith(".json")) {
+                console.log(orange, path.basename(file) + " is not an expected *.json.gz or *.json file, skipping...", reset);
                 continue;
             }
             const file_path = path.join(options.dump, file);
@@ -323,7 +327,7 @@ function indexFile(options, dumpFile) {
                         console.log("Error occurred: " + error);
                     }
                 );
-        } else if (options.dumpType === 'directory') {
+        } else if (options.dumpType === 'directory' && dumpFile.endsWith(".gz")) {
             // note: it's not jsonl, we have a json on each line, but in a global array 
             readStream = fs.createReadStream(dumpFile)
                 .pipe(zlib.createGunzip())
@@ -333,8 +337,17 @@ function indexFile(options, dumpFile) {
                     function (error) {
                         console.log("Error occurred: " + error);
                     });
+        } else if (options.dumpType === 'directory' && dumpFile.endsWith(".json")) {
+            // note: it's not jsonl, we have a json on each line, but in a global array 
+            readStream = fs.createReadStream(dumpFile)
+                .pipe(es.split(",\n"))
+                .pipe(es.map(createBiblObj))
+                .on('error',
+                    function (error) {
+                        console.log("Error occurred: " + error);
+                    });
         } else {
-            console.log('Unsupported dump format: must be uncompressed json, compressed json file (xz, gzip) or directory of *.json.gz files.');
+            console.log('Unsupported dump format: must be uncompressed json, compressed json file (xz, gzip) or directory of *.json or *.json.gz files.');
         }
 
         if (readStream == null)
@@ -369,7 +382,7 @@ function indexFile(options, dumpFile) {
             i++;
 
             if (i % options.batchSize === 0) {
-                var previous_start = new Date();
+                const previous_start = new Date();
 
                 async.waterfall([
                     function (callback) {
@@ -379,16 +392,18 @@ function indexFile(options, dumpFile) {
                                 //requestTimeout: 200000,
                                 body: batch
                             },
-                            function (err, resp) { 
+                            async function (err, resp) { 
                                 if (err) { 
-                                    console.log(err.message);
+                                    console.error(err.message);
                                     throw err;
                                 } else if (resp.errors) {
-                                    console.log('Bulk is rejected... let\'s medidate 10 seconds about the illusion of time and consciousness');
+                                    console.log(orange, 
+                                        'Bulk is rejected... let\'s medidate 10 seconds about the illusion of time and consciousness', 
+                                        reset);
                                     // let's just wait and re-send the bulk request with increased
                                     // timeout to be on the safe side
-                                    console.log("Waiting for 10 seconds");
-                                    sleep.msleep(20000); // -> this is blocking... time for elasticsearch to do whatever it does
+                                    console.log(orange, "Waiting for 10 seconds", reset);
+                                    await sleep(20000); // -> this is blocking... time for elasticsearch to do whatever it does
                                     // and be in a better mood to accept this bulk
                                     client.bulk(
                                         {
@@ -407,7 +422,7 @@ function indexFile(options, dumpFile) {
                                                 // alternative would be to block again and resend
                                                 // propagate that in a next function of the async to have something less ugly?
                                             }
-                                            console.log("bulk is finally ingested...");
+                                            console.log(orange, "bulk is finally ingested...", reset);
                                             let theEnd = new Date();
                                             return callback(null, theEnd);
                                         });
@@ -418,11 +433,19 @@ function indexFile(options, dumpFile) {
                             });
                     },
                     function(end, callback) {
-                        let total_time = (end - start) / 1000;
+                        let total_time = round((end - start) / 1000);
                         let intermediate_time = (end - previous_start) / 1000;
 
-                        console.log('Loaded %s records in %d s (%d record/s)', incrementIndexed(options.batchSize), 
-                            total_time, options.batchSize / intermediate_time);
+                        let progressSnapshot = '\rLoaded ' + incrementIndexed(options.batchSize) + 
+                            ' records in ' + total_time + 
+                            's (' + round(options.batchSize / intermediate_time) + 
+                            ' records/s)';
+                        for(let i=progressSnapshot.length; i<65; i++){
+                            progressSnapshot += ' ';
+                        }
+
+                        process.stdout.write(progressSnapshot + path.basename(dumpFile) + '    ');
+
                         return callback(null, total_time);
                     }
                 ],
@@ -436,7 +459,8 @@ function indexFile(options, dumpFile) {
             }
         });
 
-        // When the stream ends write the remaining records
+        // When the stream ends write the remaining records, 
+        // TBD: call same methods/functions as in the above main waterfall loop
         readStream.on("end", function () {
             if (batch.length > 0) {
                 //console.log('Loaded %s records', batch.length);
@@ -451,7 +475,8 @@ function indexFile(options, dumpFile) {
                         console.log(resp.errors, 'Failed to build index');
                         throw resp;
                     } else {
-                        console.log('Completed indexing of CrossRef dump file, %d record', incrementIndexed(options.length));
+                        incrementIndexed(batch.length);
+                        //console.log('Completed indexing of the current CrossRef dump file, %d record', incrementIndexed(batch.length));
                         batch = [];
                         return resolve();
                     }
