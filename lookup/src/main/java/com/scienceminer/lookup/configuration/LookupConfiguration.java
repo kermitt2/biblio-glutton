@@ -144,7 +144,7 @@ public class LookupConfiguration extends Configuration {
         private String host;
         private String index;
 
-        private String type;
+        //private String type;
 
         public String getHost() {
             return host;
@@ -162,13 +162,13 @@ public class LookupConfiguration extends Configuration {
             this.index = index;
         }
 
-        public String getType() {
+        /*public String getType() {
             return type;
         }
 
         public void setType(String type) {
             this.type = type;
-        }
+        }*/
     }
 
     public String getCorsAllowedOrigins() {

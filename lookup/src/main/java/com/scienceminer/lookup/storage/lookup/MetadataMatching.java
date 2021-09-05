@@ -10,6 +10,8 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -82,18 +84,13 @@ public class MetadataMatching {
 
     public long getSize() {
         try {
-            SearchRequest searchRequest = new SearchRequest(configuration.getElastic().getIndex());
+            CountRequest countRequest = new CountRequest(); 
+            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder(); 
+            searchSourceBuilder.query(QueryBuilders.matchAllQuery()); 
+            countRequest.source(searchSourceBuilder);
 
-            SearchResponse response = esClient.searchSync(searchRequest, RequestOptions.DEFAULT);
-
-            SearchHits hits = response.getHits();
-            TotalHits totalHits = hits.getTotalHits();
-
-            // Since ElasticSearch 7, the hit number should be interpreted with am indicated relation, which
-            // means that this number can be an approximation. For biblio-glutton, it doesn't matter because
-            // the number of results of the blocking step is not exposed by the service. 
-
-            return totalHits.value;
+            CountResponse countResponse = esClient.count(countRequest, RequestOptions.DEFAULT);
+            return countResponse.getCount();
         } catch (IOException e) {
             LOGGER.error("Error while contacting Elasticsearch to fetch the size of "
                     + configuration.getElastic().getIndex() + " index.", e);

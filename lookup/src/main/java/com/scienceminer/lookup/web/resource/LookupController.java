@@ -92,15 +92,55 @@ public class LookupController {
 //        });
 
 
-        //DEFAULTS
-        if (postValidate == null) postValidate = Boolean.TRUE;
-        if (parseReference == null) parseReference = Boolean.TRUE;
+        // defaults
+        if (postValidate == null) 
+            postValidate = Boolean.TRUE;
+        if (parseReference == null) 
+            parseReference = Boolean.TRUE;
 
-        getByQuery(doi, pmid, pmc, pii, istexid, firstAuthor, atitle,
+        processByQuery(doi, pmid, pmc, pii, istexid, firstAuthor, atitle,
                 postValidate, jtitle, volume, firstPage, biblio, parseReference, asyncResponse);
     }
 
-    protected void getByQuery(
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Path("/")
+    public void postByQueryAsync(
+            @FormParam("doi") String doi,
+            @FormParam("pmid") String pmid,
+            @FormParam("pmc") String pmc,
+            @FormParam("pii") String pii,
+            @FormParam("istexid") String istexid,
+            @FormParam("firstAuthor") String firstAuthor,
+            @FormParam("atitle") String atitle,
+            @FormParam("postValidate") Boolean postValidate,
+            @FormParam("jtitle") String jtitle,
+            @FormParam("volume") String volume,
+            @FormParam("firstPage") String firstPage,
+            @FormParam("biblio") String biblio,
+            @FormParam("parseReference") Boolean parseReference,
+            @Suspended final AsyncResponse asyncResponse) {
+
+        asyncResponse.setTimeoutHandler(asyncResponse1 ->
+                asyncResponse1.resume(Response.status(Response.Status.REQUEST_TIMEOUT)
+                        .entity("Operation time out")
+                        .build()
+                )
+        );
+        asyncResponse.setTimeout(2, TimeUnit.MINUTES);
+
+        // defaults
+        if (postValidate == null) 
+            postValidate = Boolean.TRUE;
+        if (parseReference == null) 
+            parseReference = Boolean.TRUE;
+
+        processByQuery(doi, pmid, pmc, pii, istexid, firstAuthor, atitle,
+                postValidate, jtitle, volume, firstPage, biblio, parseReference, asyncResponse);
+    }
+
+    protected void processByQuery(
             String doi,
             String pmid,
             String pmc,
@@ -195,6 +235,8 @@ public class LookupController {
         }
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
+            areParametersEnoughToLookup = true;
+
             LOGGER.debug("Try to match with article title and first author name metadata");
             lookupEngine.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
@@ -276,6 +318,8 @@ public class LookupController {
         }
 
         if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
+            areParametersEnoughToLookup = true;
+
             LOGGER.debug("Try to match with journal title, journal volume, journal first page and first author name if available");
             lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocument -> {
                 if (matchingDocument.isException()) {
@@ -325,6 +369,8 @@ public class LookupController {
         }*/
 
         if (isNotBlank(biblio)) {
+            areParametersEnoughToLookup = true;
+
             LOGGER.debug("Match with biblio string");
             lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
                 if (matchingDocumentBiblio.isException()) {
@@ -403,7 +449,7 @@ public class LookupController {
         return lookupEngine.retrieveByIstexid(istexid, false, null, null);
     }
 
-    @POST
+    /*@POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.TEXT_PLAIN)
     @Path("/")
@@ -416,7 +462,7 @@ public class LookupController {
         }
 
         throw new ServiceException(400, "Missing or empty biblio parameter");
-    }
+    }*/
 
     protected void setLookupEngine(LookupEngine lookupEngine) {
         this.lookupEngine = lookupEngine;

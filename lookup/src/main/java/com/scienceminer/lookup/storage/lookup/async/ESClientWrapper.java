@@ -6,6 +6,8 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,13 +32,15 @@ public class ESClientWrapper {
                 new LinkedBlockingQueue<>(poolSize), (r, executor) -> {
             throw new ServiceException(503, "Rejected request, try later");
         });
-
     }
 
     public SearchResponse searchSync(final SearchRequest request, final RequestOptions options) throws IOException {
         return esClient.search(request, options);
     }
 
+    public CountResponse count(final CountRequest request, final RequestOptions options) throws IOException {
+        return esClient.count(request, options);
+    }
 
     public CompletableFuture<Void> searchAsync(final SearchRequest request, final RequestOptions options,
                                                BiConsumer<SearchResponse, Throwable> callback) {

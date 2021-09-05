@@ -108,7 +108,7 @@ public class LookupEngine {
     }
 
     /**
-     * Blocking by journal title, volume and first page
+     * Async blocking by journal title, volume and first page
      */
     public void retrieveByJournalMetadataAsync(String jtitle, 
                                                String volume, 
@@ -145,13 +145,15 @@ public class LookupEngine {
     }
 
     /**
-     * Async blocking by journal title, volume and first page
+     * Async blocking by full bibliographical reference string, with Grobid parsing for pairwise matching
      */
-    /*public void retrieveByJournalMetadataAsync(String jtitle, 
-                                               String volume, 
-                                               String firstPage, 
-                                               Consumer<MatchingDocument> callback) {
-        metadataMatching.retrieveByMetadataAsync(jtitle, volume, firstPage, matchingDocuments -> {
+    public void retrieveByBiblioAsync(String biblio, 
+                                      Boolean postValidate, 
+                                      final String firstAuthor, 
+                                      final String atitle, 
+                                      Boolean parseReference, 
+                                      Consumer<MatchingDocument> callback) {
+        metadataMatching.retrieveByBiblioAsync(biblio, matchingDocuments -> {
             if (matchingDocuments == null || matchingDocuments.size() == 0) {
                 callback.accept(new MatchingDocument(new NotFoundException("No matching document found")));
                 return;
@@ -159,30 +161,83 @@ public class LookupEngine {
 
             MatchingDocument resultDocument = matchingDocuments.get(0);
             if (!resultDocument.isException()) {
-                
-                List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(null, null, jtitle, 
-                    null, null, volume, null, firstPage, null, matchingDocuments);
+                //if ((isBlank(firstAuthor) || isBlank(atitle)) && parseReference) {
+                if (isBlank(firstAuthor) && parseReference) {
+                    try {
+                        grobidClient.ping();
+                        grobidClient.processCitation(biblio, "0", response -> {
 
-                resultDocument = rankedMatchingDocuments.get(0);
+                            // TBD: extract more metadata from Grobid result to improve the pairwise ranking
 
-                final String s = injectIdsByDoi(resultDocument.getJsonObject(), resultDocument.getDOI());
-                resultDocument.setFinalJsonObject(s);
-            }
+                            String firstAuthor1 = 
+                                isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph();
+                            String atitle1 = response.getAtitle();
+
+                            if (isBlank(firstAuthor1))
+                                firstAuthor1 = firstAuthor;
+                            if (isBlank(atitle1))
+                                atitle1 = atitle;
+
+                            List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle1, firstAuthor1, matchingDocuments);
+                            final MatchingDocument localResultDocument = rankedMatchingDocuments.get(0);
+
+                            if (postValidate != null && postValidate) {
+                                //no title and author, extract with grobid. if grobid unavailable... it will fail.
+                                if (!isBlank(firstAuthor1)) {
+
+                                    if (!areMetadataMatching(atitle1, firstAuthor1, localResultDocument, true)) {
+                                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                                        return;
+                                    }
+                                    final String s = injectIdsByDoi(localResultDocument.getJsonObject(), localResultDocument.getDOI());
+                                    localResultDocument.setFinalJsonObject(s);
+                                    callback.accept(localResultDocument);
+                                }
+                            }
+                        });
+                    } catch (Exception e) {
+                        LOGGER.warn("GROBID not available, no extra metadata available for pairwise ranking");
+                    }
+                }
+
+                // pairwise ranking with whatever is available
+                List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle, firstAuthor, matchingDocuments);
+                final MatchingDocument localResultDocument = rankedMatchingDocuments.get(0);
+
+                if (postValidate != null && postValidate) {
+                    if (!isBlank(firstAuthor)) {
+
+                        if (!areMetadataMatching(atitle, firstAuthor, localResultDocument, true)) {
+                            callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                            return;
+                        }
+                        final String s = injectIdsByDoi(localResultDocument.getJsonObject(), localResultDocument.getDOI());
+                        localResultDocument.setFinalJsonObject(s);
+                        callback.accept(localResultDocument);
+                    } else {
+                        // we cannot post validate
+                        callback.accept(new MatchingDocument(new NotFoundException("No metadata available for post-validation")));
+                        return;
+                    }
+                } else {
+                    final String s = injectIdsByDoi(localResultDocument.getJsonObject(), localResultDocument.getDOI());
+                    localResultDocument.setFinalJsonObject(s);
+                    callback.accept(localResultDocument);
+                }
+
+                resultDocument = localResultDocument;
+            } 
+
             callback.accept(resultDocument);
         });
-    }*/
+    }
 
     /**
-     * Async blocking by journal title, volume, first page and first author. 
-     * first author might be null, and then ignored when blocking. 
+     * Async blocking by full bibliographical reference string, without Grobid for pairwise matching, without validation
      */
-    public void retrieveByJournalMetadataAsync(String jtitle, 
-                                               String volume, 
-                                               String firstPage, 
-                                               String firstAuthor,
-                                               Consumer<MatchingDocument> callback) {
-        metadataMatching.retrieveByMetadataAsync(jtitle, volume, firstPage, firstAuthor, matchingDocuments -> {
-
+    public void retrieveByBiblioAsync(String biblio, 
+                                      Consumer<MatchingDocument> callback) {
+        metadataMatching.retrieveByBiblioAsync(biblio, matchingDocuments -> {
             if (matchingDocuments == null || matchingDocuments.size() == 0) {
                 callback.accept(new MatchingDocument(new NotFoundException("No matching document found")));
                 return;
@@ -190,17 +245,13 @@ public class LookupEngine {
 
             MatchingDocument resultDocument = matchingDocuments.get(0);
             if (!resultDocument.isException()) {
-                List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(null, firstAuthor, jtitle, 
-                    null, null, volume, null, firstPage, null, matchingDocuments);
-
-                resultDocument = rankedMatchingDocuments.get(0);
-
                 final String s = injectIdsByDoi(resultDocument.getJsonObject(), resultDocument.getDOI());
                 resultDocument.setFinalJsonObject(s);
             }
             callback.accept(resultDocument);
         });
     }
+
 
     public String retrieveByDoi(String doi, 
                                 Boolean postValidate, 
@@ -495,114 +546,6 @@ public class LookupEngine {
         String url = ISTEX_BASE + istexId + "/fulltext/pdf";
 
         return Pair.of(oaLink, url);
-    }
-
-    /**
-     * Async blocking by full bibliographical reference string, with Grobid parsing for pairwise matching
-     */
-    public void retrieveByBiblioAsync(String biblio, 
-                                      Boolean postValidate, 
-                                      final String firstAuthor, 
-                                      final String atitle, 
-                                      Boolean parseReference, 
-                                      Consumer<MatchingDocument> callback) {
-        metadataMatching.retrieveByBiblioAsync(biblio, matchingDocuments -> {
-            if (matchingDocuments == null || matchingDocuments.size() == 0) {
-                callback.accept(new MatchingDocument(new NotFoundException("No matching document found")));
-                return;
-            }
-
-            MatchingDocument resultDocument = matchingDocuments.get(0);
-            if (!resultDocument.isException()) {
-                //if ((isBlank(firstAuthor) || isBlank(atitle)) && parseReference) {
-                if (isBlank(firstAuthor) && parseReference) {
-                    try {
-                        grobidClient.ping();
-                        grobidClient.processCitation(biblio, "0", response -> {
-
-                            // TBD: extract more metadata from Grobid result to improve the pairwise ranking
-
-                            String firstAuthor1 = 
-                                isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph();
-                            String atitle1 = response.getAtitle();
-
-                            if (isBlank(firstAuthor1))
-                                firstAuthor1 = firstAuthor;
-                            if (isBlank(atitle1))
-                                atitle1 = atitle;
-
-                            List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle1, firstAuthor1, matchingDocuments);
-                            final MatchingDocument localResultDocument = rankedMatchingDocuments.get(0);
-
-                            if (postValidate != null && postValidate) {
-                                //no title and author, extract with grobid. if grobid unavailable... it will fail.
-                                if (!isBlank(firstAuthor1)) {
-
-                                    if (!areMetadataMatching(atitle1, firstAuthor1, localResultDocument, true)) {
-                                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
-                                        return;
-                                    }
-                                    final String s = injectIdsByDoi(localResultDocument.getJsonObject(), localResultDocument.getDOI());
-                                    localResultDocument.setFinalJsonObject(s);
-                                    callback.accept(localResultDocument);
-                                }
-                            }
-                        });
-                    } catch (Exception e) {
-                        LOGGER.warn("GROBID not available, no extra metadata available for pairwise ranking");
-                    }
-                }
-
-                // pairwise ranking with whatever is available
-                List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle, firstAuthor, matchingDocuments);
-                final MatchingDocument localResultDocument = rankedMatchingDocuments.get(0);
-
-                if (postValidate != null && postValidate) {
-                    if (!isBlank(firstAuthor)) {
-
-                        if (!areMetadataMatching(atitle, firstAuthor, localResultDocument, true)) {
-                            callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
-                            return;
-                        }
-                        final String s = injectIdsByDoi(localResultDocument.getJsonObject(), localResultDocument.getDOI());
-                        localResultDocument.setFinalJsonObject(s);
-                        callback.accept(localResultDocument);
-                    } else {
-                        // we cannot post validate
-                        callback.accept(new MatchingDocument(new NotFoundException("No metadata available for post-validation")));
-                        return;
-                    }
-                } else {
-                    final String s = injectIdsByDoi(localResultDocument.getJsonObject(), localResultDocument.getDOI());
-                    localResultDocument.setFinalJsonObject(s);
-                    callback.accept(localResultDocument);
-                }
-
-                resultDocument = localResultDocument;
-            } 
-
-            callback.accept(resultDocument);
-        });
-    }
-
-    /**
-     * Async blocking by full bibliographical reference string, without Grobid for pairwise matching
-     */
-    public void retrieveByBiblioAsync(String biblio, 
-                                      Consumer<MatchingDocument> callback) {
-        metadataMatching.retrieveByBiblioAsync(biblio, matchingDocuments -> {
-            if (matchingDocuments == null || matchingDocuments.size() == 0) {
-                callback.accept(new MatchingDocument(new NotFoundException("No matching document found")));
-                return;
-            }
-
-            MatchingDocument resultDocument = matchingDocuments.get(0);
-            if (!resultDocument.isException()) {
-                final String s = injectIdsByDoi(resultDocument.getJsonObject(), resultDocument.getDOI());
-                resultDocument.setFinalJsonObject(s);
-            }
-            callback.accept(resultDocument);
-        });
     }
 
     public String extractDOI(String input) {
