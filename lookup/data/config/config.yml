@@ -20,7 +20,6 @@ maxAcceptedRequests: 2048
 elastic:
   host: localhost:9200
   index: crossref
-  type: work
 
 corsAllowedOrigins: "*"
 corsAllowedMethods: "OPTIONS,GET,PUT,POST,DELETE,HEAD"
