@@ -9,6 +9,9 @@ ignoreCrossRefFields:
 # Loading batch size
 batchSize: 10000
 
+# max blocking size (number of candidates considered before pairwise matching)
+blockSize: 5
+
 # Grobid URL
 grobidPath: http://localhost:8070/api
 

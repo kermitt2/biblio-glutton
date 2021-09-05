@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.core.*;
@@ -59,7 +60,6 @@ public class MetadataMatching {
 
     private final String INDEX_FIELD_NAME_JSONDOC = "jsondoc";
 
-
     public MetadataMatching(LookupConfiguration configuration, MetadataLookup metadataLookup) {
         this.configuration = configuration;
 
@@ -89,6 +89,10 @@ public class MetadataMatching {
             SearchHits hits = response.getHits();
             TotalHits totalHits = hits.getTotalHits();
 
+            // Since ElasticSearch 7, the hit number should be interpreted with am indicated relation, which
+            // means that this number can be an approximation. For biblio-glutton, it doesn't matter because
+            // the number of results of the blocking step is not exposed by the service. 
+
             return totalHits.value;
         } catch (IOException e) {
             LOGGER.error("Error while contacting Elasticsearch to fetch the size of "
@@ -101,7 +105,7 @@ public class MetadataMatching {
     /**
      * Lookup by title, firstAuthor
      **/
-    public MatchingDocument retrieveByMetadata(String title, String firstAuthor) {
+    public List<MatchingDocument> retrieveByMetadata(String title, String firstAuthor) {
         validateInput(title, firstAuthor);
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
@@ -112,7 +116,7 @@ public class MetadataMatching {
     }
 
     public void retrieveByMetadataAsync(String title, String firstAuthor,
-                                        Consumer<MatchingDocument> callback) {
+                                        Consumer<List<MatchingDocument>> callback) {
         validateInput(title, firstAuthor);
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
@@ -131,7 +135,7 @@ public class MetadataMatching {
     /**
      * Lookup by journal title, journal abbreviated title, volume, first page
      **/
-    public MatchingDocument retrieveByMetadata(String title, String volume,
+    public List<MatchingDocument> retrieveByMetadata(String title, String volume,
                                                String firstPage) {
 
         validateInput(title, volume, firstPage);
@@ -143,7 +147,7 @@ public class MetadataMatching {
 
     public void retrieveByMetadataAsync(String title, String volume,
                                         String firstPage,
-                                        Consumer<MatchingDocument> callback) {
+                                        Consumer<List<MatchingDocument>> callback) {
 
         validateInput(title, volume, firstPage);
 
@@ -169,11 +173,10 @@ public class MetadataMatching {
         }
     }
 
-
     /**
      * Lookup by journal title, journal abbreviated title, volume, first page
      **/
-    public MatchingDocument retrieveByMetadata(String title, String volume,
+    public List<MatchingDocument> retrieveByMetadata(String title, String volume,
                                                String firstPage, String firstAuthor) {
 
         validateInput(title, volume, firstPage, firstAuthor);
@@ -194,7 +197,7 @@ public class MetadataMatching {
 
     public void retrieveByMetadataAsync(String title, String volume,
                                         String firstPage, String firstAuthor,
-                                        Consumer<MatchingDocument> callback) {
+                                        Consumer<List<MatchingDocument>> callback) {
 
         validateInput(title, volume, firstPage, firstAuthor);
 
@@ -212,7 +215,7 @@ public class MetadataMatching {
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
     }
 
-    public MatchingDocument retrieveByBiblio(String biblio) {
+    public List<MatchingDocument> retrieveByBiblio(String biblio) {
         if (isBlank(biblio)) {
             throw new ServiceException(400, "Supplied bibliographical string is empty.");
         }
@@ -222,7 +225,7 @@ public class MetadataMatching {
         return executeQuery(query);
     }
 
-    public void retrieveByBiblioAsync(String biblio, Consumer<MatchingDocument> callback) {
+    public void retrieveByBiblioAsync(String biblio, Consumer<List<MatchingDocument>> callback) {
         if (isBlank(biblio)) {
             throw new ServiceException(400, "Supplied bibliographical string is empty.");
         }
@@ -232,20 +235,25 @@ public class MetadataMatching {
         executeQueryAsync(query, callback);
     }
 
-    private MatchingDocument executeQuery(QueryBuilder query) {
+    private List<MatchingDocument> executeQuery(QueryBuilder query) {
         SearchRequest request = prepareQueryExecution(query);
-        final MatchingDocument matchingDocument;
+        final List<MatchingDocument> matchingDocuments;
         try {
             final SearchResponse searchResponse = esClient.searchSync(request, RequestOptions.DEFAULT);
 
-            matchingDocument = processResponse(searchResponse);
+            matchingDocuments = processResponse(searchResponse);
 
-            if (matchingDocument.isException()) {
-                if(matchingDocument.getException() instanceof NotFoundException) {
-                    throw (NotFoundException) matchingDocument.getException();
+            if (matchingDocuments.size() == 0) {
+                // It should not be the case, in case of search failure we have one MatchingDocument
+                // with an exception. We can consider this case as not found case
+                throw new NotFoundException("Cannot find records for the input query.");
+            }
+            else if (matchingDocuments.get(0).isException()) {
+                if(matchingDocuments.get(0).getException() instanceof NotFoundException) {
+                    throw (NotFoundException) matchingDocuments.get(0).getException();
                 }
 
-                throw (Exception) matchingDocument.getException();
+                throw (Exception) matchingDocuments.get(0).getException();
             }
         } catch (IOException e) {
             throw new ServiceException(500, "No response from Elasticsearch. ", e);
@@ -253,11 +261,10 @@ public class MetadataMatching {
             throw new ServiceException(500, "Elasticsearch server error. ", e);
         }
 
-        return matchingDocument;
+        return matchingDocuments;
     }
 
-
-    private void executeQueryAsync(QueryBuilder query, Consumer<MatchingDocument> callback) {
+    private void executeQueryAsync(QueryBuilder query, Consumer<List<MatchingDocument>> callback) {
         SearchRequest searchRequest = prepareQueryExecution(query);
         try {
             RequestOptions options = RequestOptions.DEFAULT;
@@ -267,11 +274,15 @@ public class MetadataMatching {
                 if (exception == null) {
                     callback.accept(processResponse(response));
                 } else {
-                    callback.accept(new MatchingDocument(exception));
+                    List<MatchingDocument> matchingDocuments = new ArrayList<>();
+                    matchingDocuments.add(new MatchingDocument(exception));
+                    callback.accept(matchingDocuments);
                 }
             });
         } catch (Exception e) {
-            callback.accept(new MatchingDocument(e));
+            List<MatchingDocument> matchingDocuments = new ArrayList<>();
+            matchingDocuments.add(new MatchingDocument(e));
+            callback.accept(matchingDocuments);
         }
     }
 
@@ -298,12 +309,14 @@ public class MetadataMatching {
         return searchRequest;
     }
 
-    private MatchingDocument processResponse(SearchResponse response) {
+    private List<MatchingDocument> processResponse(SearchResponse response) {
         SearchHits hits = response.getHits();
         Iterator<SearchHit> it = hits.iterator();
-        final MatchingDocument matchingDocument = new MatchingDocument();
+        final List<MatchingDocument> matchingDocuments = new ArrayList<>();
 
-        while (it.hasNext()) {
+        while (it.hasNext() && matchingDocuments.size() < configuration.getBlockSize()) {
+            MatchingDocument matchingDocument = new MatchingDocument();
+
             SearchHit hit = it.next();
 
             String DOI = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_DOI);
@@ -320,8 +333,8 @@ public class MetadataMatching {
             matchingDocument.setTitle(title);
             final String jsonObject = metadataLookup.retrieveJsonDocument(DOI);
             if (jsonObject == null) {
-                matchingDocument.setException(new NotFoundException("The index returned a result but the body cannot be fetched. Doi: " + DOI));
-                return matchingDocument;
+                LOGGER.warn("The search index returned a result but the corresponding entry cannot be fetched in the metadata db, DOI: " + DOI);
+                continue;
             }
             matchingDocument.setJsonObject(jsonObject);
 
@@ -347,12 +360,16 @@ public class MetadataMatching {
                 LOGGER.warn("Invalid JSON object", e);
             }
 
-
-            return matchingDocument;
+            matchingDocuments.add(matchingDocument);
         }
 
-        matchingDocument.setIsException(true);
-        matchingDocument.setException(new NotFoundException("Cannot find records for the input query."));
-        return matchingDocument;
+        if (matchingDocuments.size() == 0) {
+            MatchingDocument matchingDocument = new MatchingDocument();
+            matchingDocument.setIsException(true);
+            matchingDocument.setException(new NotFoundException("Cannot find records for the input query."));
+            matchingDocuments.add(matchingDocument);
+        }
+
+        return matchingDocuments;
     }
 }

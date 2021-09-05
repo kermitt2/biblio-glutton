@@ -19,6 +19,7 @@ import scala.Option;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.List;
 
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -31,7 +32,10 @@ public class LookupEngine {
     private MetadataLookup metadataLookup = null;
     private MetadataMatching metadataMatching = null;
     private PMIdsLookup pmidLookup = null;
+
+    // DOI matching regex from GROBID
     public static Pattern DOIPattern = Pattern.compile("\"DOI\"\\s?:\\s?\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
+    
     private GrobidClient grobidClient = null;
 
     private static String ISTEX_BASE = "https://api.istex.fr/document/";
@@ -47,84 +51,159 @@ public class LookupEngine {
         this.pmidLookup = new PMIdsLookup(storageFactory);
     }
 
+    public String retrieveByArticleMetadata(String title, 
+                                            String firstAuthor, 
+                                            Boolean postValidate) {
+        List<MatchingDocument> matchingDocuments = metadataMatching.retrieveByMetadata(title, firstAuthor);
+        List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(title, firstAuthor, matchingDocuments);
 
-    public String retrieveByArticleMetadata(String title, String firstAuthor, Boolean postValidate) {
-        MatchingDocument outputData = metadataMatching.retrieveByMetadata(title, firstAuthor);
         if (postValidate != null && postValidate) {
-            if (!areMetadataMatching(title, firstAuthor, outputData)) {
+            if (!areMetadataMatching(title, firstAuthor, rankedMatchingDocuments.get(0))) {
                 throw new NotFoundException("Best bibliographical record did not passed the post-validation");
             }
         }
-        return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
+        return injectIdsByDoi(rankedMatchingDocuments.get(0).getJsonObject(), rankedMatchingDocuments.get(0).getDOI());
     }
 
-    public void retrieveByArticleMetadataAsync(String title, String firstAuthor, Boolean postValidate, Consumer<MatchingDocument> callback) {
-        metadataMatching.retrieveByMetadataAsync(title, firstAuthor, matchingDocument -> {
-            if (!matchingDocument.isException()) {
-                if (postValidate != null && postValidate) {
-                    if (!areMetadataMatching(title, firstAuthor, matchingDocument)) {
-                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
-                        return;
-                    }
-                }
-
-                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
-                matchingDocument.setFinalJsonObject(s);
-            }
-            callback.accept(matchingDocument);
-        });
-    }
-
-
-    public String retrieveByJournalMetadata(String title, String volume, String firstPage) {
-        MatchingDocument outputData = metadataMatching.retrieveByMetadata(title, volume, firstPage);
-        return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
-    }
-
-    public void retrieveByJournalMetadataAsync(String jtitle, String volume, String firstPage, String atitle, String firstAuthor, Boolean postValidate, Consumer<MatchingDocument> callback) {
-        metadataMatching.retrieveByMetadataAsync(jtitle, volume, firstPage, matchingDocument -> {
-            if (!matchingDocument.isException()) {
-                if (postValidate != null && postValidate) {
-                    if (!areMetadataMatching(atitle, firstAuthor, matchingDocument, true)) {
-                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
-                        return;
-                    }
-                }
-
-                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
-                matchingDocument.setFinalJsonObject(s);
-            }
-            callback.accept(matchingDocument);
-        });
-    }
-
-    public void retrieveByJournalMetadataAsync(String jtitle, String volume, String firstPage, Consumer<MatchingDocument> callback) {
-        metadataMatching.retrieveByMetadataAsync(jtitle, volume, firstPage, matchingDocument -> {
-            if (!matchingDocument.isException()) {
-                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
-                matchingDocument.setFinalJsonObject(s);
-            }
-            callback.accept(matchingDocument);
-        });
-    }
-
-    public String retrieveByJournalMetadata(String title, String volume, String firstPage, String firstAuthor) {
-        MatchingDocument outputData = metadataMatching.retrieveByMetadata(title, volume, firstPage, firstAuthor);
-        return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
-    }
-
-    public void retrieveByJournalMetadataAsync(String title, String volume, String firstPage, String firstAuthor,
+    public void retrieveByArticleMetadataAsync(String title, 
+                                               String firstAuthor, 
+                                               Boolean postValidate, 
                                                Consumer<MatchingDocument> callback) {
-        metadataMatching.retrieveByMetadataAsync(title, volume, firstPage, firstAuthor, matchingDocument -> {
-            if (!matchingDocument.isException()) {
-                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
-                matchingDocument.setFinalJsonObject(s);
+        metadataMatching.retrieveByMetadataAsync(title, firstAuthor, matchingDocuments -> {
+            if (matchingDocuments == null || matchingDocuments.size() == 0) {
+                callback.accept(new MatchingDocument(new NotFoundException("No matching document found")));
+                return;
             }
-            callback.accept(matchingDocument);
+
+            MatchingDocument resultDocument = matchingDocuments.get(0);
+            if (!resultDocument.isException()) {
+
+                List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(title, firstAuthor, matchingDocuments);
+
+                if (postValidate != null && postValidate) {
+                    if (!areMetadataMatching(title, firstAuthor, rankedMatchingDocuments.get(0))) {
+                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                        return;
+                    }
+                }
+
+                resultDocument = rankedMatchingDocuments.get(0);
+                final String s = injectIdsByDoi(resultDocument.getJsonObject(), resultDocument.getDOI());
+                resultDocument.setFinalJsonObject(s);
+            }
+            callback.accept(resultDocument);
         });
     }
 
-    public String retrieveByDoi(String doi, Boolean postValidate, String firstAuthor, String atitle) {
+    /*public String retrieveByJournalMetadata(String title, String volume, String firstPage) {
+        List<MatchingDocument> matchingDocuments = metadataMatching.retrieveByMetadata(title, volume, firstPage);
+        if (matchingDocuments == null || matchingDocuments.size() == 0) {
+            return new MatchingDocument(new NotFoundException("No matching document found"));
+        }
+
+        List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(title, null, matchingDocuments);
+        return injectIdsByDoi(rankedMatchingDocuments.get(0).getJsonObject(), rankedMatchingDocuments.get(0).getDOI());
+    }*/
+
+    public void retrieveByJournalMetadataAsync(String jtitle, 
+                                               String volume, 
+                                               String firstPage,
+                                               String atitle, 
+                                               String firstAuthor, 
+                                               Boolean postValidate, 
+                                               Consumer<MatchingDocument> callback) {
+        metadataMatching.retrieveByMetadataAsync(jtitle, volume, firstPage, matchingDocuments -> {
+            if (matchingDocuments == null || matchingDocuments.size() == 0) {
+                callback.accept(new MatchingDocument(new NotFoundException("No matching document found")));
+                return;
+            }
+
+            MatchingDocument resultDocument = matchingDocuments.get(0);
+            if (!resultDocument.isException()) {
+                
+                List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle, firstAuthor, matchingDocuments);
+
+                if (postValidate != null && postValidate) {
+                    if (!areMetadataMatching(atitle, firstAuthor, rankedMatchingDocuments.get(0), true)) {
+                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                        return;
+                    }
+                }
+
+                resultDocument = rankedMatchingDocuments.get(0);
+                final String s = injectIdsByDoi(resultDocument.getJsonObject(), resultDocument.getDOI());
+                resultDocument.setFinalJsonObject(s);
+            }
+            callback.accept(resultDocument);
+        });
+    }
+
+    public void retrieveByJournalMetadataAsync(String jtitle, 
+                                               String volume, 
+                                               String firstPage, 
+                                               Consumer<MatchingDocument> callback) {
+        metadataMatching.retrieveByMetadataAsync(jtitle, volume, firstPage, matchingDocuments -> {
+            if (matchingDocuments == null || matchingDocuments.size() == 0) {
+                callback.accept(new MatchingDocument(new NotFoundException("No matching document found")));
+                return;
+            }
+
+            MatchingDocument resultDocument = matchingDocuments.get(0);
+            if (!resultDocument.isException()) {
+                
+                List<MatchingDocument> rankedMatchingDocuments = matchingDocuments;
+                    //pairwiseRanking(title, firstAuthor, matchingDocuments);
+                resultDocument = rankedMatchingDocuments.get(0);
+
+                final String s = injectIdsByDoi(resultDocument.getJsonObject(), resultDocument.getDOI());
+                resultDocument.setFinalJsonObject(s);
+            }
+            callback.accept(resultDocument);
+        });
+    }
+
+    /*public String retrieveByJournalMetadata(String title, 
+                                            String volume, 
+                                            String firstPage, 
+                                            String firstAuthor) {
+        List<MatchingDocument> matchingDocuments = metadataMatching.retrieveByMetadata(title, volume, firstPage, firstAuthor);
+
+        if (matchingDocuments == null || matchingDocuments.size() == 0) {
+            return new MatchingDocument(new NotFoundException("No matching document found"));
+        }
+
+        List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(title, firstAuthor, matchingDocuments);
+        return injectIdsByDoi(rankedMatchingDocuments.get(0).getJsonObject(), rankedMatchingDocuments.get(0).getDOI());
+    }*/
+
+    public void retrieveByJournalMetadataAsync(String title, 
+                                               String volume, 
+                                               String firstPage, 
+                                               String firstAuthor,
+                                               Consumer<MatchingDocument> callback) {
+        metadataMatching.retrieveByMetadataAsync(title, volume, firstPage, firstAuthor, matchingDocuments -> {
+
+            if (matchingDocuments == null || matchingDocuments.size() == 0) {
+                callback.accept(new MatchingDocument(new NotFoundException("No matching document found")));
+                return;
+            }
+
+            MatchingDocument resultDocument = matchingDocuments.get(0);
+            if (!resultDocument.isException()) {
+                List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(title, firstAuthor, matchingDocuments);
+                resultDocument = rankedMatchingDocuments.get(0);
+
+                final String s = injectIdsByDoi(resultDocument.getJsonObject(), resultDocument.getDOI());
+                resultDocument.setFinalJsonObject(s);
+            }
+            callback.accept(resultDocument);
+        });
+    }
+
+    public String retrieveByDoi(String doi, 
+                                Boolean postValidate, 
+                                String firstAuthor, 
+                                String atitle) {
         MatchingDocument outputData = metadataLookup.retrieveByMetadata(doi);
         outputData = validateJsonBody(postValidate, firstAuthor, atitle, outputData);
 
@@ -231,7 +310,6 @@ public class LookupEngine {
 
         throw new NotFoundException("Cannot find bibliographical record by PII " + pii);
     }
-
 
     // Intermediate lookups
 
@@ -379,14 +457,42 @@ public class LookupEngine {
         return Pair.of(oaLink, url);
     }
 
-    public String retrieveByBiblio(String biblio) {
-        final MatchingDocument outputData = metadataMatching.retrieveByBiblio(biblio);
-        return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
-    }
+    /*public String retrieveByBiblio(String biblio) {
+        List<MatchingDocument> matchingDocuments = metadataMatching.retrieveByBiblio(biblio);
 
-    public void retrieveByBiblioAsync(String biblio, Boolean postValidate, String firstAuthor, String title, Boolean parseReference, Consumer<MatchingDocument> callback) {
-        metadataMatching.retrieveByBiblioAsync(biblio, matchingDocument -> {
-            if (!matchingDocument.isException()) {
+        if (matchingDocuments == null || matchingDocuments.size() == 0) {
+            return new MatchingDocument(new NotFoundException("No matching document found"));
+        }
+
+        MatchingDocument resultDocument = matchingDocuments.get(0);
+        if (!resultDocument.isException()) {
+            List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(title, firstAuthor, matchingDocuments);
+            resultDocument = rankedMatchingDocuments.get(0);
+        }
+
+        return injectIdsByDoi(resultDocument.getJsonObject(), resultDocument.getDOI());
+    }*/
+
+    /**
+     * Blocking by full bibliographical reference string, with Grobid for pairwise matching
+     */
+    public void retrieveByBiblioAsync(String biblio, 
+                                      Boolean postValidate, 
+                                      String firstAuthor, 
+                                      String title, 
+                                      Boolean parseReference, 
+                                      Consumer<MatchingDocument> callback) {
+        metadataMatching.retrieveByBiblioAsync(biblio, matchingDocuments -> {
+            if (matchingDocuments == null || matchingDocuments.size() == 0) {
+                callback.accept(new MatchingDocument(new NotFoundException("No matching document found")));
+                return;
+            }
+
+            MatchingDocument resultDocument = matchingDocuments.get(0);
+            if (!resultDocument.isException()) {
+                List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(title, firstAuthor, matchingDocuments);
+                final MatchingDocument localResultDocument = rankedMatchingDocuments.get(0);
+
                 if (postValidate != null && postValidate) {
                     //no title and author, extract with grobid. if grobid unavailable... it will fail.
                     if (isBlank(firstAuthor) && parseReference) {
@@ -394,52 +500,61 @@ public class LookupEngine {
                             grobidClient.ping();
                             grobidClient.processCitation(biblio, "0", response -> {
                                 final String firstAuthor1 = isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph();
-                                if (!areMetadataMatching(response.getAtitle(), firstAuthor1, matchingDocument, true)) {
+                                if (!areMetadataMatching(response.getAtitle(), firstAuthor1, localResultDocument, true)) {
                                     callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
                                     return;
                                 }
-                                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
-                                matchingDocument.setFinalJsonObject(s);
-                                callback.accept(matchingDocument);
+                                final String s = injectIdsByDoi(localResultDocument.getJsonObject(), localResultDocument.getDOI());
+                                localResultDocument.setFinalJsonObject(s);
+                                callback.accept(localResultDocument);
                             });
                         } catch (Exception e) {
                             callback.accept(new MatchingDocument(new NotFoundException("Post-validation not possible, no title/first author provided for validation and " +
                                     "GROBID is not available.", e)));
                         }
                     } else {
-                        if (!areMetadataMatching(title, firstAuthor, matchingDocument, true)) {
+                        if (!areMetadataMatching(title, firstAuthor, localResultDocument, true)) {
                             callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
                             return;
                         }
-                        final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
-                        matchingDocument.setFinalJsonObject(s);
-                        callback.accept(matchingDocument);
+                        final String s = injectIdsByDoi(localResultDocument.getJsonObject(), localResultDocument.getDOI());
+                        localResultDocument.setFinalJsonObject(s);
+                        callback.accept(localResultDocument);
                     }
                 } else {
-                    final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
-                    matchingDocument.setFinalJsonObject(s);
-                    callback.accept(matchingDocument);
+                    final String s = injectIdsByDoi(localResultDocument.getJsonObject(), localResultDocument.getDOI());
+                    localResultDocument.setFinalJsonObject(s);
+                    callback.accept(localResultDocument);
                 }
-            } else {
-                // got an exception; propagate it
-                callback.accept(matchingDocument);
-            }
+
+                resultDocument = localResultDocument;
+            } 
+
+            callback.accept(resultDocument);
         });
     }
 
-    public void retrieveByBiblioAsync(String biblio, Consumer<MatchingDocument> callback) {
-        metadataMatching.retrieveByBiblioAsync(biblio, matchingDocument -> {
-            if (!matchingDocument.isException()) {
-                final String s = injectIdsByDoi(matchingDocument.getJsonObject(), matchingDocument.getDOI());
-                matchingDocument.setFinalJsonObject(s);
+    /**
+     * Blocking by full bibliographical reference string, without Grobid for pairwise matching
+     */
+    public void retrieveByBiblioAsync(String biblio, 
+                                      Consumer<MatchingDocument> callback) {
+        metadataMatching.retrieveByBiblioAsync(biblio, matchingDocuments -> {
+            if (matchingDocuments == null || matchingDocuments.size() == 0) {
+                callback.accept(new MatchingDocument(new NotFoundException("No matching document found")));
+                return;
             }
-            callback.accept(matchingDocument);
+
+            MatchingDocument resultDocument = matchingDocuments.get(0);
+            if (!resultDocument.isException()) {
+                final String s = injectIdsByDoi(resultDocument.getJsonObject(), resultDocument.getDOI());
+                resultDocument.setFinalJsonObject(s);
+            }
+            callback.accept(resultDocument);
         });
     }
 
     public String fetchDOI(String input) {
-        //From grobid
-//        Pattern DOIPattern = Pattern.compile("(10\\.\\d{4,5}\\/[\\S]+[^;,.\\s])");
 
         Matcher doiMatcher = DOIPattern.matcher(input);
         while (doiMatcher.find()) {
@@ -451,15 +566,20 @@ public class LookupEngine {
         return null;
     }
 
+    List<MatchingDocument> pairwiseRanking(String title, String firstAuthor, List<MatchingDocument> matchingDocuments) {
+        // TBD :)
+
+        List<MatchingDocument> rankedMatchingDocuments = matchingDocuments;
+
+        return matchingDocuments;
+    }
+
     /**
      * Methods borrowed from GROBID Consolidation.java
      */
 
     /**
-     * The bibliographical matching service is a search API, and thus returns
-     * many false positives. It is necessary to validate return results
-     * against the (incomplete) source bibliographic item to block
-     * inconsistent results.
+     * Introduce a minimum matching threshold for key metadata.
      */
     private boolean areMetadataMatching(String title, String firstAuthor, MatchingDocument result, boolean ignoreTitleIfNotPresent) {
         boolean valid = true;
@@ -485,7 +605,6 @@ public class LookupEngine {
     private boolean areMetadataMatching(String title, String firstAuthor, MatchingDocument result) {
         return areMetadataMatching(title, firstAuthor, result, false);
     }
-
 
     private double ratcliffObershelpDistance(String string1, String string2, boolean caseDependent) {
         if (StringUtils.isBlank(string1) || StringUtils.isBlank(string2))

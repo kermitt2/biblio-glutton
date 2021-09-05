@@ -10,7 +10,9 @@ import java.util.List;
 
 public class LookupConfiguration extends Configuration {
 
-    private int batchSize;
+    private int batchSize = 10000;
+
+    private int blockSize = 0;
 
     private String storage;
 
@@ -80,6 +82,14 @@ public class LookupConfiguration extends Configuration {
 
     public void setBatchSize(int batchSize) {
         this.batchSize = batchSize;
+    }
+
+    public int getBlockSize() {
+        return blockSize;
+    }
+
+    public void setBlockSize(int blockSize) {
+        this.blockSize = blockSize;
     }
 
     public List<String> getIgnoreCrossRefFields() {
