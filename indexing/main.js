@@ -1,13 +1,14 @@
 'use strict';
 
-var client = require('./my_connection.js'),
+var elasticsearch = require('@elastic/elasticsearch'),
     fs = require('fs'),
     path = require('path'),
     lzma = require('lzma-native'),
     es = require('event-stream'),
     async = require("async"),
     zlib = require('zlib'),
-    process = require('process');
+    process = require('process'),
+    yaml = require('js-yaml');
 
 // for making console output less boring
 const green = '\x1b[32m';
@@ -34,6 +35,10 @@ const round = (n) => Number.parseFloat(n).toFixed(2);
 const sleep = async (ms) => {
     return new Promise((resolve) => setTimeout(resolve, ms));
 };
+
+var client;
+
+module.exports = client;
 
 function processAction(options) {
     if (options.action === "health") {
@@ -139,8 +144,18 @@ function createBiblObj(data, cb) {
 
     // - Main fields (in the mapping)
     obj.title = data.title;
-    obj.title = obj.title.replace("\n", " ");
-    obj.title = obj.title.replace("( )+", " ");
+    // normally it's an array of string
+    if (typeof obj.title === 'string') {
+        obj.title = obj.title.replace("\n", " ");
+        obj.title = obj.title.replace("( )+", " ");
+        obj.title = [ obj.title ];
+    } else {
+        // it's an array
+        for(var pos in obj.title) {
+            obj.title[pos] = obj.title[pos].replace("\n", " ");
+            obj.title[pos] = obj.title[pos].replace("( )+", " ");
+        }
+    }
 
     obj.DOI = data.DOI;
 
@@ -525,10 +540,27 @@ function init() {
     var options = new Object();
 
     // first get the config
-    const config = require('./config.json');
-    options.indexName = config.indexName;
-    options.docType = config.docType;
-    options.batchSize = config.batchSize;
+    try {
+        let config = yaml.load(fs.readFileSync('../config/glutton.yml', 'utf8'));
+        options.indexName = config['elastic']['index'];
+        options.batchSize = config['indexBatchSize'];
+        options.elastic_host = config['elastic']['host'];
+        if (!options.elastic_host.startsWith("http"))
+            options.elastic_host = "http://" + options.elastic_host;
+    } catch (e) {
+        console.error("the yaml configuration file could not be read, please check: ../config/glutton.yml");
+    }
+
+    client = new elasticsearch.Client( {
+        node: options.elastic_host,
+        keepAlive: false,
+        log: "error",
+        requestTimeout: 1000000,  //to give more time for indexing
+        sniffOnStart: true       //discover the rest of the cluster at startup
+        // sniffOnConnectionFault: true,
+        // sniffInterval: 300,
+        //suggestCompression: true
+    });
 
     options.action = "health";
     var attribute; // name of the passed parameter

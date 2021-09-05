@@ -2,7 +2,7 @@
 
 ## Build
 
-You need first to install and start ElasticSearch, version `7.*`. Replace placeholder in the file `my_connection.js` to set the host name and port of the Elasticsearch server. 
+You need first to install and start ElasticSearch, version `7.*`. Edit the project configuration file `biblio-glutton/config/glutton.yml` to indicate the host name and port of the Elasticsearch server. 
 
 Install the present module:
 
@@ -10,7 +10,12 @@ Install the present module:
 
 ## Requirements
 
-- elasticsearch
+- @elastic/elasticsearch
+- @types/gzip-js
+- event-stream
+- lzma-native 
+- async
+- js-yaml
 
 ## Usage 
 
@@ -40,9 +45,7 @@ node main health
 
 ## Settings
 
-Default connection parameters can be found in the file `indexing/my_connection.js` (ElaticSearch node and port information).
-
-In `indexing/config.json`, it is possible to specify the name of the index and the batch size of the bulk indexing. 
+Default connection parameters can be found in the file `biblio-glutton/config/glutton.yml` (ElaticSearch node and port information). In this configuration file, it is possible to specify the name of the index ('default `crossref`) and the batch size of the bulk indexing. 
 
 ## License
 

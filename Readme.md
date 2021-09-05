@@ -92,7 +92,7 @@ Once everything has booted up, biblio-glutton will be running at http://localhos
 
 To load data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. For example, this command will load Crossref data (as described in more detail [below](https://github.com/kermitt2/biblio-glutton#resources)):
 
-    $ docker-compose run biblio java -jar lib/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input ../../data/crossref-works.2018-09-05.json.xz data/config/config.yml
+    $ docker-compose run biblio java -jar lib/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input ../../data/crossref-works.2018-09-05.json.xz config/glutton.yml
 
 You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources). 
 
@@ -357,11 +357,11 @@ Note: see bellow how to create this mapping file `istexIds.all.gz`.
 
 Elasticsearch `7.*` is required. `node.js` version 10 or more should work fine. 
 
-A node.js utility under the subdirectory `indexing/` is used to build the Elasticsearch index. It will take a couple of hours for the >110M crossref entries.
+A node.js utility under the subdirectory `indexing/` is used to build the Elasticsearch index. It will take a couple of hours for the >115M crossref entries (around 6 hours) and the index will take around 22GB of space.
 
 #### Install and configure
 
-You need first to install and start ElasticSearch, version `7.*`. Replace placeholder in the file `my_connection.js` to set the host name and port of the Elasticsearch server. 
+You need first to install and start ElasticSearch, version `7.*`. Edit the project configuration file `biblio-glutton/config/glutton.yml` to indicate the host name and port of the Elasticsearch server. In this configuration file, it is possible to specify the name of the index ('default `crossref`) and the batch size of the bulk indexing. 
 
 Install the node.js module:
 
@@ -390,7 +390,7 @@ Example with GreeneLab/Internet Archive dump file:
 node main -dump ~/tmp/crossref-works.2019-09-09.json.xz index
 ```
 
-Note that launching the above command will fully re-index the data, deleting existing index. The default name of the index is `crossref`, but this can be changed via the config file `indexing/config.json`.
+Note that launching the above command will fully re-index the data, deleting existing index. The default name of the index is `crossref`, but this can be changed via the global config file `biblio-glutton/config/glutton.yml`.
 
 For getting health check information about the selected ElasticSearch cluster:
 
