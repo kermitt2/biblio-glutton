@@ -1,9 +1,8 @@
 package com.scienceminer.lookup.web;
 
-
 import com.google.common.collect.Lists;
 import com.google.inject.Module;
-import com.hubspot.dropwizard.guicier.GuiceBundle;
+
 import com.scienceminer.lookup.command.LoadCrossrefCommand;
 import com.scienceminer.lookup.command.LoadIstexIdsCommand;
 import com.scienceminer.lookup.command.LoadPMIDCommand;
@@ -14,11 +13,20 @@ import com.scienceminer.lookup.web.module.LookupServiceModule;
 import com.scienceminer.lookup.web.module.NotFoundExceptionMapper;
 import com.scienceminer.lookup.web.module.ServiceExceptionMapper;
 import com.scienceminer.lookup.web.module.ServiceOverloadedExceptionMapper;
+
 import io.dropwizard.Application;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import com.hubspot.dropwizard.guicier.GuiceBundle;
 
+import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.eclipse.jetty.servlets.QoSFilter;
+
+import javax.servlet.DispatcherType;
+import javax.servlet.FilterRegistration;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 public final class LookupServiceApplication extends Application<LookupConfiguration> {
@@ -32,6 +40,26 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
 
     @Override
     public void run(LookupConfiguration configuration, Environment environment) throws Exception {
+        String allowedOrigins = configuration.getCorsAllowedOrigins();
+        String allowedMethods = configuration.getCorsAllowedMethods();
+        String allowedHeaders = configuration.getCorsAllowedHeaders();
+
+        // Enable CORS headers
+        final FilterRegistration.Dynamic cors =
+            environment.servlets().addFilter("CORS", CrossOriginFilter.class);
+
+        // Configure CORS parameters
+        cors.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, allowedOrigins);
+        cors.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, allowedMethods);
+        cors.setInitParameter(CrossOriginFilter.ALLOWED_HEADERS_PARAM, allowedHeaders);
+
+        // Add URL mapping
+        cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
+
+        // Enable QoS filter
+        final FilterRegistration.Dynamic qos = environment.servlets().addFilter("QOS", QoSFilter.class);
+        qos.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
+        qos.setInitParameter("maxRequests", String.valueOf(configuration.getMaxAcceptedRequests()));
 
         environment.jersey().setUrlPattern(RESOURCES + "/*");
         environment.jersey().register(new ServiceExceptionMapper());
@@ -45,7 +73,6 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
     private List<? extends Module> getGuiceModules() {
         return Lists.newArrayList(new LookupServiceModule());
     }
-
 
     @Override
     public void initialize(Bootstrap<LookupConfiguration> bootstrap) {

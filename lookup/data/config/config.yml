@@ -12,7 +12,6 @@ batchSize: 10000
 # Grobid URL
 grobidPath: http://localhost:8070/api
 
-# when set to -1 it's using the number of processors available to the machine
 maxAcceptedRequests: 2048
 
 elastic:
@@ -20,15 +19,11 @@ elastic:
   index: crossref
   type: work
 
-#httpClient:
-#  timeout: 500ms
-#  connectionTimeout: 500ms
-#  timeToLive: 1h
-#  cookiesEnabled: false
-#  maxConnections: 1024
-#  maxConnectionsPerRoute: 1024
-#  keepAlive: 0ms
-#  retries: 0
+corsAllowedOrigins: "*"
+corsAllowedMethods: "OPTIONS,GET,PUT,POST,DELETE,HEAD"
+corsAllowedHeaders: "X-Requested-With,Content-Type,Accept,Origin"
+
+timeZone: UTC
 
 server:
   type: custom

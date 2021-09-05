@@ -36,6 +36,16 @@ public class LookupConfiguration extends Configuration {
         this.httpClient = httpClient;
     }
 
+    // CORS
+    @JsonProperty
+    private String corsAllowedOrigins = "*";
+
+    @JsonProperty
+    private String corsAllowedMethods = "OPTIONS,GET,PUT,POST,DELETE,HEAD";
+
+    @JsonProperty
+    private String corsAllowedHeaders = "X-Requested-With,Content-Type,Accept,Origin";
+
     private List<String> ignoreCrossRefFields;
 
     private int maxAcceptedRequests;
@@ -149,6 +159,29 @@ public class LookupConfiguration extends Configuration {
         public void setType(String type) {
             this.type = type;
         }
+    }
 
+    public String getCorsAllowedOrigins() {
+        return corsAllowedOrigins;
+    }
+
+    public void setCorsAllowedOrigins(String corsAllowedOrigins) {
+        this.corsAllowedOrigins = corsAllowedOrigins;
+    }
+
+    public String getCorsAllowedMethods() {
+        return corsAllowedMethods;
+    }
+
+    public void setCorsAllowedMethods(String corsAllowedMethods) {
+        this.corsAllowedMethods = corsAllowedMethods;
+    }
+
+    public String getCorsAllowedHeaders() {
+        return corsAllowedHeaders;
+    }
+
+    public void setCorsAllowedHeaders(String corsAllowedHeaders) {
+        this.corsAllowedHeaders = corsAllowedHeaders;
     }
 }
