@@ -10,7 +10,7 @@ import java.util.List;
 
 public class LookupConfiguration extends Configuration {
 
-    private int batchSize = 10000;
+    private int loadingBatchSize = 10000;
 
     private int blockSize = 0;
 
@@ -76,12 +76,12 @@ public class LookupConfiguration extends Configuration {
         return elastic;
     }
 
-    public int getBatchSize() {
-        return batchSize;
+    public int getLoadingBatchSize() {
+        return loadingBatchSize;
     }
 
-    public void setBatchSize(int batchSize) {
-        this.batchSize = batchSize;
+    public void setLoadingBatchSize(int loadingBatchSize) {
+        this.loadingBatchSize = loadingBatchSize;
     }
 
     public int getBlockSize() {

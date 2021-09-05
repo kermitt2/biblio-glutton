@@ -37,11 +37,11 @@ repositories {
 }
 
 sourceSets.main.resources {
-    srcDirs = ["src/main/resources", "data/config"];
+    srcDirs = ["src/main/resources"];
 }
 
 processResources {
-    filesMatching('**/*.config.yml') {
+    filesMatching('../config/glutton.yml') {
         filter {
             it.replace('project.version', project.property('version_placeholder'))
         }
@@ -93,11 +93,11 @@ dependencies {
 
 distributions {
     shadow {
-        contents {
+        /*contents {
             from(new File(rootProject.rootDir, "data/config")) {
                 into "data/config"
             }
-        }
+        }*/
     }
 }
 

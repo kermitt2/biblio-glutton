@@ -51,7 +51,7 @@ public class IstexIdsLookup {
 
     public IstexIdsLookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
-        batchSize = storageEnvFactory.getConfiguration().getBatchSize();
+        batchSize = storageEnvFactory.getConfiguration().getLoadingBatchSize();
 
         dbDoiToIds = this.environment.openDbi(NAME_DOI2IDS, DbiFlags.MDB_CREATE);
         dbIstexToIds = this.environment.openDbi(NAME_ISTEX2IDS, DbiFlags.MDB_CREATE);

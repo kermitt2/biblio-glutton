@@ -135,44 +135,6 @@ public class MetadataMatching {
         }
     }
 
-    /**
-     * Boolean search by journal title or abbreviated journal title, volume and first page
-     **/
-    /*public List<MatchingDocument> retrieveByMetadata(String jtitle, 
-                                                     String volume,
-                                                     String firstPage) {
-
-        validateInput(jtitle, volume, firstPage);
-
-        BoolQueryBuilder query = getQueryBuilderJournal(jtitle, volume, firstPage, null);
-
-        return executeQuery(query);
-    }*/
-
-    /**
-     * Async boolean search by journal title or abbreviated journal title, volume and first page
-     **/
-    /*public void retrieveByMetadataAsync(String jtitle, 
-                                        String volume,
-                                        String firstPage,
-                                        Consumer<List<MatchingDocument>> callback) {
-
-        validateInput(jtitle, volume, firstPage);
-
-        BoolQueryBuilder query = getQueryBuilderJournal(jtitle, volume, firstPage, null);
-
-        executeQueryAsync(query, callback);
-    }*/
-
-    /*private BoolQueryBuilder getQueryBuilderJournal(String jtitle, String volume, String firstPage) {
-
-        return QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, jtitle))
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, jtitle))
-                .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
-                .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
-    }*/
-
     private void validateInput(String title, String volume, String firstPage) {
         if (isBlank(title)
                 || isBlank(volume)
@@ -213,34 +175,21 @@ public class MetadataMatching {
         executeQueryAsync(query, callback);
     }
 
-    /*private void validateInput(String jtitle, String volume, String firstPage, String firstAuthor) {
-        if (isBlank(jtitle)
-                || isBlank(volume)
-                || isBlank(firstPage)
-                || isBlank(firstAuthor)) {
-            throw new ServiceException(400, 
-                "At least one of supplied journal title, abbreviated journal title, volume, first page or first author is null.");
-        }
-    }*/
-
     private BoolQueryBuilder getQueryBuilderJournal(String jtitle, 
                                                     String volume, 
                                                     String firstPage, 
                                                     String firstAuthor) {
-        if (isBlank(firstAuthor)) {
-            return QueryBuilders.boolQuery()
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, jtitle))
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, jtitle))
                 .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
                 .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
-        } else {
-            return QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, jtitle))
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, jtitle))
-                .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
-                .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage))
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
-        }
+
+        if (!isBlank(firstAuthor)) {
+            queryBuilder = queryBuilder.should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
+        } 
+
+        return queryBuilder;
     }
 
     /**

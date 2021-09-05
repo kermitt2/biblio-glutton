@@ -49,7 +49,7 @@ public class MetadataLookup {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
 
         configuration = storageEnvFactory.getConfiguration();
-        batchSize = configuration.getBatchSize();
+        batchSize = configuration.getLoadingBatchSize();
         dbCrossrefJson = this.environment.openDbi(NAME_CROSSREF_JSON, DbiFlags.MDB_CREATE);
     }
 
@@ -168,4 +168,5 @@ public class MetadataLookup {
 
         return values;
     }
+
 }

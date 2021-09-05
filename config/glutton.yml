@@ -6,8 +6,9 @@ ignoreCrossRefFields:
   - abstract
   - indexed
 
-# Loading batch size
-batchSize: 10000
+# batch size for preparing the data
+loadingBatchSize: 10000
+indexBatchSize: 500
 
 # max blocking size (number of candidates considered before pairwise matching)
 blockSize: 5
@@ -18,7 +19,8 @@ grobidPath: http://localhost:8070/api
 maxAcceptedRequests: 2048
 
 elastic:
-  host: localhost:9200
+  #host: localhost:9200
+  host: 192.168.1.106:9200
   index: crossref
 
 corsAllowedOrigins: "*"

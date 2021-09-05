@@ -28,9 +28,17 @@ import javax.servlet.FilterRegistration;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.io.File;
+
+import org.apache.commons.lang3.ArrayUtils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class LookupServiceApplication extends Application<LookupConfiguration> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LookupConfiguration.class);
     private static final String RESOURCES = "/service";
+    private static final String[] DEFAULT_CONF_LOCATIONS = {"../config/glutton.yml"};
 
     // ========== Application ==========
     @Override
@@ -68,6 +76,12 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
 
         final LookupHealthCheck healthCheck = new LookupHealthCheck(configuration);
         environment.healthChecks().register("HealthCheck", healthCheck);
+
+        // launch gap update task to update missing CrossRef records 
+
+        // register daily update job via ScheduledExecutorService
+
+
     }
 
     private List<? extends Module> getGuiceModules() {
@@ -89,6 +103,26 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
 
     // ========== static ==========
     public static void main(String... args) throws Exception {
+        if (ArrayUtils.getLength(args) < 2) {
+            // use default configuration file
+            String foundConf = null;
+            for (String p : DEFAULT_CONF_LOCATIONS) {
+                File confLocation = new File(p).getAbsoluteFile();
+                if (confLocation.exists()) {
+                    foundConf = confLocation.getAbsolutePath();
+                    LOGGER.info("Found conf path: {}", foundConf);
+                    break;
+                }
+            }
+
+            if (foundConf != null) {
+                LOGGER.info("Running with default arguments: \"server\" \"{}\"", foundConf);
+                args = new String[]{"server", foundConf};
+            } else {
+                throw new RuntimeException("No explicit config provided and cannot find in one of the default locations: "
+                    + Arrays.toString(DEFAULT_CONF_LOCATIONS));
+            }
+        }
         new LookupServiceApplication().run(args);
     }
 }
