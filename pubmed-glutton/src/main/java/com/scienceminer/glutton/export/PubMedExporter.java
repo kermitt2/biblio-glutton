@@ -34,7 +34,7 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 import org.elasticsearch.action.bulk.*;
 import static org.elasticsearch.common.xcontent.XContentFactory.*;
 import org.elasticsearch.common.xcontent.*;
-import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.core.TimeValue;
 
 import org.apache.http.HttpHost;
 
