@@ -135,6 +135,8 @@ public class MatchingDocument {
     }
 
     public void setBTitle(String btitle) {
+        btitle = btitle.replace("\n", " ");
+        btitle = btitle.replaceAll("( )+", " ");
         this.btitle = btitle;
     }
 
