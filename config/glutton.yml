@@ -54,3 +54,14 @@ logging:
     archivedLogFilenamePattern: logs/lookup-service-%d.log
     archivedFileCount: 5
     timeZone: UTC
+
+# the following is used only for pubmed related enrichments and extractions
+pubmed:
+  # path to the medline resources
+  pubmedDirectory: /mnt/data/medline2020
+  # path to PMC mapping data
+  pmcDirectory: ../data/pmc
+  # elasticsearch index for pubmed, used to create extraction based on MeSH terms
+  index: pubmed
+  # path to the working pubmed databases 
+  dbDirectory: /media/lopez/T5/data2/db

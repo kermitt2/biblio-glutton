@@ -134,7 +134,7 @@ public class Main {
     public static void main(final String[] args) throws Exception {
         gbdArgs = new MainArgs();
 
-        File confFile = new File("config/glutton.yaml");
+        File confFile = new File("../config/glutton.yml");
         if (!confFile.canRead()) {
             System.out.println("'" + args[0] + "' cannot be read");
             System.exit(1);

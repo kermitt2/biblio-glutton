@@ -82,11 +82,11 @@ public abstract class KBDatabase<K,V> {
 		this.name = type.name();
 
 		if (env.getType() == KBEnvironment.EnvironmentType.staging)
-			this.envFilePath = env.getConfiguration().getDbDirectory() + "/staging/" + type.toString();
+			this.envFilePath = env.getConfiguration().pubmed.getDbDirectory() + "/staging/" + type.toString();
 		else if (env.getType() == KBEnvironment.EnvironmentType.service)
-			this.envFilePath = env.getConfiguration().getDbDirectory() + "/service/" + type.toString();
+			this.envFilePath = env.getConfiguration().pubmed.getDbDirectory() + "/service/" + type.toString();
 		else 
-			this.envFilePath = env.getConfiguration().getDbDirectory() + "/" + type.toString();
+			this.envFilePath = env.getConfiguration().pubmed.getDbDirectory() + "/" + type.toString();
 		//System.out.println("db path: " + this.envFilePath);
 
 		this.environment = new Env();
@@ -117,11 +117,11 @@ public abstract class KBDatabase<K,V> {
 		this.name = name;
 
 		if (env.getType() == KBEnvironment.EnvironmentType.staging)
-			this.envFilePath = env.getConfiguration().getDbDirectory() + "/staging/" + name;
+			this.envFilePath = env.getConfiguration().pubmed.getDbDirectory() + "/staging/" + name;
 		else if (env.getType() == KBEnvironment.EnvironmentType.service)
-			this.envFilePath = env.getConfiguration().getDbDirectory() + "/service/" + name;
+			this.envFilePath = env.getConfiguration().pubmed.getDbDirectory() + "/service/" + name;
 		else 
-			this.envFilePath = env.getConfiguration().getDbDirectory() + "/" + name;
+			this.envFilePath = env.getConfiguration().pubmed.getDbDirectory() + "/" + name;
 
 		this.environment = new Env();
     	this.environment.setMapSize(200 * 1024 * 1024, ByteUnit.KIBIBYTES);

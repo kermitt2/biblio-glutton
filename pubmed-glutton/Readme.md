@@ -18,13 +18,13 @@ First build the project:
 
 You need to download the MEDLINE/PubMed data file available at: https://www.nlm.nih.gov/databases/download/pubmed_medline.html
 
-Then indicate the directory path where you stored these compressed xml dumps (as warning, MEDLINE/PubMed data consist in around 975 files taking 26GB, compressed) in the file `config/glutton.yaml`: 
+Then indicate the directory path where you stored these compressed xml dumps (as warning, MEDLINE/PubMed data consist in around 975 files taking 26GB, compressed) in the global configuration file `biblio-glutton/config/glutton.yml`: 
 
 > pubmedDirectory: /home/lopez/data/pubmed
 
 ### MEDLINE/PubMed extraction and indexing
 
-Be sure to have the full Medline data downloaded (see https://www.nlm.nih.gov/databases/download/pubmed_medline.html), and indicate in tje config file `config/glutton.yaml` the path to the repository containing the Medline bulk download, e.g. 
+Be sure to have the full Medline data downloaded (see https://www.nlm.nih.gov/databases/download/pubmed_medline.html), and indicate in the config file `biblio-glutton/config/glutton.yml` the path to the repository containing the Medline bulk download, e.g. 
 
 ```yaml
 pubmedDirectory: /mnt/data/biblio/medline2020
@@ -32,7 +32,7 @@ pubmedDirectory: /mnt/data/biblio/medline2020
 
 At first launch, the data will be parsed and stored in the LMDB database for fast access and manipulation. This is only done one time and takes a few hours (around 3 hours) with SSD.   
 
-Be also sure to have the PMID and PMCID mapping to DOI, available at Euro PMC saved under your pmcDirectory path indicated in `config/glutton.yaml` (by default `data/pmc`). As of September 2018, the mapping was still available [there](ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/). Medline records will then be aggregated with DOI identifiers. 
+Be also sure to have the PMID and PMCID mapping to DOI, available at Euro PMC saved under your pmcDirectory path indicated in `biblio-glutton/config/glutton.yml` (by default `data/pmc`). As of September 2018, the mapping was still available [there](ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/). Medline records will then be aggregated with DOI identifiers. 
 
 To index the PubMed data, run:
 
@@ -58,7 +58,7 @@ In case you are only interested in PubMed Central entries (e.g. for exploiting f
 
 ### ISTEX to PubMed mapping
 
-Be sure to have the PMID and PMCID mapping to DOI, available at Euro PMC saved under your pmcDirectory path indicated in `config/glutton.yaml` (by default `data/pmc`). As of September 2018, the mapping was still available [there](ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/).
+Be sure to have the PMID and PMCID mapping to DOI, available at Euro PMC saved under your pmcDirectory path indicated in `biblio-glutton/config/glutton.yml` (by default `data/pmc`). As of September 2018, the mapping was still available [there](ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/).
 
 To create the ISTEX to PubMed mapping, run:
 

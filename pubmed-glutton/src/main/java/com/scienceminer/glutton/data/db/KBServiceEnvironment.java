@@ -73,11 +73,11 @@ public class KBServiceEnvironment extends KBEnvironment {
 	protected void initDatabases() {
 		System.out.println("\ninit service environment");
 		
-		File dbDirectory = new File(conf.getDbDirectory());
+		File dbDirectory = new File(conf.pubmed.getDbDirectory());
 		if (!dbDirectory.exists())
 			dbDirectory.mkdirs();
 
-		File dbServiceDirectory = new File(conf.getDbDirectory()+"/service/");
+		File dbServiceDirectory = new File(conf.pubmed.getDbDirectory()+"/service/");
 		if (!dbServiceDirectory.exists())
 			dbServiceDirectory.mkdirs();
 
@@ -116,11 +116,11 @@ public class KBServiceEnvironment extends KBEnvironment {
 		System.out.println("building Environment for staging area");	
 		
 		//check all files exist and are readable before doing anything
-		File pmcDirectory = new File(conf.getPmcDirectory());
+		File pmcDirectory = new File(conf.pubmed.getPmcDirectory());
 		File pmcDOIData = getDataFile(pmcDirectory, "PMID_PMCID_DOI.csv.gz");
 
-		File istexDirectory = new File(conf.getIstexDirectory());
-		File istexIdData = getDataFile(istexDirectory, "istexIds.all.gz");		
+		//File istexDirectory = new File(conf.getIstexDirectory());
+		//File istexIdData = getDataFile(istexDirectory, "istexIds.all.gz");		
 
 		//File coreDirectory = new File(conf.getCoreDirectory());
 		//File coreData = getDataFile(coreDirectory, "repository_metadata_2016-10-05.tar.gz");			

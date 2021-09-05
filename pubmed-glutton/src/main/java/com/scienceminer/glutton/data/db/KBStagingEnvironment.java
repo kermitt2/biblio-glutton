@@ -150,11 +150,11 @@ public class KBStagingEnvironment extends KBEnvironment {
 	protected void initDatabases() {
 		System.out.println("\ninit staging environment");
 		
-		File dbDirectory = new File(conf.getDbDirectory());
+		File dbDirectory = new File(conf.pubmed.getDbDirectory());
 		if (!dbDirectory.exists())
 			dbDirectory.mkdirs();
 
-		File dbStagingDirectory = new File(conf.getDbDirectory()+"/staging/");
+		File dbStagingDirectory = new File(conf.pubmed.getDbDirectory()+"/staging/");
 		if (!dbStagingDirectory.exists())
 			dbStagingDirectory.mkdirs();
 
@@ -249,16 +249,16 @@ public class KBStagingEnvironment extends KBEnvironment {
 		System.out.println("building Environment for staging area");	
 		
 		//check all files exist and are readable before doing anything
-		File pmcDirectory = new File(conf.getPmcDirectory());
+		File pmcDirectory = new File(conf.pubmed.getPmcDirectory());
 		File pmcDOIData = getDataFile(pmcDirectory, "PMID_PMCID_DOI.csv.gz");
 
-		File istexDirectory = new File(conf.getIstexDirectory());
-		File istexIdData = getDataFile(istexDirectory, "istexIds.all.gz");		
+		//File istexDirectory = new File(conf.getIstexDirectory());
+		//File istexIdData = getDataFile(istexDirectory, "istexIds.all.gz");		
 
 		//File coreDirectory = new File(conf.getCoreDirectory());
 		//File coreData = getDataFile(coreDirectory, "repository_metadata_2016-10-05.tar.gz");			
 
-		File pubmedDirectory = new File(conf.getPubmedDirectory());
+		File pubmedDirectory = new File(conf.pubmed.getPubmedDirectory());
 
 		//now load databases
 
@@ -273,7 +273,7 @@ public class KBStagingEnvironment extends KBEnvironment {
 		System.out.println(dbDOI2PMID.getDatabaseSize() + " DOI/PMID mappings.");
 
 		//System.out.println("Building dbISTEX2IDs");
-		dbISTEX2IDs.loadFromFile(istexIdData, overwrite);
+		//dbISTEX2IDs.loadFromFile(istexIdData, overwrite);
 		
 		/*System.out.println("Building dbCore2JSON");
 		dbCore2JSON.loadFromFile(coreData, overwrite);*/

@@ -41,7 +41,7 @@ public class TestIngestion {
 		try {
 			ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 			
-			conf = mapper.readValue(new File("config/glutton.yaml"), GluttonConfig.class);
+			conf = mapper.readValue(new File("../config/glutton.yml"), GluttonConfig.class);
             env1 = new KBStagingEnvironment(conf);
             env1.buildEnvironment(false);
 

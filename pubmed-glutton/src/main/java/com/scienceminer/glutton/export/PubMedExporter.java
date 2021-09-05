@@ -163,9 +163,8 @@ public class PubMedExporter {
 
         // init elasticsearch client
         RestHighLevelClient client = new RestHighLevelClient(
-            RestClient.builder(
-                    new HttpHost(conf.getEsHost(), conf.getEsPort(), "http"),
-                    new HttpHost(conf.getEsHost(), conf.getEsPort(), "http")));
+                RestClient.builder(
+                        HttpHost.create(conf.elastic.getHost())));
 
         final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(120L));
         SearchRequest searchRequest = new SearchRequest("pubmed");
