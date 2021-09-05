@@ -20,6 +20,8 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.List;
+import java.util.Collections;
+import java.util.Comparator;
 
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -232,7 +234,7 @@ public class LookupEngine {
         final JsonArray titlesFromJson = jobject.get("title").getAsJsonArray();
         if (titlesFromJson != null && titlesFromJson.size() > 0) {
             String titleFromJson = titlesFromJson.get(0).getAsString();
-            outputData.setTitle(titleFromJson);
+            outputData.setATitle(titleFromJson);
         }
 
         final JsonArray authorsFromJson = jobject.get("author").getAsJsonArray();
@@ -249,6 +251,46 @@ public class LookupEngine {
                 }
             }
         }
+
+        return outputData;
+    }
+
+     private MatchingDocument extractMetadataFromJson(MatchingDocument outputData) {
+        JsonElement jelement = new JsonParser().parse(outputData.getJsonObject());
+        JsonObject jobject = jelement.getAsJsonObject();
+
+        final JsonArray titlesFromJson = jobject.get("title").getAsJsonArray();
+        if (titlesFromJson != null && titlesFromJson.size() > 0) {
+            String titleFromJson = titlesFromJson.get(0).getAsString();
+            outputData.setATitle(titleFromJson);
+        }
+
+        final JsonArray authorsFromJson = jobject.get("author").getAsJsonArray();
+        if (authorsFromJson != null && authorsFromJson.size() > 0) {
+
+            String firstAuthorFromJson = "";
+            for (int i = 0; i < authorsFromJson.size(); i++) {
+                final JsonObject currentAuthor = authorsFromJson.get(i).getAsJsonObject();
+                if (currentAuthor.has("sequence")
+                        && StringUtils.equals(currentAuthor.get("sequence").getAsString(), "first")) {
+                    // this supposes we always have a family name (not raw full name by default?)
+                    firstAuthorFromJson = currentAuthor.get("family").getAsString();
+                    outputData.setFirstAuthor(firstAuthorFromJson);
+                    break;
+                }
+            }
+
+            if (outputData.getFirstAuthor() == null) {
+                // no sequence information available, as fallback we take the first authot in the list
+                final JsonObject currentAuthor = authorsFromJson.get(0).getAsJsonObject();
+                // this supposes we always have a family name (not raw full name by default?)
+                firstAuthorFromJson = currentAuthor.get("family").getAsString();
+                outputData.setFirstAuthor(firstAuthorFromJson);
+            }
+        }
+
+        // other metadata relevant for pairwise matching to be extracted here
+
 
         return outputData;
     }
@@ -285,7 +327,6 @@ public class LookupEngine {
             MatchingDocument outputData = metadataLookup.retrieveByMetadata(doi);
 
             outputData = validateJsonBody(postValidate, firstAuthor, atitle, outputData);
-            //return injectIdsByIstexData(outputData.getJsonObject(), doi, istexData);
 
             final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
             return injectIdsByIstexData(outputData.getJsonObject(), doi, istexData, oaLink);
@@ -566,12 +607,67 @@ public class LookupEngine {
         return null;
     }
 
-    List<MatchingDocument> pairwiseRanking(String title, String firstAuthor, List<MatchingDocument> matchingDocuments) {
-        // TBD :)
-
+    private List<MatchingDocument> pairwiseRanking(String title, 
+                                           String firstAuthor, 
+                                           List<MatchingDocument> matchingDocuments) {
         List<MatchingDocument> rankedMatchingDocuments = matchingDocuments;
 
+        MatchingDocument referenceDocument = new MatchingDocument();
+        referenceDocument.setATitle(title);
+        referenceDocument.setFirstAuthor(firstAuthor);
+
+        for(MatchingDocument matchingDocument : matchingDocuments) {
+            matchingDocument = extractMetadataFromJson(matchingDocument);
+
+            double computedRecordDistance = recordDistance(matchingDocument, referenceDocument);
+            // here we can introduce a threshold when removing the post validation
+            matchingDocument.setMatchingScore(computedRecordDistance);
+            rankedMatchingDocuments.add(matchingDocument);
+        }
+
+        Collections.sort(rankedMatchingDocuments, new Comparator<MatchingDocument>() {
+            @Override
+            public int compare(MatchingDocument d1, MatchingDocument d2) {
+                double diff = d2.getMatchingScore() - d1.getMatchingScore();
+                if (diff < 0.0) {
+                    return -1;
+                } else if (diff > 0.0) {
+                    return 1;
+                }
+                return 0;
+            }
+        });
+
         return matchingDocuments;
+    }
+
+    /**
+     * Compute a distance score between a candidate matching document and a reference document with target
+     * metadata. score is in [0,1], with 1 perfect match
+     */
+    private double recordDistance(MatchingDocument matchingDocument, MatchingDocument referenceDocument) {
+        // atitle component
+        Double atitleScore = 0.0;
+        if (isNotBlank(matchingDocument.getATitle()) && isNotBlank(referenceDocument.getATitle())) {
+            atitleScore = ratcliffObershelpDistance(referenceDocument.getATitle(), matchingDocument.getATitle(), false);
+        }
+
+        // first author component
+        Double firstAuthorScore = 0.0;
+        if (isNotBlank(matchingDocument.getFirstAuthor()) && isNotBlank(referenceDocument.getFirstAuthor())) {
+            firstAuthorScore = ratcliffObershelpDistance(referenceDocument.getFirstAuthor(), matchingDocument.getFirstAuthor(), false);
+        } 
+
+        // more metadata
+        // TBD
+
+        // manage strong clash: if key fields are totally different, we lower the score down to 0
+        // TBD
+
+        // TBD: we should use a more robust meaning
+        double score = (atitleScore + firstAuthorScore) / 2;
+
+        return score;
     }
 
     /**
@@ -586,14 +682,13 @@ public class LookupEngine {
 
 
         if (isNotBlank(title)) {
-            if (ratcliffObershelpDistance(title, result.getTitle(), false) < 0.7)
+            if (ratcliffObershelpDistance(title, result.getATitle(), false) < 0.8)
                 return false;
         } else if (!ignoreTitleIfNotPresent) {
             return false;
         }
 
-
-        if (ratcliffObershelpDistance(firstAuthor, result.getFirstAuthor(), false) < 0.7)
+        if (ratcliffObershelpDistance(firstAuthor, result.getFirstAuthor(), false) < 0.8)
             return false;
 
         return valid;

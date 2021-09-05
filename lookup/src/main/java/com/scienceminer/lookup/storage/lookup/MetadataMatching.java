@@ -330,7 +330,7 @@ public class MetadataMatching {
 
             matchingDocument.setDOI(DOI);
             matchingDocument.setFirstAuthor(firstAuthor);
-            matchingDocument.setTitle(title);
+            matchingDocument.setATitle(title);
             final String jsonObject = metadataLookup.retrieveJsonDocument(DOI);
             if (jsonObject == null) {
                 LOGGER.warn("The search index returned a result but the corresponding entry cannot be fetched in the metadata db, DOI: " + DOI);

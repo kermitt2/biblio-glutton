@@ -3,8 +3,10 @@ package com.scienceminer.lookup.data;
 public class MatchingDocument {
     private String DOI;
     private String firstAuthor;
-    private String title;
+    private String atitle;
     private String jsonObject;
+
+    private double matchingScore = 0.0;
 
     private boolean isException = false;
     private Throwable exception;
@@ -36,7 +38,7 @@ public class MatchingDocument {
         this.setDOI(otherMatchingDocument.getDOI());
         this.setFirstAuthor(otherMatchingDocument.getFirstAuthor());
         this.setJsonObject(otherMatchingDocument.getJsonObject());
-        this.setTitle(otherMatchingDocument.getTitle());
+        this.setATitle(otherMatchingDocument.getATitle());
     }
 
     public String getJsonObject() {
@@ -63,12 +65,12 @@ public class MatchingDocument {
         this.firstAuthor = firstAuthor;
     }
 
-    public String getTitle() {
-        return title;
+    public String getATitle() {
+        return atitle;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public void setATitle(String atitle) {
+        this.atitle = atitle;
     }
 
     public boolean isException() {
@@ -96,5 +98,13 @@ public class MatchingDocument {
         if (finalJsonObject != null)
             finalJsonObject = finalJsonObject.replace("\n", "");
         return finalJsonObject;
+    }
+
+    public double getMatchingScore() {
+        return matchingScore;
+    }
+
+    public void setMatchingScore(double matchingScore) {
+        this.matchingScore = matchingScore;
     }
 }
