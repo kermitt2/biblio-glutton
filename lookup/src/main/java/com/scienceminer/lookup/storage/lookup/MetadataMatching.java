@@ -103,64 +103,75 @@ public class MetadataMatching {
     }
 
     /**
-     * Lookup by title, firstAuthor
+     * Boolean search by article title, firstAuthor
      **/
-    public List<MatchingDocument> retrieveByMetadata(String title, String firstAuthor) {
-        validateInput(title, firstAuthor);
+    public List<MatchingDocument> retrieveByMetadata(String atitle, 
+                                                     String firstAuthor) {
+        validateInput(atitle, firstAuthor);
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_TITLE, title))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_TITLE, atitle))
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
 
         return executeQuery(query);
     }
 
-    public void retrieveByMetadataAsync(String title, String firstAuthor,
+    /**
+     * Async boolean search by article title, firstAuthor
+     **/
+    public void retrieveByMetadataAsync(String atitle, 
+                                        String firstAuthor,
                                         Consumer<List<MatchingDocument>> callback) {
-        validateInput(title, firstAuthor);
+        validateInput(atitle, firstAuthor);
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_TITLE, title))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_TITLE, atitle))
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
 
         executeQueryAsync(query, callback);
     }
 
-    private void validateInput(String title, String firstAuthor) {
+    private void validateInput(String title, 
+                               String firstAuthor) {
         if (isBlank(title) || isBlank(firstAuthor)) {
-            throw new ServiceException(400, "Supplied title or firstAuthor are null.");
+            throw new ServiceException(400, "Supplied title and/or first author is null.");
         }
     }
 
     /**
-     * Lookup by journal title, journal abbreviated title, volume, first page
+     * Boolean search by journal title or abbreviated journal title, volume and first page
      **/
-    public List<MatchingDocument> retrieveByMetadata(String title, String volume,
-                                               String firstPage) {
+    public List<MatchingDocument> retrieveByMetadata(String jtitle, 
+                                                     String volume,
+                                                     String firstPage) {
 
-        validateInput(title, volume, firstPage);
+        validateInput(jtitle, volume, firstPage);
 
-        BoolQueryBuilder query = getQueryBuilderJournal(title, volume, firstPage);
+        BoolQueryBuilder query = getQueryBuilderJournal(jtitle, volume, firstPage);
 
         return executeQuery(query);
     }
 
-    public void retrieveByMetadataAsync(String title, String volume,
+    /**
+     * Async boolean search by journal title or abbreviated journal title, volume and first page
+     **/
+    public void retrieveByMetadataAsync(String jtitle, 
+                                        String volume,
                                         String firstPage,
                                         Consumer<List<MatchingDocument>> callback) {
 
-        validateInput(title, volume, firstPage);
+        validateInput(jtitle, volume, firstPage);
 
-        BoolQueryBuilder query = getQueryBuilderJournal(title, volume, firstPage);
+        BoolQueryBuilder query = getQueryBuilderJournal(jtitle, volume, firstPage);
 
         executeQueryAsync(query, callback);
     }
 
-    private BoolQueryBuilder getQueryBuilderJournal(String title, String volume, String firstPage) {
+    private BoolQueryBuilder getQueryBuilderJournal(String jtitle, String volume, String firstPage) {
 
         return QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, jtitle))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, jtitle))
                 .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
                 .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
     }
@@ -169,52 +180,67 @@ public class MetadataMatching {
         if (isBlank(title)
                 || isBlank(volume)
                 || isBlank(firstPage)) {
-            throw new ServiceException(400, "Supplied journalTitle or abbr journal title or volume, or first page are null.");
+            throw new ServiceException(400, 
+                "At least one of supplied journal title, abbreviated journal title, volume, or first page is null.");
         }
     }
 
     /**
-     * Lookup by journal title, journal abbreviated title, volume, first page
+     * Boolean search by journal title or abbreviated journal title, volume, first page and first author
      **/
-    public List<MatchingDocument> retrieveByMetadata(String title, String volume,
-                                               String firstPage, String firstAuthor) {
+    public List<MatchingDocument> retrieveByMetadata(String jtitle, 
+                                                     String volume,
+                                                     String firstPage, 
+                                                     String firstAuthor) {
 
-        validateInput(title, volume, firstPage, firstAuthor);
+        validateInput(jtitle, volume, firstPage, firstAuthor);
 
-        final BoolQueryBuilder query = getQueryBuilderJournal(title, volume, firstPage, firstAuthor);
+        final BoolQueryBuilder query = getQueryBuilderJournal(jtitle, volume, firstPage, firstAuthor);
 
         return executeQuery(query);
     }
 
-    private void validateInput(String title, String volume, String firstPage, String firstAuthor) {
-        if (isBlank(title)
-                || isBlank(volume)
-                || isBlank(firstPage)
-                || isBlank(firstAuthor)) {
-            throw new ServiceException(400, "Supplied journalTitle or abbr journal title or volume, or first page are null.");
-        }
-    }
-
-    public void retrieveByMetadataAsync(String title, String volume,
-                                        String firstPage, String firstAuthor,
+    /**
+     * Async boolean search by journal title or abbreviated journal title, volume, first page and first author
+     **/
+    public void retrieveByMetadataAsync(String jtitle, 
+                                        String volume,
+                                        String firstPage, 
+                                        String firstAuthor,
                                         Consumer<List<MatchingDocument>> callback) {
 
-        validateInput(title, volume, firstPage, firstAuthor);
+        validateInput(jtitle, volume, firstPage, firstAuthor);
 
-        final BoolQueryBuilder query = getQueryBuilderJournal(title, volume, firstPage, firstAuthor);
+        final BoolQueryBuilder query = getQueryBuilderJournal(jtitle, volume, firstPage, firstAuthor);
 
         executeQueryAsync(query, callback);
     }
 
-    private BoolQueryBuilder getQueryBuilderJournal(String title, String volume, String firstPage, String firstAuthor) {
+    private void validateInput(String jtitle, String volume, String firstPage, String firstAuthor) {
+        if (isBlank(jtitle)
+                || isBlank(volume)
+                || isBlank(firstPage)
+                || isBlank(firstAuthor)) {
+            throw new ServiceException(400, 
+                "At least one of supplied journal title, abbreviated journal title, volume, first page or first author is null.");
+        }
+    }
+
+    private BoolQueryBuilder getQueryBuilderJournal(String jtitle, 
+                                                    String volume, 
+                                                    String firstPage, 
+                                                    String firstAuthor) {
         return QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, jtitle))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, jtitle))
                 .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
                 .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage))
                 .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
     }
 
+    /**
+     * Search by raw bibliographical reference string
+     */
     public List<MatchingDocument> retrieveByBiblio(String biblio) {
         if (isBlank(biblio)) {
             throw new ServiceException(400, "Supplied bibliographical string is empty.");
@@ -225,6 +251,9 @@ public class MetadataMatching {
         return executeQuery(query);
     }
 
+    /**
+     * Async search by raw bibliographical reference string
+     **/
     public void retrieveByBiblioAsync(String biblio, Consumer<List<MatchingDocument>> callback) {
         if (isBlank(biblio)) {
             throw new ServiceException(400, "Supplied bibliographical string is empty.");

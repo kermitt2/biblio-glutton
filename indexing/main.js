@@ -139,6 +139,9 @@ function createBiblObj(data, cb) {
 
     // - Main fields (in the mapping)
     obj.title = data.title;
+    obj.title = obj.title.replace("\n", " ");
+    obj.title = obj.title.replace("( )+", " ");
+
     obj.DOI = data.DOI;
 
     if (data.author) {

@@ -1,9 +1,21 @@
 package com.scienceminer.lookup.data;
 
+import java.util.List;
+import java.util.ArrayList;
+
 public class MatchingDocument {
     private String DOI;
     private String firstAuthor;
     private String atitle;
+    
+    private String jtitle; // all serials
+    private String btitle; // book title (conference proceedings, book containing book chapters, etc.)
+    private String year;
+    private String volume;
+    private String issue;
+    private String firstPage;
+    private List<String> authors;
+
     private String jsonObject;
 
     private double matchingScore = 0.0;
@@ -70,6 +82,8 @@ public class MatchingDocument {
     }
 
     public void setATitle(String atitle) {
+        atitle = atitle.replace("\n", " ");
+        atitle = atitle.replaceAll("( )+", " ");
         this.atitle = atitle;
     }
 
@@ -107,4 +121,68 @@ public class MatchingDocument {
     public void setMatchingScore(double matchingScore) {
         this.matchingScore = matchingScore;
     }
+
+    public String getJTitle() {
+        return jtitle;
+    }
+
+    public void setJTitle(String jtitle) {
+        this.jtitle = jtitle;
+    }
+
+    public String getBTitle() {
+        return btitle;
+    }
+
+    public void setBTitle(String btitle) {
+        this.btitle = btitle;
+    }
+
+    public String getYear() {
+        return year;
+    }
+
+    public void setYear(String year) {
+        this.year = year;
+    }
+
+    public String getVolume() {
+        return volume;
+    }
+
+    public void setVolume(String volume) {
+        this.volume = volume;
+    }
+
+    public String getIssue() {
+        return issue;
+    }
+
+    public void setIssue(String issue) {
+        this.issue = issue;
+    }
+
+    public String getFirstPage() {
+        return firstPage;
+    }
+
+    public void setFirstPage(String firstPage) {
+        this.firstPage = firstPage;
+    }
+
+    public List<String> getAuthors() {
+        return this.authors;
+    }
+
+    public void addAuthors(String author) {
+        if (this.authors == null) {
+            this.authors = new ArrayList<>();
+        }
+        this.authors.add(author);
+    }
+
+    public void setAuthors(List<String> authors) {
+        this.authors = authors;
+    }
+
 }
