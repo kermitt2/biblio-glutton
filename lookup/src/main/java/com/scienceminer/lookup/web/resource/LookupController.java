@@ -54,7 +54,7 @@ public class LookupController {
         this.configuration = configuration;
         this.storageEnvFactory = storageEnvFactory;
         this.lookupEngine = new LookupEngine(storageEnvFactory);
-        this.lookupEngine.setGrobidClient(new GrobidClient(configuration.getGrobidPath()));
+        this.lookupEngine.setGrobidClient(new GrobidClient(configuration.getGrobidHost()));
     }
 
     @GET

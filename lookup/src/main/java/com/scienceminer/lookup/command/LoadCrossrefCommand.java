@@ -82,24 +82,36 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
                         StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".xz") ||
                         StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".json")))
                         .forEach(dumpFile -> {
-                                    try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
-                                        metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
-                                    } catch (Exception e) {
-                                        LOGGER.error("Error while processing " + dumpFile.toAbsolutePath(), e);
-                                    }
+                                try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
+                                    metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
+                                    // possibly update with the lastest indexed date obtained from this file
+//System.out.println(reader.getLastIndexed().toString());
+                                    if (metadataLookup.getLastIndexed() == null || 
+                                        metadataLookup.getLastIndexed().isBefore(reader.getLastIndexed()))
+                                        metadataLookup.setLastIndexed(reader.getLastIndexed());
+                                } catch (Exception e) {
+                                    LOGGER.error("Error while processing " + dumpFile.toAbsolutePath(), e);
                                 }
+                            }
                         );
             }
         } else {
             try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
-                metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefGreenelabJsonReader(configuration),
-                        meter, counterInvalidRecords);
+                CrossrefGreenelabJsonReader reader = new CrossrefGreenelabJsonReader(configuration);
+
+                metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
+                metadataLookup.setLastIndexed(reader.getLastIndexed());
+    
             } catch (Exception e) {
                 LOGGER.error("Error while processing " + crossrefFilePath, e);
             }
         }
         LOGGER.info("Number of Crossref records processed: " + meter.getCount());
         LOGGER.info("Crossref lookup size " + metadataLookup.getSize() + " records.");
+        if (metadataLookup.getLastIndexed() != null)
+            LOGGER.info("Crossref latest indexed date " + metadataLookup.getLastIndexed().toString() + ".");
+        else
+            LOGGER.info("Crossref latest indexed date is not set.");
     }
 
     private InputStream selectStream(Path crossrefFilePath) throws IOException {
@@ -113,4 +125,5 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         }
         return inputStreamCrossref;
     }
+
 }

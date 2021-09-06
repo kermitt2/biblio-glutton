@@ -1,5 +1,6 @@
 storage: data/db
 #storage: /media/lopez/T5/data/db
+
 version: version_placeholder
 ignoreCrossRefFields: 
   - reference
@@ -14,19 +15,37 @@ indexBatchSize: 500
 blockSize: 5
 
 # Grobid URL
-grobidPath: http://localhost:8070/api
+grobidHost: http://localhost:8070/api
 
-maxAcceptedRequests: 2048
+timeZone: UTC
 
 elastic:
   host: localhost:9200
+  #host: 192.168.1.106:9200
   index: crossref
+
+crossref:
+  dumpPath: /media/lopez/data2/crossref_public_data_file_2021_01
+  # a directory where the crossref update files will be located
+  mailto: 
+  # for the crossref REST API and daily update, you need normally to use it politely and to indicate an email 
+  #address here, e.g. 
+  #mailto: "toto@titi.tutu"
+  token:
+  # to use Crossref metadata plus service (available by subscription)
+  #token: "yourmysteriouscrossrefmetadataplusauthorizationtokentobeputhere"
+
+unpaywall:
+  dumpPath: 
+  # a directory where the unpaywall update data feed change files will be located
+  API_key: 
+  # API Key for the Unpaywall subscription is necessary to get the data feed change files for daily update
 
 corsAllowedOrigins: "*"
 corsAllowedMethods: "OPTIONS,GET,PUT,POST,DELETE,HEAD"
 corsAllowedHeaders: "X-Requested-With,Content-Type,Accept,Origin"
 
-timeZone: UTC
+maxAcceptedRequests: 2048
 
 server:
   type: custom
@@ -60,7 +79,7 @@ pubmed:
   # path to the medline resources
   pubmedDirectory: /mnt/data/medline2020
   # path to PMC mapping data
-  pmcDirectory: ../data/pmc
+  pmcDirectory: data/pmc
   # elasticsearch index for pubmed, used to create extraction based on MeSH terms
   index: pubmed
   # path to the working pubmed databases 

@@ -7,6 +7,7 @@ import io.dropwizard.client.HttpClientConfiguration;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.io.File;
 
 public class LookupConfiguration extends Configuration {
 
@@ -22,7 +23,7 @@ public class LookupConfiguration extends Configuration {
 
     private Elastic elastic;
 
-    private String grobidPath;
+    private String grobidHost;
 
     @Valid
     @NotNull
@@ -57,6 +58,8 @@ public class LookupConfiguration extends Configuration {
     }
 
     public void setStorage(String storage) {
+        // if storage path is relative, we need to adjust to the subproject directory
+        storage = checkPath(storage);
         this.storage = storage;
     }
 
@@ -109,12 +112,12 @@ public class LookupConfiguration extends Configuration {
         this.maxAcceptedRequests = maxAcceptedRequests;
     }
 
-    public String getGrobidPath() {
-        return grobidPath;
+    public String getGrobidHost() {
+        return grobidHost;
     }
 
-    public void setGrobidPath(String grobidPath) {
-        this.grobidPath = grobidPath;
+    public void setGrobidPath(String grobidHost) {
+        this.grobidHost = grobidHost;
     }
 
     public class Source {
@@ -193,5 +196,15 @@ public class LookupConfiguration extends Configuration {
 
     public void setCorsAllowedHeaders(String corsAllowedHeaders) {
         this.corsAllowedHeaders = corsAllowedHeaders;
+    }
+
+    private static String checkPath(String path) {
+        if (path != null) {
+            File file = new File(path);
+            if (!file.isAbsolute()) {
+                path = ".." + File.separator + path;
+            }
+        }
+        return path;
     }
 }

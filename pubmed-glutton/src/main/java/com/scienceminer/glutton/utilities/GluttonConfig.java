@@ -1,6 +1,7 @@
 package com.scienceminer.glutton.utilities;
 
 import java.util.Map;
+import java.io.File;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
@@ -33,6 +34,7 @@ public class GluttonConfig {
 		}
 
 		public void setDbDirectory(String directory) {
+			directory = checkPath(directory);
 			this.dbDirectory = directory;
 		}
 
@@ -51,6 +53,7 @@ public class GluttonConfig {
 		}
 
 		public void setPmcDirectory(String directory) {
+			directory = checkPath(directory);
 			this.pmcDirectory = directory;
 		}
 
@@ -59,6 +62,7 @@ public class GluttonConfig {
 		}
 
 		public void setPubmedDirectory(String directory) {
+			directory = checkPath(directory);
 			this.pubmedDirectory = directory;
 		}
     }
@@ -77,5 +81,15 @@ public class GluttonConfig {
 			this.host = host;
 		}
 	}
+
+	private static String checkPath(String path) {
+        if (path != null) {
+            File file = new File(path);
+            if (!file.isAbsolute()) {
+                path = ".." + File.separator + path;
+            }
+        }
+        return path;
+    }
 
 }

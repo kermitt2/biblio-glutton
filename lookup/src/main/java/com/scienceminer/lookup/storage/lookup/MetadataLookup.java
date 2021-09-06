@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.time.LocalDateTime;
 
 import static com.scienceminer.lookup.web.resource.DataController.DEFAULT_MAX_SIZE_LIST;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -44,6 +45,9 @@ public class MetadataLookup {
     private final int batchSize;
 
     private LookupConfiguration configuration;
+
+    // this date keeps track of the latest indexed date of the metadata database
+    private LocalDateTime lastIndexed = null; 
 
     public MetadataLookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
@@ -169,4 +173,11 @@ public class MetadataLookup {
         return values;
     }
 
+    public LocalDateTime getLastIndexed() {
+        return lastIndexed;
+    }
+
+    public void setLastIndexed(LocalDateTime lastIndexed) {
+        this.lastIndexed = lastIndexed;
+    }
 }
