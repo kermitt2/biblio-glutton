@@ -2,6 +2,28 @@
 
 See the main root readme. 
 
+## Note on CrossRef incremental update
+
+From the CrossRef REST API doc:
+
+```
+Notes on incremental metadata updates
+
+When using time filters to retrieve periodic, incremental metadata updates, the from-index-date filter should be used over from-update-date, from-deposit-date, from-created-date and from-pub-date. The timestamp that from-index-date filters on is guaranteed to be updated every time there is a change to metadata requiring a reindex.
+```
+
+For example: 
+
+```
+from-index-date:2017,until-index-date:2017 filters works with metadata updated in 2017
+```
+
+## Note on incremental Unpaywall updates
+
+This is subscription-based service: see https://github.com/kermitt2/biblio-glutton/issues/56
+
+Results are in jsonl format, similar as the regular dump.
+
 ## Commands / tricks
 
 Not to forget :-) 

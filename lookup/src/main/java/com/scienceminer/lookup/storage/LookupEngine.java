@@ -234,8 +234,9 @@ public class LookupEngine {
 
     /**
      * Async blocking by full bibliographical reference string, without Grobid for pairwise matching, without validation
+     * Without GROBID for extracting metadata, this is not usable. 
      */
-    public void retrieveByBiblioAsync(String biblio, 
+    /*public void retrieveByBiblioAsync(String biblio, 
                                       Consumer<MatchingDocument> callback) {
         metadataMatching.retrieveByBiblioAsync(biblio, matchingDocuments -> {
             if (matchingDocuments == null || matchingDocuments.size() == 0) {
@@ -250,8 +251,7 @@ public class LookupEngine {
             }
             callback.accept(resultDocument);
         });
-    }
-
+    }*/
 
     public String retrieveByDoi(String doi, 
                                 Boolean postValidate, 
@@ -635,6 +635,7 @@ public class LookupEngine {
         // TBD
 
         // manage strong clash: if key fields are totally different, we lower the score down to 0
+        // this should replace the post-validation step and the corresponding parameter in the API
         // TBD
 
         // TBD: we can use a more robust mean, weights, but ideally we should use a classifier

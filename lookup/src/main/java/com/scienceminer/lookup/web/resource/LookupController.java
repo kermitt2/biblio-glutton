@@ -449,7 +449,9 @@ public class LookupController {
         return lookupEngine.retrieveByIstexid(istexid, false, null, null);
     }
 
-    /*@POST
+    /*
+    // Note: this is covered by the previous processByQuery with all field null except biblio 
+    @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.TEXT_PLAIN)
     @Path("/")

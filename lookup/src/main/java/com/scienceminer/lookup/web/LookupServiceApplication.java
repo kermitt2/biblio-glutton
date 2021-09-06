@@ -76,12 +76,6 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
 
         final LookupHealthCheck healthCheck = new LookupHealthCheck(configuration);
         environment.healthChecks().register("HealthCheck", healthCheck);
-
-        // launch gap update task to update missing CrossRef records 
-
-        // register daily update job via ScheduledExecutorService
-
-
     }
 
     private List<? extends Module> getGuiceModules() {
@@ -101,7 +95,6 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         bootstrap.addCommand(new LoadCrossrefCommand());
     }
 
-    // ========== static ==========
     public static void main(String... args) throws Exception {
         if (ArrayUtils.getLength(args) < 2) {
             // use default configuration file
