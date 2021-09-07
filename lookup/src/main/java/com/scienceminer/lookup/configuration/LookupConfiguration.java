@@ -23,7 +23,11 @@ public class LookupConfiguration extends Configuration {
 
     private Elastic elastic;
 
+    private Crossref crossref;
+
     private String grobidHost;
+
+    private ProxyParameters proxy;
 
     @Valid
     @NotNull
@@ -77,6 +81,10 @@ public class LookupConfiguration extends Configuration {
 
     public Elastic getElastic() {
         return elastic;
+    }
+
+    public Crossref getCrossref() {
+        return crossref;
     }
 
     public int getLoadingBatchSize() {
@@ -147,8 +155,6 @@ public class LookupConfiguration extends Configuration {
         private String host;
         private String index;
 
-        //private String type;
-
         public String getHost() {
             return host;
         }
@@ -164,14 +170,61 @@ public class LookupConfiguration extends Configuration {
         public void setIndex(String index) {
             this.index = index;
         }
+    }
 
-        /*public String getType() {
-            return type;
+    public class Crossref {
+        private String dumpPath;
+        private String mailto;
+        private String token;
+
+        public String getDumpPath() {
+            return dumpPath;
         }
 
-        public void setType(String type) {
-            this.type = type;
-        }*/
+        public void setDumpPath(String dumpPath) {
+            this.dumpPath = dumpPath;
+        }
+
+        public String getMailto() {
+            return mailto;
+        }
+
+        public void setMailto(String mailto) {
+            this.mailto = mailto;
+        }
+
+        public String getToken() {
+            return token;
+        }
+
+        public void setToken(String token) {
+            this.token = token;
+        }
+    }
+
+    public ProxyParameters getProxy() {
+        return this.proxy;
+    }
+
+    public static class ProxyParameters {
+        private String host;
+        private int port;
+
+        public String getHost() {
+            return this.host;
+        }
+
+        public void setHost(String host) {
+            this.host = host;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
     }
 
     public String getCorsAllowedOrigins() {

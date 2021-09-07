@@ -24,6 +24,11 @@ elastic:
   #host: 192.168.1.106:9200
   index: crossref
 
+proxy:
+    # proxy to be used when doing external call to crossref or unpaywall
+    host: 
+    port: 
+
 crossref:
   dumpPath: /media/lopez/data2/crossref_public_data_file_2021_01
   # a directory where the crossref update files will be located
