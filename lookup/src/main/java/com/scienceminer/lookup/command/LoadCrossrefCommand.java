@@ -85,7 +85,6 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
                                 try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
                                     metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
                                     // possibly update with the lastest indexed date obtained from this file
-//System.out.println(reader.getLastIndexed().toString());
                                     if (metadataLookup.getLastIndexed() == null || 
                                         metadataLookup.getLastIndexed().isBefore(reader.getLastIndexed()))
                                         metadataLookup.setLastIndexed(reader.getLastIndexed());
@@ -108,8 +107,9 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         }
         LOGGER.info("Number of Crossref records processed: " + meter.getCount());
         LOGGER.info("Crossref lookup size " + metadataLookup.getSize() + " records.");
-        if (metadataLookup.getLastIndexed() != null)
-            LOGGER.info("Crossref latest indexed date " + metadataLookup.getLastIndexed().toString() + ".");
+        if (metadataLookup.getLastIndexed() != null) {
+            LOGGER.info("Crossref latest indexed date " + metadataLookup.getLastIndexed().toString() + ".");            
+        }
         else
             LOGGER.info("Crossref latest indexed date is not set.");
     }

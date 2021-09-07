@@ -122,7 +122,6 @@ public class MetadataLookup {
         }
 
         return record;
-
     }
 
     /**
@@ -174,10 +173,44 @@ public class MetadataLookup {
     }
 
     public LocalDateTime getLastIndexed() {
-        return lastIndexed;
+        if (lastIndexed != null)
+            return lastIndexed;
+        else {
+            // get a possible value made persistent in the db
+            final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
+            ByteBuffer cachedData = null;
+            try (Txn<ByteBuffer> tx = environment.txnRead()) {
+                keyBuffer.put(BinarySerialiser.serialize("last-indexed-date")).flip();
+                cachedData = dbCrossrefJson.get(tx, keyBuffer);
+                if (cachedData != null) {
+                    lastIndexed = (LocalDateTime) BinarySerialiser.deserializeAndDecompress(cachedData);
+                }
+            } catch (Env.ReadersFullException e) {
+                throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
+            } catch (Exception e) {
+                LOGGER.error("Cannot retrieve the persistent last indexed date object", e);
+            }
+            return lastIndexed;
+        }
     }
 
     public void setLastIndexed(LocalDateTime lastIndexed) {
         this.lastIndexed = lastIndexed;
+
+        // persistent store of this date
+        final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
+        try {
+            final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
+            keyBuffer.put(BinarySerialiser.serialize("last-indexed-date")).flip();
+            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(this.lastIndexed);
+            final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
+            valBuffer.put(serializedValue).flip();
+            dbCrossrefJson.put(transactionWrapper.tx, keyBuffer, valBuffer);
+        } catch (Exception e) {
+            LOGGER.error("Cannot store the last-indexed-date");
+        } finally {
+            transactionWrapper.tx.commit();
+            transactionWrapper.tx.close();
+        }
     }
 }
