@@ -172,7 +172,7 @@ public class MetadataLookup {
         return values;
     }
 
-    public LocalDateTime getLastIndexed() {
+    public synchronized LocalDateTime getLastIndexed() {
         if (lastIndexed != null)
             return lastIndexed;
         else {
@@ -194,7 +194,7 @@ public class MetadataLookup {
         }
     }
 
-    public void setLastIndexed(LocalDateTime lastIndexed) {
+    public synchronized void setLastIndexed(LocalDateTime lastIndexed) {
         this.lastIndexed = lastIndexed;
 
         // persistent store of this date

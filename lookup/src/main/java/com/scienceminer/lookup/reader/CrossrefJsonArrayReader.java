@@ -9,52 +9,53 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
-public class CrossrefGreenelabJsonReader extends CrossrefJsonReader{
-    private static final Logger LOGGER = LoggerFactory.getLogger(CrossrefGreenelabJsonReader.class);
+public class CrossrefJsonArrayReader extends CrossrefJsonReader {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CrossrefJsonArrayReader.class);
 
-    public CrossrefGreenelabJsonReader(LookupConfiguration configuration) {
+    public CrossrefJsonArrayReader(LookupConfiguration configuration) {
         super(configuration);
         this.configuration = configuration;
     }
 
     public void load(InputStream input, Counter counterInvalidRecords, Consumer<JsonNode> closure) {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(input))) {
-
-            //br returns as stream and convert it into a List
-            br.lines().forEach(line -> {
-                final JsonNode crossrefRawData = fromJson(line);
+        final JsonNode jsonMap = fromJson(input);
+        if (jsonMap != null && jsonMap.get("items") != null) {
+            for (JsonNode crossrefRawData : jsonMap.get("items")) {
                 if (isRecordIncomplete(crossrefRawData)) {
                     counterInvalidRecords.inc();
                 } else {
                     final JsonNode crossrefData = postProcessRecord(crossrefRawData);
                     closure.accept(crossrefData);
                 }
-            });
-
-        } catch (IOException e) {
-            LOGGER.error("Some serious error when processing the input Crossref file.", e);
+            }
+        } else {
+            LOGGER.error("Null/empty content. The whole file will be ignored. ");
         }
     }
 
-    private JsonNode fromJson(String inputLine) {
+    private JsonNode fromJson(InputStream inputLine) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
             mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
             return mapper.readTree(inputLine);
         } catch (JsonGenerationException | JsonMappingException e) {
-            LOGGER.error("The input line cannot be processed\n " + inputLine + "\n ", e);
+            LOGGER.error("The input cannot be deserialised. ", e);
         } catch (IOException e) {
-            LOGGER.error("Some serious error when deserialize the JSON object: \n" + inputLine, e);
+            LOGGER.error("Some serious error when deserialize the JSON object", e);
         }
         return null;
     }

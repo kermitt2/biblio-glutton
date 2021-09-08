@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.inject.Module;
 
 import com.scienceminer.lookup.command.LoadCrossrefCommand;
+import com.scienceminer.lookup.command.GapUpdateCrossrefCommand;
 import com.scienceminer.lookup.command.LoadIstexIdsCommand;
 import com.scienceminer.lookup.command.LoadPMIDCommand;
 import com.scienceminer.lookup.command.LoadUnpayWallCommand;
@@ -93,6 +94,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         bootstrap.addCommand(new LoadIstexIdsCommand());
         bootstrap.addCommand(new LoadPMIDCommand());
         bootstrap.addCommand(new LoadCrossrefCommand());
+        bootstrap.addCommand(new GapUpdateCrossrefCommand());
     }
 
     public static void main(String... args) throws Exception {

@@ -5,8 +5,8 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
-import com.scienceminer.lookup.reader.CrossrefGreenelabJsonReader;
-import com.scienceminer.lookup.reader.CrossrefTorrentJsonReader;
+import com.scienceminer.lookup.reader.CrossrefJsonlReader;
+import com.scienceminer.lookup.reader.CrossrefJsonArrayReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.storage.lookup.MetadataLookup;
 import io.dropwizard.cli.ConfiguredCommand;
@@ -75,7 +75,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         final Counter counterInvalidRecords = metrics.counter("crossrefLookup_invalidRecords");
         if (Files.isDirectory(crossrefFilePath)) {
             try (Stream<Path> stream = Files.walk(crossrefFilePath, 1)) {
-                CrossrefTorrentJsonReader reader = new CrossrefTorrentJsonReader(configuration);
+                CrossrefJsonArrayReader reader = new CrossrefJsonArrayReader(configuration);
 
                 stream.filter(path -> Files.isRegularFile(path) && Files.isReadable(path)
                         && (StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".gz") ||
@@ -96,7 +96,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
             }
         } else {
             try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
-                CrossrefGreenelabJsonReader reader = new CrossrefGreenelabJsonReader(configuration);
+                CrossrefJsonlReader reader = new CrossrefJsonlReader(configuration);
 
                 metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
                 metadataLookup.setLastIndexed(reader.getLastIndexed());

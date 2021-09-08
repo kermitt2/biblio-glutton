@@ -22,12 +22,27 @@ import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.Observable;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * GET crossref request
  * @see <a href="https://github.com/CrossRef/rest-api-doc/blob/master/rest_api.md">Crossref API Documentation</a>
  *
  */
 public class CrossrefRequest extends Observable {
+    public static final Logger LOGGER = LoggerFactory.getLogger(CrossrefRequest.class);
 
     protected static final String BASE_URL = "https://api.crossref.org";
     
@@ -44,11 +59,13 @@ public class CrossrefRequest extends Observable {
     public Map<String, String> params;
  
     protected LookupConfiguration configuration;
+    protected ObjectMapper mapper;
 
     public CrossrefRequest(String model, Map<String, String> params, LookupConfiguration configuration) {
         this.model = model;
         this.params = params;
         this.configuration = configuration;
+        this.mapper = new ObjectMapper();
     }
        
     /**
@@ -80,7 +97,7 @@ public class CrossrefRequest extends Observable {
             
             String path = model;
 
-            // typically here "from-index-date", 
+            // typically here "filter=from-index-date:YYYY-MM-dd", 
             // &cursor=* for first query then use "next-cursor" field as value
             // rows=20 by default, max is 1000
 
@@ -124,8 +141,7 @@ public class CrossrefRequest extends Observable {
                     HttpEntity entity = response.getEntity();
                     if (entity != null) {
                         String body = EntityUtils.toString(entity);
-System.out.println(body);
-                        crossrefResponse.results = parseBody(body);
+                        crossrefResponse = parseBody(body, crossrefResponse);
                     }
                     
                     return crossrefResponse;
@@ -161,7 +177,38 @@ System.out.println(body);
         return str;
     }
 
-    public List<String> parseBody(String body) {
-        return Arrays.asList(body.split("\n"));
+    public CrossrefResponse parseBody(String body, CrossrefResponse crossrefResponse) {
+        if (crossrefResponse == null)
+            return null;
+
+        if (body == null || body.length() ==0)
+            return crossrefResponse;
+        
+        try {
+            JsonNode treeNode = mapper.readTree(body);
+            JsonNode messageNode = treeNode.get("message");
+            if (messageNode != null && messageNode.isObject()) {
+                JsonNode nextCursorNode = messageNode.get("next-cursor");
+                if (nextCursorNode != null && nextCursorNode.isObject()) {
+                    crossrefResponse.nextCursor = nextCursorNode.textValue();
+                }
+                List<String> results = new ArrayList<>();
+                JsonNode itemsNode = messageNode.get("items");
+                if (itemsNode != null && itemsNode.isArray()) {
+                    //ArrayNode itemsArrayNode = (ArrayNode)itemsNode;
+
+                    for(JsonNode oneItem : itemsNode) {
+                        results.add(mapper.writeValueAsString(oneItem));
+                    }
+                }
+                crossrefResponse.results = results;
+            }
+        } catch(JsonParseException pe) {
+            LOGGER.error("could not parse the JSON result object from Crossref REST API", pe);
+        } catch(Exception e) {
+            LOGGER.error("error when processing the JSON result object from Crossref REST API", e);
+        }
+
+        return crossrefResponse;
     }
 }
