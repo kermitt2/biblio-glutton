@@ -317,6 +317,25 @@ ignoreCrossRefFields:
   - indexed
 ```
 
+Example loading the [public CrossRef dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (2021-01-07), with SSD (final db size: 226 GB) - loading time: 3:52 (dump files on hard drive).
+
+
+```
+-- Counters --------------------------------------------------------------------
+crossrefLookup_invalidRecords
+             count = 4712332
+
+-- Meters ----------------------------------------------------------------------
+crossrefLookup
+             count = 115972356
+         mean rate = 11368.21 events/second
+     1-minute rate = 6520.71 events/second
+     5-minute rate = 6403.19 events/second
+    15-minute rate = 7240.26 events/second
+```
+
+The 4,712,332 invalid records correspond to all the DOI "components" (given to figures, tables, etc. part of document) which are filtered out. 
+
 #### PMID and PMC ID
 
 ```sh
@@ -377,6 +396,7 @@ npm install
 Usage information for indexing:
 
 ```sh
+cd biblio-glutton/indexing/
 node main -dump *PATH_TO_THE_CROSSREF_DUMP* index
 ```
 
@@ -399,6 +419,12 @@ For getting health check information about the selected ElasticSearch cluster:
 ```sh
 node main health
 ```
+
+Example loading the [public CrossRef dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (2021-01-07), index on SSD, dump files on hard drive, Ubuntu 18.04, 4 cores, 16MB RAM 6 years old machine:
+
+- 115,972,356 indexed records
+- around 6:30 for indexing (working on the same time on the computer), 4797 records/s
+- 25.94GB index size
 
 ## Matching accuracy
 
