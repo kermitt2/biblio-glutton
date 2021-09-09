@@ -259,7 +259,7 @@ For building the database and index used by service, you will need these resourc
   
 Without Metadata Plus subscription, we recommend to use the Academic Torrents CrossRef dumps. For instance, with the Linux command line `aria2` and a high speed internet connection (e.g. 500Mb/s), the dump can be downloaded in a few minutes. 
 
-* DOI to PMID and PMC mapping: available at Europe PMC and regularly updated, see ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/,
+* DOI to PMID and PMC mapping: available at Europe PMC and regularly updated, see ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz,
 
 * optionally, but advised, the Unpaywall dataset, to get Open Access links aggregated with the bibliographical metadata, see [here](http://unpaywall.org/products/snapshot) to get the latest database snapshot. 
 
@@ -348,6 +348,8 @@ Example:
 java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar pmid --input PMID_PMCID_DOI.csv.gz 
 ```
 
+As of Spetember 2021, the latest mapping covers 33,994,284 PMID, with 24,814,263 having a DOI (which means 9,180,021 PMID are not represented in Crossref).
+
 #### OA via Unpaywall
 
 ```sh
@@ -422,7 +424,7 @@ node main health
 
 Example loading the [public CrossRef dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (2021-01-07), index on SSD, dump files on hard drive, Ubuntu 18.04, 4 cores, 16MB RAM 6 years old machine:
 
-- 115,972,356 indexed records
+- 115,972,356 indexed records (perfect match with metadata db)
 - around 6:30 for indexing (working on the same time on the computer), 4797 records/s
 - 25.94GB index size
 

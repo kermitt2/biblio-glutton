@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
+import java.util.function.Consumer;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
@@ -46,13 +47,18 @@ public class IncrementalLoaderTask implements Runnable {
     private Meter meter;
     private Counter counterInvalidRecords;
 
+    // if true, we will also index the incremental dump files in elasticsearch during the task via 
+    // the external indexing module
+    private boolean indexing = false;
+
     private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("YYYY-MM-dd");
 
     public IncrementalLoaderTask(MetadataLookup metadataLookup, 
                                  LocalDateTime lastIndexed, 
                                  LookupConfiguration configuration,
                                  Meter meter,
-                                 Counter counterInvalidRecords) {
+                                 Counter counterInvalidRecords,
+                                 boolean indexing) {
         this.metadataLookup = metadataLookup;
         this.lastIndexed = lastIndexed;
         this.configuration = configuration;
@@ -62,6 +68,8 @@ public class IncrementalLoaderTask implements Runnable {
 
         this.meter = meter;
         this.counterInvalidRecords = counterInvalidRecords;
+
+        this.indexing = indexing;
     }
 
     public void run()  {
@@ -111,37 +119,36 @@ System.out.println(this.lastIndexed.format(formatter));
             }
 
 System.out.println("number of json documents: " + jsonObjectsStr.size());
-
+            
             File crossrefFile = new File(configuration.getCrossref().getDumpPath() + 
                     File.separator + "G" + nbFiles + ".json.gz");
-            try {
-                // write the file synchronously
+
+            // write the file synchronously
 System.out.println("writing: " + crossrefFile.getPath());
+            try {
                 Writer writer = new OutputStreamWriter(new GZIPOutputStream(
                     new FileOutputStream(crossrefFile)), StandardCharsets.UTF_8);
-                for(String oneJsonObjectsStr: jsonObjectsStr) {
-                    writer.write(oneJsonObjectsStr);
+                for(String result : jsonObjectsStr) {
+                    writer.write(result);
                     writer.write("\n");
                 }
                 writer.close();
-                nbFiles++;
-
-                // load in another thread
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                Runnable task = new LoadCrossrefFile(crossrefFile, configuration, meter, counterInvalidRecords);
-                executor.submit(task);
-
-                // index in a background external process
-
-
             } catch (Exception e) {
                 LOGGER.error("Writing incremental dump file failed: " + crossrefFile.getPath(), e);
             } 
 
-            try {
-                TimeUnit.MILLISECONDS.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            // load in another thread
+            ExecutorService executorLoading = Executors.newSingleThreadExecutor();
+            Runnable taskLoading = new LoadCrossrefFile(crossrefFile, jsonObjectsStr, configuration, meter, counterInvalidRecords);
+            executorLoading.submit(taskLoading);
+
+            nbFiles++;
+            
+            if (indexing) {
+                // index in another background external process
+                ExecutorService executorIndexing = Executors.newSingleThreadExecutor();
+                Runnable taskIndexing = new IndexCrossrefFile(crossrefFile, configuration);
+                executorIndexing.submit(taskIndexing);
             }
 
             if (jsonObjectsStr == null || jsonObjectsStr.size() == 0)
@@ -154,13 +161,18 @@ System.out.println("writing: " + crossrefFile.getPath());
 
     class LoadCrossrefFile implements Runnable { 
         private File crossrefFile;
+        private List<String> results;
         private LookupConfiguration configuration;
         private Meter meter;
         private Counter counterInvalidRecords;
 
-        public LoadCrossrefFile(File crossrefFile, LookupConfiguration configuration, Meter meter,
+        public LoadCrossrefFile(File crossrefFile, 
+                                List<String> results, 
+                                LookupConfiguration configuration, 
+                                Meter meter,
                                 Counter counterInvalidRecords) { 
             this.crossrefFile = crossrefFile;
+            this.results = results;
             this.configuration = configuration;
             this.meter = meter;
             this.counterInvalidRecords = counterInvalidRecords;
@@ -179,4 +191,54 @@ System.out.println("writing: " + crossrefFile.getPath());
         }
     }
 
-}
+    class IndexCrossrefFile implements Runnable { 
+        private File crossrefFile;
+        private LookupConfiguration configuration;
+
+        public IndexCrossrefFile(File crossrefFile, LookupConfiguration configuration) { 
+            this.crossrefFile = crossrefFile;
+            this.configuration = configuration;
+        } 
+
+        @Override
+        public void run() { 
+            // write the file synchronously
+System.out.println("indexing: " + crossrefFile.getPath());
+
+            ProcessBuilder builder = new ProcessBuilder();
+            // command is: node main -dump ~/tmp/crossref_public_data_file_2021_01 index
+            builder.command("node", "main", "-dumo", crossrefFile.getAbsolutePath(), "index");            
+            builder.directory(new File("../indexing"));
+
+            try {
+                Process process = builder.start();
+                StreamGobbler streamGobbler = new StreamGobbler(process.getInputStream(), System.out::println);
+                Executors.newSingleThreadExecutor().submit(streamGobbler);
+                
+                int exitCode = process.waitFor();
+                if (exitCode != 0)
+                    LOGGER.warn("Indexing script leave with exit code: " + exitCode);
+            } catch(java.io.IOException ioe) {
+                LOGGER.error("IO error when executing external command: " + builder.command().toString(), ioe);
+            } catch(java.lang.InterruptedException ie) {
+                LOGGER.error("External process unexpected interruption", ie);
+            } 
+        }
+    }
+
+    private static class StreamGobbler implements Runnable {
+        private InputStream inputStream;
+        private Consumer<String> consumer;
+
+        public StreamGobbler(InputStream inputStream, Consumer<String> consumer) {
+            this.inputStream = inputStream;
+            this.consumer = consumer;
+        }
+
+        @Override
+        public void run() {
+            new BufferedReader(new InputStreamReader(inputStream)).lines()
+              .forEach(consumer);
+        }
+    }
+}   

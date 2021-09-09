@@ -71,7 +71,8 @@ public class GapUpdateCrossrefCommand extends ConfiguredCommand<LookupConfigurat
                                                   metadataLookup.getLastIndexed(), 
                                                   configuration, 
                                                   meter, 
-                                                  counterInvalidRecords);
+                                                  counterInvalidRecords,
+                                                  false); // no ES indexing
         Future future = executor.submit(task);
         // wait until done (in ms)
         while (!future.isDone()) {
