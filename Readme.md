@@ -53,11 +53,11 @@ To check if it works, you can view a report of the data used by the service at `
 
 ```json
 {
-    "Metadata Lookup Crossref size": "{crossref_Jsondoc=96491709}",
-    "Metadata Matching Crossref size": "96450728",
-    "DOI OA size": "{unpayWall_doiOAUrl=25215243}",
-    "PMID lookup size": "{pmid_doi2ids=19648024, pmid_pmc2ids=4991296, pmid_pmid2ids=29010455}",
-    "ISTEX size": "{istex_doi2ids=20999895, istex_istex2ids=21073367}"
+    "Metadata Lookup Crossref size": "{crossref_Jsondoc=115972357}",
+    "ISTEX size": "{istex_doi2ids=21325689, istex_istex2ids=21401921, istex_pii2ids=6954865}",
+    "Metadata Matching Crossref size": "116074854",
+    "PMID lookup size": "{pmid_doi2ids=24814263, pmid_pmc2ids=7109853, pmid_pmid2ids=33009734}",
+    "DOI OA size": "{unpayWall_doiOAUrl=28373676}"
 }
 ```
 
@@ -380,7 +380,7 @@ Note: see bellow how to create this mapping file `istexIds.all.gz`.
 
 Elasticsearch `7.*` is required. `node.js` version 10 or more should work fine. 
 
-A node.js utility under the subdirectory `indexing/` is used to build the Elasticsearch index. It will take a couple of hours for the >115M crossref entries (around 6 hours) and the index will take around 22GB of space.
+A node.js utility under the subdirectory `indexing/` is used to build the Elasticsearch index. It will take a couple of hours. For 116M crossref entries, our routine loading takes around 6 hours and around 22GB of index space (per ES node if you plan to use several ES nodes).
 
 #### Install and configure
 
