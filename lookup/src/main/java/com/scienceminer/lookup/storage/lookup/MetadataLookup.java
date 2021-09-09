@@ -73,8 +73,6 @@ public class MetadataLookup {
             store(key, crossrefData.toString(), dbCrossrefJson, transactionWrapper.tx);
             meterValidRecord.mark();
             counter.incrementAndGet();
-
-
         });
         transactionWrapper.tx.commit();
         transactionWrapper.tx.close();

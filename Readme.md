@@ -322,7 +322,7 @@ Example loading the [public CrossRef dump](https://www.crossref.org/blog/new-pub
 
 ```
 -- Counters --------------------------------------------------------------------
-crossrefLookup_invalidRecords
+crossrefLookup_rejectedRecords
              count = 4712332
 
 -- Meters ----------------------------------------------------------------------
@@ -334,7 +334,7 @@ crossrefLookup
     15-minute rate = 7240.26 events/second
 ```
 
-The 4,712,332 invalid records correspond to all the DOI "components" (given to figures, tables, etc. part of document) which are filtered out. 
+The 4,712,332 rejected records correspond to all the DOI "components" (given to figures, tables, etc. part of document) which are filtered out. 
 
 #### PMID and PMC ID
 
@@ -380,7 +380,7 @@ Note: see bellow how to create this mapping file `istexIds.all.gz`.
 
 Elasticsearch `7.*` is required. `node.js` version 10 or more should work fine. 
 
-A node.js utility under the subdirectory `indexing/` is used to build the Elasticsearch index. It will take a couple of hours. For 116M crossref entries, our routine loading takes around 6 hours and around 22GB of index space (per ES node if you plan to use several ES nodes).
+A node.js utility under the subdirectory `indexing/` is used to build the Elasticsearch index. Indexing will take a few hours. For 116M crossref entries, the indexing takes around 6 hours (with SSD, 16GB RAM) and around 22GB of index space (per ES node if you plan to use several ES nodes).
 
 #### Install and configure
 

@@ -5,6 +5,7 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
+import com.scienceminer.lookup.reader.CrossrefJsonReader;
 import com.scienceminer.lookup.reader.CrossrefJsonlReader;
 import com.scienceminer.lookup.reader.CrossrefJsonArrayReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
@@ -72,17 +73,26 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefFilePathString);
 
         final Meter meter = metrics.meter("crossrefLookup");
-        final Counter counterInvalidRecords = metrics.counter("crossrefLookup_invalidRecords");
+        final Counter counterInvalidRecords = metrics.counter("crossrefLookup_rejectedRecords");
         if (Files.isDirectory(crossrefFilePath)) {
             try (Stream<Path> stream = Files.walk(crossrefFilePath, 1)) {
-                CrossrefJsonArrayReader reader = new CrossrefJsonArrayReader(configuration);
+                CrossrefJsonArrayReader readerJsonArray = new CrossrefJsonArrayReader(configuration);
+                CrossrefJsonlReader readerJsonl = new CrossrefJsonlReader(configuration);
 
                 stream.filter(path -> Files.isRegularFile(path) && Files.isReadable(path)
                         && (StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".gz") ||
                         StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".xz") ||
                         StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".json")))
                         .forEach(dumpFile -> {
+                                CrossrefJsonReader reader;
+                                if (StringUtils.startsWith(dumpFile.getFileName().toString(), "G") ||
+                                    StringUtils.startsWith(dumpFile.getFileName().toString(), "D")) {
+                                    reader = readerJsonl;
+                                } else {
+                                    reader = readerJsonArray;
+                                }
                                 try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
+
                                     metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
                                     // possibly update with the lastest indexed date obtained from this file
                                     if (metadataLookup.getLastIndexed() == null || 

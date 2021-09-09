@@ -62,7 +62,7 @@ public class GapUpdateCrossrefCommand extends ConfiguredCommand<LookupConfigurat
         LOGGER.info("Preparing the system. Loading data from Crossref REST API, saving them into " + crossrefFilePathString);
 
         final Meter meter = metrics.meter("crossrefGapUpdate");
-        final Counter counterInvalidRecords = metrics.counter("crossrefGapUpdate_invalidRecords");
+        final Counter counterInvalidRecords = metrics.counter("crossrefGapUpdate_rejectedRecords");
 
         System.out.println("Run gap update...");
 
@@ -83,10 +83,5 @@ public class GapUpdateCrossrefCommand extends ConfiguredCommand<LookupConfigurat
         LOGGER.info("New Crossref lookup size (with gap update) " + metadataLookup.getSize() + " records.");
         LOGGER.info("Crossref metadata are up to date.");            
     }
-
-    /*private InputStream selectStream(Path crossrefFilePath) throws IOException {
-        InputStream inputStreamCrossref = new GZIPInputStream(Files.newInputStream(crossrefFilePath));
-        return inputStreamCrossref;
-    }*/
 
 }

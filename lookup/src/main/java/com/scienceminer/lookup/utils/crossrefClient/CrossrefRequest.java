@@ -12,6 +12,9 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.apache.http.util.EntityUtils;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
+
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 
 import java.io.IOException;
@@ -21,6 +24,7 @@ import java.util.Map;
 import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.Observable;
+import java.util.Iterator;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
@@ -82,14 +86,21 @@ public class CrossrefRequest extends Observable {
             return crossrefResponse;
         }
         CloseableHttpClient httpclient = null;
+        RequestConfig requestConfig = RequestConfig.custom()
+                                .setCookieSpec(CookieSpecs.STANDARD)
+                                .build();
         if (configuration.getProxy().getHost() != null) {
             HttpHost proxy = new HttpHost(configuration.getProxy().getHost(), configuration.getProxy().getPort());
             DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
+
             httpclient = HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig).setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build())
                 .setRoutePlanner(routePlanner)
                 .build();
         } else {
-            httpclient = HttpClients.createDefault();
+            httpclient = HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .build();
         }
 
         try {
@@ -112,6 +123,7 @@ public class CrossrefRequest extends Observable {
             }
 
             // set recommended User-Agent header
+            //System.out.println(uriBuilder.build().toString());
             HttpGet httpget = new HttpGet(uriBuilder.build());
 
             if (configuration.getCrossref().getMailto() != null) {
@@ -188,20 +200,25 @@ public class CrossrefRequest extends Observable {
             JsonNode treeNode = mapper.readTree(body);
             JsonNode messageNode = treeNode.get("message");
             if (messageNode != null && messageNode.isObject()) {
-                JsonNode nextCursorNode = messageNode.get("next-cursor");
-                if (nextCursorNode != null && nextCursorNode.isObject()) {
-                    crossrefResponse.nextCursor = nextCursorNode.textValue();
-                }
-                List<String> results = new ArrayList<>();
-                JsonNode itemsNode = messageNode.get("items");
-                if (itemsNode != null && itemsNode.isArray()) {
-                    //ArrayNode itemsArrayNode = (ArrayNode)itemsNode;
 
-                    for(JsonNode oneItem : itemsNode) {
-                        results.add(mapper.writeValueAsString(oneItem));
+                Iterator<String> keys = messageNode.fieldNames();
+                while(keys.hasNext()) {
+                    String key = keys.next();
+                    if (key.equals("next-cursor")) {
+                        crossrefResponse.nextCursor = messageNode.get(key).textValue();
+                    } else if (key.equals("items")) {
+                        List<String> results = new ArrayList<>();
+                        JsonNode itemsNode = messageNode.get("items");
+                        if (itemsNode != null && itemsNode.isArray()) {
+                            //ArrayNode itemsArrayNode = (ArrayNode)itemsNode;
+                            for(JsonNode oneItem : itemsNode) {
+                                results.add(mapper.writeValueAsString(oneItem));
+                            }
+                        }
+                        crossrefResponse.results = results;
                     }
+
                 }
-                crossrefResponse.results = results;
             }
         } catch(JsonParseException pe) {
             LOGGER.error("could not parse the JSON result object from Crossref REST API", pe);

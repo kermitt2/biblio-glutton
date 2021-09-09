@@ -91,10 +91,8 @@ public class IncrementalLoaderTask implements Runnable {
 
         boolean responseEmpty = false;
         String cursorValue = "*";
-
         int nbFiles = 1000000;
 System.out.println(this.lastIndexed.format(formatter));
-
         boolean first = true;
 
         while(!responseEmpty) {
@@ -118,13 +116,11 @@ System.out.println(this.lastIndexed.format(formatter));
                 LOGGER.error("Crossref update call failed", e);
             }
 
-System.out.println("number of json documents: " + jsonObjectsStr.size());
-            
             File crossrefFile = new File(configuration.getCrossref().getDumpPath() + 
                     File.separator + "G" + nbFiles + ".json.gz");
 
             // write the file synchronously
-System.out.println("writing: " + crossrefFile.getPath());
+//System.out.println("writing: " + crossrefFile.getPath());
             try {
                 Writer writer = new OutputStreamWriter(new GZIPOutputStream(
                     new FileOutputStream(crossrefFile)), StandardCharsets.UTF_8);
