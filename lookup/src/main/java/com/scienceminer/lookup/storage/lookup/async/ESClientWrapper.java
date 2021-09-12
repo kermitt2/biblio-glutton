@@ -65,6 +65,7 @@ public class ESClientWrapper {
 
                 Exception returnException = e;
                 if (e instanceof IOException) {
+LOGGER.error("es query processing failure", e);
                     returnException = new ServiceException(500, "Cannot connect to Elasticsearch", e);
                 }
                 callback.accept(null, returnException);
@@ -77,7 +78,6 @@ public class ESClientWrapper {
             final int i = counter.decrementAndGet();
             LOGGER.debug("Ready to call, occupying a spot: " + i);
         }
-
         final CompletableFuture<Void> searchResponseCompletableFuture = CompletableFuture
                 .runAsync(() -> esClient.searchAsync(request, options, listener), executorService);
 

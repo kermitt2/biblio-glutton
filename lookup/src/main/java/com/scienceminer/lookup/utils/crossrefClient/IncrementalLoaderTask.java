@@ -50,6 +50,7 @@ public class IncrementalLoaderTask implements Runnable {
     // if true, we will also index the incremental dump files in elasticsearch during the task via 
     // the external indexing module
     private boolean indexing = false;
+    private boolean daily = false;
 
     private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("YYYY-MM-dd");
 
@@ -58,7 +59,8 @@ public class IncrementalLoaderTask implements Runnable {
                                  LookupConfiguration configuration,
                                  Meter meter,
                                  Counter counterInvalidRecords,
-                                 boolean indexing) {
+                                 boolean indexing,
+                                 boolean daily) {
         this.metadataLookup = metadataLookup;
         this.lastIndexed = lastIndexed;
         this.configuration = configuration;
@@ -70,6 +72,7 @@ public class IncrementalLoaderTask implements Runnable {
         this.counterInvalidRecords = counterInvalidRecords;
 
         this.indexing = indexing;
+        this.daily = daily;
     }
 
     public void run()  {
@@ -85,7 +88,7 @@ public class IncrementalLoaderTask implements Runnable {
          *
          **/
 
-        // "from-index-date", 
+        // "from-index-date" but we get > 1 million per day, or "from-update-date" (a few hundred thousands)
         // &cursor=* for first query then use "next-cursor" field as value
         // rows=20 by default, max is 1000
 
@@ -100,8 +103,10 @@ System.out.println(this.lastIndexed.format(formatter));
         
             arguments.put("cursor", cursorValue);
             arguments.put("rows", "1000");
-            if (first) {
-                arguments.put("filter", "from-index-date:"+this.lastIndexed.format(formatter));
+            //if (first) 
+            {
+                //arguments.put("filter", "from-index-date:"+this.lastIndexed.format(formatter));
+                arguments.put("filter", "from-update-date:"+this.lastIndexed.format(formatter));
                 first = false;
             }
 
@@ -110,14 +115,30 @@ System.out.println(this.lastIndexed.format(formatter));
             try {
                 CrossrefResponse response = client.request("works", arguments);
 
+                if (response.errorMessage != null) {
+                    // wait 2 seconds and resend
+                    TimeUnit.SECONDS.sleep(2);
+
+                    response = client.request("works", arguments);
+                    if (response.errorMessage != null) {
+                        throw new Exception("The request to Crossref REST API failed: " + response.errorMessage);
+                    }
+                }
+
                 jsonObjectsStr = response.results;
                 cursorValue = response.nextCursor;
             } catch (Exception e) {
                 LOGGER.error("Crossref update call failed", e);
             }
-
-            File crossrefFile = new File(configuration.getCrossref().getDumpPath() + 
-                    File.separator + "G" + nbFiles + ".json.gz");
+//System.out.println("number of results: " + jsonObjectsStr.size());
+            String crossrefFileName = configuration.getCrossref().getDumpPath() +  File.separator;
+            if (daily) {
+                crossrefFileName += "D";
+            } else {
+                crossrefFileName += "G";
+            }
+            crossrefFileName += nbFiles + ".json.gz";
+            File crossrefFile = new File(crossrefFileName);
 
             // write the file synchronously
 //System.out.println("writing: " + crossrefFile.getPath());

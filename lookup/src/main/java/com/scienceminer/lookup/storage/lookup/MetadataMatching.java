@@ -50,21 +50,21 @@ public class MetadataMatching {
     private MetadataLookup metadataLookup;
 
     public static final String INDEX_FIELD_NAME_ID = "id";
-    public static final String INDEX_FIELD_NAME_TITLE = "title";
+    public static final String INDEX_FIELD_NAME_ATITLE = "title";
     public static final String INDEX_FIELD_NAME_FIRST_PAGE = "first_page";
     public static final String INDEX_FIELD_NAME_FIRST_AUTHOR = "first_author";
     public static final String INDEX_FIELD_NAME_DOI = "DOI";
     public static final String INDEX_FIELD_NAME_VOLUME = "volume";
     public static final String INDEX_FIELD_NAME_ISSN = "issn";
     public static final String INDEX_FIELD_NAME_BIBLIOGRAPHIC = "bibliographic";
-    public static final String INDEX_FIELD_NAME_JOURNAL_TITLE = "journal";
+    public static final String INDEX_FIELD_NAME_JTITLE = "journal";
     public static final String INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE = "abbreviated_journal";
+    public static final String INDEX_FIELD_NAME_YEAR = "year";
 
     private final String INDEX_FIELD_NAME_JSONDOC = "jsondoc";
 
     public MetadataMatching(LookupConfiguration configuration, MetadataLookup metadataLookup) {
         this.configuration = configuration;
-
         RestHighLevelClient esClient = new RestHighLevelClient(
                 RestClient.builder(
                         HttpHost.create(configuration.getElastic().getHost()))
@@ -72,6 +72,7 @@ public class MetadataMatching {
                                 requestConfigBuilder -> requestConfigBuilder
                                         .setConnectTimeout(30000)
                                         .setSocketTimeout(60000)));
+
         // note: maxRetryTimeoutMillis is deprecated in ES 7 due to implementation issue 
         // https://github.com/elastic/elasticsearch/pull/38085
         //                .setMaxRetryTimeoutMillis(120000));
@@ -79,7 +80,6 @@ public class MetadataMatching {
         this.esClient = new ESClientWrapper(esClient, configuration.getMaxAcceptedRequests());
 
         this.metadataLookup = metadataLookup;
-
     }
 
     public long getSize() {
@@ -107,7 +107,7 @@ public class MetadataMatching {
         validateInput(atitle, firstAuthor);
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_TITLE, atitle))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_ATITLE, atitle))
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
 
         return executeQuery(query);
@@ -122,7 +122,7 @@ public class MetadataMatching {
         validateInput(atitle, firstAuthor);
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_TITLE, atitle))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_ATITLE, atitle))
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
 
         executeQueryAsync(query, callback);
@@ -180,7 +180,7 @@ public class MetadataMatching {
                                                     String firstPage, 
                                                     String firstAuthor) {
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, jtitle))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JTITLE, jtitle))
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, jtitle))
                 .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
                 .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
@@ -212,7 +212,6 @@ public class MetadataMatching {
         if (isBlank(biblio)) {
             throw new ServiceException(400, "Supplied bibliographical string is empty.");
         }
-
         final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
 
         executeQueryAsync(query, callback);
@@ -273,14 +272,16 @@ public class MetadataMatching {
         SearchSourceBuilder builder = new SearchSourceBuilder();
         builder.query(query);
         builder.from(0);
-        builder.size(1);
+        builder.size(configuration.getBlockSize());
 
         String[] includeFields = new String[]
                 {
                         INDEX_FIELD_NAME_ID,
                         INDEX_FIELD_NAME_DOI,
                         INDEX_FIELD_NAME_FIRST_AUTHOR,
-                        INDEX_FIELD_NAME_TITLE
+                        INDEX_FIELD_NAME_ATITLE,
+                        INDEX_FIELD_NAME_JTITLE,
+                        INDEX_FIELD_NAME_YEAR
                 };
         String[] excludeFields = new String[]{"*"};
         builder.fetchSource(includeFields, null);
@@ -288,7 +289,6 @@ public class MetadataMatching {
         final SearchRequest searchRequest = new SearchRequest(configuration.getElastic().getIndex());
         searchRequest.searchType(SearchType.DFS_QUERY_THEN_FETCH);
         searchRequest.source(builder);
-
         return searchRequest;
     }
 
@@ -296,6 +296,9 @@ public class MetadataMatching {
         SearchHits hits = response.getHits();
         Iterator<SearchHit> it = hits.iterator();
         final List<MatchingDocument> matchingDocuments = new ArrayList<>();
+
+        double scoreMin = 1.0;
+        double scoreMax = 0.0;
 
         while (it.hasNext() && matchingDocuments.size() < configuration.getBlockSize()) {
             MatchingDocument matchingDocument = new MatchingDocument();
@@ -305,21 +308,43 @@ public class MetadataMatching {
             String DOI = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_DOI);
             String firstAuthor = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_FIRST_AUTHOR);
 
-            final List<String> titles = (List<String>) hit.getSourceAsMap().get(INDEX_FIELD_NAME_TITLE);
-            String title = "";
-            if (CollectionUtils.isNotEmpty(titles)) {
-                title = titles.get(0);
+            final List<String> atitles = (List<String>) hit.getSourceAsMap().get(INDEX_FIELD_NAME_ATITLE);
+            String atitle = "";
+            if (CollectionUtils.isNotEmpty(atitles)) {
+                atitle = atitles.get(0);
+            }
+
+            final List<String> jtitles = (List<String>) hit.getSourceAsMap().get(INDEX_FIELD_NAME_JTITLE);
+            String jtitle = "";
+            if (CollectionUtils.isNotEmpty(jtitles)) {
+                jtitle = jtitles.get(0);
+            }
+
+            final Integer year = (Integer) hit.getSourceAsMap().get(INDEX_FIELD_NAME_YEAR);
+            String yearStr = null;
+            if (year != null) {
+                yearStr = ""+year; 
             }
 
             matchingDocument.setDOI(DOI);
             matchingDocument.setFirstAuthor(firstAuthor);
-            matchingDocument.setATitle(title);
+            matchingDocument.setATitle(atitle);
+            matchingDocument.setJTitle(jtitle);
+            matchingDocument.setYear(yearStr);
+
             final String jsonObject = metadataLookup.retrieveJsonDocument(DOI);
             if (jsonObject == null) {
                 LOGGER.warn("The search index returned a result but the corresponding entry cannot be fetched in the metadata db, DOI: " + DOI);
                 continue;
             }
+
             matchingDocument.setJsonObject(jsonObject);
+            double hitScore = hit.getScore();
+            matchingDocument.setBlockingScore(hitScore);
+            if (hitScore > scoreMax)
+                scoreMax = hitScore;
+            if (hitScore < scoreMin)
+                scoreMin = hitScore;
 
             try {
                 ObjectMapper mapper = new ObjectMapper();
@@ -351,6 +376,13 @@ public class MetadataMatching {
             matchingDocument.setIsException(true);
             matchingDocument.setException(new NotFoundException("Cannot find records for the input query."));
             matchingDocuments.add(matchingDocument);
+        } else {
+            // normalize search scores in [0.5:1]
+            for(MatchingDocument matchingDocument : matchingDocuments) {
+                double normalizedHitScore = (matchingDocument.getBlockingScore() - scoreMin) / (scoreMax - scoreMin);
+                normalizedHitScore = 0.5 + (normalizedHitScore/2);
+                matchingDocument.setBlockingScore(normalizedHitScore);
+            }
         }
 
         return matchingDocuments;

@@ -9,7 +9,7 @@ public class CrossrefResponse {
     public long time;
     public String errorMessage;
     public Exception errorException;
-    
+
     public CrossrefResponse() {
         this.status = -1;
         this.results = null;

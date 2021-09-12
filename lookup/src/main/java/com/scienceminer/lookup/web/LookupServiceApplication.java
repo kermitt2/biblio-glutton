@@ -66,9 +66,9 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
 
         // Enable QoS filter
-        final FilterRegistration.Dynamic qos = environment.servlets().addFilter("QOS", QoSFilter.class);
+        /*final FilterRegistration.Dynamic qos = environment.servlets().addFilter("QOS", QoSFilter.class);
         qos.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
-        qos.setInitParameter("maxRequests", String.valueOf(configuration.getMaxAcceptedRequests()));
+        qos.setInitParameter("maxRequests", String.valueOf(configuration.getMaxAcceptedRequests()));*/
 
         environment.jersey().setUrlPattern(RESOURCES + "/*");
         environment.jersey().register(new ServiceExceptionMapper());

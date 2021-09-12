@@ -122,10 +122,8 @@ __Important Note__: this Docker is a way to test and play with the biblio-glutto
     - `GET host:port/service/lookup/pii/{PII}`   
 
 - match record by article title and first author lastname
-    - `GET host:port/service/lookup?atitle=ARTICLE_TITLE&firstAuthor=FIRST_AUTHOR_SURNAME[?postValidate=true]`
+    - `GET host:port/service/lookup?atitle=ARTICLE_TITLE&firstAuthor=FIRST_AUTHOR_SURNAME`
     
-    The post validation optional parameter avoids returning records whose title and first author are too different from the searched ones.
-
 - match record by journal title or abbreviated title, volume and first page
     - `GET host:port/service/lookup?jtitle=JOURNAL_TITLE&volume=VOLUME&firstPage=FIRST_PAGE`
 
@@ -138,13 +136,13 @@ __Important Note__: this Docker is a way to test and play with the biblio-glutto
 
 Any combinations of these metadata and full raw citation string is possible, for instance: 
 
-    - `GET host:port/service/lookup?biblio=BIBLIO_STRING&atitle=ARTICLE_TITLE&firstAuthor=FIRST_AUTHOR_SURNAME[?postValidate=true]`
+    - `GET host:port/service/lookup?biblio=BIBLIO_STRING&atitle=ARTICLE_TITLE&firstAuthor=FIRST_AUTHOR_SURNAME`
 
 or:
 
     - `GET host:port/service/lookup?jtitle=JOURNAL_TITLE&volume=VOLUME&firstPage=FIRST_PAGE&firstAuthor=FIRST_AUTHOR_SURNAME&atitle=ARTICLE_TITLE`
 
-biblio-glutton will make the best use of all the parameters sent to retrieve in the fastest way a record and to post-validate it to avoid false positive. See [#12](https://github.com/kermitt2/biblio-glutton/issues/12). So it is advised to send as much metadata as possible to try to optimize the DOI matching in term of speed and accuracy.  
+biblio-glutton will make the best use of all the parameters sent to retrieve in the fastest way a record and apply matching threashold to avoid false positive. It is advised to send as much metadata as possible to try to optimize the DOI matching in term of speed and accuracy, and when possible a full raw bibliographical string.  
 
 In case you are only interested by the Open Access URL for a bibliographical object, the open Access resolver API returns the OA PDF link (URL) only via an identifier: 
 
@@ -173,9 +171,9 @@ curl http://localhost:8080/service/lookup?doi=10.1484/J.QUAESTIO.1.103624
 Matching with title and first authort lastname:
 
 ```sh
-curl "http://localhost:8080/service/lookup?atitle=Naturalizing+Intentionality+between+Philosophy+and+Brain+Science.+A+Survey+of+Methodological+and+Metaphysical+Issues&firstAuthor=Pecere&postValidate=true"
+curl "http://localhost:8080/service/lookup?atitle=Naturalizing+Intentionality+between+Philosophy+and+Brain+Science.+A+Survey+of+Methodological+and+Metaphysical+Issues&firstAuthor=Pecere"
 
-curl "http://localhost:8080/service/lookup?atitle=Naturalizing+Intentionality+between+Philosophy+and+Brain+Science&firstAuthor=Pecere&postValidate=false"
+curl "http://localhost:8080/service/lookup?atitle=Naturalizing+Intentionality+between+Philosophy+and+Brain+Science&firstAuthor=Pecere"
 ```
 
 Matching with raw bibliographical reference string:
@@ -333,6 +331,7 @@ crossrefLookup
      5-minute rate = 6403.19 events/second
     15-minute rate = 7240.26 events/second
 ```
+116074854
 
 The 4,712,332 rejected records correspond to all the DOI "components" (given to figures, tables, etc. part of document) which are filtered out. 
 
@@ -471,14 +470,14 @@ The evaluation dataset will be saved under `ABS_PATH_TO_PMC/PMC_sample_1943` wit
 
 - For launching an evaluation: 
 
-1) Select the matching method (`crossref` or `glutton`) in the `grobid-home/config/grobid.properties` file: 
+1) Select the matching method (`crossref` or `glutton`) in the `grobid-home/config/grobid.yaml` file: 
 
-
-```
-#-------------------- consolidation --------------------
-# Define the bibliographical data consolidation service to be used, eiter "crossref" for CrossRef REST API or "glutton" for https://github.com/kermitt2/biblio-glutton
-#grobid.consolidation.service=crossref
-grobid.consolidation.service=glutton
+```yaml
+consolidation:
+    # define the bibliographical data consolidation service to be used, either "crossref" for CrossRef REST API or 
+    # "glutton" for https://github.com/kermitt2/biblio-glutton
+    #service: "crossref"
+    service: "glutton"
 ```
 
 2) If Glutton is setected, start the Glutton server as indicated above (we assume that it is running at `localhost:8080`).

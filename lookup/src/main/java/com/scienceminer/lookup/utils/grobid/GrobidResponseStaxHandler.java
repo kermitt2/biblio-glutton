@@ -40,6 +40,7 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
     private StaxTag firstAuthorForename = new StaxTag("forename", "/biblStruct/analytic/author/persName/forename");
     private StaxTag firstAuthorSurnameMonograph = new StaxTag("surname", "/biblStruct/monogr/author/persName/surname");
     private StaxTag firstAuthorForenameMonograph = new StaxTag("forename", "/biblStruct/monogr/author/persName/forename");
+    private StaxTag date = new StaxTag("year", "/biblStruct/analytic/date");
 
     @Override
     public void onStartDocument(XMLStreamReader2 reader) {
@@ -71,7 +72,12 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
             firstAuthorMonograph = true;
         } else if (currentTag.equals(firstAuthorSurnameMonograph) && firstAuthorMonograph) {
             fetchText = true;
-        }
+        } else if (currentTag.equals(date)) {
+            if (getAttributeValue(reader, "when") != null) {
+                String isoDate = getAttributeValue(reader, "when");
+                response.setYear(isoDate.substring(0,4));
+            }
+        } 
 
         indentLevel++;
     }
@@ -195,7 +201,6 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
 
     }
 
-
     public class GrobidResponse {
 
         private String atitle;
@@ -204,9 +209,12 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
 
         private String firstAuthorMonograph;
 
-        public GrobidResponse(String firstAuthor, String atitle) {
+        private String year;
+
+        public GrobidResponse(String firstAuthor, String atitle, String year) {
             this.firstAuthor = firstAuthor;
             this.atitle = atitle;
+            this.year = year;
         }
 
         public GrobidResponse() {
@@ -227,6 +235,14 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
 
         public void setAtitle(String atitle) {
             this.atitle = atitle;
+        }
+
+        public String getYear() {
+            return year;
+        }
+
+        public void setYear(String year) {
+            this.year = year;
         }
 
         public void setFirstAuthorMonograph(String firstAuthorMonograph) {

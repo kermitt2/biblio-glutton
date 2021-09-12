@@ -72,7 +72,8 @@ public class GapUpdateCrossrefCommand extends ConfiguredCommand<LookupConfigurat
                                                   configuration, 
                                                   meter, 
                                                   counterInvalidRecords,
-                                                  false); // no ES indexing
+                                                  false, // no ES indexing
+                                                  false); // not daily incremental update
         Future future = executor.submit(task);
         // wait until done (in ms)
         while (!future.isDone()) {

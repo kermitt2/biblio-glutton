@@ -19,6 +19,7 @@ public class MatchingDocument {
     private String jsonObject;
 
     private double matchingScore = 0.0;
+    private double blockingScore = 0.0;
 
     private boolean isException = false;
     private Throwable exception;
@@ -82,8 +83,10 @@ public class MatchingDocument {
     }
 
     public void setATitle(String atitle) {
-        atitle = atitle.replace("\n", " ");
-        atitle = atitle.replaceAll("( )+", " ");
+        if (atitle != null) {
+            atitle = atitle.replace("\n", " ");
+            atitle = atitle.replaceAll("( )+", " ");
+        }
         this.atitle = atitle;
     }
 
@@ -122,6 +125,14 @@ public class MatchingDocument {
         this.matchingScore = matchingScore;
     }
 
+    public double getBlockingScore() {
+        return blockingScore;
+    }
+
+    public void setBlockingScore(double blockingScore) {
+        this.blockingScore = blockingScore;
+    }
+
     public String getJTitle() {
         return jtitle;
     }
@@ -135,8 +146,10 @@ public class MatchingDocument {
     }
 
     public void setBTitle(String btitle) {
-        btitle = btitle.replace("\n", " ");
-        btitle = btitle.replaceAll("( )+", " ");
+        if (btitle != null) {
+            btitle = btitle.replace("\n", " ");
+            btitle = btitle.replaceAll("( )+", " ");
+        }
         this.btitle = btitle;
     }
 

@@ -85,8 +85,12 @@ public class CrossrefRequest extends Observable {
             crossrefResponse.setException(new Exception("no parameters provided"), this.toString());
             return crossrefResponse;
         }
+        int timeout = 15; // 15s timeout
         CloseableHttpClient httpclient = null;
         RequestConfig requestConfig = RequestConfig.custom()
+                                .setConnectTimeout(timeout * 1000)
+                                .setConnectionRequestTimeout(timeout * 1000)
+                                .setSocketTimeout(timeout * 1000)
                                 .setCookieSpec(CookieSpecs.STANDARD)
                                 .build();
         if (configuration.getProxy().getHost() != null) {
@@ -94,8 +98,8 @@ public class CrossrefRequest extends Observable {
             DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
 
             httpclient = HttpClients.custom()
-                .setDefaultRequestConfig(requestConfig).setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build())
-                .setRoutePlanner(routePlanner)
+                .setDefaultRequestConfig(requestConfig)
+                .setRoutePlanner(routePlanner)     
                 .build();
         } else {
             httpclient = HttpClients.custom()

@@ -112,8 +112,9 @@ public class LookupConfiguration extends Configuration {
     }
 
     public int getMaxAcceptedRequests() {
-        final int maxAcceptedRequestsNormalised = maxAcceptedRequests < 1 ? Runtime.getRuntime().availableProcessors() : this.maxAcceptedRequests;
-        return maxAcceptedRequestsNormalised;
+        //final int maxAcceptedRequestsNormalised = maxAcceptedRequests < 1 ? Runtime.getRuntime().availableProcessors() : this.maxAcceptedRequests;
+        //return maxAcceptedRequestsNormalised;
+        return maxAcceptedRequests;
     }
 
     public void setMaxAcceptedRequests(int maxAcceptedRequests) {
