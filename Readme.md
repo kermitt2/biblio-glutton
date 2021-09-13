@@ -85,7 +85,7 @@ Once everything has booted up, biblio-glutton will be running at http://localhos
 
 To load data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. For example, this command will load Crossref data (as described in more detail [below](https://github.com/kermitt2/biblio-glutton#resources)):
 
-    $ docker-compose run biblio java -jar lib/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input ../../data/crossref-works.2018-09-05.json.xz data/config/config.yml
+    $ docker-compose run biblio java -jar lib/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input ../../data/crossref-works.2018-09-05.json.xz --type GREENELAB data/config/config.yml
 
 You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources). 
 
@@ -276,13 +276,13 @@ All the following commands need to be launched under the subdirectory `lookup/`.
 #### CrossRef metadata
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file /path/to/your/configuration
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file --type <METADATAPLUS|GREENELAB|TORRENT> /path/to/your/configuration
 ```
 
 Example (XZ files will be streamed directly from the compressed versions): 
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2019-09-09.json.xz data/config/config.yml
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2019-09-09.json.xz --type GREENELAB data/config/config.yml
 ```
 
 **Note:** by default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk  space. The `reference` field is often particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `data/config/config.yml`, by editing the lines:
