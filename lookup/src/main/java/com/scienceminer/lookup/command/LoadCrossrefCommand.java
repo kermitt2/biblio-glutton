@@ -6,6 +6,7 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.reader.CrossrefGreenelabJsonReader;
+import com.scienceminer.lookup.reader.CrossrefPlusJsonReader;
 import com.scienceminer.lookup.reader.CrossrefTorrentJsonReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.storage.lookup.MetadataLookup;
@@ -13,6 +14,8 @@ import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,6 +91,21 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
                                 }
                         );
             }
+        } else if(StringUtils.endsWithIgnoreCase(crossrefFilePath.getFileName().toString(), ".tar.gz")){
+            if (Files.isRegularFile(crossrefFilePath) && Files.isReadable(crossrefFilePath)){
+                TarArchiveInputStream tarInput = new TarArchiveInputStream(selectStream(crossrefFilePath));
+                TarArchiveEntry currentEntry = tarInput.getNextTarEntry();
+                while (currentEntry != null) {
+                    System.out.println("processing file " + currentEntry.getName());
+                    if (currentEntry.getName().endsWith(".json")) {
+                        metadataLookup.loadFromFile(tarInput, new CrossrefPlusJsonReader(configuration),
+                                metrics.meter("crossrefLookup"), counterInvalidRecords);
+                    }
+                    currentEntry = tarInput.getNextTarEntry();
+                }
+                tarInput.close();
+            } else
+                LOGGER.error("crossref snapshot file is not found");
         } else {
             try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
                 metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefGreenelabJsonReader(configuration),
