@@ -286,7 +286,7 @@ All the following commands need to be launched under the subdirectory `lookup/`.
 java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file path/to/config/file/glutton.yml
 ```
 
-If you want to specify a configuration file different from the de fault one (`biblio-glutton/config/glutton.yml`), add its path as additional parameter:
+The last parameter is the project config file normally under `biblio-glutton/config/glutton.yml`:
 
 ```sh
 java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file ../config/glutton.yml
@@ -299,8 +299,13 @@ Example with CrossRef dump Academic Torrent file (path to a repository of `*.jso
 java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input ~/tmp/crossref_public_data_file_2021_01 ../config/glutton.yml
 ```
 
+Example with Crossref Metadata Plus snapshot (path to a `.tar.gz` file which archives many json files):
 
-Example with xz-compressed file: 
+```sh
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input ~/tmp/crossref_metadata_plus.tar.gz ../config/glutton.yml
+```
+
+Example with xz-compressed file (e.g. GreeneLab dump): 
 
 ```sh
 java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2019-09-09.json.xz ../config/glutton.yml
@@ -405,6 +410,12 @@ Example with CrossRef dump Academic Torrent file (path to a repository of `*.jso
 
 ```sh
 node main -dump ~/tmp/crossref_public_data_file_2021_01 index
+```
+
+Example with CrossRef Metadata Plus snapshot (path to a file `.tar.gz` which archives many json files):
+
+```sh
+node main -dump ~/tmp/crossref_sample.tar.gz index
 ```
 
 Example with GreeneLab/Internet Archive dump file:
