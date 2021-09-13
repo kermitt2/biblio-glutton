@@ -8,7 +8,8 @@ var elasticsearch = require('@elastic/elasticsearch'),
     async = require("async"),
     zlib = require('zlib'),
     process = require('process'),
-    yaml = require('js-yaml');
+    yaml = require('js-yaml'),
+    tar = require('tar-stream');
 
 // for making console output less boring
 const green = '\x1b[32m';
@@ -124,8 +125,13 @@ function parseJson(data) {
     data = data.replace('\n]\n}\n', '');
     if (data.startsWith('{"items":['))
         data = data.replace('{"items":[', '');
-    
-    var jsonObj = JSON.parse(data);
+
+    var jsonObj = null;
+    try {
+        jsonObj = JSON.parse(data);
+    } catch (error) {
+        console.error(error);
+    }
     return jsonObj;
 }
 
@@ -299,14 +305,35 @@ async function index(options) {
                 continue;
             }
             const file_path = path.join(options.dump, file);
-            await indexFile(options, file_path);
+            await indexFile(options, file_path, options.dump);
         }
+    } else if (options.dumpType === 'tar') {
+        var extract = tar.extract()
+
+        extract.on('entry', function(header, inputStream, next) {
+            indexFile(options, inputStream, header.name).then(next()); 
+
+            //indexFile(options, inputStream, header.name);
+            /*inputStream.on('end', function() {
+                next(); 
+            });*/
+
+            inputStream.resume(); // just auto drain the stream 
+        });
+
+        extract.on('finish', function() {
+            // all entries read
+        });
+
+        fs.createReadStream(options.dump)
+                  .pipe(zlib.createGunzip())
+                  .pipe(extract);
     } else {
-        await indexFile(options, options.dump);
+        await indexFile(options, options.dump, options.dump);
     }
 }
 
-function indexFile(options, dumpFile) {
+function indexFile(options, dumpFile, fileName) {
     
     return new Promise((resolve, reject) => {
 
@@ -345,7 +372,18 @@ function indexFile(options, dumpFile) {
                         console.log("Error occurred: " + error);
                     }
                 );
-        } else if (options.dumpType === 'directory' && dumpFile.endsWith(".gz")) {
+        } else if (options.dumpType === 'tar') {
+            // we assume here it's a set of json array file in the archive (Crossref Metadata Plus snapshot)
+            // dumpFile in this case is already a stream
+            readStream = dumpFile
+                .pipe(es.split(", \n"))
+                .pipe(es.map(createBiblObj))
+                .on('error',
+                    function (error) {
+                        console.log("Error occurred: " + error);
+                    }
+                );
+        } else if (options.dumpType === 'directory' && fileName.endsWith(".gz")) {
             // note: it's not jsonl, we have a json on each line, but in a global array 
             readStream = fs.createReadStream(dumpFile)
                 .pipe(zlib.createGunzip())
@@ -355,8 +393,8 @@ function indexFile(options, dumpFile) {
                     function (error) {
                         console.log("Error occurred: " + error);
                     });
-        } else if (options.dumpType === 'directory' && dumpFile.endsWith(".json")) {
-            // note: it's not jsonl, we have a json on each line, but in a global array 
+        } else if (options.dumpType === 'directory' && fileName.endsWith(".json")) {
+            // note: it's not jsonl, but in a global JSON array per file
             readStream = fs.createReadStream(dumpFile)
                 .pipe(es.split(",\n"))
                 .pipe(es.map(createBiblObj))
@@ -365,7 +403,7 @@ function indexFile(options, dumpFile) {
                         console.log("Error occurred: " + error);
                     });
         } else {
-            console.log('Unsupported dump format: must be uncompressed json, compressed json file (xz, gzip) or directory of *.json or *.json.gz files.');
+            console.log('Unsupported dump format: must be uncompressed json, compressed json file (xz, gzip), tar.gz of json files or directory of *.json or *.json.gz files.');
         }
 
         if (readStream == null)
@@ -462,7 +500,7 @@ function indexFile(options, dumpFile) {
                             progressSnapshot += ' ';
                         }
 
-                        process.stdout.write(progressSnapshot + path.basename(dumpFile) + '    ');
+                        process.stdout.write(progressSnapshot + path.basename(fileName) + '    ');
 
                         return callback(null, total_time);
                     }
@@ -506,7 +544,7 @@ function indexFile(options, dumpFile) {
 
         readStream.on("error", function(err) {
             console.error('Error when reading file', err);
-            return reject();
+            return reject(err);
         });
     });
 }
@@ -581,6 +619,8 @@ function init() {
         } else if (stats.isFile()) {
             if (options.dump.endsWith(".json")) {
                 options.dumpType = "json"
+            } else if (options.dump.endsWith(".tar.gz")) {
+                options.dumpType = "tar"
             } else if (options.dump.endsWith(".gz")) {
                 options.dumpType = "gz"
             } else if (options.dump.endsWith(".xz")) {

@@ -125,7 +125,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
                 TarArchiveEntry currentEntry = tarInput.getNextTarEntry();
 
                 while (currentEntry != null) {
-                    System.out.println("processing file " + currentEntry.getName());
+                    //System.out.println("processing file " + currentEntry.getName());
                     try {
                         CrossrefJsonArrayReader reader = new CrossrefJsonArrayReader(configuration);
                         metadataLookup.loadFromFile(tarInput, reader, meter, counterInvalidRecords);
