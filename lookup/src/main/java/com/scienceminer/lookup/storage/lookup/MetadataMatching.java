@@ -283,7 +283,7 @@ public class MetadataMatching {
                         INDEX_FIELD_NAME_JTITLE,
                         INDEX_FIELD_NAME_YEAR
                 };
-        String[] excludeFields = new String[]{"*"};
+        //String[] excludeFields = new String[]{"*"};
         builder.fetchSource(includeFields, null);
 
         final SearchRequest searchRequest = new SearchRequest(configuration.getElastic().getIndex());
@@ -380,7 +380,7 @@ public class MetadataMatching {
             // normalize search scores in [0.5:1]
             for(MatchingDocument matchingDocument : matchingDocuments) {
                 double normalizedHitScore = (matchingDocument.getBlockingScore() - scoreMin) / (scoreMax - scoreMin);
-                normalizedHitScore = 0.5 + (normalizedHitScore/2);
+                //normalizedHitScore = 0.5 + (normalizedHitScore/2);
                 matchingDocument.setBlockingScore(normalizedHitScore);
             }
         }
