@@ -19,6 +19,9 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
+/**
+ * Load the Unpaywall OA targets from the "official" dump.
+ */
 public class LoadUnpayWallCommand extends ConfiguredCommand<LookupConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadUnpayWallCommand.class);
 

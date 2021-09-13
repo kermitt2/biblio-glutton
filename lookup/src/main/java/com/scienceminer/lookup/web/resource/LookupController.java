@@ -28,10 +28,10 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 
 /**
- * retrieve a DOI based on some key metadata: journal title (alternatively short title or ISSN) + volume + first page
- * (the key would be a hash of these metadata, the value is the DOI)
- * retrieve an ISTEX ID and/or a PMID based on a DOI
- * retrieve the URL of the open access version based on a DOI and/or a PMID
+ * Resolve raw bibliographical references and/or incomplete metadata for scientific article.
+ * Combination of metadata and raw references are supported to improve matching accuracy and 
+ * speed. 
+ * The result is a strong unique identifier, currently a DOI from Crossref.   
  */
 @Path("lookup")
 @Timed
@@ -45,9 +45,6 @@ public class LookupController {
     private StorageEnvFactory storageEnvFactory;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LookupController.class);
-
-    /*protected LookupController() {
-    }*/
 
     @Inject
     public LookupController(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) {
@@ -68,7 +65,6 @@ public class LookupController {
             @QueryParam("istexid") String istexid,
             @QueryParam("firstAuthor") String firstAuthor,
             @QueryParam("atitle") String atitle,
-//            @QueryParam("postValidate") Boolean postValidate,
             @QueryParam("jtitle") String jtitle,
             @QueryParam("volume") String volume,
             @QueryParam("firstPage") String firstPage,
@@ -84,23 +80,10 @@ public class LookupController {
                 )
         );
         asyncResponse.setTimeout(2, TimeUnit.MINUTES);
-
-//        asyncResponse.register((CompletionCallback) throwable -> {
-//            if (throwable != null) {
-//                Something happened with the client...
-//                lastException = throwable;
-//            }
-//        });
-
-
-        // defaults
-//        if (postValidate == null) 
-//            postValidate = Boolean.TRUE;
         if (parseReference == null) 
             parseReference = Boolean.TRUE;
 
         processByQuery(doi, pmid, pmc, pii, istexid, firstAuthor, atitle,
-//                postValidate, 
                 jtitle, volume, firstPage, year, biblio, parseReference, asyncResponse);
     }
 
@@ -116,7 +99,6 @@ public class LookupController {
             @FormParam("istexid") String istexid,
             @FormParam("firstAuthor") String firstAuthor,
             @FormParam("atitle") String atitle,
-//            @FormParam("postValidate") Boolean postValidate,
             @FormParam("jtitle") String jtitle,
             @FormParam("volume") String volume,
             @FormParam("firstPage") String firstPage,
@@ -132,15 +114,10 @@ public class LookupController {
                 )
         );
         asyncResponse.setTimeout(2, TimeUnit.MINUTES);
-
-        // defaults
-//        if (postValidate == null) 
-//            postValidate = Boolean.TRUE;
         if (parseReference == null) 
             parseReference = Boolean.TRUE;
 
         processByQuery(doi, pmid, pmc, pii, istexid, firstAuthor, atitle,
-//                postValidate, 
             jtitle, volume, firstPage, year, biblio, parseReference, asyncResponse);
     }
 
@@ -152,7 +129,6 @@ public class LookupController {
             String istexid,
             String firstAuthor,
             String atitle,
-//           final Boolean postValidate,
             String jtitle,
             String volume,
             String firstPage,
@@ -276,34 +252,6 @@ public class LookupController {
                         return;
                     }
 
-                    // the following case is the same as above, the field firstAuthor is "should" in the search (not blank in this conditional)
-                    // and firstAuthor+atitle are use for post-validation (atitle only use for post-validation)
-//                    LOGGER.debug("Error with title/first author, trying to match with journal infos only (without first author)");
-//                    if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-//                        lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocumentJournal -> {
-//                            if (matchingDocumentJournal.isException()) {
-//
-//                                //error with journal info - trying to match biblio
-//                                LOGGER.debug("Error with journal info, trying to match with biblio string");
-//                                if (isNotBlank(biblio)) {
-//                                    lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
-//                                        if (matchingDocumentBiblio.isException()) {
-//                                            asyncResponse.resume(matchingDocumentBiblio.getException());
-//                                        } else {
-//                                            asyncResponse.resume(matchingDocumentBiblio.getFinalJsonObject());
-//                                        }
-//                                    });
-//                                    return;
-//                                } else {
-//                                    asyncResponse.resume(matchingDocument.getException());
-//                                }
-//                            } else {
-//                                asyncResponse.resume(matchingDocumentJournal.getFinalJsonObject());
-//                            }
-//                        });
-//                        return;
-//                    }
-
                     // error with article info - and no journal information provided -
                     // trying to match with bibliographical reference string
                     LOGGER.debug("Error with article title/first author and no journal metadata available, trying to match with bibliographical reference string");
@@ -352,31 +300,6 @@ public class LookupController {
             return;
         }
 
-        // useless, same as above when firstAuthor is blank
-//        if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-//            LOGGER.debug("Match with journal title without first author");
-//            lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocument -> {
-//                if (matchingDocument.isException()) {
-//                    //error with journal info - trying to match biblio
-//                    if (isNotBlank(biblio)) {
-//                        lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
-//                            if (matchingDocumentBiblio.isException()) {
-//                                asyncResponse.resume(matchingDocumentBiblio.getException());
-//                            } else {
-//                                asyncResponse.resume(matchingDocumentBiblio.getFinalJsonObject());
-//                            }
-//                        });
-//                        return;
-//                    } else {
-//                        asyncResponse.resume(matchingDocument.getException());
-//                    }
-//                } else {
-//                    asyncResponse.resume(matchingDocument.getFinalJsonObject());
-//                }
-//            });
-//            return;
-//        }
-
         if (isNotBlank(biblio)) {
             areParametersEnoughToLookup = true;
 
@@ -406,7 +329,6 @@ public class LookupController {
             String istexid,
             String firstAuthor,
             String atitle,
-//            final Boolean postValidate,
             String jtitle,
             String volume,
             String firstPage,
@@ -622,23 +544,6 @@ public class LookupController {
     public String getByIstexid(@PathParam("istexid") String istexid) {
         return lookupEngine.retrieveByIstexid(istexid, null, null);
     }
-
-    /*
-    // Note: this is covered by the previous processByQuery with all field null except biblio 
-    @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.TEXT_PLAIN)
-    @Path("/")
-    public void getByBiblioStringWithPost(String biblio, @Suspended final AsyncResponse asyncResponse) {
-        if (isNotBlank(biblio)) {
-            lookupEngine.retrieveByBiblioAsync(biblio, matchingDocument -> {
-                dispatchResponseOrException(asyncResponse, matchingDocument);
-            });
-            return;
-        }
-
-        throw new ServiceException(400, "Missing or empty biblio parameter");
-    }*/
 
     protected void setLookupEngine(LookupEngine lookupEngine) {
         this.lookupEngine = lookupEngine;

@@ -307,54 +307,6 @@ public class LookupEngine {
         return outputData;
     }
 
-     private MatchingDocument extractMetadataFromJson(MatchingDocument outputData) {
-        JsonElement jelement = new JsonParser().parse(outputData.getJsonObject());
-        JsonObject jobject = jelement.getAsJsonObject();
-
-        if (jobject.get("title") != null) {
-            final JsonArray titlesFromJson = jobject.get("title").getAsJsonArray();
-            if (titlesFromJson != null && titlesFromJson.size() > 0) {
-                String titleFromJson = titlesFromJson.get(0).getAsString();
-                outputData.setATitle(titleFromJson);
-            }
-        }
-
-        if (jobject.get("author") != null) {
-            final JsonArray authorsFromJson = jobject.get("author").getAsJsonArray();
-            if (authorsFromJson != null && authorsFromJson.size() > 0) {
-
-                String firstAuthorFromJson = "";
-                for (int i = 0; i < authorsFromJson.size(); i++) {
-                    final JsonObject currentAuthor = authorsFromJson.get(i).getAsJsonObject();
-                    if (currentAuthor != null && currentAuthor.has("sequence")
-                            && StringUtils.equals(currentAuthor.get("sequence").getAsString(), "first")) {
-                        // this supposes we always have a family name (not raw full name by default?)
-                        if (currentAuthor.has("family")) {
-                            firstAuthorFromJson = currentAuthor.get("family").getAsString();
-                            outputData.setFirstAuthor(firstAuthorFromJson);
-                            break;
-                        }
-                    }
-                }
-
-                if (outputData.getFirstAuthor() == null) {
-                    // no sequence information available, as fallback we take the first authot in the list
-                    final JsonObject currentAuthor = authorsFromJson.get(0).getAsJsonObject();
-                    // this supposes we always have a family name (not raw full name by default?)
-                    if (currentAuthor != null && currentAuthor.has("family")) {
-                        firstAuthorFromJson = currentAuthor.get("family").getAsString();
-                        outputData.setFirstAuthor(firstAuthorFromJson);
-                    }
-                }
-            }
-        }
-
-        // other metadata relevant for pairwise matching to be extracted here
-
-
-        return outputData;
-    }
-
     public String retrieveByPmid(String pmid, String firstAuthor, String atitle) {
         final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
 
@@ -614,13 +566,11 @@ public class LookupEngine {
                 continue;
             }
 
-            matchingDocument = extractMetadataFromJson(matchingDocument);
-
             double computedRecordDistance = recordDistance(matchingDocument, referenceDocument);
             // here we can introduce a threshold when removing the post validation
             matchingDocument.setMatchingScore(computedRecordDistance);
             rankedMatchingDocuments.add(matchingDocument);
-System.out.println(computedRecordDistance);
+//System.out.println(computedRecordDistance);
         }
 
         Collections.sort(rankedMatchingDocuments, new Comparator<MatchingDocument>() {
@@ -668,7 +618,6 @@ System.out.println(computedRecordDistance);
             accumulatedScore += firstAuthorScore;
         }
 
-        // note to be normalized
         double blockingScore = matchingDocument.getBlockingScore();
         nbCriteria++;
         accumulatedScore += blockingScore;
@@ -690,12 +639,52 @@ System.out.println(computedRecordDistance);
             if (isNotBlank(matchingDocument.getYear())) {
                 if (referenceDocument.getYear().equals(matchingDocument.getYear()))
                     yearScore = 1.0;
-            } 
+            }
             accumulatedScore += yearScore;
         }
 
-        // more metadata
-        // TBD
+        // btitle: currently in the search index jtitle contains all container titles (journal names and book title names)
+        /*if (isNotBlank(referenceDocument.getBTitle())) {
+            nbCriteria++;
+            Double btitleScore = 0.0;
+            if (isNotBlank(matchingDocument.getBTitle())) {
+                btitleScore = ratcliffObershelpDistance(referenceDocument.getBTitle(), matchingDocument.getBTitle(), false);
+            }
+            accumulatedScore += btitleScore;
+        }*/
+
+        // volume
+        /*if (isNotBlank(referenceDocument.getVolume())) {
+            nbCriteria++;
+            Double volumeScore = 0.0;
+            if (isNotBlank(matchingDocument.getVolume())) {
+                if (referenceDocument.getVolume().equals(matchingDocument.getVolume()))
+                    volumeScore = 1.0;
+            } 
+            accumulatedScore += volumeScore;
+        }*/
+
+        // issue
+        /*if (isNotBlank(referenceDocument.getIssue())) {
+            nbCriteria++;
+            Double issueScore = 0.0;
+            if (isNotBlank(matchingDocument.getIssue())) {
+                if (referenceDocument.getIssue().equals(matchingDocument.getIssue()))
+                    issueScore = 1.0;
+            } 
+            accumulatedScore += issueScore;
+        }*/
+
+        // first page
+        /*if (isNotBlank(referenceDocument.getFirstPage())) {
+            nbCriteria++;
+            Double firstPageScore = 0.0;
+            if (isNotBlank(matchingDocument.getFirstPage())) {
+                if (referenceDocument.getFirstPage().equals(matchingDocument.getFirstPage()))
+                    firstPageScore = 1.0;
+            } 
+            accumulatedScore += firstPageScore;
+        }*/
 
         // manage strong clash: if key fields are totally different, we lower the score down to 0
         // this should replace the post-validation step and the corresponding parameter in the API

@@ -51,6 +51,7 @@ public class CrossrefJsonArrayReader extends CrossrefJsonReader {
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
             mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+            mapper.configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, false);
             return mapper.readTree(inputLine);
         } catch (JsonGenerationException | JsonMappingException e) {
             LOGGER.error("The input cannot be deserialised. ", e);

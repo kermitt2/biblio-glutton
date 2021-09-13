@@ -4,19 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-/**
- * {"url": "https://pdfs.journals.lww.com",
- * "pmh_id": null,
- * "is_best": true,
- * "license": null,
- * "updated": "2018-06-03T10:08:13.027568",
- * "version": "publishedVersion",
- * "evidence": "open (via free pdf)",
- * "host_type": "publisher",
- * "url_for_pdf": "https://pdfs.journals.lww.com/",
- * "url_for_landing_page": "https://doi.org/10.1097/00007890-201007272-00675"}]
- */
-@JsonIgnoreProperties({"endpoint_id", "repository_institution"})
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class OALocation {
 
     private String url;

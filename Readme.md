@@ -44,7 +44,7 @@ The service will use the default project configuration located under `biblio-glu
 ```sh
 cd lookup/
 ./gradlew clean build
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar server /some/where/config.yml
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar server /some/where/glutton.yml
 ```
 
 To check if it works, you can view a report of the data used by the service at `host:port/service/data`. For instance:
@@ -283,27 +283,27 @@ All the following commands need to be launched under the subdirectory `lookup/`.
 #### CrossRef metadata
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file path/to/config/file/glutton.yml
 ```
 
 If you want to specify a configuration file different from the de fault one (`biblio-glutton/config/glutton.yml`), add its path as additional parameter:
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file ../config/glutton.yml
 ```
 
 Example with CrossRef dump Academic Torrent file (path to a repository of `*.json.gz` files):
 
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input ~/tmp/crossref_public_data_file_2021_01 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input ~/tmp/crossref_public_data_file_2021_01 ../config/glutton.yml
 ```
 
 
 Example with xz-compressed file: 
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2019-09-09.json.xz 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar crossref --input crossref-works.2019-09-09.json.xz ../config/glutton.yml
 ```
 
 **Note:** By default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk  space. The `reference` field is particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `biblio-glutton/config/glutton.yml`, by editing the lines:
@@ -338,13 +338,13 @@ The 4,712,332 rejected records correspond to all the DOI "components" (given to 
 #### PMID and PMC ID
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar pmid --input /path/to/pmid/csv/file 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar pmid --input /path/to/pmid/csv/file path/to/config/file/glutton.yml
 ```
 
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar pmid --input PMID_PMCID_DOI.csv.gz 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar pmid --input PMID_PMCID_DOI.csv.gz ../config/glutton.yml
 ```
 
 As of Spetember 2021, the latest mapping covers 33,994,284 PMID, with 24,814,263 having a DOI (which means 9,180,021 PMID are not represented in Crossref).
@@ -352,25 +352,25 @@ As of Spetember 2021, the latest mapping covers 33,994,284 PMID, with 24,814,263
 #### OA via Unpaywall
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input /path/to/unpaywall/json/file 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input /path/to/unpaywall/json/file path/to/config/file/glutton.yml
 ```
 
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2020-04-27T153236.jsonl.gz 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2020-04-27T153236.jsonl.gz ../config/glutton.yml
 ```
 
 #### ISTEX
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar istex --input /path/to/istex/json/file 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar istex --input /path/to/istex/json/file path/to/config/file/glutton.yml
 ```
 
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar istex --input istexIds.all.gz 
+java -jar build/libs/lookup-service-1.0-SNAPSHOT-onejar.jar istex --input istexIds.all.gz ../config/glutton.yml
 ```
 
 Note: see bellow how to create this mapping file `istexIds.all.gz`. 

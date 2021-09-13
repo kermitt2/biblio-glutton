@@ -10,17 +10,6 @@ import java.util.List;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-/**
- * {"doi": "10.1109/indcon.2013.6726080", "year": 2013, "genre": "proceedings-article",
- * "is_oa": false, "title": "Rotor position estimation of 8/6 SRM using orthogonal phase inductance vectors",
- * "doi_url": "https://doi.org/10.1109/indcon.2013.6726080",
- * "updated": "2018-06-18T23:44:24.315660", "publisher": "IEEE",
- * "z_authors": [{"given": "Nithin", "family": "Itteera"}, {"given": "A Dolly", "family": "Mary"}],
- * "journal_name": "2013 Annual IEEE India Conference (INDICON)", "oa_locations": [], "data_standard": 2,
- * "journal_is_oa": false, "journal_issns": null, "published_date": "2013-12-01", "best_oa_location": null,
- * "journal_is_in_doaj": false}
- */
-//@JsonIgnoreProperties({"z_authors", "x_reported_noncompliant_copies", "x_error", "journal_issn_l", "issn_l", "has_repository_copy", "is_paratext"})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class UnpayWallMetadata {
 
