@@ -1,7 +1,9 @@
-storage: data/db
-#storage: /media/lopez/T5/data/db
+version: 0.2
 
-version: version_placeholder
+# where the metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings 
+storage: data/db
+
+# Crossref fields to be ignored when storing metadata, reference field in particular take a lot of space
 ignoreCrossRefFields: 
   - reference
   - abstract
@@ -12,16 +14,16 @@ loadingBatchSize: 10000
 indexBatchSize: 500
 
 # max blocking size (number of candidates considered before pairwise matching)
-blockSize: 5
+blockSize: 4
 
-# Grobid URL
+# Grobid server URL
 grobidHost: http://localhost:8070/api
 
 timeZone: UTC
 
+# a node of the elasticsearch cluster to be used and a name for the index
 elastic:
   host: localhost:9200
-  #host: 192.168.1.106:9200
   index: crossref
 
 proxy:
@@ -30,15 +32,19 @@ proxy:
     port: 
 
 crossref:
-  dumpPath: /media/lopez/data2/crossref_public_data_file_2021_01
-  # a directory where the crossref update files will be located
-  mailto: 
+  # a directory where the crossref incremental update files will be located
+  #dumpPath: /media/lopez/data2/crossref_public_data_file_2021_01
+  dumpPath: /media/lopez/data2/crossref_metadata_plus_examples
+
   # for the crossref REST API and daily update, you need normally to use it politely and to indicate an email 
   #address here, e.g. 
   #mailto: "toto@titi.tutu"
-  token:
+  #mailto: 
+  mailto: patrice.lopez@science-miner.com
+  
   # to use Crossref metadata plus service (available by subscription)
   #token: "yourmysteriouscrossrefmetadataplusauthorizationtokentobeputhere"
+  token:
 
 unpaywall:
   dumpPath: 
@@ -46,10 +52,13 @@ unpaywall:
   API_key: 
   # API Key for the Unpaywall subscription is necessary to get the data feed change files for daily update
 
+# CORS parameters 
 corsAllowedOrigins: "*"
 corsAllowedMethods: "OPTIONS,GET,PUT,POST,DELETE,HEAD"
 corsAllowedHeaders: "X-Requested-With,Content-Type,Accept,Origin"
 
+# beyond the following number of requests, a 503 status will be returned (service unavailable) until enough
+# requests are processed to go beyond the max
 maxAcceptedRequests: 2048
 
 server:
