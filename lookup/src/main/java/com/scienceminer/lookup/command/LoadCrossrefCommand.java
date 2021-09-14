@@ -97,22 +97,26 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
                         StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".xz") ||
                         StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".json")))
                         .forEach(dumpFile -> {
-                                CrossrefJsonReader reader;
-                                if (StringUtils.startsWith(dumpFile.getFileName().toString(), "G") ||
-                                    StringUtils.startsWith(dumpFile.getFileName().toString(), "D")) {
-                                    reader = readerJsonl;
-                                } else {
-                                    reader = readerJsonArray;
-                                }
+                                CrossrefJsonReader reader = null;
                                 try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
+                                    if (CrossrefJsonReader.isJsonArray(inputStreamCrossref))
+                                        reader = readerJsonArray;
+                                    else
+                                        reader = readerJsonl;
+                                } catch (IOException e) {
+                                    LOGGER.error("Error while pre-processing " + dumpFile.toAbsolutePath(), e);
+                                }
 
-                                    metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
-                                    // possibly update with the lastest indexed date obtained from this file
-                                    if (metadataLookup.getLastIndexed() == null || 
-                                        metadataLookup.getLastIndexed().isBefore(reader.getLastIndexed()))
-                                        metadataLookup.setLastIndexed(reader.getLastIndexed());
-                                } catch (Exception e) {
-                                    LOGGER.error("Error while processing " + dumpFile.toAbsolutePath(), e);
+                                if (reader != null) {
+                                    try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
+                                        metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
+                                        // possibly update with the lastest indexed date obtained from this file
+                                        if (metadataLookup.getLastIndexed() == null || 
+                                            metadataLookup.getLastIndexed().isBefore(reader.getLastIndexed()))
+                                            metadataLookup.setLastIndexed(reader.getLastIndexed());
+                                    } catch (Exception e) {
+                                        LOGGER.error("Error while processing " + dumpFile.toAbsolutePath(), e);
+                                    }
                                 }
                             }
                         );
@@ -143,14 +147,23 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
                 LOGGER.error("Crossref snapshot file is not found");
 
         } else {
+            CrossrefJsonReader reader = null;
             try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
-                CrossrefJsonlReader reader = new CrossrefJsonlReader(configuration);
+                if (CrossrefJsonReader.isJsonArray(inputStreamCrossref))
+                    reader = new CrossrefJsonArrayReader(configuration);
+                else
+                    reader = new CrossrefJsonlReader(configuration);
+            } catch (IOException e) {
+                LOGGER.error("Error while pre-processing " + crossrefFilePath.toAbsolutePath(), e);
+            }
 
-                metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
-                metadataLookup.setLastIndexed(reader.getLastIndexed());
-    
-            } catch (Exception e) {
-                LOGGER.error("Error while processing " + crossrefFilePath, e);
+            if (reader != null) {
+                try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
+                    metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
+                    metadataLookup.setLastIndexed(reader.getLastIndexed());
+                } catch (Exception e) {
+                    LOGGER.error("Error while processing " + crossrefFilePath, e);
+                }
             }
         }
         LOGGER.info("Number of Crossref records processed: " + meter.getCount());

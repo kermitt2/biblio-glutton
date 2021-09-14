@@ -96,19 +96,15 @@ public class IncrementalLoaderTask implements Runnable {
         String cursorValue = "*";
         int nbFiles = 1000000;
 System.out.println(this.lastIndexed.format(formatter));
-        boolean first = true;
 
         while(!responseEmpty) {
             Map<String, String> arguments = new HashMap<String,String>();
         
             arguments.put("cursor", cursorValue);
             arguments.put("rows", "1000");
-            //if (first) 
-            {
-                //arguments.put("filter", "from-index-date:"+this.lastIndexed.format(formatter));
-                arguments.put("filter", "from-update-date:"+this.lastIndexed.format(formatter));
-                first = false;
-            }
+
+            //arguments.put("filter", "from-index-date:"+this.lastIndexed.format(formatter));
+            arguments.put("filter", "from-update-date:"+this.lastIndexed.format(formatter));       
 
             List<String> jsonObjectsStr = null;
 
@@ -130,6 +126,10 @@ System.out.println(this.lastIndexed.format(formatter));
             } catch (Exception e) {
                 LOGGER.error("Crossref update call failed", e);
             }
+
+            if (jsonObjectsStr.size() == 0)
+                continue;
+
 //System.out.println("number of results: " + jsonObjectsStr.size());
             String crossrefFileName = configuration.getCrossref().getDumpPath() +  File.separator;
             if (daily) {
@@ -145,9 +145,13 @@ System.out.println(this.lastIndexed.format(formatter));
             try {
                 Writer writer = new OutputStreamWriter(new GZIPOutputStream(
                     new FileOutputStream(crossrefFile)), StandardCharsets.UTF_8);
+                boolean first = true;
                 for(String result : jsonObjectsStr) {
+                    if (first)
+                        first = false;
+                    else 
+                        writer.write("\n");
                     writer.write(result);
-                    writer.write("\n");
                 }
                 writer.close();
             } catch (Exception e) {

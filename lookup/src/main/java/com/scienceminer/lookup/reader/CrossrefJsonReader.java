@@ -8,6 +8,14 @@ import com.scienceminer.lookup.configuration.LookupConfiguration;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.InputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import java.util.function.Consumer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -98,5 +106,20 @@ public abstract class CrossrefJsonReader {
         Instant dateInstant = Instant.from(isoFormatter.parse(dateString));
         LocalDateTime date = LocalDateTime.ofInstant(dateInstant, ZoneId.of(ZoneOffset.UTC.getId()));
         return date;
+    }
+
+    /**
+     * Check is the file is a json array or in jsonl format
+     */
+    public static boolean isJsonArray(InputStream inputStreamCrossref) {
+        boolean result = false;
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(inputStreamCrossref))) {
+            String firstLine = r.readLine();
+            if (firstLine.startsWith("{\"items\":["))
+                result = true;
+        } catch(IOException e) {
+            LOGGER.error("cannot read input stream when trying to detect json format type", e);
+        }
+        return result;
     }
 }

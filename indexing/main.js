@@ -136,6 +136,8 @@ function parseJson(data) {
 }
 
 function createBiblObj(data, cb) {
+    if (data == null || data.trim().length == 0)
+        return null;
     // prepare/massage the data
     data = parseJson(data);
     var obj = new Object();
@@ -384,19 +386,29 @@ function indexFile(options, dumpFile, fileName) {
                     }
                 );
         } else if (options.dumpType === 'directory' && fileName.endsWith(".gz")) {
-            // note: it's not jsonl, we have a json on each line, but in a global array 
+            // note: from Crossref it's not jsonl by default, but in a global array, 
+            // if we have gap or daily incremental files, it's jsonl
+            var separator = ",\n";
+            if (fileName.startsWith("G") || fileName.startsWith("D")) {
+                separator = "\n";
+            }
             readStream = fs.createReadStream(dumpFile)
                 .pipe(zlib.createGunzip())
-                .pipe(es.split(",\n"))
+                .pipe(es.split(separator))
                 .pipe(es.map(createBiblObj))
                 .on('error',
                     function (error) {
                         console.log("Error occurred: " + error);
                     });
         } else if (options.dumpType === 'directory' && fileName.endsWith(".json")) {
-            // note: it's not jsonl, but in a global JSON array per file
+            // note: from Crossref it's not jsonl by default, but in a global array, 
+            // if we have gap or daily incremental files, it's jsonl
+            var separator = ",\n";
+            if (fileName.startsWith("G") || fileName.startsWith("D")) {
+                separator = "\n";
+            }
             readStream = fs.createReadStream(dumpFile)
-                .pipe(es.split(",\n"))
+                .pipe(es.split(separator))
                 .pipe(es.map(createBiblObj))
                 .on('error',
                     function (error) {

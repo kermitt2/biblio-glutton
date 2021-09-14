@@ -199,7 +199,7 @@ public class CrossrefRequest extends Observable {
 
         if (body == null || body.length() ==0)
             return crossrefResponse;
-        
+
         try {
             JsonNode treeNode = mapper.readTree(body);
             JsonNode messageNode = treeNode.get("message");
