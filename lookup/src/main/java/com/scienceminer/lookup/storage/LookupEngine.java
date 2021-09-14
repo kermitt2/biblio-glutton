@@ -737,7 +737,7 @@ public class LookupEngine {
      */
     private boolean areMetadataMatching(MatchingDocument result) {
 //System.out.println(result.getMatchingScore());
-        return (result.getMatchingScore() < THRESHOLD_MATCHING) ? true : false;
+        return (result.getMatchingScore() < THRESHOLD_MATCHING) ? false : true;
     }
 
     private double ratcliffObershelpDistance(String string1, String string2, boolean caseDependent) {

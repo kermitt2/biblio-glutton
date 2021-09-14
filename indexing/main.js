@@ -305,7 +305,7 @@ async function index(options) {
                 continue;
             }
             const file_path = path.join(options.dump, file);
-            await indexFile(options, file_path, options.dump);
+            await indexFile(options, file_path, path.basename(file));
         }
     } else if (options.dumpType === 'tar') {
         var extract = tar.extract()
