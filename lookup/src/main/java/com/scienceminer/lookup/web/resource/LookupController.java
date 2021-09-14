@@ -234,7 +234,7 @@ public class LookupController {
                                 //error with journal info - trying to match biblio
                                 LOGGER.debug("Error with journal metadata, trying to match with bibliographical reference string");
                                 if (isNotBlank(biblio)) {
-                                    lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, year, parseReference, MatchingDocumentBiblio -> {
+                                    lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, jtitle, year, parseReference, MatchingDocumentBiblio -> {
                                         if (MatchingDocumentBiblio.isException()) {
                                             asyncResponse.resume(MatchingDocumentBiblio.getException());
                                         } else {
@@ -256,7 +256,7 @@ public class LookupController {
                     // trying to match with bibliographical reference string
                     LOGGER.debug("Error with article title/first author and no journal metadata available, trying to match with bibliographical reference string");
                     if (isNotBlank(biblio)) {
-                        lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, year, parseReference, matchingDocumentBiblio -> {
+                        lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, jtitle, year, parseReference, matchingDocumentBiblio -> {
                             if (matchingDocumentBiblio.isException()) {
                                 asyncResponse.resume(matchingDocumentBiblio.getException());
                             } else {
@@ -282,7 +282,7 @@ public class LookupController {
                 if (matchingDocument.isException()) {
                     LOGGER.debug("Error with journal metadata, trying to match with bibliographical reference string");
                     if (isNotBlank(biblio)) {
-                        lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, year, parseReference, matchingDocumentBiblio -> {
+                        lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, jtitle, year, parseReference, matchingDocumentBiblio -> {
                             if (matchingDocumentBiblio.isException()) {
                                 asyncResponse.resume(matchingDocumentBiblio.getException());
                             } else {
@@ -304,7 +304,7 @@ public class LookupController {
             areParametersEnoughToLookup = true;
 
             LOGGER.debug("Match with biblio string");
-            lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, year, parseReference, matchingDocumentBiblio -> {
+            lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, jtitle, year, parseReference, matchingDocumentBiblio -> {
                 if (matchingDocumentBiblio.isException()) {
                     asyncResponse.resume(matchingDocumentBiblio.getException());
                 } else {
@@ -420,7 +420,7 @@ public class LookupController {
             areParametersEnoughToLookup = true;
 
             LOGGER.debug("Match with biblio string");
-            lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, year, parseReference, matchingDocumentBiblio -> {
+            lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, jtitle, year, parseReference, matchingDocumentBiblio -> {
                 if (matchingDocumentBiblio.isException()) {
                     asyncResponse.resume(matchingDocumentBiblio.getException());
                     //messagesSb.append(matchingDocumentBiblio.getException().getMessage());

@@ -18,9 +18,7 @@ import java.util.Objects;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.trim;
 
-/**
- * Created by lfoppiano on 29/08/16.
- */
+
 public class GrobidResponseStaxHandler implements StaxParserContentHandler {
     private static Logger LOGGER = LoggerFactory.getLogger(GrobidResponseStaxHandler.class);
 
@@ -34,13 +32,14 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
     private boolean fetchText = false;
     private boolean firstAuthorArticle = false;
     private boolean firstAuthorMonograph = false;
-    private StaxTag title = new StaxTag("title", "/biblStruct/analytic/title");
 
+    private StaxTag title = new StaxTag("title", "/biblStruct/analytic/title");
     private StaxTag firstAuthorSurname = new StaxTag("surname", "/biblStruct/analytic/author/persName/surname");
     private StaxTag firstAuthorForename = new StaxTag("forename", "/biblStruct/analytic/author/persName/forename");
     private StaxTag firstAuthorSurnameMonograph = new StaxTag("surname", "/biblStruct/monogr/author/persName/surname");
     private StaxTag firstAuthorForenameMonograph = new StaxTag("forename", "/biblStruct/monogr/author/persName/forename");
-    private StaxTag date = new StaxTag("year", "/biblStruct/analytic/date");
+    private StaxTag date = new StaxTag("date", "/biblStruct/monogr/imprint/date");
+    private StaxTag journalTitle = new StaxTag("title", "/biblStruct/monogr/title");
 
     @Override
     public void onStartDocument(XMLStreamReader2 reader) {
@@ -57,6 +56,7 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
         final String localName = reader.getName().getLocalPart();
         stackTags.append(localName);
         final StaxTag currentTag = new StaxTag(localName, stackTags.toString());
+
         if (currentTag.equals(title) &&
                 (getAttributeValue(reader, "level").equals("a") &&
                         getAttributeValue(reader, "type").equals("main"))
@@ -71,6 +71,8 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
                 getAttributeValue(reader, "type").equals("first")) {
             firstAuthorMonograph = true;
         } else if (currentTag.equals(firstAuthorSurnameMonograph) && firstAuthorMonograph) {
+            fetchText = true;
+        } else if (currentTag.equals(journalTitle)) {
             fetchText = true;
         } else if (currentTag.equals(date)) {
             if (getAttributeValue(reader, "when") != null) {
@@ -105,7 +107,11 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
                     response.setFirstAuthorMonograph(accumulator.toString());
                 accumulator = new StringBuffer();
                 firstAuthorMonograph = false;
-            }
+            } else if (journalTitle.equals(currentTag)) {
+                if (response.getJtitle() == null)
+                    response.setJtitle(accumulator.toString());
+                accumulator = new StringBuffer();
+            } 
             fetchText = false;
         }
 
@@ -120,7 +126,8 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
             return;
         }
 
-        if (fetchText) accumulator.append(text);
+        if (fetchText) 
+            accumulator.append(text);
     }
 
     private String getText(XMLStreamReader2 reader) {
@@ -205,6 +212,8 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
 
         private String atitle;
 
+        private String jtitle;
+
         private String firstAuthor;
 
         private String firstAuthorMonograph;
@@ -235,6 +244,14 @@ public class GrobidResponseStaxHandler implements StaxParserContentHandler {
 
         public void setAtitle(String atitle) {
             this.atitle = atitle;
+        }
+
+        public String getJtitle() {
+            return jtitle;
+        }
+
+        public void setJtitle(String jtitle) {
+            this.jtitle = jtitle;
         }
 
         public String getYear() {

@@ -19,6 +19,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.codehaus.stax2.XMLStreamReader2;
+import org.apache.commons.io.IOUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

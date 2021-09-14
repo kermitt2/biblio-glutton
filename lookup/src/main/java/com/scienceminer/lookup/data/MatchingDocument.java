@@ -10,6 +10,8 @@ public class MatchingDocument {
     
     private String jtitle; // all serials
     private String btitle; // book title (conference proceedings, book containing book chapters, etc.)
+    private String abbreviatedTitle;
+
     private String year;
     private String volume;
     private String issue;
@@ -139,6 +141,14 @@ public class MatchingDocument {
 
     public void setJTitle(String jtitle) {
         this.jtitle = jtitle;
+    }
+
+    public String getAbbreviatedTitle() {
+        return abbreviatedTitle;
+    }
+
+    public void setAbbreviatedTitle(String abbreviatedTitle) {
+        this.abbreviatedTitle = abbreviatedTitle;
     }
 
     public String getBTitle() {

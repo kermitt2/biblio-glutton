@@ -60,6 +60,7 @@ public class MetadataMatching {
     public static final String INDEX_FIELD_NAME_JTITLE = "journal";
     public static final String INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE = "abbreviated_journal";
     public static final String INDEX_FIELD_NAME_YEAR = "year";
+    public static final String INDEX_FIELD_NAME_ABBREV_TITLE = "abbreviated_journal";
 
     private final String INDEX_FIELD_NAME_JSONDOC = "jsondoc";
 
@@ -320,6 +321,12 @@ public class MetadataMatching {
                 jtitle = jtitles.get(0);
             }
 
+            final List<String> abbrevTtitles = (List<String>) hit.getSourceAsMap().get(INDEX_FIELD_NAME_ABBREV_TITLE);
+            String abbreviatedTitle = "";
+            if (CollectionUtils.isNotEmpty(abbrevTtitles)) {
+                abbreviatedTitle = abbrevTtitles.get(0);
+            }
+
             final Integer year = (Integer) hit.getSourceAsMap().get(INDEX_FIELD_NAME_YEAR);
             String yearStr = null;
             if (year != null) {
@@ -330,6 +337,7 @@ public class MetadataMatching {
             matchingDocument.setFirstAuthor(firstAuthor);
             matchingDocument.setATitle(atitle);
             matchingDocument.setJTitle(jtitle);
+            matchingDocument.setAbbreviatedTitle(abbreviatedTitle);
             matchingDocument.setYear(yearStr);
 
             final String jsonObject = metadataLookup.retrieveJsonDocument(DOI);

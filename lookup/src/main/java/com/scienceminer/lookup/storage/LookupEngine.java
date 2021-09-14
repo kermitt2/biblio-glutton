@@ -48,6 +48,8 @@ public class LookupEngine {
 
     private static String ISTEX_BASE = "https://api.istex.fr/document/";
 
+    private static double THRESHOLD_MATCHING = 0.7;
+
     public LookupEngine() {
     }
 
@@ -67,7 +69,7 @@ public class LookupEngine {
         List<MatchingDocument> matchingDocuments = metadataMatching.retrieveByMetadata(atitle, firstAuthor);
         List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle, firstAuthor, matchingDocuments);
 
-        if (!areMetadataMatching(atitle, firstAuthor, rankedMatchingDocuments.get(0))) {
+        if (!areMetadataMatching(rankedMatchingDocuments.get(0))) {
             throw new NotFoundException("Best bibliographical record did not passed the post-validation");
         }
 
@@ -91,7 +93,7 @@ public class LookupEngine {
 
                 List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle, firstAuthor, matchingDocuments);
 
-                if (!areMetadataMatching(atitle, firstAuthor, rankedMatchingDocuments.get(0))) {
+                if (!areMetadataMatching(rankedMatchingDocuments.get(0))) {
                     callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
                     return;
                 }
@@ -125,7 +127,7 @@ public class LookupEngine {
                 List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle, firstAuthor, jtitle, 
                     null, null, volume, null, firstPage, null, matchingDocuments);
 
-                if (!areMetadataMatching(atitle, firstAuthor, rankedMatchingDocuments.get(0), true)) {
+                if (!areMetadataMatching(rankedMatchingDocuments.get(0))) {
                     callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
                     return;
                 }
@@ -144,6 +146,7 @@ public class LookupEngine {
     public void retrieveByBiblioAsync(String biblio, 
                                       final String firstAuthor, 
                                       final String atitle, 
+                                      final String jtitle, 
                                       final String year,
                                       Boolean parseReference, 
                                       Consumer<MatchingDocument> callback) {
@@ -155,33 +158,47 @@ public class LookupEngine {
 
             MatchingDocument resultDocument = matchingDocuments.get(0);
             if (!resultDocument.isException()) {
-                if (isBlank(firstAuthor) && parseReference) {
+                //if (isBlank(firstAuthor) && parseReference) {
+                if (parseReference) {
                     try {
                         grobidClient.ping();
                         GrobidResponse response = grobidClient.processCitation(biblio, "0");
 
                         // TBD: extract more metadata from Grobid result to improve the pairwise ranking
-                        String firstAuthor1 = 
-                            isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph();
-                        String atitle1 = response.getAtitle();
-                        String year1 = response.getYear();
-
-                        if (isBlank(firstAuthor1))
+                        String firstAuthor1 = null;
+                        if (!isBlank(firstAuthor))
                             firstAuthor1 = firstAuthor;
-                        if (isBlank(atitle1))
-                            atitle1 = atitle;
-                        if (isBlank(year1))
-                            year1 = year;
+                        else
+                            firstAuthor1 = isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph();
 
-                        List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle1, firstAuthor1, year1, matchingDocuments);
-                                //pairwiseRanking(atitle1, firstAuthor1, null, 
-                                //    null, year1, null, null, null, null, matchingDocuments);
+                        String atitle1 = null;
+                        if (!isBlank(atitle))
+                            atitle1 = atitle;
+                        else
+                            atitle1 = response.getAtitle();
+                        
+                        String year1 = null;
+                        if (!isBlank(year))
+                            year1 = year;
+                        else
+                            year1 = response.getYear();
+
+                        String jtitle1 = null;
+                        if (!isBlank(year))
+                            jtitle1 = jtitle;
+                        else
+                            jtitle1 = response.getJtitle();
+
+//System.out.println(biblio + " -> " + firstAuthor1 + " | " + atitle1 + " | " + year1 + " | " + jtitle1);
+                        List<MatchingDocument> rankedMatchingDocuments = //pairwiseRanking(atitle1, firstAuthor1, year1, matchingDocuments);
+                                pairwiseRanking(atitle1, firstAuthor1, jtitle1, 
+                                    null, year1, null, null, null, null, matchingDocuments);
 
                         final MatchingDocument localResultDocument = rankedMatchingDocuments.get(0);
 
                         //no title and author, extract with grobid. if grobid unavailable... it will fail.
                         if (!isBlank(firstAuthor1)) {
-                            if (!areMetadataMatching(atitle1, firstAuthor1, localResultDocument, true)) {
+                            if (!areMetadataMatching(localResultDocument)) {
                                 callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
                                 return;
                             }
@@ -199,34 +216,26 @@ public class LookupEngine {
                 }
 
                 // pairwise ranking with whatever is available
-                List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle, firstAuthor, year, matchingDocuments);
-                    //pairwiseRanking(atitle, firstAuthor, null, 
-                    //                null, year, null, null, null, null, matchingDocuments);
+                List<MatchingDocument> rankedMatchingDocuments = //pairwiseRanking(atitle, firstAuthor, year, matchingDocuments);
+                    pairwiseRanking(atitle, firstAuthor, jtitle, 
+                                    null, year, null, null, null, null, matchingDocuments);
                 final MatchingDocument localResultDocument = rankedMatchingDocuments.get(0);
+                if (!isBlank(firstAuthor)) {
 
-                //if (postValidate != null && postValidate) {
-                    if (!isBlank(firstAuthor)) {
-
-                        if (!areMetadataMatching(atitle, firstAuthor, localResultDocument, true)) {                         
-                            callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
-                            return;
-                        }
-
-                        final String s = injectIdsByDoi(localResultDocument.getJsonObject(), localResultDocument.getDOI());
-                        localResultDocument.setFinalJsonObject(s);
-                        callback.accept(localResultDocument);
-                        return;
-                    } else {
-                        // we cannot post validate
-                        callback.accept(new MatchingDocument(new NotFoundException("No metadata available for post-validation")));
+                    if (!areMetadataMatching(localResultDocument)) {                         
+                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
                         return;
                     }
-                /*} else {
+
                     final String s = injectIdsByDoi(localResultDocument.getJsonObject(), localResultDocument.getDOI());
                     localResultDocument.setFinalJsonObject(s);
                     callback.accept(localResultDocument);
                     return;
-                }*/
+                } else {
+                    // we cannot post validate
+                    callback.accept(new MatchingDocument(new NotFoundException("No metadata available for post-validation")));
+                    return;
+                }
 
                 //resultDocument = localResultDocument;
             }
@@ -598,7 +607,7 @@ public class LookupEngine {
         int nbCriteria = 0;
         double accumulatedScore = 0.0;
 
-        // atitle component
+        // atitle component (skipped if not provided)
         if (isNotBlank(referenceDocument.getATitle())) {
             nbCriteria++;
             Double atitleScore = 0.0;
@@ -626,8 +635,16 @@ public class LookupEngine {
         if (isNotBlank(referenceDocument.getJTitle())) {
             nbCriteria++;
             Double jtitleScore = 0.0;
-            if (isNotBlank(matchingDocument.getJTitle())) {
-                jtitleScore = ratcliffObershelpDistance(referenceDocument.getJTitle(), matchingDocument.getJTitle(), false);
+            if (isNotBlank(matchingDocument.getJTitle()) || isNotBlank(matchingDocument.getAbbreviatedTitle())) {
+                if (isNotBlank(matchingDocument.getJTitle())) {
+                    jtitleScore = ratcliffObershelpDistance(referenceDocument.getJTitle(), matchingDocument.getJTitle(), false);
+                } 
+                if (isNotBlank(matchingDocument.getAbbreviatedTitle())) {
+                    Double abbrevTitleScore = ratcliffObershelpDistance(referenceDocument.getJTitle(), matchingDocument.getAbbreviatedTitle(), false);
+                    if (abbrevTitleScore > jtitleScore) {
+                        jtitleScore = abbrevTitleScore;
+                    }
+                }
             } 
             accumulatedScore += jtitleScore;
         }
@@ -718,19 +735,9 @@ public class LookupEngine {
     /**
      * Introduce a minimum matching threshold based on the pairwise ranking
      */
-    private boolean areMetadataMatching(String atitle, String firstAuthor, MatchingDocument result, boolean ignoreTitleIfNotPresent) {
+    private boolean areMetadataMatching(MatchingDocument result) {
 //System.out.println(result.getMatchingScore());
-        if (result.getMatchingScore() < 0.7)
-            return false;
-        else
-            return true;
-    }
-
-    /**
-     * default version checking title and authors
-     **/
-    private boolean areMetadataMatching(String atitle, String firstAuthor, MatchingDocument result) {
-        return areMetadataMatching(atitle, firstAuthor, result, false);
+        return (result.getMatchingScore() < THRESHOLD_MATCHING) ? true : false;
     }
 
     private double ratcliffObershelpDistance(String string1, String string2, boolean caseDependent) {
