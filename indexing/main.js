@@ -116,6 +116,63 @@ function processAction(options) {
                 index(options);
             }
         })
+    } else if ((options.action === "extend")) {
+        // reuse existing index for incremental indexing
+        async.waterfall([
+            function indexExists(callback) {
+                client.indices.exists({
+                    index: options.indexName
+                }, function (err, resp, status) {
+                    if (err) {
+                        console.error('indexExists error: ' + err.message);
+                        return callback(err);
+                    }
+                    return callback(null, resp.body);
+                });
+            },
+            function createIndex(existence, callback) {
+                // if index does not exist we create it
+                if (!existence) {
+                    var analyzers;
+                    var mapping;
+                    try {
+                        analyzers = fs.readFileSync(settingsPath, 'utf8');
+                        mapping = fs.readFileSync(mappingPath, 'utf8');
+                    } catch (e) {
+                        console.error('error reading analyzer/mapping file ' + e);
+                    }
+
+                    if (!existence) {
+                        var request_body = {
+                            "settings": JSON.parse(analyzers),
+                            "mappings": JSON.parse(mapping)
+                        };
+
+                        client.indices.create({
+                            index: options.indexName,
+                            body: request_body
+                        }, function (err, resp, status) {
+                            if (err) {
+                                console.error('createIndex error: ' + err.message);
+                                return callback(err)
+                            }
+                            console.log(green, 'Index crossref have been created\n', reset);
+                            return callback(null, true);
+                        });
+                    }
+                } else
+                   return callback(null, true);
+            }
+        ], (err, results) => {
+            if (err) {
+                console.error('setting error: ' + err);
+            }
+
+            if (options.action === "index" || options.action === "extend") {
+                // launch the heavy indexing stuff...
+                index(options);
+            }
+        })
     }
 
 }
