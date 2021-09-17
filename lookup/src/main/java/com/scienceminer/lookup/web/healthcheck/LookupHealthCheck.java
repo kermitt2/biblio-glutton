@@ -37,7 +37,7 @@ public class LookupHealthCheck extends com.codahale.metrics.health.HealthCheck {
         try {
             new OALookup(storageEnvFactory).getSize();
             new IstexIdsLookup(storageEnvFactory).getSize();
-            final MetadataLookup metadataLookup = new MetadataLookup(storageEnvFactory);
+            final MetadataLookup metadataLookup = MetadataLookup.getInstance(storageEnvFactory);
             metadataLookup.getSize();
             new MetadataMatching(configuration, metadataLookup).getSize();
             new PMIdsLookup(storageEnvFactory).getSize();

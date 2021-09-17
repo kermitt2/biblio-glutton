@@ -1,4 +1,4 @@
-package com.scienceminer.lookup.utils.crossrefClient;
+package com.scienceminer.lookup.utils.crossrefclient;
 
 import java.util.List;
 

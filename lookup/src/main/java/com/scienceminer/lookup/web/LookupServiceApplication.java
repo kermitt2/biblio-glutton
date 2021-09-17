@@ -14,6 +14,9 @@ import com.scienceminer.lookup.web.module.LookupServiceModule;
 import com.scienceminer.lookup.web.module.NotFoundExceptionMapper;
 import com.scienceminer.lookup.web.module.ServiceExceptionMapper;
 import com.scienceminer.lookup.web.module.ServiceOverloadedExceptionMapper;
+import com.scienceminer.lookup.utils.crossrefclient.IncrementalLoaderTask;
+import com.scienceminer.lookup.storage.lookup.MetadataLookup;
+import com.scienceminer.lookup.storage.StorageEnvFactory;
 
 import io.dropwizard.Application;
 import io.dropwizard.forms.MultiPartBundle;
@@ -24,14 +27,26 @@ import com.hubspot.dropwizard.guicier.GuiceBundle;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.eclipse.jetty.servlets.QoSFilter;
 
+import org.apache.commons.lang3.ArrayUtils;
+
+import com.codahale.metrics.ConsoleReporter;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.io.File;
-
-import org.apache.commons.lang3.ArrayUtils;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.time.ZonedDateTime;
+import java.time.ZoneId;
+import java.time.Duration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +60,52 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
     @Override
     public String getName() {
         return "lookup-service";
+    }
+
+    private void scheduleDailyUpdate(LookupConfiguration configuration) throws Exception {
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of(configuration.getTimeZone()));
+        String dailyTime = configuration.getDailyUpdateTime();
+
+        if (dailyTime.length() != 5) {
+            throw new Exception("Invalid format for Daily Update Time in configuration file, it should be HH:MM");
+        }
+
+        String hourString = dailyTime.substring(0,2);
+        String minuteString = dailyTime.substring(3,dailyTime.length());
+
+        int hour = -1;
+        int min = -1;
+        try {
+            hour = Integer.parseInt(hourString);
+            min = Integer.parseInt(minuteString);
+        } catch(Exception e) {
+            throw new Exception("Cannot parse Daily Update Time in configuration file, it should be HH:MM", e);
+        }
+
+        ZonedDateTime nextRun = now.withHour(hour).withMinute(min).withSecond(0);
+        if(now.compareTo(nextRun) > 0)
+            nextRun = nextRun.plusDays(1);
+
+        Duration duration = Duration.between(now, nextRun);
+        long initalDelay = duration.getSeconds();
+
+        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
+        MetadataLookup metadataLookup = MetadataLookup.getInstance(storageEnvFactory);
+
+        final MetricRegistry metrics = new MetricRegistry();
+        final Meter meter = metrics.meter("crossrefDailyUpdate");
+        final Counter counterInvalidRecords = metrics.counter("crossrefDailyUpdate_rejectedRecords");
+
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        Runnable task = new IncrementalLoaderTask(metadataLookup, 
+                                                  metadataLookup.getLastIndexed(), 
+                                                  configuration, 
+                                                  meter, 
+                                                  counterInvalidRecords,
+                                                  true, // with ES indexing
+                                                  true); // this is daily incremental update
+
+        ScheduledFuture<?> scheduledFuture = executor.scheduleAtFixedRate(task, initalDelay, TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
     }
 
     @Override

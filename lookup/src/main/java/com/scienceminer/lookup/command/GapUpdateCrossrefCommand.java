@@ -7,7 +7,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.storage.lookup.MetadataLookup;
-import com.scienceminer.lookup.utils.crossrefClient.IncrementalLoaderTask;
+import com.scienceminer.lookup.utils.crossrefclient.IncrementalLoaderTask;
 import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -55,7 +55,7 @@ public class GapUpdateCrossrefCommand extends ConfiguredCommand<LookupConfigurat
         reporter.start(15, TimeUnit.SECONDS);
 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
-        MetadataLookup metadataLookup = new MetadataLookup(storageEnvFactory);
+        MetadataLookup metadataLookup = MetadataLookup.getInstance(storageEnvFactory);
 
         final String crossrefFilePathString = configuration.getCrossref().getDumpPath();
         Path crossrefFilePath = Paths.get(crossrefFilePathString);

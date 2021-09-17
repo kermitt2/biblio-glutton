@@ -1,4 +1,4 @@
-package com.scienceminer.lookup.utils.crossrefClient;
+package com.scienceminer.lookup.utils.crossrefclient;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -73,6 +73,14 @@ public class IncrementalLoaderTask implements Runnable {
 
         this.indexing = indexing;
         this.daily = daily;
+
+        if (this.daily) {
+            // the last indexed time need to be ajusted to the previous day
+            LocalDateTime yesterday = ;
+            LocalDate today = LocalDate.now();
+            LocalDate yesterday = today.minusDays(1);
+            this.lastIndexed = yesterday.atStartOfDay();;
+        }
     }
 
     public void run()  {
@@ -228,7 +236,7 @@ System.out.println("indexing: " + crossrefFile.getPath());
 
             ProcessBuilder builder = new ProcessBuilder();
             // command is: node main -dump ~/tmp/crossref_public_data_file_2021_01 index
-            builder.command("node", "main", "-dumo", crossrefFile.getAbsolutePath(), "index");            
+            builder.command("node", "main", "-dump", crossrefFile.getAbsolutePath(), "extend");            
             builder.directory(new File("../indexing"));
 
             try {

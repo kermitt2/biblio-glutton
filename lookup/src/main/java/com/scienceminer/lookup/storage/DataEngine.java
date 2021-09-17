@@ -26,7 +26,7 @@ public class DataEngine {
     public DataEngine(StorageEnvFactory storageFactory) {
         this.oaDoiLookup = new OALookup(storageFactory);
         this.istexLookup = new IstexIdsLookup(storageFactory);
-        this.metadataLookup = new MetadataLookup(storageFactory);
+        this.metadataLookup = MetadataLookup.getInstance(storageFactory);
         this.metadataMatching = new MetadataMatching(storageFactory.getConfiguration(), metadataLookup);
         this.pmidLookup = new PMIdsLookup(storageFactory);
     }

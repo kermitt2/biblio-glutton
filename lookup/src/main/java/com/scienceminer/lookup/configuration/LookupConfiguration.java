@@ -29,6 +29,10 @@ public class LookupConfiguration extends Configuration {
 
     private ProxyParameters proxy;
 
+    private String timeZone;
+
+    private String dailyUpdateTime;
+
     @Valid
     @NotNull
     private HttpClientConfiguration httpClient = new HttpClientConfiguration();
@@ -127,6 +131,22 @@ public class LookupConfiguration extends Configuration {
 
     public void setGrobidPath(String grobidHost) {
         this.grobidHost = grobidHost;
+    }
+
+    public String getTimeZone() {
+        return timeZone;
+    }
+
+    public void setTimeZone(String timeZone) {
+        this.timeZone = timeZone;
+    }
+
+    public String getDailyUpdateTime() {
+        return dailyUpdateTime;
+    }
+
+    public void setDailyUpdateTime(String dailyUpdateTime) {
+        this.dailyUpdateTime = dailyUpdateTime;
     }
 
     public class Source {

@@ -31,10 +31,13 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 /**
+ * Singleton class
  * Lookup metadata -> doi
  */
 public class MetadataLookup {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataLookup.class);
+
+    private static volatile MetadataLookup instance;
 
     private Env<ByteBuffer> environment;
     private Dbi<ByteBuffer> dbCrossrefJson;
@@ -49,7 +52,26 @@ public class MetadataLookup {
     // this date keeps track of the latest indexed date of the metadata database
     private LocalDateTime lastIndexed = null; 
 
-    public MetadataLookup(StorageEnvFactory storageEnvFactory) {
+    public static MetadataLookup getInstance(StorageEnvFactory storageEnvFactory) {
+        if (instance == null) {
+            synchronized (MetadataLookup.class) {
+                if (instance == null) {
+                    getNewInstance(storageEnvFactory);
+                }
+            }
+        }
+        return instance;
+    }
+
+    /**
+     * Creates a new instance.
+     */
+    private static synchronized void getNewInstance(StorageEnvFactory storageEnvFactory) {
+        instance = new MetadataLookup(storageEnvFactory);
+    }
+
+
+    private MetadataLookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
 
         configuration = storageEnvFactory.getConfiguration();

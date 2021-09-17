@@ -1,4 +1,4 @@
-package com.scienceminer.lookup.utils.crossrefClient;
+package com.scienceminer.lookup.utils.crossrefclient;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;

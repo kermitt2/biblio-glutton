@@ -79,7 +79,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         reporter.start(15, TimeUnit.SECONDS);
 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
-        MetadataLookup metadataLookup = new MetadataLookup(storageEnvFactory);
+        MetadataLookup metadataLookup = MetadataLookup.getInstance(storageEnvFactory);
 
         final String crossrefFilePathString = namespace.get(CROSSREF_SOURCE);
         Path crossrefFilePath = Paths.get(crossrefFilePathString);
