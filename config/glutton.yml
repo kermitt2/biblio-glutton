@@ -20,6 +20,8 @@ blockSize: 4
 grobidHost: http://localhost:8070/api
 
 timeZone: UTC
+# the day hour for lauching the automatic daily incremental update, format is HH:MM
+dailyUpdateTime: 05:00
 
 # a node of the elasticsearch cluster to be used and a name for the index
 elastic:
