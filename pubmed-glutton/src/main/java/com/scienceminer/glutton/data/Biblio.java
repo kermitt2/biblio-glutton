@@ -44,6 +44,12 @@ public class Biblio implements Serializable {
 	// the URL given by the primary publisher in the official DOI record at CrossRef
 	private String doiPublisherUrl;
 
+	// list of grants
+	private List<Grant> grants;
+
+	// list of structured keyword objects (in contrast to a raw list of keywords as attribute field)
+	private List<Keyword> keywords;
+
 	// TBD
 	// erroneous biblio item
 	private boolean error = false;
@@ -180,6 +186,22 @@ public class Biblio implements Serializable {
 		setPublisherAttribute("doi", StringUtils.trim(doi));
 	}
 
+	public String getRawPublicationType() {
+		return (String) getAttributeValue("rawPublicationType");
+	}
+
+	public void setRawPublicationType(String rawPublicationType) {
+		setPublisherAttribute("rawPublicationType", StringUtils.trim(rawPublicationType));
+	}
+
+	public String getPublicationTypeUI() {
+		return (String) getAttributeValue("publicationTypeUI");
+	}
+
+	public void setPublicationTypeUI(String publicationTypeUI) {
+		setPublisherAttribute("publicationTypeUI", StringUtils.trim(publicationTypeUI));
+	}
+
 	public void setCoreId(Integer coreId) {
 		setPublisherAttribute("coreId", coreId);
 	}
@@ -289,6 +311,14 @@ public class Biblio implements Serializable {
 
 	public void setEPublicationDate(Partial date) {
 		setPublisherAttribute("ePublicationDate", date);
+	}
+
+	public Partial getLastUpdateDate() {
+		return (Partial) getAttributeValue("lastUpdateDate");
+	}
+
+	public void setLastUpdateDate(Partial date) {
+		setPublisherAttribute("lastUpdateDate", date);
 	}
 
 	public String getTitle() {
@@ -581,6 +611,20 @@ public class Biblio implements Serializable {
 		setPublisherAttribute("keywords", keywords);
 	}
 
+	public List<Keyword> getKeywordItems() {
+		return keywords;
+	}
+
+	public void setKeywordItems(List<Keyword> keywords) {
+		this.keywords = keywords;
+	}
+
+	public void addKeywordItems(Keyword keyword) {
+		if (this.keywords == null)
+			this.keywords = new ArrayList<>();
+		this.keywords.add(keyword);
+	}
+
 	public String getCollectionTitle() {
 		return (String) getAttributeValue("collection_title");
 	}
@@ -687,6 +731,21 @@ public class Biblio implements Serializable {
 		getFirstAuthor(true).setFirstName(Person.normalizeName(name));
 	}
 
+	public List<Grant> getGrants() {
+		return grants;
+	}
+
+	public void setGrants(List<Grant> grants) {
+		this.grants = grants;
+	}
+
+	public void addGrant(Grant grant) {
+		if (this.grants == null) {
+			this.grants = new ArrayList<>();
+		}
+		this.grants.add(grant);
+	}
+
 	/** Returns the page range. */
 	public String printPages() {
 		if (StringUtils.isNotBlank(getPageRange())) {
@@ -786,6 +845,9 @@ public class Biblio implements Serializable {
 		defaultPropertyIfNull(this, source, "hostType");
 		defaultPropertyIfNull(this, source, "documentType");
 		defaultPropertyIfNull(this, source, "doi");
+		defaultPropertyIfNull(this, source, "pii");
+		defaultPropertyIfNull(this, source, "pmc");	
+		defaultPropertyIfNull(this, source, "pubmedid");
 		defaultPropertyIfNull(this, source, "title");
 		defaultPropertyIfNull(this, source, "firstAuthor");
 		defaultPropertyIfNull(this, source, "volume");

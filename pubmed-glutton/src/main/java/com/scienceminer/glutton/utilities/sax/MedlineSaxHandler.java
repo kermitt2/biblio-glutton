@@ -66,14 +66,25 @@ public class MedlineSaxHandler extends DefaultHandler {
 	private Identifier authorIdentifierObject = null;
 	private String affiliationString = null;
     private String abstractString = null;
+    private String publicationTypeUI = null;
 
 	private String language = null;
 
+    // grant
+    private List<Grant> grants = null;
+    private Grant currentGrant = null;
+
     // position tags
-    private boolean pubDate = false;
     private boolean electronic = false;
     private boolean print = false;
     private boolean inAffiliationInfo = false;
+    private boolean validElocationTypeDOI = false;
+    private boolean isArticleIdList = false;
+
+    private boolean doiType = false;
+    private boolean pubmedType = false;
+    private boolean piiType = false;
+    private boolean pmcType = false;
 
     private DateTimeFieldType[] fieldYMD = new DateTimeFieldType[] {
        	DateTimeFieldType.year(),
@@ -123,6 +134,7 @@ public class MedlineSaxHandler extends DefaultHandler {
     		}
     		biblio.setPmid(pmid);
     	} else if (qName.equals("PubmedArticle")) {
+            // new article
     		if (biblios == null) {
     			biblios = new ArrayList<Biblio>();
     		}
@@ -130,7 +142,7 @@ public class MedlineSaxHandler extends DefaultHandler {
     	} else if (qName.equals("ISSN")) {
     		if (electronic)
     			issne = getText();
-    		else  if (print)
+    		else if (print)
     			issnp = getText();
     		electronic = false;
     		print = false;
@@ -171,11 +183,11 @@ public class MedlineSaxHandler extends DefaultHandler {
     		if ( (articleTitle != null) && (articleTitle.length() > 0) ) 
     			biblio.setArticleTitle(articleTitle);
     		articleTitle = null;
-    	} else if (pubDate && qName.equals("Year")) {
+    	} else if (qName.equals("Year")) {
     		year = getText();
-    	} else if (pubDate && qName.equals("Month")) {
+    	} else if (qName.equals("Month")) {
     		month = getText();
-    	} else if (pubDate && qName.equals("Day")) {
+    	} else if (qName.equals("Day")) {
     		day = getText();
     	} else if (qName.equals("Chemical")) {
     		// store the chemical
@@ -226,7 +238,7 @@ public class MedlineSaxHandler extends DefaultHandler {
 				qualifierNames = new ArrayList<String>();
 			 qualifierNames.add(getText());
 		} else if (qName.equals("MedlinePgn")) {
-			// this is the pagination type used in practice currently
+			// pain: this is the pagination type used experimentally given that this is very messy
 			String pagination = getText(); 
 			if ( (pagination != null) && (pagination.length() > 0) ) {
 				// first we might have a "suppl.:"" prefix
@@ -242,6 +254,9 @@ public class MedlineSaxHandler extends DefaultHandler {
 				pagination = pagination.replace("author reply", "").trim();
 
 				// format is 117-26 / 121-6 / 1173-9
+                // OR 
+                // 5911-5924 
+                // !!!
 				int ind = pagination.indexOf("-");
 				if (ind != -1) {
 					firstPage = pagination.substring(0, ind);
@@ -344,7 +359,7 @@ public class MedlineSaxHandler extends DefaultHandler {
 			}
 			pagination = null;
 		} else if (qName.equals("StartPage")) {
-			// this pagination is not used now but it is supposed to be used in the future
+			// this clean pagination is not used now but it is supposed to be used in the future :)
 			firstPage = getText();
 			int firstPageVal = -1;
 			try {
@@ -359,7 +374,7 @@ public class MedlineSaxHandler extends DefaultHandler {
 				biblio.setStartPageInt(firstPageVal);
 			firstPage = null;
 		} else if (qName.equals("EndPage")) {
-			// this pagination is not used now but it is supposed to be used in the future
+			// this clean pagination is not used now but it is supposed to be used in the future
 			lastPage = getText();
 			int lastPageVal = -1;
 			try {
@@ -387,74 +402,18 @@ public class MedlineSaxHandler extends DefaultHandler {
 						biblio.setRawLanguage(rawLang);
 				}
 			}
-		} else if (qName.equals("PubDate")) {
-        	pubDate = false;
-
-        	// try to get the best of the date information
-    		int yearVal = -1;
-    		int monthVal = -1;
-    		int dayVal = -1;
-
-    		if (month != null) {
-    			monthVal = Utilities.convertMedlineMonth(month);
-    		}
-
-    		if (year != null) {
-	    		try {
-	    			yearVal = Integer.parseInt(year);
-	    		} catch(Exception e) {
-	    			System.err.println("Failure to parse year: " + year);
-	    		}
-	    	}
-
-    		if ((monthVal == -1) && (month != null)) {
-	    		try {		
-		    		monthVal = Integer.parseInt(month);
-		    	} catch(Exception e) {
-	    			System.err.println("Failure to parse month: " + month);
-	    		}
-	    	}
-	
-			if (day != null) {
-				try {
-	    			dayVal = Integer.parseInt(day);
-	    		} catch(Exception e) {
-	    			System.err.println("Failure to parse day: " + day);
-	    		}
-	    	}
-
-    		Partial date = null;
-    		try {
-	    		if (yearVal != -1) {
-	    			if (monthVal != -1) {
-	    				if (dayVal != -1) {
-	    					dayVal = Utilities.correctDay(dayVal, monthVal);
-	    					int[] values = new int[] {yearVal, monthVal, dayVal};
-	    					List types = new ArrayList(Arrays.asList(fieldYMD));
-	    					date = new Partial(fieldYMD, values);
-	    				} else {
-	    					int[] values = new int[] {yearVal, monthVal};
-	    					List types = new ArrayList(Arrays.asList(fieldYM));
-	    					date = new Partial(fieldYM, values);
-	    				}
-	    			} else {
-	    				int[] values = new int[] {yearVal};
-	    				List types = new ArrayList(Arrays.asList(fieldY));
-	    				date = new Partial(fieldY, values);
-	    			}
-	    		}
-	    	} catch(Exception e) {
-	    		// to log...
-	    		System.out.println(year + " / " + month + " / " + day);
-	    		e.printStackTrace();
-	    	}
-    		if (date != null)	
-			    biblio.setPublicationDate(date);
-
-        	year = null;
-        	month = null;
-        	day = null;
-        } else if (qName.equals("LastName")) {
+		} else if (qName.equals("ArticleDate")) {
+            // best publication date, overwrite possible existing one
+            this.dateProcessing(biblio, "publication");
+        } else if (qName.equals("PubDate")) {
+            // we keep it only if ArticleDate is not present
+            if (biblio.getPublicationDate() == null)
+                this.dateProcessing(biblio, "publication");
+        } else if (qName.equals("DateRevised")) {
+            // this is the last update date for the entry normally
+            this.dateProcessing(biblio, "update");
+        }
+        else if (qName.equals("LastName")) {
         	lastName = getText();
         } else if (qName.equals("ForeName")) {
         	foreName = getText();
@@ -506,6 +465,7 @@ public class MedlineSaxHandler extends DefaultHandler {
         	authors = null;
         } else if (qName.equals("AffiliationInfo")) { 
         	// create an affiliation to be attached to the current author
+            // affiliation is raw affiliation string, consider GROBID to add more usable affiliation/address descriptions
         	if ( (affiliationString != null) && (affiliationString.length() >0) ) {
 	        	Affiliation affiliation = new Affiliation(affiliationString);
 	        	if ( (identifierObject != null) && 
@@ -525,8 +485,52 @@ public class MedlineSaxHandler extends DefaultHandler {
         } else if (qName.equals("AbstractText")) {
             abstractString = getText();
             biblio.setAbstract(abstractString);
-        }
+        } else if (qName.equals("ELocationID") && validElocationTypeDOI) {
+            biblio.setDoi(getText());
+        } else if (qName.equals("PublicationType")) {
+            biblio.setRawPublicationType(getText());
+            if (publicationTypeUI != null) {
+                biblio.setPublicationTypeUI(publicationTypeUI);
+                publicationTypeUI = null;
+            }
+        } else if (qName.equals("GrantList")) {
+            biblio.setGrants(this.grants);
+        } else if (qName.equals("Grant")) {
+            if (currentGrant != null)
+                grants.add(currentGrant);
+            currentGrant = null;
+        } else if (qName.equals("GrantID")) {
+            if (currentGrant == null) 
+                currentGrant = new Grant(); 
+            currentGrant.setGrantID(getText());
+        } else if (qName.equals("Acronym")) {
+            if (currentGrant != null) 
+                currentGrant.setAcronym(getText());
+        } else if (qName.equals("Agency")) {
+            if (currentGrant != null) 
+                currentGrant.setAgency(getText());
+        } else if (qName.equals("Country")) {
+            if (currentGrant != null) 
+                currentGrant.setCountry(getText());
+        } else if (qName.equals("ArticleId") && isArticleIdList) {
+            if (doiType && biblio.getDoi() == null) {
+                biblio.setDoi(getText());
+            } else if (pubmedType && biblio.getPubmedId() == null) {
+                biblio.setPubmedId(getText());
+            } else if (piiType && biblio.getPii() == null) {
+                 biblio.setPii(getText());
+            } else if (pmcType && biblio.getPmc() == null) {
+                biblio.setPmc(getText());
+            }
 
+            doiType = false;
+            pubmedType = false;
+            piiType = false;
+            pmcType = false;
+        } else if (qName.equals("ArticleIdList")) {
+            isArticleIdList = false;
+        }
+        
         accumulator.setLength(0);
     }
 
@@ -598,8 +602,6 @@ public class MedlineSaxHandler extends DefaultHandler {
                     }
                 }
             }
-        } else if (qName.equals("PubDate")) {
-        	pubDate = true;
         } else if (qName.equals("ISSN")) {
         	int length = atts.getLength();
 
@@ -639,6 +641,127 @@ public class MedlineSaxHandler extends DefaultHandler {
             }
         } else if (qName.equals("AffiliationInfo")) {
         	inAffiliationInfo = true;
+        } else if (qName.equals("GrantList")) {
+            this.grants = new ArrayList<>();
+        } else if (qName.equals("Grant")) {
+            currentGrant = new Grant();
+        } else if (qName.equals("ELocationID")) {
+            // DOI, if any and valid, is here: <ELocationID EIdType="doi" ValidYN="Y">10.2147/CMAR.S186042</ELocationID>
+            int length = atts.getLength();
+            boolean isDoi = false;
+            boolean isValid = false;
+
+            // Process each attribute
+            for (int i = 0; i < length; i++) {
+                // Get names and values for each attribute
+                String name = atts.getQName(i);
+                String value = atts.getValue(i);
+
+                if ((name != null) & (value != null)) {
+                    if (name.equals("EIdType") && value.equals("doi")) {
+                        isDoi = true;
+                    } else if (name.equals("ValidYN") && value.equals("Y")) {
+                        isValid = true;
+                    }
+                }
+            }
+
+            if (isDoi && isValid)
+                validElocationTypeDOI = true;
+        } else if (qName.equals("ArticleId") && isArticleIdList) {
+            int length = atts.getLength();
+
+            // Process each attribute
+            for (int i = 0; i < length; i++) {
+                // Get names and values for each attribute
+                String name = atts.getQName(i);
+                String value = atts.getValue(i);
+
+                if ((name != null) & (value != null)) {
+                    if (name.equals("IdType") && value.equals("doi")) {
+                        doiType = true;
+                    } else if (name.equals("IdType") && value.equals("pubmed")) {
+                        pubmedType = true;
+                    } else if (name.equals("IdType") && value.equals("pii")) {
+                        piiType = true;
+                    } else if (name.equals("IdType") && value.equals("pmc")) {
+                        pmcType = true;
+                    } 
+                }
+            }
+        } else if (qName.equals("ArticleIdList")) {
+            isArticleIdList = true;
         }
+    }
+
+    private void dateProcessing(Biblio biblio, String type) {
+        // try to get the best of the date information
+        int yearVal = -1;
+        int monthVal = -1;
+        int dayVal = -1;
+
+        if (month != null) {
+            monthVal = Utilities.convertMedlineMonth(month);
+        }
+
+        if (year != null) {
+            try {
+                yearVal = Integer.parseInt(year);
+            } catch(Exception e) {
+                System.err.println("Failure to parse year: " + year);
+            }
+        }
+
+        if ((monthVal == -1) && (month != null)) {
+            try {       
+                monthVal = Integer.parseInt(month);
+            } catch(Exception e) {
+                System.err.println("Failure to parse month: " + month);
+            }
+        }
+
+        if (day != null) {
+            try {
+                dayVal = Integer.parseInt(day);
+            } catch(Exception e) {
+                System.err.println("Failure to parse day: " + day);
+            }
+        }
+
+        Partial date = null;
+        try {
+            if (yearVal != -1) {
+                if (monthVal != -1) {
+                    if (dayVal != -1) {
+                        dayVal = Utilities.correctDay(dayVal, monthVal);
+                        int[] values = new int[] {yearVal, monthVal, dayVal};
+                        List types = new ArrayList(Arrays.asList(fieldYMD));
+                        date = new Partial(fieldYMD, values);
+                    } else {
+                        int[] values = new int[] {yearVal, monthVal};
+                        List types = new ArrayList(Arrays.asList(fieldYM));
+                        date = new Partial(fieldYM, values);
+                    }
+                } else {
+                    int[] values = new int[] {yearVal};
+                    List types = new ArrayList(Arrays.asList(fieldY));
+                    date = new Partial(fieldY, values);
+                }
+            }
+        } catch(Exception e) {
+            // to log...
+            System.out.println(year + " / " + month + " / " + day);
+            e.printStackTrace();
+        }
+        if (date != null) {
+            if (type.equals("publication"))
+                biblio.setPublicationDate(date);
+            else if (type.equals("update"))
+                biblio.setLastUpdateDate(date);
+        }
+
+        year = null;
+        month = null;
+        day = null;
     }
 }

@@ -4,8 +4,10 @@ import java.util.Date;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTimeFieldType;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.Partial;
+import org.joda.time.format.*;
 
 /**
  * Utility class to handle all {@link Partial} date related tasks regarding the Biblio class.
@@ -167,7 +169,9 @@ public final class DateUtils {
 		}
 	}
 
-	/**Formats the date of the duplicate found in NPL master*/
+	/** 
+	* Formats the date with extra invalid day/month 
+	*/
 	public static String formatDuplicateOrdinalDate(String date) {
 		if (date == null) {
 			return null;
@@ -182,4 +186,15 @@ public final class DateUtils {
 			return date;
 		}
 	}
+
+	/**
+	 * Serialize partial date into ISO format
+	 */
+	public static String dateISO(Partial date) {
+		if (date == null) {
+			return null;
+		}
+		DateTimeFormatter fmt = ISODateTimeFormat.dateTime().withZone(DateTimeZone.getDefault());
+		return date.toString(fmt);
+	}	
 }

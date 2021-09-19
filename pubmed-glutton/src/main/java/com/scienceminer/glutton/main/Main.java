@@ -197,9 +197,22 @@ public class Main {
                     if (env != null)  
                         env.close();
                 }
+            } else if (gbdArgs.getProcessMethodName().equals("pubmedDump")) {
+                System.out.println("Export the full PubMed bibliographical entries in a dump converted into the Crossref JSON format");
+                KBStagingEnvironment env = null;
+                try {
+                    env = new KBStagingEnvironment(conf);
+                    env.buildEnvironment(false);
+
+                    PubMedExporter pubmed = new PubMedExporter(env, conf);
+                    pubmed.exportAsCrossrefDump(gbdArgs.getPathInputDirectory(), gbdArgs.getResultDirectoryPath(), true);
+                } finally {
+                    if (env != null)  
+                        env.close();
+                }
             } 
 
-
+            // DEPRECATED
             /*else if (gbdArgs.getProcessMethodName().equals("coreharvesting")) {
                 System.out.println("Harvesting CORE data");
                 KBStagingEnvironment env1 = null;
