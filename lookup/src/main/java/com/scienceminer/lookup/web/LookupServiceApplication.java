@@ -138,6 +138,8 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
 
         final LookupHealthCheck healthCheck = new LookupHealthCheck(configuration);
         environment.healthChecks().register("HealthCheck", healthCheck);
+
+        scheduleDailyUpdate(configuration);
     }
 
     private List<? extends Module> getGuiceModules() {

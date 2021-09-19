@@ -15,6 +15,7 @@ import java.util.*;
 import java.io.*;
 import java.util.zip.GZIPOutputStream;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.*;  
@@ -76,7 +77,6 @@ public class IncrementalLoaderTask implements Runnable {
 
         if (this.daily) {
             // the last indexed time need to be ajusted to the previous day
-            LocalDateTime yesterday = ;
             LocalDate today = LocalDate.now();
             LocalDate yesterday = today.minusDays(1);
             this.lastIndexed = yesterday.atStartOfDay();;
