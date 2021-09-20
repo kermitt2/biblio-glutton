@@ -358,7 +358,7 @@ public class Biblio implements Serializable {
 	}
 
 	public void setEndPage(String page) {
-		setPublisherAttribute("end_page_int", page);
+		setPublisherAttribute("end_page", page);
 	}
 
 	public Integer getStartPageInt() {
@@ -374,7 +374,7 @@ public class Biblio implements Serializable {
 	}
 
 	public void setEndPageInt(Integer page) {
-		setPublisherAttribute("end_page", page);
+		setPublisherAttribute("end_page_int", page);
 	}
 
 	public String getPagination() {
@@ -719,12 +719,12 @@ public class Biblio implements Serializable {
 	}
 
 	public String getPageRange() {
-		if (StringUtils.isNotBlank(getStartPage()) && StringUtils.isNotBlank(getEndPage())
+		/*if (StringUtils.isNotBlank(getStartPage()) && StringUtils.isNotBlank(getEndPage())
 					&& getStartPage().equals(getEndPage())) {
 			return getStartPage();
-		}
+		}*/
 		if (StringUtils.isNotBlank(getStartPage()) && StringUtils.isNotBlank(getEndPage())) {
-			return getStartPage() + " to " + getEndPage();
+			return getStartPage() + "-" + getEndPage();
 		}
 		if (StringUtils.isNotBlank(getStartPage())) {
 			return getStartPage();

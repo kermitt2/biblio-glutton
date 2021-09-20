@@ -120,25 +120,51 @@ public class PubMedSerializer {
             builder.append("], ");
             builder.append("\"date-time\": \""+ Biblio.dateISODisplayFormat(update) + "\"}");
 
-            // timestamp is crossref specific afaik
+            // timestamp seems crossref specific
         }
 
         if (biblio.getDoi() != null) {
-            builder.append(", \"DOI\": \"" + biblio.getDoi() + "\"");
+            builder.append(", \"DOI\": " + mapper.writeValueAsString(biblio.getDoi()));
+            int ind = biblio.getDoi().indexOf("/");
+            if (ind != -1) {
+                String prefix = biblio.getDoi().substring(0, ind);
+                builder.append(", \"prefix\": \"" + prefix + "\"");
+            }
+            builder.append(", \"URL\": \"http://dx.doi.org/" + biblio.getDoi() + "\"");
         }
 
         if (biblio.getPublisher() != null) {
             builder.append(", \"publisher\": " + mapper.writeValueAsString(biblio.getPublisher()));
-        }        
-
-        if (biblio.getNumber() != null) {
-            builder.append(", \"issue\": \"" + biblio.getNumber() + "\"");
-        }        
+        }      
 
         if (biblio.getVolume() != null) {
             builder.append(", \"volume\": \"" + biblio.getVolume() + "\"");
         }  
+
+        if (biblio.getNumber() != null) {
+            builder.append(", \"journal-issue\": { \"issue\": \"" + biblio.getNumber() + "\"}");
+            builder.append(", \"issue\": \"" + biblio.getNumber() + "\"");
+        } 
         
+        // pages
+        String pageRange = biblio.getPageRange();
+        if (pageRange != null && pageRange.length()>0) {
+            builder.append(", \"page\": \"" + pageRange + "\"");
+        }
+
+        // titles
+        if (biblio.getArticleTitle() != null) {
+            builder.append(", \"title\": [" + mapper.writeValueAsString(biblio.getArticleTitle()) + "]");
+        }
+
+        if (biblio.getTitle() != null) {
+            builder.append(", \"container-title\": [" + mapper.writeValueAsString(biblio.getTitle()) + "]");
+        }
+
+        if (biblio.getJournalAbbrev() != null) {
+            builder.append(", \"short-container-title\": [" + mapper.writeValueAsString(biblio.getJournalAbbrev()) + "]");
+        }
+
         if (biblio.getAuthors() != null && biblio.getAuthors().size() > 0) {
             builder.append(", \"author\": [");
 
@@ -220,18 +246,45 @@ public class PubMedSerializer {
             builder.append("], ");
             builder.append("\"date-time\": \""+ Biblio.dateISODisplayFormat(publicationDate) + "\"}");
 
-            // timestamp is crossref specific afaik
+            // timestamp seems crossref specific 
         }
 
         // identifiers
+        if (biblio.getIssn() != null || biblio.getEIssn() != null) {
+            builder.append(", \"ISSN\": [");
 
-        // titles
-        if (biblio.getArticleTitle() != null) {
-            builder.append(", \"title\": [" + mapper.writeValueAsString(biblio.getArticleTitle()) + "]");
+            if (biblio.getIssn() != null)
+                builder.append(mapper.writeValueAsString(Biblio.issnInDisplayFormat(biblio.getIssn())));
+            if (biblio.getEIssn() != null) {
+                if (biblio.getIssn() != null)
+                    builder.append(", ");
+                builder.append(mapper.writeValueAsString(Biblio.issnInDisplayFormat(biblio.getEIssn())));
+            }
+            builder.append("]");
+
+            builder.append(", \"issn-type\": [");
+            if (biblio.getIssn() != null) {
+                builder.append("{\"value\": " + mapper.writeValueAsString(Biblio.issnInDisplayFormat(biblio.getIssn())) + ", \"type\": \"print\"}");
+            }
+            if (biblio.getEIssn() != null) {
+                if (biblio.getIssn() != null) 
+                    builder.append(", ");
+                builder.append("{\"value\": " + mapper.writeValueAsString(Biblio.issnInDisplayFormat(biblio.getEIssn())) + ", \"type\": \"electronic\"}");
+            }
+            builder.append("]");
         }
 
-        if (biblio.getTitle() != null) {
-            builder.append(", \"container-title\": [" + mapper.writeValueAsString(biblio.getTitle()) + "]");
+        if (biblio.getAbstract() != null && biblio.getAbstract().length()>0) {
+            // note: consider removing mark-ups (Crossref does not remove them, but it has a rather negative value)
+            builder.append(", \"abstract\": " + mapper.writeValueAsString(biblio.getAbstract()));
+        }
+        
+        if (biblio.getPmid() != null) {
+            builder.append(", \"pmid\": " + mapper.writeValueAsString(biblio.getPmid()));
+        }
+
+        if (biblio.getPmc() != null) {
+            builder.append(", \"pmcid\": " + mapper.writeValueAsString(biblio.getPmc()));
         }
 
         builder.append("}");
