@@ -25,7 +25,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  */
 public class Main {
 
-    private static List<String> availableCommands = Arrays.asList("istexPMID", "pubmed", "pubmedExport", "pmcExport");
+    private static List<String> availableCommands = Arrays.asList("istexPMID", "pubmed", "pubmedExport", "pmcExport", "pubmedDump");
 
     /**
      * Arguments of the command.
@@ -71,6 +71,7 @@ public class Main {
             String currArg;
             for (int i = 0; i < pArgs.length; i++) {
                 currArg = pArgs[i];
+
                 if (currArg.equals("-h")) {
                     System.out.println(getHelp());
                     result = false;
@@ -197,14 +198,14 @@ public class Main {
                     if (env != null)  
                         env.close();
                 }
-            } else if (gbdArgs.getProcessMethodName().equals("pubmedDump")) {
+            } else if (gbdArgs.getProcessMethodName().equals("pubmeddump")) {
                 System.out.println("Export the full PubMed bibliographical entries in a dump converted into the Crossref JSON format");
                 KBStagingEnvironment env = null;
                 try {
-                    env = new KBStagingEnvironment(conf);
-                    env.buildEnvironment(false);
+                    //env = new KBStagingEnvironment(conf);
+                    //env.buildEnvironment(false);
 
-                    PubMedExporter pubmed = new PubMedExporter(env, conf);
+                    PubMedExporter pubmed = new PubMedExporter(null, conf);
                     pubmed.exportAsCrossrefDump(gbdArgs.getPathInputDirectory(), gbdArgs.getResultDirectoryPath(), true);
                 } finally {
                     if (env != null)  

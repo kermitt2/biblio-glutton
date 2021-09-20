@@ -328,6 +328,8 @@ public class PubMedExporter {
      */
     public void exportAsCrossrefDump(String dataDirectoryPath, String outputDirectoryPath, boolean overwrite) throws IOException {
 
+        System.out.println("Convert medline dump into Crossref dump format");
+
         File dataDirectory = new File(dataDirectoryPath);
         if (!dataDirectory.exists()) {
             System.out.println("The data directory for pubmed data is not valid: " + dataDirectoryPath);

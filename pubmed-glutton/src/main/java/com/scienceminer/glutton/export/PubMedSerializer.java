@@ -12,6 +12,9 @@ import com.scienceminer.glutton.data.ClassificationClass;
 import com.scienceminer.glutton.data.MeSHClass;
 import com.scienceminer.glutton.data.BiblioDefinitions;
 import com.scienceminer.glutton.data.DateUtils;
+import com.scienceminer.glutton.data.Person;
+import com.scienceminer.glutton.data.Identifier;
+import com.scienceminer.glutton.data.Affiliation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -102,37 +105,133 @@ public class PubMedSerializer {
             builder.append("{\"date-parts\": [");
 
             if (update.isSupported(DateTimeFieldType.year())) {
-                builder.append("[\"" + update.get(DateTimeFieldType.year()) + "\"]");
+                builder.append(update.get(DateTimeFieldType.year()));
 
                 if (update.isSupported(DateTimeFieldType.monthOfYear())) {
-                    String theMonth = StringUtils.leftPad(String.valueOf(update.get(DateTimeFieldType.monthOfYear())), 2, '0');
-                    builder.append(", [\"" + theMonth + "\"]");
+                    int theMonth = update.get(DateTimeFieldType.monthOfYear());
+                    builder.append(", " + theMonth);
 
                     if (update.isSupported(DateTimeFieldType.dayOfMonth())) {
-                        String theDay = StringUtils.leftPad(String.valueOf(update.get(DateTimeFieldType.dayOfMonth())), 2, '0');
-                        builder.append(", [\"" + theDay + "\"]");
+                        int theDay = update.get(DateTimeFieldType.dayOfMonth());
+                        builder.append(", " + theDay);
                     }
                 }
             }
-            builder.append("]}, ");
-            builder.append("{\"date-time\": \""+ DateUtils.dateISO(update) + "\"}");
+            builder.append("], ");
+            builder.append("\"date-time\": \""+ Biblio.dateISODisplayFormat(update) + "\"}");
 
             // timestamp is crossref specific afaik
         }
-
 
         if (biblio.getDoi() != null) {
             builder.append(", \"DOI\": \"" + biblio.getDoi() + "\"");
         }
 
-        
+        if (biblio.getPublisher() != null) {
+            builder.append(", \"publisher\": " + mapper.writeValueAsString(biblio.getPublisher()));
+        }        
 
+        if (biblio.getNumber() != null) {
+            builder.append(", \"issue\": \"" + biblio.getNumber() + "\"");
+        }        
+
+        if (biblio.getVolume() != null) {
+            builder.append(", \"volume\": \"" + biblio.getVolume() + "\"");
+        }  
+        
+        if (biblio.getAuthors() != null && biblio.getAuthors().size() > 0) {
+            builder.append(", \"author\": [");
+
+            boolean first = true;
+            for(Person author : biblio.getAuthors()) {
+                if (!first)
+                    builder.append(", ");
+                builder.append("{");
+
+                if (author.getFirstName() != null) {
+                    if (author.getMiddleName() != null) {
+                        builder.append("\"given\": " + 
+                            mapper.writeValueAsString(author.getFirstName() + " " + author.getMiddleName()));
+                    } else {
+                        builder.append("\"given\": " + 
+                            mapper.writeValueAsString(author.getFirstName()));
+                    }
+                }
+                if (author.getLastName() != null)
+                    builder.append(", \"family\": " + mapper.writeValueAsString(author.getLastName()));
+                if (first) 
+                    builder.append(", \"sequence\": \"first\"");
+                else
+                    builder.append(", \"sequence\": \"additional\"");
+
+                List<Identifier> identifiers = author.getIdentifiers();
+                if (identifiers != null && identifiers.size()>0) {
+                    for(Identifier identifier : identifiers) {
+                        if (identifier.getIdentifierName().toLowerCase().equals("orcid")) {
+                            builder.append(", \"ORCID\": " + 
+                                mapper.writeValueAsString(identifier.getIdentifierValue()));
+                        }
+                    }
+                }
+
+                List<Affiliation> affiliations = author.getAffiliations();
+                if (affiliations != null && affiliations.size()>0) {
+                    builder.append(", \"affiliation\": [");
+                    boolean firstAff = true;
+                    for(Affiliation affiliation : affiliations) {
+                        if (firstAff)
+                            firstAff = false;
+                        else
+                            builder.append(", ");
+                        builder.append("{\"name\": "+ 
+                            mapper.writeValueAsString(affiliation.getAffiliationString()) + "}");
+                    }
+                    builder.append("]");
+                }
+
+                if (first) 
+                    first = false;
+
+                builder.append("}");
+            }
+            builder.append("]");
+        } 
+
+        // publication date
+        if (biblio.getPublicationDate() != null) {
+            Partial publicationDate = biblio.getPublicationDate();
+            builder.append(", \"published\": ");
+
+            builder.append("{\"date-parts\": [");
+
+            if (publicationDate.isSupported(DateTimeFieldType.year())) {
+                builder.append(publicationDate.get(DateTimeFieldType.year()));
+
+                if (publicationDate.isSupported(DateTimeFieldType.monthOfYear())) {
+                    int theMonth = publicationDate.get(DateTimeFieldType.monthOfYear());
+                    builder.append(", " + theMonth);
+
+                    if (publicationDate.isSupported(DateTimeFieldType.dayOfMonth())) {
+                        int theDay = publicationDate.get(DateTimeFieldType.dayOfMonth());
+                        builder.append(", " + theDay);
+                    }
+                }
+            }
+            builder.append("], ");
+            builder.append("\"date-time\": \""+ Biblio.dateISODisplayFormat(publicationDate) + "\"}");
+
+            // timestamp is crossref specific afaik
+        }
 
         // identifiers
 
-        // title
+        // titles
         if (biblio.getArticleTitle() != null) {
-            builder.append(", \"title\": [\"" + mapper.writeValueAsString(biblio.getArticleTitle()) + "\"]");
+            builder.append(", \"title\": [" + mapper.writeValueAsString(biblio.getArticleTitle()) + "]");
+        }
+
+        if (biblio.getTitle() != null) {
+            builder.append(", \"container-title\": [" + mapper.writeValueAsString(biblio.getTitle()) + "]");
         }
 
         builder.append("}");

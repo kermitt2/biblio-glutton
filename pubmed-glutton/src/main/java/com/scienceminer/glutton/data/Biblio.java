@@ -484,6 +484,22 @@ public class Biblio implements Serializable {
 		return authors;
 	}
 
+	@SuppressWarnings("unchecked")
+	public List<Person> getAuthors() {
+		List<Person> allAuthors = new ArrayList<>();
+
+		Person firstAuthor = getFirstAuthor(false);
+		if (firstAuthor != null) 
+			allAuthors.add(firstAuthor);
+
+		List<Person> authors = (List<Person>) getAttributeValue("authors");
+		if (authors != null) {
+			allAuthors.addAll(authors);
+		}
+
+		return allAuthors;
+	}
+
 	public Person getFirstAuthor() {
 		return getFirstAuthor(false);
 	}

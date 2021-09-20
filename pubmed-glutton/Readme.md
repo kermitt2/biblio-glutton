@@ -37,7 +37,7 @@ Be also sure to have the PMID and PMCID mapping to DOI, available at Euro PMC sa
 To index the PubMed data, run:
 
 ```bash
-> java -Xmx1024m -jar build/libs/com.scienceminer.glutton-0.1-SNAPSHOT-onejar.jar -exe pubmed 
+> java -Xmx1024m -jar build/libs/com.scienceminer.glutton-0.2-SNAPSHOT-onejar.jar -exe pubmed 
 ```
 
 ### MEDLINE/PubMed/PubMed Central Export 
@@ -47,13 +47,13 @@ After the launch of the above extraction and indexing, it is possible to export 
 To export a sub-corpus of PubMed records, run:
 
 ```bash
-> java -Xmx1024m -jar build/libs/com.scienceminer.glutton-0.1-SNAPSHOT-onejar.jar -exe pubmedExport -tdata src/test/resources/classes-mesh.csv -out ~/tmp/mesh/
+> java -Xmx1024m -jar build/libs/com.scienceminer.glutton-0.2-SNAPSHOT-onejar.jar -exe pubmedExport -tdata src/test/resources/classes-mesh.csv -out ~/tmp/mesh/
 ```
 
 In case you are only interested in PubMed Central entries (e.g. for exploiting full text with text mining), use `pmcExport` as `-exe` action: 
 
 ```bash
-> java -Xmx1024m -jar build/libs/com.scienceminer.glutton-0.1-SNAPSHOT-onejar.jar -exe pmcExport -tdata src/test/resources/classes-mesh.csv -out ~/tmp/mesh/
+> java -Xmx1024m -jar build/libs/com.scienceminer.glutton-0.2-SNAPSHOT-onejar.jar -exe pmcExport -tdata src/test/resources/classes-mesh.csv -out ~/tmp/mesh/
 ```
 
 ### ISTEX to PubMed mapping
@@ -63,7 +63,7 @@ Be sure to have the PMID and PMCID mapping to DOI, available at Euro PMC saved u
 To create the ISTEX to PubMed mapping, run:
 
 ```bash
-> java -Xmx1024m -jar build/libs/com.scienceminer.glutton-0.1-SNAPSHOT-onejar.jar -exe istexPMID -addMeSH -out ../data/istex/istex2pmid.json
+> java -Xmx1024m -jar build/libs/com.scienceminer.glutton-0.2-SNAPSHOT-onejar.jar -exe istexPMID -addMeSH -out ../data/istex/istex2pmid.json
 ```
 
 The resulting mapping will be written under the path introduced by the parameter `-out`.
