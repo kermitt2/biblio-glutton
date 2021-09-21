@@ -7,10 +7,6 @@ FROM openjdk:8-jdk as builder
 
 USER root
 
-RUN apt-get update
-#&& \
-#    apt-get -y --no-install-recommends install
-
 WORKDIR /app/glutton-source
 
 RUN mkdir -p .gradle
@@ -43,8 +39,6 @@ RUN unzip -o ./lookup-service.zip -d ./lookup && \
 
 RUN rm *.zip
 
-WORKDIR /app/lookup/lookup-service
-
 ENV JAVA_OPTS=-Xmx4g
 
-CMD java -jar lib/lookup-service-1.0-SNAPSHOT-onejar.jar server data/config/config.yml
+CMD java -jar /app/lookup/lookup-service/lib/lookup-service-1.0-SNAPSHOT-onejar.jar server lookup/lookup-service/data/config/config.yml
