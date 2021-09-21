@@ -287,6 +287,23 @@ public class PubMedSerializer {
             builder.append(", \"pmcid\": " + mapper.writeValueAsString(biblio.getPmc()));
         }
 
+        // MeSH stuff
+        List<ClassificationClass> meshClasses = biblio.getClassifications();
+        if (meshClasses != null && meshClasses.size() > 0) {
+            builder.append(", \"mesh\": [");
+            boolean first = true;
+            for(ClassificationClass theClass : meshClasses) {
+                if (theClass.getScheme().equals("MeSH")) {
+                    if (first)
+                        first = false;
+                    else
+                        builder.append(", ");
+                    builder.append(((MeSHClass)theClass).toJson());
+                }
+            }
+            builder.append("]");
+        }
+
         builder.append("}");
         return builder.toString();
     }

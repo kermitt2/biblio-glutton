@@ -22,7 +22,16 @@ Then indicate the directory path where you stored these compressed xml dumps (as
 
 > pubmedDirectory: /home/lopez/data/pubmed
 
-### MEDLINE/PubMed extraction and indexing
+
+### MEDLINE/PubMed export in the Crossref JSON format
+
+Convert the downloaded MEDLINE/PubMed metadata XML files into a dump in the Crossref JSON format. 
+
+```bash
+> java -Xmx1024m -jar build/libs/com.scienceminer.glutton-0.2-SNAPSHOT-onejar.jar -exe pubmedDump -tdata /path/to/medline/ -out /path/to/new/dump/
+```
+
+### MEDLINE/PubMed indexing
 
 Be sure to have the full Medline data downloaded (see https://www.nlm.nih.gov/databases/download/pubmed_medline.html), and indicate in the config file `biblio-glutton/config/glutton.yml` the path to the repository containing the Medline bulk download, e.g. 
 

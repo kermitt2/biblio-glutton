@@ -446,7 +446,7 @@ function indexFile(options, dumpFile, fileName) {
             // note: from Crossref it's not jsonl by default, but in a global array, 
             // if we have gap or daily incremental files, it's jsonl
             var separator = ",\n";
-            if (fileName.startsWith("G") || fileName.startsWith("D")) {
+            if (fileName.startsWith("G") || fileName.startsWith("D") || fileName.startsWith("P")) {
                 separator = "\n";
             }
             readStream = fs.createReadStream(dumpFile)
@@ -461,7 +461,7 @@ function indexFile(options, dumpFile, fileName) {
             // note: from Crossref it's not jsonl by default, but in a global array, 
             // if we have gap or daily incremental files, it's jsonl
             var separator = ",\n";
-            if (fileName.startsWith("G") || fileName.startsWith("D")) {
+            if (fileName.startsWith("G") || fileName.startsWith("D") || fileName.startsWith("P")) {
                 separator = "\n";
             }
             readStream = fs.createReadStream(dumpFile)
