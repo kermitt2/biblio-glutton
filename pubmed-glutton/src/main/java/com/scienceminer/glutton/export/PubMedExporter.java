@@ -364,7 +364,7 @@ public class PubMedExporter {
 
                 try (Writer writer = new OutputStreamWriter(new GZIPOutputStream(outputStream), "UTF-8")) {
                     for(Biblio biblio : entries) {
-                        String jsonString = PubMedSerializer.serializeJson(biblio);
+                        String jsonString = PubMedSerializer.serializeJson(biblio, env);
                         if (jsonString != null) {
                             if (first)
                                 first = false;
@@ -406,7 +406,8 @@ public class PubMedExporter {
                 System.out.println("Cannot parse file: " + file.getPath());
                 e.printStackTrace();
             } finally {
-                IOUtils.closeQuietly(gzipStream);        
+                if (gzipStream != null)
+                    IOUtils.closeQuietly(gzipStream);        
             }
         }
 
@@ -418,7 +419,7 @@ public class PubMedExporter {
 
             try (Writer writer = new OutputStreamWriter(new GZIPOutputStream(outputStream), "UTF-8")) {
                 for(Biblio biblio : entries) {
-                    String jsonString = PubMedSerializer.serializeJson(biblio);
+                    String jsonString = PubMedSerializer.serializeJson(biblio, env);
                     if (jsonString != null) {
                         if (first)
                             first = false;

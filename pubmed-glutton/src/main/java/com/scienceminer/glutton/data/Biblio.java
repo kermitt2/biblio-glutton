@@ -50,6 +50,8 @@ public class Biblio implements Serializable {
 	// list of structured keyword objects (in contrast to a raw list of keywords as attribute field)
 	private List<Keyword> keywords;
 
+	private List<Reference> references = null;
+
 	// TBD
 	// erroneous biblio item
 	private boolean error = false;
@@ -375,6 +377,28 @@ public class Biblio implements Serializable {
 
 	public void setEndPageInt(Integer page) {
 		setPublisherAttribute("end_page_int", page);
+	}
+
+	public Integer getReferenceCount() {
+		if (references != null)
+			return references.size();
+		else 
+			return null;
+	}
+
+	public void addReference(Reference reference) {
+		if (this.references == null) {
+			this.references = new ArrayList<>();
+		}
+		this.references.add(reference);
+	}
+
+	public void setReference(List<Reference> theReferences) {
+		this.references = theReferences;
+	}
+
+	public List<Reference> getReferences() {
+		return this.references;
 	}
 
 	public String getPagination() {

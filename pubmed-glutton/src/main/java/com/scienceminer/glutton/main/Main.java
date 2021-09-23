@@ -5,7 +5,6 @@ import org.apache.commons.lang3.StringUtils;
 import com.scienceminer.glutton.utilities.GluttonConfig;
 import com.scienceminer.glutton.data.db.KBEnvironment;
 import com.scienceminer.glutton.data.db.KBStagingEnvironment;
-import com.scienceminer.glutton.data.db.KBServiceEnvironment;
 import com.scienceminer.glutton.ingestion.IstexPubMedMapper;
 import com.scienceminer.glutton.ingestion.PubMedIndexer;
 import com.scienceminer.glutton.export.PubMedExporter;
@@ -202,46 +201,16 @@ public class Main {
                 System.out.println("Export the full PubMed bibliographical entries in a dump converted into the Crossref JSON format");
                 KBStagingEnvironment env = null;
                 try {
-                    //env = new KBStagingEnvironment(conf);
-                    //env.buildEnvironment(false);
+                    env = new KBStagingEnvironment(conf);
+                    env.buildEnvironment(false);
 
-                    PubMedExporter pubmed = new PubMedExporter(null, conf);
+                    PubMedExporter pubmed = new PubMedExporter(env, conf);
                     pubmed.exportAsCrossrefDump(gbdArgs.getPathInputDirectory(), gbdArgs.getResultDirectoryPath(), true);
                 } finally {
                     if (env != null)  
                         env.close();
                 }
             } 
-
-            // DEPRECATED
-            /*else if (gbdArgs.getProcessMethodName().equals("coreharvesting")) {
-                System.out.println("Harvesting CORE data");
-                KBStagingEnvironment env1 = null;
-                KBServiceEnvironment env2 = null;
-                try {
-                    env1 = new KBStagingEnvironment(conf);
-                    env1.buildEnvironment(false);
-
-                    env2 = new KBServiceEnvironment(conf);
-                    env2.buildEnvironment(false);
-
-                    CoreIngester coreIngester = new CoreIngester(env1, env2);
-                
-                    // repositories
-                    int nb = coreIngester.fillRepositoryDb();
-                    System.out.println(nb + " repositories added");
-
-                    // biblio entries
-                    //nb = coreIngester.harvest();
-                    //System.out.println(nb + " entries added");
-                } finally {
-                    if (env1 != null)
-                        env1.close();
-                    if (env2 != null)
-                        env2.close();
-                }
-            }*/
         }
     }
-
 }

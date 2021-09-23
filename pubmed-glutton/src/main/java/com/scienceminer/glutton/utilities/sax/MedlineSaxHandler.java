@@ -67,6 +67,9 @@ public class MedlineSaxHandler extends DefaultHandler {
 	private String affiliationString = null;
     private String abstractString = null;
     private String publicationTypeUI = null;
+    private Reference currentReference = null;
+    private Keyword currentKeyword = null;
+    private String currentKeywordOrigin = null;
 
 	private String language = null;
 
@@ -80,6 +83,7 @@ public class MedlineSaxHandler extends DefaultHandler {
     private boolean inAffiliationInfo = false;
     private boolean validElocationTypeDOI = false;
     private boolean isArticleIdList = false;
+    private boolean inReferenceList = false;
 
     private boolean doiType = false;
     private boolean pubmedType = false;
@@ -129,7 +133,7 @@ public class MedlineSaxHandler extends DefaultHandler {
     		try {
     			pmid = Integer.parseInt(rawPmid);
     		} catch(Exception e) {
-    			System.out.println("Error parsing the PMID: " + rawPmid);
+    			System.out.println("Error parsing this PMID: " + rawPmid);
     			e.printStackTrace();
     		}
     		biblio.setPmid(pmid);
@@ -485,8 +489,10 @@ public class MedlineSaxHandler extends DefaultHandler {
         } else if (qName.equals("AbstractText")) {
             abstractString = getText();
             biblio.setAbstract(abstractString);
+            abstractString = null;
         } else if (qName.equals("ELocationID") && validElocationTypeDOI) {
             biblio.setDoi(getText());
+            validElocationTypeDOI = false;
         } else if (qName.equals("PublicationType")) {
             biblio.setRawPublicationType(getText());
             if (publicationTypeUI != null) {
@@ -496,7 +502,7 @@ public class MedlineSaxHandler extends DefaultHandler {
         } else if (qName.equals("GrantList")) {
             biblio.setGrants(this.grants);
         } else if (qName.equals("Grant")) {
-            if (currentGrant != null)
+            if (currentGrant != null && this.grants != null)
                 grants.add(currentGrant);
             currentGrant = null;
         } else if (qName.equals("GrantID")) {
@@ -512,15 +518,27 @@ public class MedlineSaxHandler extends DefaultHandler {
         } else if (qName.equals("Country")) {
             if (currentGrant != null) 
                 currentGrant.setCountry(getText());
-        } else if (qName.equals("ArticleId") && isArticleIdList) {
-            if (doiType && biblio.getDoi() == null) {
-                biblio.setDoi(getText());
-            } else if (pubmedType && biblio.getPubmedId() == null) {
-                biblio.setPubmedId(getText());
-            } else if (piiType && biblio.getPii() == null) {
-                 biblio.setPii(getText());
-            } else if (pmcType && biblio.getPmc() == null) {
-                biblio.setPmc(getText());
+        } else if (qName.equals("ArticleId")) {
+            if (isArticleIdList && !inReferenceList) {
+                if (doiType && biblio.getDoi() == null) {
+                    biblio.setDoi(getText());
+                } else if (pubmedType && biblio.getPubmedId() == null) {
+                    biblio.setPubmedId(getText());
+                } else if (piiType && biblio.getPii() == null) {
+                     biblio.setPii(getText());
+                } else if (pmcType && biblio.getPmc() == null) {
+                    biblio.setPmc(getText());
+                }
+            } else if (inReferenceList && currentReference != null) {
+                if (doiType) {
+                    currentReference.setDoi(getText());
+                } else if (pubmedType) {
+                    currentReference.setPubmedId(getText());
+                } else if (piiType) {
+                     currentReference.setPii(getText());
+                } else if (pmcType) {
+                    currentReference.setPmc(getText());
+                }
             }
 
             doiType = false;
@@ -529,8 +547,28 @@ public class MedlineSaxHandler extends DefaultHandler {
             pmcType = false;
         } else if (qName.equals("ArticleIdList")) {
             isArticleIdList = false;
+        } else if (qName.equals("Citation")) {
+            String referenceString = getText();
+            if (currentReference != null) 
+                currentReference.setReferenceString(referenceString);
+        } else if (qName.equals("Reference") && inReferenceList) {
+            if (currentReference != null) {
+               biblio.addReference(currentReference);
+            }
+            currentReference = null;
+        } else if (qName.equals("ReferenceList")) {
+            inReferenceList = false;
+        } else if (qName.equals("Keyword")) {
+            if (currentKeyword == null) {
+                currentKeyword = new Keyword();
+            }
+            currentKeyword.setValue(getText());
+            biblio.addKeywordItems(currentKeyword);
+            currentKeyword = null;
+        } else if (qName.equals("KeywordList")) {
+            currentKeywordOrigin = null; 
         }
-        
+
         accumulator.setLength(0);
     }
 
@@ -542,6 +580,7 @@ public class MedlineSaxHandler extends DefaultHandler {
             throws SAXException {
         if (qName.equals("PubmedArticle")) {
         	biblio = new Biblio();
+            this.grants = null;
         } else if (qName.equals("NameOfSubstance")) {
         	int length = atts.getLength();
 
@@ -668,7 +707,7 @@ public class MedlineSaxHandler extends DefaultHandler {
 
             if (isDoi && isValid)
                 validElocationTypeDOI = true;
-        } else if (qName.equals("ArticleId") && isArticleIdList) {
+        } else if (qName.equals("ArticleId") && (isArticleIdList || inReferenceList)) {
             int length = atts.getLength();
 
             // Process each attribute
@@ -691,6 +730,46 @@ public class MedlineSaxHandler extends DefaultHandler {
             }
         } else if (qName.equals("ArticleIdList")) {
             isArticleIdList = true;
+        } else if (qName.equals("ReferenceList")) {
+            inReferenceList = true;
+        } else if (qName.equals("Reference") && inReferenceList) {
+            currentReference = new Reference();
+        } else if (qName.equals("KeywordList")) {
+            int length = atts.getLength();
+
+            // Process each attribute
+            for (int i = 0; i < length; i++) {
+                // Get names and values for each attribute
+                String name = atts.getQName(i);
+                String value = atts.getValue(i);
+
+                if ((name != null) & (value != null)) {
+                    if (name.equals("Owner") && value != null) {
+                        currentKeywordOrigin = value; 
+                    }
+                }
+            }
+        } else if (qName.equals("Keyword")) {
+            currentKeyword = new Keyword();
+
+            int length = atts.getLength();
+
+            // Process each attribute
+            for (int i = 0; i < length; i++) {
+                // Get names and values for each attribute
+                String name = atts.getQName(i);
+                String value = atts.getValue(i);
+
+                if ((name != null) & (value != null)) {
+                    if (name.equals("MajorTopicYN") && value.equals("Y")) {
+                        currentKeyword.setIsMajorTopic(true);
+                    }
+                }
+            }
+
+            if (currentKeywordOrigin != null) {
+                currentKeyword.setOrigin(currentKeywordOrigin);
+            }
         }
     }
 

@@ -94,7 +94,7 @@ public class PubMedIndexer {
                         json.append(", \"doi\": \"" + outputDoi + "\"");
                     }
 
-                    Integer localPmc = null;
+                    String localPmc = null;
                     if (localDoi != null) {
                         localPmc = env.getDbDOI2PMC().retrieve(localDoi.toLowerCase());
                     }
