@@ -18,6 +18,7 @@ import com.scienceminer.glutton.data.Affiliation;
 import com.scienceminer.glutton.data.Reference;
 import com.scienceminer.glutton.data.Grant;
 import com.scienceminer.glutton.data.db.KBStagingEnvironment;
+import com.scienceminer.glutton.utilities.Utilities;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -30,66 +31,13 @@ import com.fasterxml.jackson.core.io.*;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.Partial;
 
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+
 /**
  * Class for serializing PubMed biblio objects in different formats. 
  */
 
 public class PubMedSerializer {
-
-    // csv 
-    public static String[] CSV_HEADERS = { "pmid", "doi", "pmc", "title", "abstract", "MeSH Terms", "publication year", 
-        "authors", "keywords", "publisher", "host", "affiliation", "author countries", "grid", "funding_organization", 
-        "funding country" };
-
-    public static void serializeCsv(CSVWriter writer, Biblio biblio) throws IOException {
-        StringBuilder meshTerms = new StringBuilder();
-        if (biblio.getClassifications() != null) {
-            boolean first = true;
-            for (ClassificationClass theClass : biblio.getClassifications()) {
-                if (theClass.getScheme().equals("MeSH")) {
-                    if (first)
-                        first = false;
-                    else
-                        meshTerms.append(", ");
-                    meshTerms.append(((MeSHClass)theClass).getDescriptorName());
-                }
-            }
-        }
-
-        String host = null;
-        
-        if (biblio.getHostType() == BiblioDefinitions.JOURNAL)
-            host = biblio.getTitle();
-        else if (biblio.getHostType() == BiblioDefinitions.PROCEEDINGS)
-            host = biblio.getTitle();
-        else if (biblio.getHostType() == BiblioDefinitions.COLLECTION)
-            host = biblio.getCollectionTitle();
-        else if (biblio.getTitle() != null)
-            host = biblio.getTitle();
-        else if (biblio.getHostType() == BiblioDefinitions.UNKNOWN)
-            host = "";
-        else
-            host = "";
-
-        // cleaning a bit some text noise from pubmed
-        String articleTitle = biblio.getArticleTitle();
-        if (articleTitle != null) {
-            if (articleTitle.endsWith(".")) {
-                articleTitle = articleTitle.substring(0,articleTitle.length()-1);
-            }
-            if (articleTitle.startsWith("[")) {
-                articleTitle = articleTitle.substring(1,articleTitle.length());
-            }
-            if (articleTitle.endsWith("]")) {
-                articleTitle = articleTitle.substring(0,articleTitle.length()-1);
-            }
-        }
-
-        String[] data1 = { ""+biblio.getPmid(), biblio.getDoi(), biblio.getPmc(), articleTitle, biblio.getAbstract(), 
-        meshTerms.toString(), Biblio.dateISODisplayFormat(biblio.getPublicationDate()), biblio.printAuthorList(), biblio.getKeywords(),
-        biblio.getPublisher(), host, "", "", "", "", "" };
-        writer.writeNext(data1);
-    }
 
     /**
      * The export follows the same JSON schema as Crossref JSON (derived from Crossref Unixref)
@@ -159,35 +107,41 @@ public class PubMedSerializer {
         }
 
         if (biblio.getPublisher() != null) {
+            String localPublisher = Utilities.simpleCleanField(biblio.getPublisher());
             builder.append(", \"publisher\": " + mapper.writeValueAsString(biblio.getPublisher()));
         }      
 
         if (biblio.getVolume() != null) {
-            builder.append(", \"volume\": \"" + biblio.getVolume() + "\"");
+            String localVolume = Utilities.simpleCleanField(biblio.getVolume());
+            builder.append(", \"volume\": " + mapper.writeValueAsString(biblio.getVolume()));
         }  
 
-        if (biblio.getNumber() != null) {
-            builder.append(", \"journal-issue\": { \"issue\": \"" + biblio.getNumber() + "\"}");
-            builder.append(", \"issue\": \"" + biblio.getNumber() + "\"");
+        if (StringUtils.isNotEmpty(biblio.getNumber())) {
+            String localNumber = Utilities.simpleCleanField(biblio.getNumber());
+            builder.append(", \"journal-issue\": { \"issue\": \"" + localNumber + "\"}");
+            builder.append(", \"issue\": " + mapper.writeValueAsString(localNumber));
         } 
         
         // pages
         String pageRange = biblio.getPageRange();
         if (pageRange != null && pageRange.length()>0) {
-            builder.append(", \"page\": \"" + pageRange + "\"");
+            builder.append(", \"page\": " + mapper.writeValueAsString(pageRange));
         }
 
         // titles
-        if (biblio.getArticleTitle() != null) {
-            builder.append(", \"title\": [" + mapper.writeValueAsString(biblio.getArticleTitle()) + "]");
+        if (StringUtils.isNotEmpty(biblio.getArticleTitle())) {
+            String localTitle = Utilities.simpleCleanField(biblio.getArticleTitle());
+            builder.append(", \"title\": [" + mapper.writeValueAsString(localTitle) + "]");
         }
 
-        if (biblio.getTitle() != null) {
-            builder.append(", \"container-title\": [" + mapper.writeValueAsString(biblio.getTitle()) + "]");
+        if (StringUtils.isNotEmpty(biblio.getTitle())) {
+            String localTitle = Utilities.simpleCleanField(biblio.getTitle());
+            builder.append(", \"container-title\": [" + mapper.writeValueAsString(localTitle) + "]");
         }
 
-        if (biblio.getJournalAbbrev() != null) {
-            builder.append(", \"short-container-title\": [" + mapper.writeValueAsString(biblio.getJournalAbbrev()) + "]");
+         if (StringUtils.isNotEmpty(biblio.getJournalAbbrev())) {
+            String localTitle = Utilities.simpleCleanField(biblio.getJournalAbbrev());
+            builder.append(", \"short-container-title\": [" + mapper.writeValueAsString(localTitle) + "]");
         }
 
         if (biblio.getAuthors() != null && biblio.getAuthors().size() > 0) {
@@ -208,8 +162,11 @@ public class PubMedSerializer {
                             mapper.writeValueAsString(author.getFirstName()));
                     }
                 }
-                if (author.getLastName() != null)
-                    builder.append(", \"family\": " + mapper.writeValueAsString(author.getLastName()));
+                if (author.getLastName() != null) {
+                    if (author.getFirstName() != null)
+                        builder.append(", ");
+                    builder.append("\"family\": " + mapper.writeValueAsString(author.getLastName()));
+                }
                 if (first) 
                     builder.append(", \"sequence\": \"first\"");
                 else
@@ -512,6 +469,61 @@ public class PubMedSerializer {
 
         builder.append("}");
         return builder.toString();
+    }
+
+    // csv 
+    public static String[] CSV_HEADERS = { "pmid", "doi", "pmc", "title", "abstract", "MeSH Terms", "publication year", 
+        "authors", "keywords", "publisher", "host", "affiliation", "author countries", "grid", "funding_organization", 
+        "funding country" };
+
+    public static void serializeCsv(CSVWriter writer, Biblio biblio) throws IOException {
+        StringBuilder meshTerms = new StringBuilder();
+        if (biblio.getClassifications() != null) {
+            boolean first = true;
+            for (ClassificationClass theClass : biblio.getClassifications()) {
+                if (theClass.getScheme().equals("MeSH")) {
+                    if (first)
+                        first = false;
+                    else
+                        meshTerms.append(", ");
+                    meshTerms.append(((MeSHClass)theClass).getDescriptorName());
+                }
+            }
+        }
+
+        String host = null;
+        
+        if (biblio.getHostType() == BiblioDefinitions.JOURNAL)
+            host = biblio.getTitle();
+        else if (biblio.getHostType() == BiblioDefinitions.PROCEEDINGS)
+            host = biblio.getTitle();
+        else if (biblio.getHostType() == BiblioDefinitions.COLLECTION)
+            host = biblio.getCollectionTitle();
+        else if (biblio.getTitle() != null)
+            host = biblio.getTitle();
+        else if (biblio.getHostType() == BiblioDefinitions.UNKNOWN)
+            host = "";
+        else
+            host = "";
+
+        // cleaning a bit some text noise from pubmed
+        String articleTitle = biblio.getArticleTitle();
+        if (articleTitle != null) {
+            if (articleTitle.endsWith(".")) {
+                articleTitle = articleTitle.substring(0,articleTitle.length()-1);
+            }
+            if (articleTitle.startsWith("[")) {
+                articleTitle = articleTitle.substring(1,articleTitle.length());
+            }
+            if (articleTitle.endsWith("]")) {
+                articleTitle = articleTitle.substring(0,articleTitle.length()-1);
+            }
+        }
+
+        String[] data1 = { ""+biblio.getPmid(), biblio.getDoi(), biblio.getPmc(), articleTitle, biblio.getAbstract(), 
+        meshTerms.toString(), Biblio.dateISODisplayFormat(biblio.getPublicationDate()), biblio.printAuthorList(), biblio.getKeywords(),
+        biblio.getPublisher(), host, "", "", "", "", "" };
+        writer.writeNext(data1);
     }
 
     /**
