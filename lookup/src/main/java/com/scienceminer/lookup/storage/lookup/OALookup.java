@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +39,8 @@ public class OALookup {
     public static final String NAME_DOI_OA_URL = ENV_NAME + "_doiOAUrl";
     private final int batchSize;
 
+    // this date keeps track of the latest updated date of the unpaywall database to sync using data feed
+    private LocalDateTime lastUpdated = null;
 
     public OALookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
@@ -140,6 +143,48 @@ public class OALookup {
             db.put(tx, keyBuffer, valBuffer);
         } catch (Exception e) {
             LOGGER.error("Error when storing the entry " + key + ", " + value, e);
+        }
+    }
+
+    public synchronized LocalDateTime getLastUpdatedDate() {
+        if (lastUpdated != null)
+            return lastUpdated;
+        else {
+            // get a possible value made persistent in the db
+            final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
+            ByteBuffer cachedData = null;
+            try (Txn<ByteBuffer> tx = environment.txnRead()) {
+                keyBuffer.put(BinarySerialiser.serialize("updated")).flip();
+                cachedData = dbDoiOAUrl.get(tx, keyBuffer);
+                if (cachedData != null) {
+                    lastUpdated = (LocalDateTime) BinarySerialiser.deserializeAndDecompress(cachedData);
+                }
+            } catch (Env.ReadersFullException e) {
+                throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
+            } catch (Exception e) {
+                LOGGER.error("Cannot retrieve the persistent last updated date object", e);
+            }
+            return lastUpdated;
+        }
+    }
+
+    public synchronized void setLastUpdatedDate(LocalDateTime lastUpdated) {
+        this.lastUpdated = lastUpdated;
+
+        // persistent store of this date
+        final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
+        try {
+            final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
+            keyBuffer.put(BinarySerialiser.serialize("updated")).flip();
+            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(this.lastUpdated);
+            final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
+            valBuffer.put(serializedValue).flip();
+            dbDoiOAUrl.put(transactionWrapper.tx, keyBuffer, valBuffer);
+        } catch (Exception e) {
+            LOGGER.error("Cannot store the updated");
+        } finally {
+            transactionWrapper.tx.commit();
+            transactionWrapper.tx.close();
         }
     }
 }

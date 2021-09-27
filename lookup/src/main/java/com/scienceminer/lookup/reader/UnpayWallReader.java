@@ -15,12 +15,22 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class UnpayWallReader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UnpayWallReader.class);
+
+    // this date keeps track of the latest updated date of the unpaywall database to sync using data feed
+    protected LocalDateTime lastUpdated = null;
 
     public void load(String input, Consumer<UnpayWallMetadata> closure) {
         try (Stream<String> stream = Files.lines(Paths.get(input))) {
@@ -42,6 +52,17 @@ public class UnpayWallReader {
                 final UnpayWallMetadata data = fromJson(line);
                 if (data != null) {
                     closure.accept(data);
+                    String dateTimeString = data.getUpdated();
+                    if (dateTimeString != null) {
+                        try {
+                            LocalDateTime dateTime = getISODate(dateTimeString);
+                            if (this.lastUpdated == null || this.lastUpdated.isBefore(dateTime)) {
+                                this.lastUpdated = dateTime;
+                            }
+                        } catch(Exception e) {
+                            LOGGER.warn("Updated date could not be parsed: " + dateTimeString);
+                        }
+                    }
                 }
             });
 
@@ -64,4 +85,17 @@ public class UnpayWallReader {
         return null;
     }
 
+    public static LocalDateTime getISODate(String dateString) {
+        DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+        TemporalAccessor parsedDate = isoFormatter.parse(dateString);
+        LocalDateTime localDateTime = LocalDateTime.from(parsedDate);
+        ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of(ZoneOffset.UTC.getId()));
+        Instant dateInstant = Instant.from(zonedDateTime);
+        LocalDateTime date = LocalDateTime.ofInstant(dateInstant, ZoneId.of(ZoneOffset.UTC.getId()));
+        return date;
+    }
+
+    public LocalDateTime getLastUpdated() {
+        return lastUpdated;
+    }
 }

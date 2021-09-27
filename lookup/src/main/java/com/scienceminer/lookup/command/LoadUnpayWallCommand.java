@@ -66,7 +66,13 @@ public class LoadUnpayWallCommand extends ConfiguredCommand<LookupConfiguration>
         if (unpayWallFilePath.endsWith(".gz")) {
             inputStreamUnpayWall = new GZIPInputStream(inputStreamUnpayWall);
         }
-        openAccessLookup.loadFromFile(inputStreamUnpayWall, new UnpayWallReader(), metrics.meter("openAccessLookup"));
+        UnpayWallReader unpaywallJsonlReader = new UnpayWallReader();
+        openAccessLookup.loadFromFile(inputStreamUnpayWall, unpaywallJsonlReader, metrics.meter("openAccessLookup"));
+        // possibly update with the lastest updated date obtained from this file
+        if (openAccessLookup.getLastUpdatedDate() == null ||
+            openAccessLookup.getLastUpdatedDate().isBefore(unpaywallJsonlReader.getLastUpdated())){
+            openAccessLookup.setLastUpdatedDate(unpaywallJsonlReader.getLastUpdated());
+        }
         LOGGER.info("Doi lookup (doi -> oa url) loaded " + openAccessLookup.getSize() + " records. ");
         
         LOGGER.info("Finished in " +

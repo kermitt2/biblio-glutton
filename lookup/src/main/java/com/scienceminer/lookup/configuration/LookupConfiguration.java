@@ -25,6 +25,8 @@ public class LookupConfiguration extends Configuration {
 
     private Crossref crossref;
 
+    private Unpaywall unpaywall;
+
     private String grobidHost;
 
     private ProxyParameters proxy;
@@ -89,6 +91,10 @@ public class LookupConfiguration extends Configuration {
 
     public Crossref getCrossref() {
         return crossref;
+    }
+
+    public Unpaywall getUnpaywall() {
+        return unpaywall;
     }
 
     public int getLoadingBatchSize() {
@@ -220,6 +226,38 @@ public class LookupConfiguration extends Configuration {
 
         public void setToken(String token) {
             this.token = token;
+        }
+    }
+
+    public class Unpaywall {
+
+        private String dumpPath;
+        private String mailto;
+        private String apiKey;
+
+
+        public String getDumpPath() {
+            return dumpPath;
+        }
+
+        public void setDumpPath(String dumpPath) {
+            this.dumpPath = dumpPath;
+        }
+
+        public String getMailto() {
+            return mailto;
+        }
+
+        public void setMailto(String mailto) {
+            this.mailto = mailto;
+        }
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
         }
     }
 

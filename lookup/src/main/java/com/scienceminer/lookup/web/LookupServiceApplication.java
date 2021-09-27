@@ -8,6 +8,7 @@ import com.scienceminer.lookup.command.GapUpdateCrossrefCommand;
 import com.scienceminer.lookup.command.LoadIstexIdsCommand;
 import com.scienceminer.lookup.command.LoadPMIDCommand;
 import com.scienceminer.lookup.command.LoadUnpayWallCommand;
+import com.scienceminer.lookup.command.UpdateUnpaywallCommand;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.web.healthcheck.LookupHealthCheck;
 import com.scienceminer.lookup.web.module.LookupServiceModule;
@@ -158,6 +159,8 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         bootstrap.addCommand(new LoadPMIDCommand());
         bootstrap.addCommand(new LoadCrossrefCommand());
         bootstrap.addCommand(new GapUpdateCrossrefCommand());
+
+        bootstrap.addCommand(new UpdateUnpaywallCommand());
     }
 
     public static void main(String... args) throws Exception {

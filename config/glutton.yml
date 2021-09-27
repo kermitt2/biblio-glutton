@@ -49,10 +49,11 @@ crossref:
   token:
 
 unpaywall:
-  dumpPath: 
   # a directory where the unpaywall update data feed change files will be located
-  API_key: 
+  dumpPath: /home/aazhar/devs/biblio-glutton/unpaywall_update_files
   # API Key for the Unpaywall subscription is necessary to get the data feed change files for daily update
+  apiKey:
+  mailto:
 
 # CORS parameters 
 corsAllowedOrigins: "*"
