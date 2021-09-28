@@ -135,8 +135,8 @@ System.out.println(this.lastIndexed.format(formatter));
                 LOGGER.error("Crossref update call failed", e);
             }
 
-            if (jsonObjectsStr.size() == 0)
-                continue;
+            if (jsonObjectsStr == null || jsonObjectsStr.size() == 0)
+                break;
 
 //System.out.println("number of results: " + jsonObjectsStr.size());
             String crossrefFileName = configuration.getCrossref().getDumpPath() +  File.separator;

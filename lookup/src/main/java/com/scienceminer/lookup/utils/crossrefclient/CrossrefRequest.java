@@ -127,7 +127,7 @@ public class CrossrefRequest extends Observable {
             }
 
             // set recommended User-Agent header
-            //System.out.println(uriBuilder.build().toString());
+//System.out.println(uriBuilder.build().toString());
             HttpGet httpget = new HttpGet(uriBuilder.build());
 
             if (configuration.getCrossref().getMailto() != null) {
