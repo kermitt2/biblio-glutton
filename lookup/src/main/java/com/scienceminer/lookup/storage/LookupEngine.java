@@ -292,23 +292,27 @@ public class LookupEngine {
         JsonElement jelement = new JsonParser().parse(outputData.getJsonObject());
         JsonObject jobject = jelement.getAsJsonObject();
 
-        final JsonArray titlesFromJson = jobject.get("title").getAsJsonArray();
-        if (titlesFromJson != null && titlesFromJson.size() > 0) {
-            String titleFromJson = titlesFromJson.get(0).getAsString();
-            outputData.setATitle(titleFromJson);
+        if (jobject.has("title")) {
+            final JsonArray titlesFromJson = jobject.get("title").getAsJsonArray();
+            if (titlesFromJson != null && titlesFromJson.size() > 0) {
+                String titleFromJson = titlesFromJson.get(0).getAsString();
+                outputData.setATitle(titleFromJson);
+            }
         }
 
-        final JsonArray authorsFromJson = jobject.get("author").getAsJsonArray();
-        if (authorsFromJson != null && authorsFromJson.size() > 0) {
+        if (jobject.has("author")) {
+            final JsonArray authorsFromJson = jobject.get("author").getAsJsonArray();
+            if (authorsFromJson != null && authorsFromJson.size() > 0) {
 
-            String firstAuthorFromJson = "";
-            for (int i = 0; i < authorsFromJson.size(); i++) {
-                final JsonObject currentAuthor = authorsFromJson.get(i).getAsJsonObject();
-                if (currentAuthor.has("sequence")
-                        && StringUtils.equals(currentAuthor.get("sequence").getAsString(), "first")) {
-                    firstAuthorFromJson = currentAuthor.get("family").getAsString();
-                    outputData.setFirstAuthor(firstAuthorFromJson);
-                    break;
+                String firstAuthorFromJson = "";
+                for (int i = 0; i < authorsFromJson.size(); i++) {
+                    final JsonObject currentAuthor = authorsFromJson.get(i).getAsJsonObject();
+                    if (currentAuthor.has("sequence")
+                            && StringUtils.equals(currentAuthor.get("sequence").getAsString(), "first")) {
+                        firstAuthorFromJson = currentAuthor.get("family").getAsString();
+                        outputData.setFirstAuthor(firstAuthorFromJson);
+                        break;
+                    }
                 }
             }
         }
