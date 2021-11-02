@@ -18,7 +18,7 @@ VOLUME /app/glutton-source/.gradle
 
 # source
 COPY lookup/ ./lookup/
-COPY matching/ ./matching/
+COPY indexing/ ./indexing/
 
 RUN cd /app/glutton-source/lookup && ./gradlew clean assemble --no-daemon
 
@@ -31,10 +31,9 @@ RUN apt-get update -qq && apt-get -qy install curl build-essential unzip
 RUN mkdir -p /app
 WORKDIR /app
 
-RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
-RUN apt-get update -qq && apt-get -y install nodejs
-COPY --from=builder /app/glutton-source/matching /app/matching
-RUN cd matching; npm install
+RUN apt-get update -qq && apt-get -y install nodejs npm
+COPY --from=builder /app/glutton-source/indexing /app/indexing
+RUN cd indexing; npm install
 
 COPY --from=builder /app/glutton-source/lookup/build/distributions/lookup-service-shadow-*.zip ./lookup-service.zip
 
