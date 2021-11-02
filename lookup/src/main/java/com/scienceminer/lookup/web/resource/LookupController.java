@@ -452,6 +452,9 @@ public class LookupController {
                             }
                         });
                         return;
+                    } else {
+			asyncResponse.resume(matchingDocument.getException());
+                        return;
                     }
                 } else {
                     asyncResponse.resume(matchingDocument.getFinalJsonObject());
