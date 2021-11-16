@@ -257,7 +257,7 @@ For building the database and index used by service, you will need these resourc
   
 Without Metadata Plus subscription, we recommend to use the Academic Torrents CrossRef dumps. For instance, with the Linux command line `aria2` and a high speed internet connection (e.g. 500Mb/s), the dump can be downloaded in a few minutes. 
 
-* DOI to PMID and PMC mapping: available at Europe PMC and regularly updated. [Download here](ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz),
+* DOI to PMID and PMC mapping: available at Europe PMC and regularly updated, see ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz,
 
 * optionally, but advised, the Unpaywall dataset, to get Open Access links aggregated with the bibliographical metadata, see [here](http://unpaywall.org/products/snapshot) to get the latest database snapshot. 
 
