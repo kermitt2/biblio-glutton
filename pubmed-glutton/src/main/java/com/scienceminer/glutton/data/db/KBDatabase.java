@@ -124,7 +124,7 @@ public abstract class KBDatabase<K,V> {
 			this.envFilePath = env.getConfiguration().getDbDirectory() + "/" + name;
 
 		this.environment = new Env();
-    	this.environment.setMapSize(100 * 1024 * 1024, ByteUnit.KIBIBYTES); 
+    	this.environment.setMapSize(200 * 1024 * 1024, ByteUnit.KIBIBYTES);
     	File thePath = new File(this.envFilePath);
     	if (!thePath.exists()) {
     		thePath.mkdirs();

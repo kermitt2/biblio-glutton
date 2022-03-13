@@ -67,8 +67,8 @@ public class OALookup {
         int counter = 0;
 
         try (Txn<ByteBuffer> txn = environment.txnRead()) {
-            try (CursorIterator<ByteBuffer> it = dbDoiOAUrl.iterate(txn, KeyRange.all())) {
-                for (final CursorIterator.KeyVal<ByteBuffer> kv : it.iterable()) {
+            try (CursorIterable<ByteBuffer> it = dbDoiOAUrl.iterate(txn, KeyRange.all())) {
+                for (final CursorIterable.KeyVal<ByteBuffer> kv : it) {
                     values.add(new ImmutablePair(BinarySerialiser.deserialize(kv.key()), BinarySerialiser.deserialize(kv.val())));
                     if (counter == total) {
                         txn.close();

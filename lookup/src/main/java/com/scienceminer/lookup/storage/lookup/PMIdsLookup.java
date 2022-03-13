@@ -183,8 +183,8 @@ public class PMIdsLookup {
         int counter = 0;
 
         try (Txn<ByteBuffer> txn = environment.txnRead()) {
-            try (CursorIterator<ByteBuffer> it = db.iterate(txn, KeyRange.all())) {
-                for (final CursorIterator.KeyVal<ByteBuffer> kv : it.iterable()) {
+            try (CursorIterable<ByteBuffer> it = db.iterate(txn, KeyRange.all())) {
+                for (final CursorIterable.KeyVal<ByteBuffer> kv : it) {
                     values.add(new ImmutablePair<>((String) BinarySerialiser.deserialize(kv.key()), (PmidData) BinarySerialiser.deserialize(kv.val())));
                     if (counter == total) {
                         txn.close();
