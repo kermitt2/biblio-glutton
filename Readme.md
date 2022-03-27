@@ -73,6 +73,7 @@ biblio-glutton takes advantage of GROBID for parsing raw bibliographical referen
 
 While GROBID is not required for running biblio-glutton, in particular if it is used only for bibliographical look-up, it is recommended for performing bibliographical record matching. 
 
+<!--- 
 
 ### Running with Docker
 
@@ -98,6 +99,7 @@ You will need to load similarly the other resources, as detailed [here](https://
 
 __Important Note__: this Docker is a way to test and play with the biblio-glutton service, because all the service components are bundled into one container. It might also fit simple needs. However, it is not a solution for scaling and deploying a service requiring high performance bibliographic matching, see [this section](https://github.com/kermitt2/biblio-glutton#building-the-bibliographical-data-look-up-and-matching-databases) for more information. 
 
+-->
 
 ### REST API
 
@@ -255,17 +257,23 @@ For building the database and index used by service, you will need these resourc
   - [public CrossRef dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (2021-01-07 for the latest version), 
   - Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909) (2019-09).   
   
-Without Metadata Plus subscription, we recommend to use the Academic Torrents CrossRef dumps. For instance, with the Linux command line `aria2` and a high speed internet connection (e.g. 500Mb/s), the dump can be downloaded in a few minutes. 
+We recommend to use a Crossref Metadata Plus snapshot in order to have a version of the Crossref metadata without coverage gap. With the `Crossref-Plus-API-Token`, the following command for instance will download the full snapshot for the indicated year/month: 
 
-* DOI to PMID and PMC mapping: available at Europe PMC and regularly updated, see ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz,
+```console
+wget -c --header='Crossref-Plus-API-Token: Bearer __Crossref-Plus-API-Token-Here_' https://api.crossref.org/snapshots/monthly/YYYY/MM/all.json.tar.gz
+```
 
-* optionally, but advised, the Unpaywall dataset, to get Open Access links aggregated with the bibliographical metadata, see [here](http://unpaywall.org/products/snapshot) to get the latest database snapshot. 
+Without Metadata Plus subscription, it's possible to use the Academic Torrents CrossRef dumps. For instance, with the Linux command line `aria2` and a high speed internet connection (e.g. 500Mb/s), the dump can be downloaded in a few minutes. However, the coverage gap will be important and updating these older snapshot via the normal CrossRef Web API will take an enormous amount of time. 
 
-* optionally, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see below. 
+* DOI to PMID and PMC mapping: available at Europe PMC and regularly updated at ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz,
+
+* optionally, but recommended, the Unpaywall dataset to get Open Access links aggregated with the bibliographical metadata, see [here](http://unpaywall.org/products/snapshot) to get the latest database snapshot. 
+
+* optionally, usually not required, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see below. 
 
 The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for blocking via text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
 
-The databases and elasticsearch index must first be built from the resource files. The full service needs around 300GB of space for building these index and it is highly recommended to use SSD for best performance.
+The databases and elasticsearch index must first be built from the resource files. The full service needs around 300 GB of space for building these index and it is highly recommended to use SSD for best performance.
 
 ### Build the embedded LMDB databases
 
