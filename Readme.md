@@ -290,8 +290,16 @@ All the following commands need to be launched under the subdirectory `lookup/`.
 
 #### CrossRef metadata
 
+General command line pattern:
+
 ```sh
 java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file path/to/config/file/glutton.yml
+```
+
+Example with Crossref Metadata Plus snapshot (path to a `.tar.gz` file which archives many json files):
+
+```sh
+java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar crossref --input ~/tmp/crossref_metadata_plus.tar.gz ../config/glutton.yml
 ```
 
 The last parameter is the project config file normally under `biblio-glutton/config/glutton.yml`:
@@ -307,11 +315,7 @@ Example with CrossRef dump Academic Torrent file (path to a repository of `*.jso
 java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar crossref --input ~/tmp/crossref_public_data_file_2021_01 ../config/glutton.yml
 ```
 
-Example with Crossref Metadata Plus snapshot (path to a `.tar.gz` file which archives many json files):
 
-```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar crossref --input ~/tmp/crossref_metadata_plus.tar.gz ../config/glutton.yml
-```
 
 Example with xz-compressed file (e.g. GreeneLab dump): 
 
@@ -328,25 +332,25 @@ ignoreCrossRefFields:
   - indexed
 ```
 
-Example loading the [public CrossRef dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (2021-01-07), with SSD (final db size: 226 GB) - loading time: 3:52 (dump files on hard drive).
-
+Example loading the Crossref Metadata Plus snapshot of March 2022, loading time around 4 hours (dump files on slow hard drive).
 
 ```
 -- Counters --------------------------------------------------------------------
 crossrefLookup_rejectedRecords
-             count = 4712332
+             count = 5472493
 
 -- Meters ----------------------------------------------------------------------
 crossrefLookup
-             count = 115972356
+             count = 126812507
          mean rate = 11368.21 events/second
      1-minute rate = 6520.71 events/second
      5-minute rate = 6403.19 events/second
     15-minute rate = 7240.26 events/second
 ```
-116074854
 
-The 4,712,332 rejected records correspond to all the DOI "components" (given to figures, tables, etc. part of document) which are filtered out. 
+The 5,472,493 rejected records correspond to all the DOI "components" (given to figures, tables, etc. part of document) which are filtered out. 
+As a March 2022, we thus have 121,340,014 crossref article records. 
+ 
 
 #### PMID and PMC ID
 
@@ -360,7 +364,7 @@ Example:
 java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar pmid --input PMID_PMCID_DOI.csv.gz ../config/glutton.yml
 ```
 
-As of Spetember 2021, the latest mapping covers 33,994,284 PMID, with 24,814,263 having a DOI (which means 9,180,021 PMID are not represented in Crossref).
+As of March 2022, the latest mapping covers 34,310,000 PMID, with 25,661,624 having a DOI (which means 8,648,376 PMID are not represented in Crossref).
 
 #### OA via Unpaywall
 
@@ -371,10 +375,14 @@ java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar unpaywall --input /p
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2020-04-27T153236.jsonl.gz ../config/glutton.yml
+java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2022-03-09T083001.jsonl.gz ../config/glutton.yml
 ```
 
+As of March 2022, the Unpaywall snapshot should provide at least one Open Access link to 30,618,764 Crossref entries. 
+
 #### ISTEX
+
+Note that ISTEX mapping is only relevant for ISTEX full text resource users, so only public research institutions in France. So you can generally skip this step. 
 
 ```sh
 java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar istex --input /path/to/istex/json/file path/to/config/file/glutton.yml

@@ -178,10 +178,14 @@ function processAction(options) {
 }
 
 function parseJson(data) {
-    // special cleaning for the academic torrent dump, others are in jsonl format
+    // cleaning for the academic torrent dump
     data = data.replace('\n]\n}\n', '');
+
+    // cleaning for the academic torrent dump
     if (data.startsWith('{"items":['))
         data = data.replace('{"items":[', '');
+
+    // others are in jsonl format
 
     var jsonObj = null;
     try {
@@ -190,6 +194,24 @@ function parseJson(data) {
         console.error(error);
     }
     return jsonObj;
+}
+
+function createBiblObjTar(data, cb) {
+    // special pre-process for metadata plus snapshot format
+    if (data == null || data.trim().length == 0)
+        return null;
+
+    // cleaning for metadata plus snapshot which has a different pattern
+    data = data.replace('\n  } ]\n}', '')
+
+    // cleaning for metadata plus snapshot which has a different pattern
+    if (data.startsWith('{\n  "items" : [ ')) {
+        data = data.replace('{\n  "items" : [ {\n', '');
+    }
+
+    data = "{ " + data + " }";
+
+    return createBiblObj(data, cb);
 }
 
 function createBiblObj(data, cb) {
@@ -435,8 +457,9 @@ function indexFile(options, dumpFile, fileName) {
             // we assume here it's a set of json array file in the archive (Crossref Metadata Plus snapshot)
             // dumpFile in this case is already a stream
             readStream = dumpFile
-                .pipe(es.split(", \n"))
-                .pipe(es.map(createBiblObj))
+                //.pipe(es.split(", \n"))
+                .pipe(es.split("\n  }, {\n"))
+                .pipe(es.map(createBiblObjTar))
                 .on('error',
                     function (error) {
                         console.log("Error occurred: " + error);
