@@ -248,16 +248,32 @@ Processing time for matching 17,015 raw bibliographical reference strings to DOI
 
 Machines have the same configuration Intel i7 4-cores, 8 threads, 16GB memory, SSD, on Ubuntu 16.04.
 
+### Loading resources
+
+To set-up a functional biblio-glutton server, resources need to be loaded following these steps: 
+
+1) Loading of a Crossref full metadata dump
+
+2) Loading the coverage gap between the Crossref dump and the current day (updates are then realized automatically daily as the service is up and running)
+
+3) Loading the DOI to PMID and PMC ID mapping
+
+4) (Optional) Loading the Open Access information from an Unpaywall datset snapshot 
+
+5) (Very optional) Loading the ISTEX ID mapping
+
+6) Creating the ElasticSearch index
+
 ### Resources
 
 For building the database and index used by service, you will need these resources:
 
 * CrossRef metadata dump, available:  
-  - via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service for a current snapshot, or
-  - [public CrossRef dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (2021-01-07 for the latest version), 
+  - strongly recommended: via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service for a current snapshot, or
+  - [public CrossRef dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (2021-01-07 for the latest version, no update in 2022 as far as we known), 
   - Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909) (2019-09).   
   
-We recommend to use a Crossref Metadata Plus snapshot in order to have a version of the Crossref metadata without coverage gap. With the `Crossref-Plus-API-Token`, the following command for instance will download the full snapshot for the indicated year/month: 
+We recommend to use a Crossref Metadata Plus snapshot in order to have a version of the Crossref metadata without large coverage gap. With the `Crossref-Plus-API-Token`, the following command for instance will download the full snapshot for the indicated year/month: 
 
 ```console
 wget -c --header='Crossref-Plus-API-Token: Bearer __Crossref-Plus-API-Token-Here_' https://api.crossref.org/snapshots/monthly/YYYY/MM/all.json.tar.gz
@@ -315,8 +331,6 @@ Example with CrossRef dump Academic Torrent file (path to a repository of `*.jso
 java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar crossref --input ~/tmp/crossref_public_data_file_2021_01 ../config/glutton.yml
 ```
 
-
-
 Example with xz-compressed file (e.g. GreeneLab dump): 
 
 ```sh
@@ -350,7 +364,31 @@ crossrefLookup
 
 The 5,472,493 rejected records correspond to all the DOI "components" (given to figures, tables, etc. part of document) which are filtered out. 
 As a March 2022, we thus have 121,340,014 crossref article records. 
- 
+
+
+#### CrossRef metadata gap coverage
+
+Once the main Crossref metadata snapshot has been loaded, the metadata and index will be updated daily automatically via the Crossref web API. However, there is usually a gap of coverage between the day the large snapshot image has been created and the start of the daily update. 
+
+Users of Crossref Metadata Plus snapshot can load first a snapshot of the last month, then an additional snapshot mid-month update is available with the registered content that has changed in the first half of the month. This permits to minimize the coverage gap usually to a few days. 
+
+Using the Crossref web API to cover the remaining gap (from the latest update day in the full snapshot to the current day) is done with the following command (still under `biblio-glutton/lookup/`):
+
+```sh
+java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar gap_crossref path/to/config/file/glutton.yml
+```
+
+For instance:
+
+```sh
+java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar gap_crossref ../config/glutton.yml
+```
+
+Be sure to indicate in the configution file `glutton.yml` your polite usage email and/or crossref matadata plus token for using the Crossref web API. 
+
+This command should thus be launched only one time after the loading of a full Crossref snapshot, it will resync the current metadata and index to the current day, and the daily update will then ensure everything remain in sync with the reference Crossref metadata as long the service is up and running. 
+
+__Warning:__ If an older snapshot is used, like the CrossRef dump Academic Torrent file, the coverage gap is not a few days, but usually several months or more than one year (since Crossref has not updated the Academic Torrent dump in 2022). Using the Crossweb API to cover such a long gap will unfortunately take an enormous amount of time (more than a week) due to API usage rate limitations and is likely not a acceptable solution. In addition, the Crossref web API is not always reliable, which might cause further delays. 
 
 #### PMID and PMC ID
 
@@ -453,6 +491,8 @@ Example loading the [public CrossRef dump](https://www.crossref.org/blog/new-pub
 - 115,972,356 indexed records (perfect match with metadata db)
 - around 6:30 for indexing (working on the same time on the computer), 4797 records/s
 - 25.94GB index size
+
+Like for the metadata database, the Crossref objects of type `component` are skipped.
 
 ## Matching accuracy
 
