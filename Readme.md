@@ -252,15 +252,15 @@ Machines have the same configuration Intel i7 4-cores, 8 threads, 16GB memory, S
 
 To set-up a functional biblio-glutton server, resources need to be loaded following these steps: 
 
-1) Loading of a Crossref full metadata dump
+1) Loading of a Crossref full metadata dump as embedded LMDB
 
-2) Loading the coverage gap between the Crossref dump and the current day (updates are then realized automatically daily as the service is up and running)
+2) Loading the coverage gap between the Crossref dump and the current day (updates are then realized automatically daily as the service is up and running) in the embedded LMDB
 
-3) Loading the DOI to PMID and PMC ID mapping
+3) Loading the DOI to PMID and PMC ID mapping as embedded LMDB
 
-4) (Optional) Loading the Open Access information from an Unpaywall datset snapshot 
+4) (Optional) Loading the Open Access information from an Unpaywall datset snapshot as embedded LMDB
 
-5) (Very optional) Loading the ISTEX ID mapping
+5) (Very optional) Loading the ISTEX ID mapping as embedded LMDB
 
 6) Creating the ElasticSearch index
 
@@ -368,9 +368,9 @@ As a March 2022, we thus have 121,340,014 crossref article records.
 
 #### CrossRef metadata gap coverage
 
-Once the main Crossref metadata snapshot has been loaded, the metadata and index will be updated daily automatically via the Crossref web API. However, there is usually a gap of coverage between the day the large snapshot image has been created and the start of the daily update. 
+Once the main Crossref metadata snapshot has been loaded, the metadata and index will be updated daily automatically via the Crossref web API. However, there is always a gap of coverage between the last day covered by the used large snapshot image and the start of the daily update. 
 
-Users of Crossref Metadata Plus snapshot can load first a snapshot of the last month, then an additional snapshot mid-month update is available with the registered content that has changed in the first half of the month. This permits to minimize the coverage gap usually to a few days. 
+Currently new Crossref Metadata Plus snapshot are available on the 5th of every month, covering all the metadata updates for until the previous month. It means that in the best case, there will be a coverage gap of 5 days to be recovered. More generally, users of Crossref Metadata Plus snapshot can load first a snapshot of the last month, then an additional snapshot mid-month update is available with the registered content that has changed in the first half of the month. This permits to minimize the coverage gap usually to a few days. 
 
 Using the Crossref web API to cover the remaining gap (from the latest update day in the full snapshot to the current day) is done with the following command (still under `biblio-glutton/lookup/`):
 
