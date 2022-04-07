@@ -62,7 +62,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         return "lookup-service";
     }
 
-    private void scheduleDailyUpdate(LookupConfiguration configuration) throws Exception {
+    private void scheduleDailyUpdate(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) throws Exception {
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of(configuration.getTimeZone()));
         String dailyTime = configuration.getDailyUpdateTime();
 
@@ -89,7 +89,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         Duration duration = Duration.between(now, nextRun);
         long initalDelay = duration.getSeconds();
 
-        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
+        //StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
         MetadataLookup metadataLookup = MetadataLookup.getInstance(storageEnvFactory);
 
         final MetricRegistry metrics = new MetricRegistry();
@@ -136,10 +136,11 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         environment.jersey().register(new NotFoundExceptionMapper());
         environment.jersey().register(new ServiceOverloadedExceptionMapper());
 
-        final LookupHealthCheck healthCheck = new LookupHealthCheck(configuration);
+        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
+        final LookupHealthCheck healthCheck = new LookupHealthCheck(configuration, storageEnvFactory);
         environment.healthChecks().register("HealthCheck", healthCheck);
 
-        scheduleDailyUpdate(configuration);
+        scheduleDailyUpdate(configuration, storageEnvFactory);
     }
 
     private List<? extends Module> getGuiceModules() {
