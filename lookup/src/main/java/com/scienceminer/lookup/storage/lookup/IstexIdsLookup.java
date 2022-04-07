@@ -259,4 +259,8 @@ public class IstexIdsLookup {
 
         return values;
     }
+
+    public void close() {
+        this.environment.close();
+    }
 }

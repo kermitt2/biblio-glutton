@@ -199,4 +199,8 @@ public class PMIdsLookup {
 
         return values;
     }
+
+    public void close() {
+        this.environment.close();
+    }
 }

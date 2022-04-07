@@ -35,12 +35,26 @@ public class LookupHealthCheck extends com.codahale.metrics.health.HealthCheck {
     protected Result check() throws Exception {
 
         try {
-            new OALookup(storageEnvFactory).getSize();
-            new IstexIdsLookup(storageEnvFactory).getSize();
-            final MetadataLookup metadataLookup = MetadataLookup.getInstance(storageEnvFactory);
+            OALookup oaDoiLookup = new OALookup(storageEnvFactory);
+            oaDoiLookup.getSize();
+            oaDoiLookup.close();
+
+            IstexIdsLookup istexIdsLookup = new IstexIdsLookup(storageEnvFactory);
+            istexIdsLookup.getSize();
+            istexIdsLookup.close();
+
+            MetadataLookup metadataLookup = MetadataLookup.getInstance(storageEnvFactory);
             metadataLookup.getSize();
-            new MetadataMatching(configuration, metadataLookup).getSize();
-            new PMIdsLookup(storageEnvFactory).getSize();
+            metadataLookup.close();
+
+            MetadataMatching metadataMatching = new MetadataMatching(configuration, metadataLookup);
+            metadataMatching.getSize();
+            metadataMatching.close();
+
+            PMIdsLookup pmidsLookup = new PMIdsLookup(storageEnvFactory);
+            pmidsLookup.getSize();
+            pmidsLookup.close();
+
             return Result.healthy();
         } catch (Exception e) {
             return Result.unhealthy(e);

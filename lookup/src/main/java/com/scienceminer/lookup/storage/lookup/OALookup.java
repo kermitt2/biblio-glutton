@@ -142,4 +142,8 @@ public class OALookup {
             LOGGER.error("Error when storing the entry " + key + ", " + value, e);
         }
     }
+
+    public void close() {
+        this.environment.close();
+    }
 }

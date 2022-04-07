@@ -233,4 +233,8 @@ public class MetadataLookup {
             transactionWrapper.tx.close();
         }
     }
+
+    public void close() {
+        this.environment.close();
+    }
 }

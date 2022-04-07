@@ -395,4 +395,8 @@ public class MetadataMatching {
 
         return matchingDocuments;
     }
+
+    public void close() {
+        this.metadataLookup.close();
+    }
 }
