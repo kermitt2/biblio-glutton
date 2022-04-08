@@ -3,11 +3,13 @@ package com.scienceminer.lookup.utils.crossrefclient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.io.FileUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.scienceminer.lookup.storage.lookup.MetadataLookup;
+import com.scienceminer.lookup.storage.lookup.MetadataMatching;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import com.scienceminer.lookup.reader.CrossrefJsonlReader;
 
@@ -54,6 +56,7 @@ public class IncrementalLoaderTask implements Runnable {
     private boolean daily = false;
 
     private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("YYYY-MM-dd");
+    private LocalDate today;
 
     public IncrementalLoaderTask(MetadataLookup metadataLookup, 
                                  LocalDateTime lastIndexed, 
@@ -74,10 +77,10 @@ public class IncrementalLoaderTask implements Runnable {
 
         this.indexing = indexing;
         this.daily = daily;
+        this.today = LocalDate.now();
 
         if (this.daily) {
             // the last indexed time need to be ajusted to the previous day
-            LocalDate today = LocalDate.now();
             LocalDate yesterday = today.minusDays(1);
             this.lastIndexed = yesterday.atStartOfDay();;
         }
@@ -103,7 +106,16 @@ public class IncrementalLoaderTask implements Runnable {
         boolean responseEmpty = false;
         String cursorValue = "*";
         int nbFiles = 1000000;
-System.out.println(this.lastIndexed.format(formatter));
+        System.out.println(this.lastIndexed.format(formatter));
+
+        String todayStr = this.today.format(DateTimeFormatter.ISO_DATE);
+
+        File crossrefFileDirectory = new File(configuration.getCrossref().getDumpPath() + 
+            File.separator + todayStr);
+        if (crossrefFileDirectory.mkdirs() == false) {
+            LOGGER.error("Error when creating the directory for storing crossref incremental file: " + 
+                crossrefFileDirectory.getPath());
+        }
 
         while(!responseEmpty) {
             Map<String, String> arguments = new HashMap<String,String>();
@@ -138,8 +150,8 @@ System.out.println(this.lastIndexed.format(formatter));
             if (jsonObjectsStr == null || jsonObjectsStr.size() == 0)
                 break;
 
-//System.out.println("number of results: " + jsonObjectsStr.size());
-            String crossrefFileName = configuration.getCrossref().getDumpPath() +  File.separator;
+            String crossrefFileName = configuration.getCrossref().getDumpPath() + 
+                File.separator + todayStr + File.separator;
             if (daily) {
                 crossrefFileName += "D";
             } else {
@@ -149,7 +161,6 @@ System.out.println(this.lastIndexed.format(formatter));
             File crossrefFile = new File(crossrefFileName);
 
             // write the file synchronously
-//System.out.println("writing: " + crossrefFile.getPath());
             try {
                 Writer writer = new OutputStreamWriter(new GZIPOutputStream(
                     new FileOutputStream(crossrefFile)), StandardCharsets.UTF_8);
@@ -168,13 +179,13 @@ System.out.println(this.lastIndexed.format(formatter));
 
             // load in another thread
             ExecutorService executorLoading = Executors.newSingleThreadExecutor();
-            Runnable taskLoading = new LoadCrossrefFile(crossrefFile, jsonObjectsStr, configuration, meter, counterInvalidRecords);
+            Runnable taskLoading = new LoadCrossrefFile(crossrefFile, jsonObjectsStr, this.configuration, meter, counterInvalidRecords);
             executorLoading.submit(taskLoading);
 
             nbFiles++;
             
             if (indexing) {
-                // index in another background external process
+                // index in another thread 
                 ExecutorService executorIndexing = Executors.newSingleThreadExecutor();
                 Runnable taskIndexing = new IndexCrossrefFile(crossrefFile, configuration);
                 executorIndexing.submit(taskIndexing);
@@ -185,7 +196,49 @@ System.out.println(this.lastIndexed.format(formatter));
         }
 
         // possibly update with the lastest indexed date obtained from this file
-        metadataLookup.setLastIndexed(LocalDateTime.now());
+        metadataLookup.setLastIndexed(LocalDateTime.now());  
+
+        // waiting that no more loading and no more indexing take place to optionally clean the
+        // directory of incremental files
+        // note: rather than managing termination of threads, we look at storage/index size
+        // for convenience
+        MetadataMatching metadataMatching = 
+            MetadataMatching.getInstance(this.configuration, this.metadataLookup);
+
+        if (configuration.getCrossref().getCleanProcessFiles()) {
+
+            long currentSize = metadataLookup.getFullSize();
+            long esIndexSize = metadataMatching.getSize();
+
+            boolean isChanging = true;
+
+            System.out.println("Waiting that loading and indexing tasks are completed...");
+            while(isChanging) {
+                try {
+                    TimeUnit.SECONDS.sleep(5);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+
+                long newCurrentSize = metadataLookup.getFullSize();
+                long newEsIndexSize = metadataMatching.getSize();
+
+                if (newCurrentSize == currentSize && newEsIndexSize == esIndexSize) {
+                    isChanging = false;
+                }
+
+                currentSize = newCurrentSize;
+                esIndexSize = newEsIndexSize;
+            }
+
+            System.out.println("Cleaning incremental files...");        
+            try {
+                FileUtils.deleteDirectory(crossrefFileDirectory);
+            } catch(IOException e) {
+                LOGGER.error("Fail to delete directory of incremental crossref files: " + 
+                    crossrefFileDirectory.getPath());
+            }
+        }
     }
 
     class LoadCrossrefFile implements Runnable { 
@@ -221,6 +274,9 @@ System.out.println(this.lastIndexed.format(formatter));
     }
 
     class IndexCrossrefFile implements Runnable { 
+        /** 
+         * Index a crossref incremental file via a background external process
+         **/ 
         private File crossrefFile;
         private LookupConfiguration configuration;
 
@@ -231,8 +287,7 @@ System.out.println(this.lastIndexed.format(formatter));
 
         @Override
         public void run() { 
-            // write the file synchronously
-System.out.println("indexing: " + crossrefFile.getPath());
+            System.out.println("indexing: " + crossrefFile.getPath());
 
             ProcessBuilder builder = new ProcessBuilder();
             // command is: node main -dump ~/tmp/crossref_public_data_file_2021_01 index
@@ -251,7 +306,7 @@ System.out.println("indexing: " + crossrefFile.getPath());
                 LOGGER.error("IO error when executing external command: " + builder.command().toString(), ioe);
             } catch(java.lang.InterruptedException ie) {
                 LOGGER.error("External process unexpected interruption", ie);
-            } 
+            }
         }
     }
 

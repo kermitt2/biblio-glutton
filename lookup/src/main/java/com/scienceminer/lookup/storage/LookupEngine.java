@@ -57,7 +57,7 @@ public class LookupEngine {
         this.oaDoiLookup = new OALookup(storageFactory);
         this.istexLookup = new IstexIdsLookup(storageFactory);
         this.metadataLookup = MetadataLookup.getInstance(storageFactory);
-        this.metadataMatching = new MetadataMatching(storageFactory.getConfiguration(), metadataLookup);
+        this.metadataMatching = MetadataMatching.getInstance(storageFactory.getConfiguration(), metadataLookup);
         this.pmidLookup = new PMIdsLookup(storageFactory);
     }
 

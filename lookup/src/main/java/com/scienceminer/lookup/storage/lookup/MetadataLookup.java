@@ -125,6 +125,15 @@ public class MetadataLookup {
         return sizes;
     }
 
+    public Long getFullSize() {
+        long fullsize = 0;
+        Map<String, Long> sizes = getSize();
+        for (Map.Entry<String, Long> entry : sizes.entrySet()) {
+            fullsize += entry.getValue();
+        }
+        return fullsize;
+    }
+
     public String retrieveJsonDocument(String doi) {
         final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
         ByteBuffer cachedData = null;

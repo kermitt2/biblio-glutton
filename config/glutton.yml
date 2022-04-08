@@ -13,7 +13,7 @@ ignoreCrossRefFields:
 loadingBatchSize: 10000
 indexBatchSize: 500
 
-# max blocking size (number of candidates considered before pairwise matching)
+# max blocking size (number of candidates considered for pairwise matching)
 blockSize: 4
 
 # Grobid server URL
@@ -34,9 +34,12 @@ proxy:
     port: 
 
 crossref:
-  # a directory where the crossref incremental update files will be located
-  #dumpPath: /media/lopez/data2/crossref_public_data_file_2021_01
+  # a directory where the crossref incremental update files (gap or daily update) will be located
   dumpPath: /media/lopez/data2/crossref_metadata_plus_examples
+
+  # indicate if we remove the incremental files after they have been processed (value true) or if
+  # keep them in the above dumpPath (careful the volume of files can be huge after months of daily update!)
+  cleanProcessFiles: true
 
   # for the crossref REST API and daily update, you need normally to use it politely and to indicate an email 
   #address here, e.g. 

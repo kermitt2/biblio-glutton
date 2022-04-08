@@ -45,6 +45,8 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 public class MetadataMatching {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataMatching.class);
 
+    private static volatile MetadataMatching instance;
+
     private LookupConfiguration configuration;
     private ESClientWrapper esClient;
     private MetadataLookup metadataLookup;
@@ -64,7 +66,28 @@ public class MetadataMatching {
 
     private final String INDEX_FIELD_NAME_JSONDOC = "jsondoc";
 
-    public MetadataMatching(LookupConfiguration configuration, MetadataLookup metadataLookup) {
+
+    public static MetadataMatching getInstance(LookupConfiguration configuration, 
+                                               MetadataLookup metadataLookup) {
+        if (instance == null) {
+            synchronized (MetadataMatching.class) {
+                if (instance == null) {
+                    getNewInstance(configuration, metadataLookup);
+                }
+            }
+        }
+        return instance;
+    }
+
+    /**
+     * Creates a new instance.
+     */
+    private static synchronized void getNewInstance(LookupConfiguration configuration,
+                                                    MetadataLookup metadataLookup) {
+        instance = new MetadataMatching(configuration, metadataLookup);
+    }
+
+    private MetadataMatching(LookupConfiguration configuration, MetadataLookup metadataLookup) {
         this.configuration = configuration;
         RestHighLevelClient esClient = new RestHighLevelClient(
                 RestClient.builder(

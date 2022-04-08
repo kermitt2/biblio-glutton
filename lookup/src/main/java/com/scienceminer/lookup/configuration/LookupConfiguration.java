@@ -195,6 +195,7 @@ public class LookupConfiguration extends Configuration {
 
     public class Crossref {
         private String dumpPath;
+        private boolean cleanProcessFiles; 
         private String mailto;
         private String token;
 
@@ -220,6 +221,14 @@ public class LookupConfiguration extends Configuration {
 
         public void setToken(String token) {
             this.token = token;
+        }
+
+        public boolean getCleanProcessFiles() {
+            return this.cleanProcessFiles;
+        }
+
+        public void setCleanProcessFiles(boolean clean) {
+            this.cleanProcessFiles = clean;
         }
     }
 
