@@ -121,6 +121,7 @@ public class LookupController {
             jtitle, volume, firstPage, year, biblio, parseReference, asyncResponse);
     }
 
+    @Deprecated
     protected void processByQueryMixedMode(
             String doi,
             String pmid,
@@ -144,7 +145,7 @@ public class LookupController {
         if (isNotBlank(doi)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByDoi(doi, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByDoi(doi, firstAuthor, atitle, year);
 
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
@@ -161,7 +162,7 @@ public class LookupController {
         if (isNotBlank(pmid)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByPmid(pmid, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByPmid(pmid, firstAuthor, atitle, year);
 
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
@@ -176,7 +177,7 @@ public class LookupController {
         if (isNotBlank(pmc)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByPmc(pmc, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByPmc(pmc, firstAuthor, atitle, year);
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
                     return;
@@ -191,7 +192,7 @@ public class LookupController {
         if (isNotBlank(pii)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByPii(pii, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByPii(pii, firstAuthor, atitle, year);
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
                     return;
@@ -206,7 +207,7 @@ public class LookupController {
         if (isNotBlank(istexid)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByIstexid(istexid, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByIstexid(istexid, firstAuthor, atitle, year);
 
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
@@ -344,7 +345,7 @@ public class LookupController {
         if (isNotBlank(doi)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByDoi(doi, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByDoi(doi, firstAuthor, atitle, year);
 
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
@@ -353,14 +354,15 @@ public class LookupController {
 
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("DOI did not matched, move to additional metadata");
+                LOGGER.warn("DOI did not matched or did not pass post validation");
+                throw new ServiceException(404, messagesSb.toString());
             }
         }
 
         if (isNotBlank(pmid)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByPmid(pmid, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByPmid(pmid, firstAuthor, atitle, year);
 
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
@@ -368,42 +370,45 @@ public class LookupController {
                 }
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("PMID did not matched, move to additional metadata");
+                LOGGER.warn("PMID did not matched or did not pass post validation");
+                throw new ServiceException(404, messagesSb.toString());
             }
         }
 
         if (isNotBlank(pmc)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByPmc(pmc, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByPmc(pmc, firstAuthor, atitle, year);
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
                     return;
                 }
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("PMC ID did not matched, move to additional metadata");
+                LOGGER.warn("PMC ID did not matched or did not pass post validation");
+                throw new ServiceException(404, messagesSb.toString());
             }
         }
 
         if (isNotBlank(pii)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByPii(pii, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByPii(pii, firstAuthor, atitle, year);
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
                     return;
                 }
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("PII ID did not matched, move to additional metadata");
+                LOGGER.warn("PII ID did not matched or did not pass post validation");
+                throw new ServiceException(404, messagesSb.toString());
             }
         }
 
         if (isNotBlank(istexid)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByIstexid(istexid, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByIstexid(istexid, firstAuthor, atitle, year);
 
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
@@ -412,7 +417,8 @@ public class LookupController {
 
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("ISTEX ID did not matched, move to additional metadata");
+                LOGGER.warn("ISTEX ID did not matched or did not pass post validation");
+                throw new ServiceException(404, messagesSb.toString());
             }
         }
 
@@ -514,35 +520,35 @@ public class LookupController {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/doi/{doi}")
     public String getByDoi(@PathParam("doi") String doi) {
-        return lookupEngine.retrieveByDoi(doi, null, null);
+        return lookupEngine.retrieveByDoi(doi, null, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/pmid/{pmid}")
     public String getByPmid(@PathParam("pmid") String pmid) {
-        return lookupEngine.retrieveByPmid(pmid, null, null);
+        return lookupEngine.retrieveByPmid(pmid, null, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/pii/{pii}")
     public String getByPii(@PathParam("pii") String pii) {
-        return lookupEngine.retrieveByPii(pii, null, null);
+        return lookupEngine.retrieveByPii(pii, null, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/pmc/{pmc}")
     public String getByPmc(@PathParam("pmc") String pmc) {
-        return lookupEngine.retrieveByPmc(pmc, null, null);
+        return lookupEngine.retrieveByPmc(pmc, null, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/istexid/{istexid}")
     public String getByIstexid(@PathParam("istexid") String istexid) {
-        return lookupEngine.retrieveByIstexid(istexid, null, null);
+        return lookupEngine.retrieveByIstexid(istexid, null, null, null);
     }
 
     protected void setLookupEngine(LookupEngine lookupEngine) {

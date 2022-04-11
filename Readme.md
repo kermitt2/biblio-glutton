@@ -111,6 +111,8 @@ __Important Note__: this Docker is a way to test and play with the biblio-glutto
 
 ### REST API
 
+The service can be queried based on a strong identifier, likeDOI, PMID, etc. as follow:
+
 - match record by DOI
     - `GET host:port/service/lookup?doi=DOI`
     - `GET host:port/service/lookup/doi/{DOI}`
@@ -131,6 +133,8 @@ __Important Note__: this Docker is a way to test and play with the biblio-glutto
     - `GET host:port/service/lookup?pii=PII`
     - `GET host:port/service/lookup/pii/{PII}`   
 
+The service can be queried with various metadata like article title (`atitle`), first author last name (`firstAuthor`), journal title (`jtitle`), volume (`volume`), first page (`firstPage`) and publication year (`year`)
+
 - match record by article title and first author lastname
     - `GET host:port/service/lookup?atitle=ARTICLE_TITLE&firstAuthor=FIRST_AUTHOR_SURNAME`
     
@@ -139,6 +143,8 @@ __Important Note__: this Docker is a way to test and play with the biblio-glutto
 
 - match record by journal title or abbreviated title, volume, first page, and first author lastname
     - `GET host:port/service/lookup?jtitle=JOURNAL_TITLE&volume=VOLUME&firstPage=FIRST_PAGE&firstAuthor=FIRST_AUTHOR_SURNAME`
+
+It's possible to query the service based on a raw citation string (`biblio`):
 
 - match record by raw citation string 
     - `GET host:port/service/lookup?biblio=BIBLIO_STRING&`
@@ -152,9 +158,19 @@ or:
 
     - `GET host:port/service/lookup?jtitle=JOURNAL_TITLE&volume=VOLUME&firstPage=FIRST_PAGE&firstAuthor=FIRST_AUTHOR_SURNAME&atitle=ARTICLE_TITLE`
 
-biblio-glutton will make the best use of all the parameters sent to retrieve in the fastest way a record and apply matching threashold to avoid false positive. It is advised to send as much metadata as possible to try to optimize the DOI matching in term of speed and accuracy, and when possible a full raw bibliographical string.  
+or:
 
-In case you are only interested by the Open Access URL for a bibliographical object, the open Access resolver API returns the OA PDF link (URL) only via an identifier: 
+    - `GET host:port/service/lookup?biblio=BIBLIO_STRING&atitle=ARTICLE_TITLE&firstAuthor=FIRST_AUTHOR_SURNAME&year=YYYY`
+
+It is also possible to combine a strong identifier with validation metadata. In this case, if the DOI appears conflicting with the provided metadata, no results will be returned, as a way to detect invalid DOI with post-validation:
+
+    - `GET host:port/service/lookup?doi=DOI&atitle=ARTICLE_TITLE&firstAuthor=FIRST_AUTHOR_SURNAME`
+
+biblio-glutton will make the best use of all the parameters sent to retrieve in the fastest way a record and apply matching threashold to avoid false positive. It is advised to send __as much metadata as possible__ to try to optimize the DOI matching in term of speed and accuracy, and when possible a full raw bibliographical string. 
+
+The more metadata are available in the query, the better. The original raw bibliographical string is also be exploited when availableto control the bibliographical record matching.
+
+For convenience, in case you are only interested by the Open Access URL for a bibliographical object, the open Access resolver API returns the OA PDF link (URL) only via an identifier: 
 
 - return the best Open Access URL if available
     - `GET host:port/service/oa?doi=DOI` return the best Open Accss PDF url for a given DOI 

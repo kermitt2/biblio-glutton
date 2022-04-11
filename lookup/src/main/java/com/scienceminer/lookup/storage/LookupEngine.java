@@ -266,20 +266,21 @@ public class LookupEngine {
 
     public String retrieveByDoi(String doi, 
                                 String firstAuthor, 
-                                String atitle) {
+                                String atitle,
+                                String year) throws NotFoundException {
         MatchingDocument outputData = metadataLookup.retrieveByMetadata(doi);
+        // TBD: also use year for post validation of strong identifier
         outputData = validateJsonBody(firstAuthor, atitle, outputData);
-
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
     }
 
-    private MatchingDocument validateJsonBody(String firstAuthor, String atitle, MatchingDocument outputData) {
+    private MatchingDocument validateJsonBody(String firstAuthor, String atitle, MatchingDocument outputData) throws NotFoundException {   
         if (isBlank(outputData.getJsonObject())) {
             throw new NotFoundException("No bibliographical record found");
         }
 
-        if (isNotBlank(firstAuthor)) {
-            outputData = extractTitleAndFirstAuthorFromJson(outputData);
+        if (isNotBlank(firstAuthor) || isNotBlank(atitle)) {
+            outputData = extractTitleAndFirstAuthorFromJson(outputData);          
 
             if (!areMetadataMatchingTitleAuthor(atitle, firstAuthor, outputData, true)) {
                 throw new NotFoundException("Best bibliographical record did not passed the post-validation");
@@ -320,17 +321,17 @@ public class LookupEngine {
         return outputData;
     }
 
-    public String retrieveByPmid(String pmid, String firstAuthor, String atitle) {
+    public String retrieveByPmid(String pmid, String firstAuthor, String atitle, String year) {
         final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
-            return retrieveByDoi(pmidData.getDoi(), firstAuthor, atitle);
+            return retrieveByDoi(pmidData.getDoi(), firstAuthor, atitle, year);
         }
 
         throw new NotFoundException("Cannot find bibliographical record with PMID " + pmid);
     }
 
-    public String retrieveByPmc(String pmc, String firstAuthor, String atitle) {
+    public String retrieveByPmc(String pmc, String firstAuthor, String atitle, String year) {
         if (!StringUtils.startsWithIgnoreCase(pmc, "pmc")) {
             pmc = "PMC" + pmc;
         }
@@ -338,13 +339,13 @@ public class LookupEngine {
         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
-            return retrieveByDoi(pmidData.getDoi(), firstAuthor, atitle);
+            return retrieveByDoi(pmidData.getDoi(), firstAuthor, atitle, year);
         }
 
         throw new NotFoundException("Cannot find bibliographical record with PMC ID " + pmc);
     }
 
-    public String retrieveByIstexid(String istexid, String firstAuthor, String atitle) {
+    public String retrieveByIstexid(String istexid, String firstAuthor, String atitle, String year) {
         final IstexData istexData = istexLookup.retrieveByIstexId(istexid);
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi()) && isNotBlank(istexData.getDoi().get(0))) {
@@ -360,7 +361,7 @@ public class LookupEngine {
         throw new NotFoundException("Cannot find bibliographical record with ISTEX ID " + istexid);
     }
 
-    public String retrieveByPii(String pii, String firstAuthor, String atitle) {
+    public String retrieveByPii(String pii, String firstAuthor, String atitle, String year) {
         final IstexData istexData = istexLookup.retrieveByPii(pii);
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi()) && isNotBlank(istexData.getDoi().get(0))) {
