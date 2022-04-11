@@ -44,6 +44,14 @@ public class Biblio implements Serializable {
 	// the URL given by the primary publisher in the official DOI record at CrossRef
 	private String doiPublisherUrl;
 
+	// list of grants
+	private List<Grant> grants;
+
+	// list of structured keyword objects (in contrast to a raw list of keywords as attribute field)
+	private List<Keyword> keywords;
+
+	private List<Reference> references = null;
+
 	// TBD
 	// erroneous biblio item
 	private boolean error = false;
@@ -180,6 +188,22 @@ public class Biblio implements Serializable {
 		setPublisherAttribute("doi", StringUtils.trim(doi));
 	}
 
+	public String getRawPublicationType() {
+		return (String) getAttributeValue("rawPublicationType");
+	}
+
+	public void setRawPublicationType(String rawPublicationType) {
+		setPublisherAttribute("rawPublicationType", StringUtils.trim(rawPublicationType));
+	}
+
+	public String getPublicationTypeUI() {
+		return (String) getAttributeValue("publicationTypeUI");
+	}
+
+	public void setPublicationTypeUI(String publicationTypeUI) {
+		setPublisherAttribute("publicationTypeUI", StringUtils.trim(publicationTypeUI));
+	}
+
 	public void setCoreId(Integer coreId) {
 		setPublisherAttribute("coreId", coreId);
 	}
@@ -291,6 +315,14 @@ public class Biblio implements Serializable {
 		setPublisherAttribute("ePublicationDate", date);
 	}
 
+	public Partial getLastUpdateDate() {
+		return (Partial) getAttributeValue("lastUpdateDate");
+	}
+
+	public void setLastUpdateDate(Partial date) {
+		setPublisherAttribute("lastUpdateDate", date);
+	}
+
 	public String getTitle() {
 		return (String) getAttributeValue("title");
 	}
@@ -328,7 +360,7 @@ public class Biblio implements Serializable {
 	}
 
 	public void setEndPage(String page) {
-		setPublisherAttribute("end_page_int", page);
+		setPublisherAttribute("end_page", page);
 	}
 
 	public Integer getStartPageInt() {
@@ -344,7 +376,29 @@ public class Biblio implements Serializable {
 	}
 
 	public void setEndPageInt(Integer page) {
-		setPublisherAttribute("end_page", page);
+		setPublisherAttribute("end_page_int", page);
+	}
+
+	public Integer getReferenceCount() {
+		if (references != null)
+			return references.size();
+		else 
+			return null;
+	}
+
+	public void addReference(Reference reference) {
+		if (this.references == null) {
+			this.references = new ArrayList<>();
+		}
+		this.references.add(reference);
+	}
+
+	public void setReference(List<Reference> theReferences) {
+		this.references = theReferences;
+	}
+
+	public List<Reference> getReferences() {
+		return this.references;
 	}
 
 	public String getPagination() {
@@ -452,6 +506,22 @@ public class Biblio implements Serializable {
 		}
 
 		return authors;
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<Person> getAuthors() {
+		List<Person> allAuthors = new ArrayList<>();
+
+		Person firstAuthor = getFirstAuthor(false);
+		if (firstAuthor != null) 
+			allAuthors.add(firstAuthor);
+
+		List<Person> authors = (List<Person>) getAttributeValue("authors");
+		if (authors != null) {
+			allAuthors.addAll(authors);
+		}
+
+		return allAuthors;
 	}
 
 	public Person getFirstAuthor() {
@@ -581,6 +651,20 @@ public class Biblio implements Serializable {
 		setPublisherAttribute("keywords", keywords);
 	}
 
+	public List<Keyword> getKeywordItems() {
+		return keywords;
+	}
+
+	public void setKeywordItems(List<Keyword> keywords) {
+		this.keywords = keywords;
+	}
+
+	public void addKeywordItems(Keyword keyword) {
+		if (this.keywords == null)
+			this.keywords = new ArrayList<>();
+		this.keywords.add(keyword);
+	}
+
 	public String getCollectionTitle() {
 		return (String) getAttributeValue("collection_title");
 	}
@@ -659,12 +743,12 @@ public class Biblio implements Serializable {
 	}
 
 	public String getPageRange() {
-		if (StringUtils.isNotBlank(getStartPage()) && StringUtils.isNotBlank(getEndPage())
+		/*if (StringUtils.isNotBlank(getStartPage()) && StringUtils.isNotBlank(getEndPage())
 					&& getStartPage().equals(getEndPage())) {
 			return getStartPage();
-		}
+		}*/
 		if (StringUtils.isNotBlank(getStartPage()) && StringUtils.isNotBlank(getEndPage())) {
-			return getStartPage() + " to " + getEndPage();
+			return getStartPage() + "-" + getEndPage();
 		}
 		if (StringUtils.isNotBlank(getStartPage())) {
 			return getStartPage();
@@ -685,6 +769,21 @@ public class Biblio implements Serializable {
 
 	public void setFirstAuthorFirstName(String name) {
 		getFirstAuthor(true).setFirstName(Person.normalizeName(name));
+	}
+
+	public List<Grant> getGrants() {
+		return grants;
+	}
+
+	public void setGrants(List<Grant> grants) {
+		this.grants = grants;
+	}
+
+	public void addGrant(Grant grant) {
+		if (this.grants == null) {
+			this.grants = new ArrayList<>();
+		}
+		this.grants.add(grant);
 	}
 
 	/** Returns the page range. */
@@ -786,6 +885,9 @@ public class Biblio implements Serializable {
 		defaultPropertyIfNull(this, source, "hostType");
 		defaultPropertyIfNull(this, source, "documentType");
 		defaultPropertyIfNull(this, source, "doi");
+		defaultPropertyIfNull(this, source, "pii");
+		defaultPropertyIfNull(this, source, "pmc");	
+		defaultPropertyIfNull(this, source, "pubmedid");
 		defaultPropertyIfNull(this, source, "title");
 		defaultPropertyIfNull(this, source, "firstAuthor");
 		defaultPropertyIfNull(this, source, "volume");

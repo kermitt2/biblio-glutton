@@ -41,7 +41,7 @@ public class OALookup {
 
     public OALookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
-        batchSize = storageEnvFactory.getConfiguration().getBatchSize();
+        batchSize = storageEnvFactory.getConfiguration().getLoadingBatchSize();
 
         dbDoiOAUrl = this.environment.openDbi(NAME_DOI_OA_URL, DbiFlags.MDB_CREATE);
     }
@@ -141,5 +141,9 @@ public class OALookup {
         } catch (Exception e) {
             LOGGER.error("Error when storing the entry " + key + ", " + value, e);
         }
+    }
+
+    public void close() {
+        this.environment.close();
     }
 }

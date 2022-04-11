@@ -1,7 +1,15 @@
 package com.scienceminer.glutton.export;
 
 import java.io.*;
+import java.util.zip.GZIPOutputStream;
+import java.util.zip.GZIPInputStream;
 import java.util.*;
+
+import com.scienceminer.glutton.utilities.sax.MedlineSaxHandler;
+import com.scienceminer.glutton.utilities.sax.DumbEntityResolver;
+
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 
 import com.opencsv.*; 
 
@@ -12,6 +20,7 @@ import com.scienceminer.glutton.data.db.KBIterator;
 import com.scienceminer.glutton.data.Biblio;
 import com.scienceminer.glutton.data.ClassificationClass;
 import com.scienceminer.glutton.data.MeSHClass;
+import com.scienceminer.glutton.data.DateUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -34,9 +43,10 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 import org.elasticsearch.action.bulk.*;
 import static org.elasticsearch.common.xcontent.XContentFactory.*;
 import org.elasticsearch.common.xcontent.*;
-import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.core.TimeValue;
 
 import org.apache.http.HttpHost;
+import org.apache.commons.io.IOUtils;
 
 public class PubMedExporter {
 
@@ -163,9 +173,8 @@ public class PubMedExporter {
 
         // init elasticsearch client
         RestHighLevelClient client = new RestHighLevelClient(
-            RestClient.builder(
-                    new HttpHost(conf.getEsHost(), conf.getEsPort(), "http"),
-                    new HttpHost(conf.getEsHost(), conf.getEsPort(), "http")));
+                RestClient.builder(
+                        HttpHost.create(conf.elastic.getHost())));
 
         final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(120L));
         SearchRequest searchRequest = new SearchRequest("pubmed");
@@ -303,6 +312,127 @@ public class PubMedExporter {
             }
         }
         return false;
+    }
+
+
+    /**
+     * Parse the full medline XML, combine with euro PMC mapping to DOI, convert into Crossref JSON format 
+     * (more or less Unixref in JSON) and write a dump. This dump can then be further process similarly as 
+     * a Crossref dump, with the notable exception that DOI might not always be present. Some additional
+     * PubMed specific fields are added, but overall semantics of the Crossref format should be well respected.  
+     * @param dataDirectory a directory of pubmed/medline metdata file archives (medline files in XML) 
+     *          containing data to be loaded
+     * @param ouputDirectory a directory where to write the dump json.gz files, this is a jsonl format
+     * @param overwrite true if the existing database should be overwritten, otherwise false
+     * @throws IOException if there is a problem reading or deserialising the given data file.
+     */
+    public void exportAsCrossrefDump(String dataDirectoryPath, String outputDirectoryPath, boolean overwrite) throws IOException {
+
+        System.out.println("Convert medline dump into Crossref dump format");
+
+        File dataDirectory = new File(dataDirectoryPath);
+        if (!dataDirectory.exists()) {
+            System.out.println("The data directory for pubmed data is not valid: " + dataDirectoryPath);
+            return;
+        }
+
+        File outputDirectory = new File(outputDirectoryPath);
+        if (!outputDirectory.exists()) {
+            System.out.println("The output directory for pubmed data dump is not valid: " + outputDirectoryPath);
+            return;
+        }
+
+        // read directory
+        File[] files = dataDirectory.listFiles(new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return name.toLowerCase().endsWith(".gz");
+            }
+        });
+
+        if ( (files == null) || (files.length == 0) )
+            return;
+
+        int totalAdded = 0;
+        int fileNumber = 0;
+        List<Biblio> entries = new ArrayList<>();
+        for(int i=0; i<files.length; i++) {
+            if (entries.size() >= 10000) {
+                // write batch
+                boolean first = true;
+                FileOutputStream outputStream = new FileOutputStream(outputDirectory.getAbsolutePath() + 
+                    File.separator + "P" + fileNumber + ".json.gz");
+
+                try (Writer writer = new OutputStreamWriter(new GZIPOutputStream(outputStream), "UTF-8")) {
+                    for(Biblio biblio : entries) {
+                        String jsonString = PubMedSerializer.serializeJson(biblio, env);
+                        if (jsonString != null) {
+                            if (first)
+                                first = false;
+                            else 
+                                writer.write("\n");
+                            writer.write(jsonString);
+                            totalAdded++;
+                        }
+                    }
+                } 
+
+                fileNumber++;
+                entries = new ArrayList<>();
+            }
+
+            File file = files[i];
+            InputStream gzipStream = null;
+            try {
+                InputStream fileStream = new FileInputStream(file);
+                gzipStream = new GZIPInputStream(fileStream);
+
+                MedlineSaxHandler handler = new MedlineSaxHandler();
+                SAXParserFactory spf = SAXParserFactory.newInstance();
+                spf.setValidating(false);
+                spf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+
+                // get a new instance of parser
+                SAXParser saxParser = spf.newSAXParser();
+                saxParser.getXMLReader().setEntityResolver(new DumbEntityResolver());
+                saxParser.parse(gzipStream, handler);
+
+                List<Biblio> biblios = handler.getBiblios();
+                if ((biblios != null) && (biblios.size() > 0)) {
+                    System.out.println(biblios.size() + " parsed MedLine entries");
+                    entries.addAll(biblios);
+                }
+
+            } catch (Exception e) {
+                System.out.println("Cannot parse file: " + file.getPath());
+                e.printStackTrace();
+            } finally {
+                if (gzipStream != null)
+                    IOUtils.closeQuietly(gzipStream);        
+            }
+        }
+
+        // write last batch
+        if (entries.size() > 0) {
+            boolean first = true;
+            FileOutputStream outputStream = new FileOutputStream(outputDirectory.getAbsolutePath() + 
+                File.separator + "P" + fileNumber + ".json.gz");
+
+            try (Writer writer = new OutputStreamWriter(new GZIPOutputStream(outputStream), "UTF-8")) {
+                for(Biblio biblio : entries) {
+                    String jsonString = PubMedSerializer.serializeJson(biblio, env);
+                    if (jsonString != null) {
+                        if (first)
+                            first = false;
+                        else 
+                            writer.write("\n");
+                        writer.write(jsonString);
+                        totalAdded++;
+                    }
+                }
+            } 
+        }
+
+        System.out.println("total PMID entries parsed, converted and written: " + totalAdded);
     }
 
 }

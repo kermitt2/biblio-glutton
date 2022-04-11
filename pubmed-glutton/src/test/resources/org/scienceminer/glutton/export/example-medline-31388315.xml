@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE PubmedArticleSet SYSTEM "http://dtd.nlm.nih.gov/ncbi/pubmed/out/pubmed_190101.dtd">
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation Status="PubMed-not-MEDLINE" Owner="NLM">
+      <PMID Version="1">31388315</PMID>
+      <DateRevised>
+        <Year>2020</Year>
+        <Month>10</Month>
+        <Day>01</Day>
+      </DateRevised>
+      <Article PubModel="Electronic-eCollection">
+        <Journal>
+          <ISSN IssnType="Print">1179-1322</ISSN>
+          <JournalIssue CitedMedium="Print">
+            <Volume>11</Volume>
+            <PubDate>
+              <Year>2019</Year>
+            </PubDate>
+          </JournalIssue>
+          <Title>Cancer management and research</Title>
+          <ISOAbbreviation>Cancer Manag Res</ISOAbbreviation>
+        </Journal>
+        <ArticleTitle>The impact of panitumumab treatment on survival and quality of life in patients with <i>RAS</i> wild-type metastatic colorectal cancer.</ArticleTitle>
+        <Pagination>
+          <MedlinePgn>5911-5924</MedlinePgn>
+        </Pagination>
+        <ELocationID EIdType="doi" ValidYN="Y">10.2147/CMAR.S186042</ELocationID>
+        <Abstract>
+          <AbstractText>Panitumumab is a fully human monoclonal antibody targeting the epidermal growth factor receptor (EGFR). It is currently approved for the treatment of <i>RAS</i> wild-type (WT) metastatic colorectal cancer (mCRC) in combination with chemotherapy in first- and second-line and as monotherapy in chemorefractory patients. This review will provide an overview of main efficacy data on panitumumab from its early development up to latest evidences, including novel perspectives on predictive biomarkers of anti-EGFRs efficacy and mechanisms of secondary resistance. Quality of life (QoL) related issues and panitumumab safety profile will be addressed as well.</AbstractText>
+        </Abstract>
+        <AuthorList CompleteYN="Y">
+          <Author ValidYN="Y">
+            <LastName>Battaglin</LastName>
+            <ForeName>Francesca</ForeName>
+            <Initials>F</Initials>
+            <AffiliationInfo>
+              <Affiliation>Division of Medical Oncology, Norris Comprehensive Cancer Center, Keck School of Medicine, University of Southern California, Los Angeles, CA 90033, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Puccini</LastName>
+            <ForeName>Alberto</ForeName>
+            <Initials>A</Initials>
+            <AffiliationInfo>
+              <Affiliation>Medical Oncology Unit 1, IRCCS Ospedale Policlinico San Martino, Genova, Italy.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Ahcene Djaballah</LastName>
+            <ForeName>Selma</ForeName>
+            <Initials>S</Initials>
+            <AffiliationInfo>
+              <Affiliation>Medical Oncology Unit 1, Clinical and Experimental Oncology Department, Veneto Institute of Oncology IOV - IRCCS, Padua 35128, Italy.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Lenz</LastName>
+            <ForeName>Heinz-Josef</ForeName>
+            <Initials>HJ</Initials>
+            <AffiliationInfo>
+              <Affiliation>Division of Medical Oncology, Norris Comprehensive Cancer Center, Keck School of Medicine, University of Southern California, Los Angeles, CA 90033, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+        </AuthorList>
+        <Language>eng</Language>
+        <GrantList CompleteYN="Y">
+          <Grant>
+            <GrantID>P30 CA014089</GrantID>
+            <Acronym>CA</Acronym>
+            <Agency>NCI NIH HHS</Agency>
+            <Country>United States</Country>
+          </Grant>
+        </GrantList>
+        <PublicationTypeList>
+          <PublicationType UI="D016428">Journal Article</PublicationType>
+        </PublicationTypeList>
+        <ArticleDate DateType="Electronic">
+          <Year>2019</Year>
+          <Month>06</Month>
+          <Day>28</Day>
+        </ArticleDate>
+      </Article>
+      <MedlineJournalInfo>
+        <Country>New Zealand</Country>
+        <MedlineTA>Cancer Manag Res</MedlineTA>
+        <NlmUniqueID>101512700</NlmUniqueID>
+        <ISSNLinking>1179-1322</ISSNLinking>
+      </MedlineJournalInfo>
+      <KeywordList Owner="NOTNLM">
+        <Keyword MajorTopicYN="N">EGFR</Keyword>
+        <Keyword MajorTopicYN="N">RAS</Keyword>
+        <Keyword MajorTopicYN="N">biomarker</Keyword>
+        <Keyword MajorTopicYN="N">colorectal cancer</Keyword>
+        <Keyword MajorTopicYN="N">panitumumab</Keyword>
+        <Keyword MajorTopicYN="N">quality of life</Keyword>
+      </KeywordList>
+      <CoiStatement>FB has received travel/accommodations from Bayer and Amgen Inc. HJL has received clinical trial financial support from Merck Serono and Roche, honoraria for advisory board membership and lectures from Bayer, Boehringer Ingelheim, Genentech, Pfizer, Merck Serono and Roche, and travel/accommodations from Bayer, Merck Serono and Roche. The authors report no other conflicts of interest in this work.</CoiStatement>
+    </MedlineCitation>
+    <PubmedData>
+      <History>
+        <PubMedPubDate PubStatus="received">
+          <Year>2019</Year>
+          <Month>04</Month>
+          <Day>17</Day>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="accepted">
+          <Year>2019</Year>
+          <Month>06</Month>
+          <Day>11</Day>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="entrez">
+          <Year>2019</Year>
+          <Month>8</Month>
+          <Day>8</Day>
+          <Hour>6</Hour>
+          <Minute>0</Minute>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="pubmed">
+          <Year>2019</Year>
+          <Month>8</Month>
+          <Day>8</Day>
+          <Hour>6</Hour>
+          <Minute>0</Minute>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="medline">
+          <Year>2019</Year>
+          <Month>8</Month>
+          <Day>8</Day>
+          <Hour>6</Hour>
+          <Minute>1</Minute>
+        </PubMedPubDate>
+      </History>
+      <PublicationStatus>epublish</PublicationStatus>
+      <ArticleIdList>
+        <ArticleId IdType="pubmed">31388315</ArticleId>
+        <ArticleId IdType="doi">10.2147/CMAR.S186042</ArticleId>
+        <ArticleId IdType="pii">186042</ArticleId>
+        <ArticleId IdType="pmc">PMC6607986</ArticleId>
+      </ArticleIdList>
+      <ReferenceList>
+        <Reference>
+          <Citation>Nat Rev Mol Cell Biol. 2006 Jul;7(7):505-16</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">16829981</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>J Clin Oncol. 2007 May 1;25(13):1658-64</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">17470858</ArticleId>
+          </ArticleIdList>
+       </Reference>
+        <Reference>
+          <Citation>Oncology (Williston Park). 2007 Oct;21(11 Suppl 5):34-6</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">18154217</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>J Clin Oncol. 2008 Apr 1;26(10):1626-34</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">18316791</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Cancer. 2009 Apr 1;115(7):1544-54</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">19189371</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Anticancer Res. 2009 Dec;29(12):5077-82</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">20044619</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>J Clin Oncol. 2010 Mar 10;28(8):1351-7</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">20142600</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Curr Oncol. 2010 Jul;17 Suppl 1:S18-30</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">20680104</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>J Clin Oncol. 2010 Nov 1;28(31):4706-13</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">20921462</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>J Clin Oncol. 2010 Nov 1;28(31):4697-705</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">20921465</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Clin Pharmacokinet. 2010 Nov;49(11):729-40</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">20923247</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ann Oncol. 2011 May;22(5):1141-6</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">21115601</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Int J Colorectal Dis. 2011 Feb;26(2):173-81</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">21190026</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>J Cancer Res Clin Oncol. 2012 Jan;138(1):65-72</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">21960318</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Br J Cancer. 2011 Nov 8;105(10):1495-502</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">21989186</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Clin Colorectal Cancer. 2011 Dec;10(4):333-9</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">22000810</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Target Oncol. 2011 Dec;6(4):227-33</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">22113391</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Cancer Discov. 2011 Nov;1(6):508-23</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">22586653</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>BMC Cancer. 2012 Sep 29;12:438</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">23020584</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Clin Cancer Res. 2013 Apr 1;19(7):1902-12</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">23325582</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ann Oncol. 2013 Aug;24(8):2062-7</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">23666916</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>N Engl J Med. 2013 Sep 12;369(11):1023-34</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">24024839</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ann Oncol. 2014 Jan;25(1):107-16</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">24356622</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Sci Transl Med. 2014 Feb 19;6(224):224ra24</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">24553385</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Acta Oncol. 2014 Jul;53(7):852-64</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">24666267</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>J Clin Oncol. 2014 Jul 20;32(21):2240-7</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">24687833</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ann Oncol. 2014 Jul;25(7):1346-55</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">24718886</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Lancet Oncol. 2014 May;15(6):569-79</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">24739896</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ann Oncol. 2015 Jan;26(1):13-21</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">25115304</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Cancer Discov. 2014 Nov;4(11):1269-80</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">25293556</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ann Oncol. 2015 Apr;26(4):731-6</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">25628445</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Eur J Cancer. 2015 Mar;51(5):587-94</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">25673558</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Future Oncol. 2015;11(4):617-27</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">25686117</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Eur J Cancer. 2015 Jul;51(11):1371-80</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">25963019</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Clin Colorectal Cancer. 2015 Jun;14(2):72-80</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">25982297</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Br J Cancer. 2015 Jun 9;112(12):1888-94</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">25989278</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Nat Med. 2015 Jul;21(7):795-801</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">26030179</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Nat Rev Clin Oncol. 2015 Oct;12(10):607-19</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">26215044</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Clin Cancer Res. 2015 Dec 15;21(24):5469-79</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">26341920</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Nature. 2015 Oct 8;526(7572):263-7</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">26416732</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>J Clin Oncol. 2016 Jan 10;34(2):179-85</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">26438111</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Oncologist. 2015 Nov;20(11):1261-5</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">26446234</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Oncologist. 2016 Mar;21(3):279-80</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">26911408</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Lancet Oncol. 2016 Jun;17(6):738-746</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">27108243</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>JAMA Oncol. 2017 Feb 1;3(2):194-201</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">27722750</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Br J Cancer. 2016 Nov 8;115(10):1206-1214</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">27736842</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Br J Cancer. 2016 Nov 8;115(10):1215-1222</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">27764839</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>ESMO Open. 2016 Mar 31;1(2):e000041</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">27843597</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Eur J Cancer. 2017 Jan;70:87-98</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">27907852</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>J Mol Diagn. 2017 Mar;19(2):187-225</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">28185757</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ann Oncol. 2017 Aug 1;28(8):1713-1729</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">28407110</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Int J Colorectal Dis. 2017 Aug;32(8):1179-1190</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">28424871</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Oncologist. 2017 Jul;22(7):864-872</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">28576857</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Eur J Cancer. 2017 Aug;81:191-202</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">28633089</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Eur J Cancer. 2017 Oct;84:69-80</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">28787661</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ann Oncol. 2018 Jan 1;29(1):119-126</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">28945848</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>J Cancer Res Clin Oncol. 2018 Feb;144(2):321-335</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">29080924</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>CA Cancer J Clin. 2018 Jan;68(1):7-30</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">29313949</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Cancer Discov. 2018 Apr;8(4):428-443</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">29431699</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>ESMO Open. 2018 Feb 24;3(2):e000297</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">29531837</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Clin Colorectal Cancer. 2018 Jun;17(2):85-96</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">29576427</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Clin Colorectal Cancer. 2018 Sep;17(3):170-178.e3</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">29627309</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Clin Cancer Res. 2018 Aug 15;24(16):3838-3844</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">29739790</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>ESMO Open. 2018 May 5;3(4):e000353</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">29765773</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Clin Cancer Res. 2018 Nov 15;24(22):5602-5609</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">29898991</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Br J Cancer. 2018 Aug;119(3):303-312</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">30013091</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>J Geriatr Oncol. 2019 Jan;10(1):143-148</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">30366852</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ann Oncol. 2019 Feb 1;30(2):243-249</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">30462160</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>JAMA Oncol. 2019 Mar 1;5(3):343-350</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">30476968</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Clin Cancer Res. 2019 Feb 15;25(4):1216-1225</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">30487126</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Int J Cancer. 2019 Jul 15;145(2):576-585</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">30614531</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Cancer Treat Rev. 2019 Feb;73:41-53</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">30616224</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Ann Oncol. 2019 May 1;30(5):796-803</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">30840064</ArticleId>
+          </ArticleIdList>
+        </Reference>
+      </ReferenceList>
+    </PubmedData>
+  </PubmedArticle>
+</PubmedArticleSet>

@@ -4,32 +4,47 @@ import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+
 import com.scienceminer.lookup.configuration.LookupConfiguration;
-import com.scienceminer.lookup.reader.CrossrefGreenelabJsonReader;
-import com.scienceminer.lookup.reader.CrossrefTorrentJsonReader;
+import com.scienceminer.lookup.reader.CrossrefJsonReader;
+import com.scienceminer.lookup.reader.CrossrefJsonlReader;
+import com.scienceminer.lookup.reader.CrossrefJsonArrayReader;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 import com.scienceminer.lookup.storage.lookup.MetadataLookup;
 import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
+
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.tukaani.xz.XZInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.FileInputStream;
+import java.io.File;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
- * This class is responsible for loading the crossref dump in lmdb
- * id -> Json object
+ * Command for loading the crossref dump in lmdb
+ * 
+ * We support multiple Crossref file formats given that the dump types is a zoo of packaging of the 
+ * same json object format. Any combination of the following should work: 
+ * - compressed xz, gz, tar files or uncompressed json files
+ * - single dump file or multiple file in a directory
+ * - jsonl or json array per file
  */
 public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadCrossrefCommand.class);
@@ -64,49 +79,114 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         reporter.start(15, TimeUnit.SECONDS);
 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
-        MetadataLookup metadataLookup = new MetadataLookup(storageEnvFactory);
+        MetadataLookup metadataLookup = MetadataLookup.getInstance(storageEnvFactory);
 
         final String crossrefFilePathString = namespace.get(CROSSREF_SOURCE);
         Path crossrefFilePath = Paths.get(crossrefFilePathString);
         LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefFilePathString);
 
         final Meter meter = metrics.meter("crossrefLookup");
-        final Counter counterInvalidRecords = metrics.counter("crossrefLookup_invalidRecords");
+        final Counter counterInvalidRecords = metrics.counter("crossrefLookup_rejectedRecords");
         if (Files.isDirectory(crossrefFilePath)) {
             try (Stream<Path> stream = Files.walk(crossrefFilePath, 1)) {
-                CrossrefTorrentJsonReader reader = new CrossrefTorrentJsonReader(configuration);
+                CrossrefJsonArrayReader readerJsonArray = new CrossrefJsonArrayReader(configuration);
+                CrossrefJsonlReader readerJsonl = new CrossrefJsonlReader(configuration);
 
                 stream.filter(path -> Files.isRegularFile(path) && Files.isReadable(path)
                         && (StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".gz") ||
-                        StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".xz")))
+                        StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".xz") ||
+                        StringUtils.endsWithIgnoreCase(path.getFileName().toString(), ".json")))
                         .forEach(dumpFile -> {
+                                CrossrefJsonReader reader = null;
+                                try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
+                                    if (CrossrefJsonReader.isJsonArray(inputStreamCrossref))
+                                        reader = readerJsonArray;
+                                    else
+                                        reader = readerJsonl;
+                                } catch (IOException e) {
+                                    LOGGER.error("Error while pre-processing " + dumpFile.toAbsolutePath(), e);
+                                }
+
+                                if (reader != null) {
                                     try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
                                         metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
+                                        // possibly update with the lastest indexed date obtained from this file
+                                        if (metadataLookup.getLastIndexed() == null || 
+                                            metadataLookup.getLastIndexed().isBefore(reader.getLastIndexed()))
+                                            metadataLookup.setLastIndexed(reader.getLastIndexed());
                                     } catch (Exception e) {
                                         LOGGER.error("Error while processing " + dumpFile.toAbsolutePath(), e);
                                     }
                                 }
+                            }
                         );
             }
+        } else if (StringUtils.endsWithIgnoreCase(crossrefFilePath.getFileName().toString(), ".tar.gz")) {
+            // this is a typical metadata plus single tar file, with json array files in it
+            if (Files.isRegularFile(crossrefFilePath) && Files.isReadable(crossrefFilePath)){
+                TarArchiveInputStream tarInput = 
+                    new TarArchiveInputStream(new GZIPInputStream(Files.newInputStream(crossrefFilePath)));
+                TarArchiveEntry currentEntry = tarInput.getNextTarEntry();
+
+                while (currentEntry != null) {
+                    //System.out.println("processing file " + currentEntry.getName());
+                    try {
+                        CrossrefJsonArrayReader reader = new CrossrefJsonArrayReader(configuration);
+                        metadataLookup.loadFromFile(tarInput, reader, meter, counterInvalidRecords);
+                        // possibly update with the lastest indexed date obtained from this file
+                        if (metadataLookup.getLastIndexed() == null || 
+                            metadataLookup.getLastIndexed().isBefore(reader.getLastIndexed()))
+                            metadataLookup.setLastIndexed(reader.getLastIndexed());
+                    } catch (Exception e) {
+                        LOGGER.error("Error while processing " + currentEntry.getName(), e);
+                    }
+                    currentEntry = tarInput.getNextTarEntry();
+                }
+                tarInput.close();
+            } else
+                LOGGER.error("Crossref snapshot file is not found");
+
         } else {
+            CrossrefJsonReader reader = null;
             try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
-                metadataLookup.loadFromFile(inputStreamCrossref, new CrossrefGreenelabJsonReader(configuration),
-                        meter, counterInvalidRecords);
-            } catch (Exception e) {
-                LOGGER.error("Error while processing " + crossrefFilePath, e);
+                if (CrossrefJsonReader.isJsonArray(inputStreamCrossref))
+                    reader = new CrossrefJsonArrayReader(configuration);
+                else
+                    reader = new CrossrefJsonlReader(configuration);
+            } catch (IOException e) {
+                LOGGER.error("Error while pre-processing " + crossrefFilePath.toAbsolutePath(), e);
+            }
+
+            if (reader != null) {
+                try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
+                    metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
+                    metadataLookup.setLastIndexed(reader.getLastIndexed());
+                } catch (Exception e) {
+                    LOGGER.error("Error while processing " + crossrefFilePath, e);
+                }
             }
         }
         LOGGER.info("Number of Crossref records processed: " + meter.getCount());
         LOGGER.info("Crossref lookup size " + metadataLookup.getSize() + " records.");
+        if (metadataLookup.getLastIndexed() != null) {
+            LOGGER.info("Crossref latest indexed date " + metadataLookup.getLastIndexed().toString() + ".");            
+        }
+        else
+            LOGGER.info("Crossref latest indexed date is not set.");
     }
 
     private InputStream selectStream(Path crossrefFilePath) throws IOException {
-        InputStream inputStreamCrossref = Files.newInputStream(crossrefFilePath);
-        if (crossrefFilePath.getFileName().toString().endsWith(".xz")) {
-            inputStreamCrossref = new XZInputStream(Files.newInputStream(crossrefFilePath));
-        } else if (crossrefFilePath.getFileName().toString().endsWith(".gz")) {
-            inputStreamCrossref = new GZIPInputStream(Files.newInputStream(crossrefFilePath));
-        }
+        return selectStream(crossrefFilePath.toFile());
+    }
+
+    private InputStream selectStream(File crossrefFile) throws IOException {
+        InputStream inputStreamCrossref = new FileInputStream(crossrefFile);
+        if (crossrefFile.getName().endsWith(".xz")) {
+            inputStreamCrossref = new XZInputStream(inputStreamCrossref);
+        } else if (crossrefFile.getName().endsWith(".gz")) {
+            inputStreamCrossref = new GZIPInputStream(inputStreamCrossref);
+        } 
         return inputStreamCrossref;
     }
+
 }

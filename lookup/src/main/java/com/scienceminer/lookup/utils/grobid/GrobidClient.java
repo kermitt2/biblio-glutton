@@ -3,8 +3,11 @@ package com.scienceminer.lookup.utils.grobid;
 import com.ctc.wstx.stax.WstxInputFactory;
 import com.scienceminer.lookup.exception.ServiceException;
 import com.scienceminer.lookup.utils.xml.StaxUtils;
+import com.scienceminer.lookup.utils.grobid.GrobidResponseStaxHandler.GrobidResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.Consts;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -12,10 +15,12 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.apache.http.impl.nio.client.HttpAsyncClients;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.codehaus.stax2.XMLStreamReader2;
+import org.apache.commons.io.IOUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,74 +34,72 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 /**
- * Created by lfoppiano on 17/08/16.
+ * Synchronous grobid client
  */
 public class GrobidClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GrobidClient.class);
 
-    private CloseableHttpAsyncClient httpClient;
+    //private ClosableHttpClient httpClient;
     private String grobidPath;
     private WstxInputFactory inputFactory = new WstxInputFactory();
     //private GrobidResponseStaxHandler grobidResponseStaxHandler = new GrobidResponseStaxHandler();
 
     public GrobidClient(String grobidPath) {
         this.grobidPath = grobidPath;
-        this.httpClient = HttpAsyncClients.createDefault();
-        httpClient.start();
+        //this.httpClient = HttpClients.createDefault();
     }
 
     public void ping() throws ServiceException {
-        try {
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             final HttpGet httpGet = new HttpGet(grobidPath + "/isalive");
-            final Future<HttpResponse> futureResponse = httpClient.execute(httpGet, null);
-            HttpResponse response = futureResponse.get();
+            HttpResponse response = httpClient.execute(httpGet);
             if (response.getStatusLine().getStatusCode() != HttpURLConnection.HTTP_OK) {
                 throw new ServiceException(502, "Error while connecting to GROBID service. Error code: " + response.getStatusLine().getStatusCode());
             }
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (Exception e) {
             throw new ServiceException(502, "Error while connecting to GROBID service", e);
         }
     }
 
-    public void processCitation(String rawCitation, String consolidation, Consumer<GrobidResponseStaxHandler.GrobidResponse> callback) throws ServiceException {
-        final HttpPost request = new HttpPost(grobidPath + "/processCitation");
+    public GrobidResponse processCitation(String rawCitation, String consolidation) throws ServiceException {
+        GrobidResponse grobidResponse = null;
 
-        List<NameValuePair> formparams = new ArrayList<>();
-        formparams.add(new BasicNameValuePair("citations", rawCitation));
-        formparams.add(new BasicNameValuePair("consolidateCitation", consolidation));
-        UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, Consts.UTF_8);
-        request.setEntity(entity);
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            final HttpPost request = new HttpPost(grobidPath + "/processCitation");
 
-        final Future<HttpResponse> response = httpClient.execute(request, new FutureCallback<HttpResponse>() {
-            @Override
-            public void completed(HttpResponse response) {
-                if (response.getStatusLine().getStatusCode() != HttpURLConnection.HTTP_OK) {
-                    throw new ServiceException(502, "Error while connecting to GROBID service. Error code: " + response.getStatusLine().getStatusCode());
-                } else {
-                    try {
-                        XMLStreamReader2 reader = (XMLStreamReader2) inputFactory.createXMLStreamReader(response.getEntity().getContent());
-                        GrobidResponseStaxHandler grobidResponseStaxHandler = new GrobidResponseStaxHandler();
+            List<NameValuePair> formparams = new ArrayList<>();
+            formparams.add(new BasicNameValuePair("citations", rawCitation));
+            formparams.add(new BasicNameValuePair("consolidateCitation", consolidation));
+            UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, Consts.UTF_8);
+            request.setEntity(entity);
 
-                        StaxUtils.traverse(reader, grobidResponseStaxHandler);
+            ResponseHandler<GrobidResponse> responseHandler = new ResponseHandler<GrobidResponse>() {
 
-                        callback.accept(grobidResponseStaxHandler.getResponse());
-                    } catch (XMLStreamException | IOException e) {
-                        throw new ServiceException(502, "Cannot parse the response from GROBID", e);
+                @Override
+                public GrobidResponse handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
+                    if (response.getStatusLine().getStatusCode() != HttpURLConnection.HTTP_OK) {
+                        throw new ServiceException(502, "Error while connecting to GROBID service. Error code: " + response.getStatusLine().getStatusCode());
+                    } else {
+                        try {
+                            XMLStreamReader2 reader = (XMLStreamReader2) inputFactory.createXMLStreamReader(response.getEntity().getContent());
+                            GrobidResponseStaxHandler grobidResponseStaxHandler = new GrobidResponseStaxHandler();
+
+                            StaxUtils.traverse(reader, grobidResponseStaxHandler);
+
+                            return grobidResponseStaxHandler.getResponse();
+                        } catch (IOException | XMLStreamException e) {
+                            throw new ServiceException(502, "Cannot parse the response from GROBID", e);
+                        }
                     }
                 }
-            }
+            };
+            
+            grobidResponse = httpClient.execute(request, responseHandler);
+        } catch(IOException e) {
+            throw new ServiceException(502, "Error calling GROBID", e);
+        }
 
-            @Override
-            public void failed(Exception ex) {
-                throw new ServiceException(502, "Cannot parse the response from GROBID", ex);
-            }
-
-            @Override
-            public void cancelled() {
-                throw new ServiceException(502, "Cannot parse the response from GROBID");
-            }
-        });
-
+        return grobidResponse;
     }
 }

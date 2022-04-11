@@ -6,6 +6,8 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,13 +32,15 @@ public class ESClientWrapper {
                 new LinkedBlockingQueue<>(poolSize), (r, executor) -> {
             throw new ServiceException(503, "Rejected request, try later");
         });
-
     }
 
     public SearchResponse searchSync(final SearchRequest request, final RequestOptions options) throws IOException {
         return esClient.search(request, options);
     }
 
+    public CountResponse count(final CountRequest request, final RequestOptions options) throws IOException {
+        return esClient.count(request, options);
+    }
 
     public CompletableFuture<Void> searchAsync(final SearchRequest request, final RequestOptions options,
                                                BiConsumer<SearchResponse, Throwable> callback) {
@@ -61,6 +65,7 @@ public class ESClientWrapper {
 
                 Exception returnException = e;
                 if (e instanceof IOException) {
+LOGGER.error("es query processing failure", e);
                     returnException = new ServiceException(500, "Cannot connect to Elasticsearch", e);
                 }
                 callback.accept(null, returnException);
@@ -73,7 +78,6 @@ public class ESClientWrapper {
             final int i = counter.decrementAndGet();
             LOGGER.debug("Ready to call, occupying a spot: " + i);
         }
-
         final CompletableFuture<Void> searchResponseCompletableFuture = CompletableFuture
                 .runAsync(() -> esClient.searchAsync(request, options, listener), executorService);
 

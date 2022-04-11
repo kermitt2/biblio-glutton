@@ -53,11 +53,9 @@ public class PubMedIndexer {
 
         JsonStringEncoder encoder = JsonStringEncoder.getInstance();
 
-        // init elasticsearch client
         RestHighLevelClient client = new RestHighLevelClient(
-            RestClient.builder(
-                    new HttpHost(conf.getEsHost(), conf.getEsPort(), "http"),
-                    new HttpHost(conf.getEsHost(), conf.getEsPort(), "http")));
+                RestClient.builder(
+                        HttpHost.create(conf.elastic.getHost())));
 
         // various counters 
         int totalPMID = 0;
@@ -96,7 +94,7 @@ public class PubMedIndexer {
                         json.append(", \"doi\": \"" + outputDoi + "\"");
                     }
 
-                    Integer localPmc = null;
+                    String localPmc = null;
                     if (localDoi != null) {
                         localPmc = env.getDbDOI2PMC().retrieve(localDoi.toLowerCase());
                     }
@@ -121,7 +119,7 @@ public class PubMedIndexer {
 
                     //System.out.println(json.toString());
                         
-                    IndexRequest request = new IndexRequest(conf.getEsIndexName(), "_doc")
+                    IndexRequest request = new IndexRequest(conf.pubmed.getIndex(), "_doc")
                         .source(json.toString(), XContentType.JSON);
 
                     bulkRequest.add(request);

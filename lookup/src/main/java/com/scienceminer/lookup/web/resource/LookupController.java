@@ -28,10 +28,10 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 
 /**
- * retrieve a DOI based on some key metadata: journal title (alternatively short title or ISSN) + volume + first page
- * (the key would be a hash of these metadata, the value is the DOI)
- * retrieve an ISTEX ID and/or a PMID based on a DOI
- * retrieve the URL of the open access version based on a DOI and/or a PMID
+ * Resolve raw bibliographical references and/or incomplete metadata for scientific article.
+ * Combination of metadata and raw references are supported to improve matching accuracy and 
+ * speed. 
+ * The result is a strong unique identifier, currently a DOI from Crossref.   
  */
 @Path("lookup")
 @Timed
@@ -46,15 +46,12 @@ public class LookupController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LookupController.class);
 
-    protected LookupController() {
-    }
-
     @Inject
     public LookupController(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) {
         this.configuration = configuration;
         this.storageEnvFactory = storageEnvFactory;
         this.lookupEngine = new LookupEngine(storageEnvFactory);
-        this.lookupEngine.setGrobidClient(new GrobidClient(configuration.getGrobidPath()));
+        this.lookupEngine.setGrobidClient(new GrobidClient(configuration.getGrobidHost()));
     }
 
     @GET
@@ -68,10 +65,10 @@ public class LookupController {
             @QueryParam("istexid") String istexid,
             @QueryParam("firstAuthor") String firstAuthor,
             @QueryParam("atitle") String atitle,
-            @QueryParam("postValidate") Boolean postValidate,
             @QueryParam("jtitle") String jtitle,
             @QueryParam("volume") String volume,
             @QueryParam("firstPage") String firstPage,
+            @QueryParam("year") String year,
             @QueryParam("biblio") String biblio,
             @QueryParam("parseReference") Boolean parseReference,
             @Suspended final AsyncResponse asyncResponse) {
@@ -83,24 +80,49 @@ public class LookupController {
                 )
         );
         asyncResponse.setTimeout(2, TimeUnit.MINUTES);
+        if (parseReference == null) 
+            parseReference = Boolean.TRUE;
 
-//        asyncResponse.register((CompletionCallback) throwable -> {
-//            if (throwable != null) {
-//                Something happened with the client...
-//                lastException = throwable;
-//            }
-//        });
-
-
-        //DEFAULTS
-        if (postValidate == null) postValidate = Boolean.TRUE;
-        if (parseReference == null) parseReference = Boolean.TRUE;
-
-        getByQuery(doi, pmid, pmc, pii, istexid, firstAuthor, atitle,
-                postValidate, jtitle, volume, firstPage, biblio, parseReference, asyncResponse);
+        processByQuery(doi, pmid, pmc, pii, istexid, firstAuthor, atitle,
+                jtitle, volume, firstPage, year, biblio, parseReference, asyncResponse);
     }
 
-    protected void getByQuery(
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Path("/")
+    public void postByQueryAsync(
+            @FormParam("doi") String doi,
+            @FormParam("pmid") String pmid,
+            @FormParam("pmc") String pmc,
+            @FormParam("pii") String pii,
+            @FormParam("istexid") String istexid,
+            @FormParam("firstAuthor") String firstAuthor,
+            @FormParam("atitle") String atitle,
+            @FormParam("jtitle") String jtitle,
+            @FormParam("volume") String volume,
+            @FormParam("firstPage") String firstPage,
+            @FormParam("year") String year,
+            @FormParam("biblio") String biblio,
+            @FormParam("parseReference") Boolean parseReference,
+            @Suspended final AsyncResponse asyncResponse) {
+
+        asyncResponse.setTimeoutHandler(asyncResponse1 ->
+                asyncResponse1.resume(Response.status(Response.Status.REQUEST_TIMEOUT)
+                        .entity("Operation time out")
+                        .build()
+                )
+        );
+        asyncResponse.setTimeout(2, TimeUnit.MINUTES);
+        if (parseReference == null) 
+            parseReference = Boolean.TRUE;
+
+        processByQuery(doi, pmid, pmc, pii, istexid, firstAuthor, atitle,
+            jtitle, volume, firstPage, year, biblio, parseReference, asyncResponse);
+    }
+
+    @Deprecated
+    protected void processByQueryMixedMode(
             String doi,
             String pmid,
             String pmc,
@@ -108,10 +130,10 @@ public class LookupController {
             String istexid,
             String firstAuthor,
             String atitle,
-            final Boolean postValidate,
             String jtitle,
             String volume,
             String firstPage,
+            String year,
             String biblio,
             final Boolean parseReference,
             AsyncResponse asyncResponse
@@ -123,7 +145,7 @@ public class LookupController {
         if (isNotBlank(doi)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByDoi(doi, postValidate, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByDoi(doi, firstAuthor, atitle, year);
 
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
@@ -140,13 +162,14 @@ public class LookupController {
         if (isNotBlank(pmid)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByPmid(pmid, postValidate, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByPmid(pmid, firstAuthor, atitle, year);
 
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
                     return;
                 }
             } catch (NotFoundException e) {
+                messagesSb.append(e.getMessage());
                 LOGGER.warn("PMID did not matched, move to additional metadata");
             }
         }
@@ -154,13 +177,14 @@ public class LookupController {
         if (isNotBlank(pmc)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByPmc(pmc, postValidate, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByPmc(pmc, firstAuthor, atitle, year);
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
                     return;
                 }
 
             } catch (NotFoundException e) {
+                messagesSb.append(e.getMessage());
                 LOGGER.warn("PMC ID did not matched, move to additional metadata");
             }
         }
@@ -168,13 +192,14 @@ public class LookupController {
         if (isNotBlank(pii)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByPii(pii, postValidate, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByPii(pii, firstAuthor, atitle, year);
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
                     return;
                 }
 
             } catch (NotFoundException e) {
+                messagesSb.append(e.getMessage());
                 LOGGER.warn("PII ID did not matched, move to additional metadata");
             }
         }
@@ -182,7 +207,7 @@ public class LookupController {
         if (isNotBlank(istexid)) {
             areParametersEnoughToLookup = true;
             try {
-                final String response = lookupEngine.retrieveByIstexid(istexid, postValidate, firstAuthor, atitle);
+                final String response = lookupEngine.retrieveByIstexid(istexid, firstAuthor, atitle, year);
 
                 if (isNotBlank(response)) {
                     asyncResponse.resume(response);
@@ -190,24 +215,27 @@ public class LookupController {
                 }
 
             } catch (NotFoundException e) {
+                messagesSb.append(e.getMessage());
                 LOGGER.warn("ISTEX ID did not matched, move to additional metadata");
             }
         }
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
-            LOGGER.debug("Match with metadata");
-            lookupEngine.retrieveByArticleMetadataAsync(atitle, firstAuthor, postValidate, matchingDocument -> {
+            areParametersEnoughToLookup = true;
+
+            LOGGER.debug("Try to match with article title and first author name metadata");
+            lookupEngine.retrieveByArticleMetadataAsync(atitle, firstAuthor, matchingDocument -> {
                 if (matchingDocument.isException()) {
-                    // error with article info - trying to match with journal infos (without first author)
-                    LOGGER.debug("Error with title/first author, trying to match with journal infos (no first author)");
-                    if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-                        lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocumentJournal -> {
+                    // error with article info - trying to match with journal infos with first author
+                    LOGGER.debug("Error with article title/first author, trying to match with available journal metadata");
+                    if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage) && isNotBlank(firstAuthor)) {
+                        lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, matchingDocumentJournal -> {
                             if (matchingDocumentJournal.isException()) {
 
                                 //error with journal info - trying to match biblio
-                                LOGGER.debug("Error with journal title, trying to match with biblio string");
+                                LOGGER.debug("Error with journal metadata, trying to match with bibliographical reference string");
                                 if (isNotBlank(biblio)) {
-                                    lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, MatchingDocumentBiblio -> {
+                                    lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, jtitle, year, parseReference, MatchingDocumentBiblio -> {
                                         if (MatchingDocumentBiblio.isException()) {
                                             asyncResponse.resume(MatchingDocumentBiblio.getException());
                                         } else {
@@ -225,62 +253,11 @@ public class LookupController {
                         return;
                     }
 
-                    // error with article info - trying to match with journal infos (with first Author)
-                    LOGGER.debug("Error with title/first author, trying to match with journal infos (with first author)");
-                    if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-                        lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocumentJournal -> {
-                            if (matchingDocumentJournal.isException()) {
-
-                                //error with journal info - trying to match biblio
-                                LOGGER.debug("Error with journal info, trying to match with biblio string");
-                                if (isNotBlank(biblio)) {
-                                    lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
-                                        if (matchingDocumentBiblio.isException()) {
-                                            asyncResponse.resume(matchingDocumentBiblio.getException());
-                                        } else {
-                                            asyncResponse.resume(matchingDocumentBiblio.getFinalJsonObject());
-                                        }
-                                    });
-                                    return;
-                                } else {
-                                    asyncResponse.resume(matchingDocument.getException());
-                                }
-                            } else {
-                                asyncResponse.resume(matchingDocumentJournal.getFinalJsonObject());
-                            }
-                        });
-                        return;
-                    }
-
                     // error with article info - and no journal information provided -
-                    // trying to match with journal infos (with first Page)
-                    LOGGER.debug("Error with title/first author, trying to match with biblio string");
+                    // trying to match with bibliographical reference string
+                    LOGGER.debug("Error with article title/first author and no journal metadata available, trying to match with bibliographical reference string");
                     if (isNotBlank(biblio)) {
-                        lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
-                            if (matchingDocumentBiblio.isException()) {
-                                asyncResponse.resume(matchingDocumentBiblio.getException());
-                            } else {
-                                asyncResponse.resume(matchingDocumentBiblio.getFinalJsonObject());
-                            }
-                        });
-                        return;
-                    } else {
-                        asyncResponse.resume(matchingDocument.getException());
-                    }
-                } else {
-                    asyncResponse.resume(matchingDocument.getFinalJsonObject());
-                }
-            });
-            return;
-        }
-
-        if (isNotBlank(jtitle) && isNotBlank(firstAuthor) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            LOGGER.debug("Match with journal title and first page");
-            lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocument -> {
-                if (matchingDocument.isException()) {
-                    //error with journal info - trying to match biblio
-                    if (isNotBlank(biblio)) {
-                        lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
+                        lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, jtitle, year, parseReference, matchingDocumentBiblio -> {
                             if (matchingDocumentBiblio.isException()) {
                                 asyncResponse.resume(matchingDocumentBiblio.getException());
                             } else {
@@ -299,12 +276,14 @@ public class LookupController {
         }
 
         if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
-            LOGGER.debug("Match with journal title without first author");
-            lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, postValidate, matchingDocument -> {
+            areParametersEnoughToLookup = true;
+
+            LOGGER.debug("Try to match with journal title, journal volume, journal first page and first author name if available");
+            lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, matchingDocument -> {
                 if (matchingDocument.isException()) {
-                    //error with journal info - trying to match biblio
+                    LOGGER.debug("Error with journal metadata, trying to match with bibliographical reference string");
                     if (isNotBlank(biblio)) {
-                        lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
+                        lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, jtitle, year, parseReference, matchingDocumentBiblio -> {
                             if (matchingDocumentBiblio.isException()) {
                                 asyncResponse.resume(matchingDocumentBiblio.getException());
                             } else {
@@ -323,12 +302,183 @@ public class LookupController {
         }
 
         if (isNotBlank(biblio)) {
+            areParametersEnoughToLookup = true;
+
             LOGGER.debug("Match with biblio string");
-            lookupEngine.retrieveByBiblioAsync(biblio, postValidate, firstAuthor, atitle, parseReference, matchingDocumentBiblio -> {
+            lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, jtitle, year, parseReference, matchingDocumentBiblio -> {
                 if (matchingDocumentBiblio.isException()) {
                     asyncResponse.resume(matchingDocumentBiblio.getException());
                 } else {
                     asyncResponse.resume(matchingDocumentBiblio.getFinalJsonObject());
+                }
+            });
+            return;
+        }
+
+        if (areParametersEnoughToLookup) {
+            throw new ServiceException(404, messagesSb.toString());
+        } else {
+            throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
+        }
+    }
+
+    protected void processByQuery(
+            String doi,
+            String pmid,
+            String pmc,
+            String pii, 
+            String istexid,
+            String firstAuthor,
+            String atitle,
+            String jtitle,
+            String volume,
+            String firstPage,
+            String year,
+            String biblio,
+            final Boolean parseReference,
+            AsyncResponse asyncResponse
+    ) {
+
+        boolean areParametersEnoughToLookup = false;
+        StringBuilder messagesSb = new StringBuilder();
+
+        if (isNotBlank(doi)) {
+            areParametersEnoughToLookup = true;
+            try {
+                final String response = lookupEngine.retrieveByDoi(doi, firstAuthor, atitle, year);
+
+                if (isNotBlank(response)) {
+                    asyncResponse.resume(response);
+                    return;
+                }
+
+            } catch (NotFoundException e) {
+                messagesSb.append(e.getMessage());
+                LOGGER.warn("DOI did not matched or did not pass post validation");
+                throw new ServiceException(404, messagesSb.toString());
+            }
+        }
+
+        if (isNotBlank(pmid)) {
+            areParametersEnoughToLookup = true;
+            try {
+                final String response = lookupEngine.retrieveByPmid(pmid, firstAuthor, atitle, year);
+
+                if (isNotBlank(response)) {
+                    asyncResponse.resume(response);
+                    return;
+                }
+            } catch (NotFoundException e) {
+                messagesSb.append(e.getMessage());
+                LOGGER.warn("PMID did not matched or did not pass post validation");
+                throw new ServiceException(404, messagesSb.toString());
+            }
+        }
+
+        if (isNotBlank(pmc)) {
+            areParametersEnoughToLookup = true;
+            try {
+                final String response = lookupEngine.retrieveByPmc(pmc, firstAuthor, atitle, year);
+                if (isNotBlank(response)) {
+                    asyncResponse.resume(response);
+                    return;
+                }
+            } catch (NotFoundException e) {
+                messagesSb.append(e.getMessage());
+                LOGGER.warn("PMC ID did not matched or did not pass post validation");
+                throw new ServiceException(404, messagesSb.toString());
+            }
+        }
+
+        if (isNotBlank(pii)) {
+            areParametersEnoughToLookup = true;
+            try {
+                final String response = lookupEngine.retrieveByPii(pii, firstAuthor, atitle, year);
+                if (isNotBlank(response)) {
+                    asyncResponse.resume(response);
+                    return;
+                }
+            } catch (NotFoundException e) {
+                messagesSb.append(e.getMessage());
+                LOGGER.warn("PII ID did not matched or did not pass post validation");
+                throw new ServiceException(404, messagesSb.toString());
+            }
+        }
+
+        if (isNotBlank(istexid)) {
+            areParametersEnoughToLookup = true;
+            try {
+                final String response = lookupEngine.retrieveByIstexid(istexid, firstAuthor, atitle, year);
+
+                if (isNotBlank(response)) {
+                    asyncResponse.resume(response);
+                    return;
+                }
+
+            } catch (NotFoundException e) {
+                messagesSb.append(e.getMessage());
+                LOGGER.warn("ISTEX ID did not matched or did not pass post validation");
+                throw new ServiceException(404, messagesSb.toString());
+            }
+        }
+
+        if (isNotBlank(biblio)) {
+            areParametersEnoughToLookup = true;
+
+            LOGGER.debug("Match with biblio string");
+            lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, jtitle, year, parseReference, matchingDocumentBiblio -> {
+                if (matchingDocumentBiblio.isException()) {
+                    asyncResponse.resume(matchingDocumentBiblio.getException());
+                    //messagesSb.append(matchingDocumentBiblio.getException().getMessage());
+                } else {
+                    asyncResponse.resume(matchingDocumentBiblio.getFinalJsonObject());
+                    return;
+                }
+            });
+            return;
+        }
+
+        if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
+            areParametersEnoughToLookup = true;
+
+            LOGGER.debug("Try to match with article title and first author name metadata");
+            lookupEngine.retrieveByArticleMetadataAsync(atitle, firstAuthor,  matchingDocument -> {
+                if (matchingDocument.isException()) {
+                    // error with article info - trying to match with journal infos with first author
+                    LOGGER.debug("Error with article title/first author, trying to match with available journal metadata");
+                    if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage) && isNotBlank(firstAuthor)) {
+                        lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, matchingDocumentJournal -> {
+                            if (matchingDocumentJournal.isException()) {
+                                asyncResponse.resume(matchingDocument.getException());
+                                //messagesSb.append(matchingDocumentJournal.getException().getMessage());
+                                return;
+                            } else {
+                                asyncResponse.resume(matchingDocumentJournal.getFinalJsonObject());
+                                return;
+                            }
+                        });
+                        return;
+                    }
+                } else {
+                    asyncResponse.resume(matchingDocument.getFinalJsonObject());
+                    return;
+                }
+            });
+            return;
+        }
+
+        if (isNotBlank(jtitle) && isNotBlank(volume) && isNotBlank(firstPage)) {
+            areParametersEnoughToLookup = true;
+
+            LOGGER.debug("Try to match with journal title, journal volume, journal first page and first author name if available");
+            lookupEngine.retrieveByJournalMetadataAsync(jtitle, volume, firstPage, atitle, firstAuthor, matchingDocument -> {
+                if (matchingDocument.isException()) {
+                    asyncResponse.resume(matchingDocument.getException());
+                    //messagesSb.append(matchingDocument.getException().getMessage());
+                    return;
+                } else {
+                    asyncResponse.resume(matchingDocument.getFinalJsonObject());
+                    return;
                 }
             });
             return;
@@ -370,50 +520,35 @@ public class LookupController {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/doi/{doi}")
     public String getByDoi(@PathParam("doi") String doi) {
-        return lookupEngine.retrieveByDoi(doi, false, null, null);
+        return lookupEngine.retrieveByDoi(doi, null, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/pmid/{pmid}")
     public String getByPmid(@PathParam("pmid") String pmid) {
-        return lookupEngine.retrieveByPmid(pmid, false, null, null);
+        return lookupEngine.retrieveByPmid(pmid, null, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/pii/{pii}")
     public String getByPii(@PathParam("pii") String pii) {
-        return lookupEngine.retrieveByPii(pii, false, null, null);
+        return lookupEngine.retrieveByPii(pii, null, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/pmc/{pmc}")
     public String getByPmc(@PathParam("pmc") String pmc) {
-        return lookupEngine.retrieveByPmc(pmc, false, null, null);
+        return lookupEngine.retrieveByPmc(pmc, null, null, null);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/istexid/{istexid}")
     public String getByIstexid(@PathParam("istexid") String istexid) {
-        return lookupEngine.retrieveByIstexid(istexid, false, null, null);
-    }
-
-    @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.TEXT_PLAIN)
-    @Path("/")
-    public void getByBiblioStringWithPost(String biblio, @Suspended final AsyncResponse asyncResponse) {
-        if (isNotBlank(biblio)) {
-            lookupEngine.retrieveByBiblioAsync(biblio, matchingDocument -> {
-                dispatchResponseOrException(asyncResponse, matchingDocument);
-            });
-            return;
-        }
-
-        throw new ServiceException(400, "Missing or empty biblio parameter");
+        return lookupEngine.retrieveByIstexid(istexid, null, null, null);
     }
 
     protected void setLookupEngine(LookupEngine lookupEngine) {

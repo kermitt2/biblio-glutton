@@ -20,9 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
 /**
- * This class is responsible for loading data for the istex mappings, in particular
- *  - istexid -> doi, ark, pmid
- *  - doi -> istexid, ark, pmid
+ * Command for loading data for the PMID/PMCID/DOI mappings
  */
 public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadPMIDCommand.class);

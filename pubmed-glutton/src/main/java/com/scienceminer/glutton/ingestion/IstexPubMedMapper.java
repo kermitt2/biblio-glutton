@@ -125,7 +125,7 @@ public class IstexPubMedMapper {
 					}
 
 					Integer pmid = null;
-					Integer pmcid = null;
+					String pmcid = null;
 
 					if (doi != null) {
 						// retrieve PMID

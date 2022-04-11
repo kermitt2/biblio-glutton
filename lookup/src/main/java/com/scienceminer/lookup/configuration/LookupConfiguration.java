@@ -7,10 +7,13 @@ import io.dropwizard.client.HttpClientConfiguration;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.io.File;
 
 public class LookupConfiguration extends Configuration {
 
-    private int batchSize;
+    private int loadingBatchSize = 10000;
+
+    private int blockSize = 0;
 
     private String storage;
 
@@ -20,7 +23,15 @@ public class LookupConfiguration extends Configuration {
 
     private Elastic elastic;
 
-    private String grobidPath;
+    private Crossref crossref;
+
+    private String grobidHost;
+
+    private ProxyParameters proxy;
+
+    private String timeZone;
+
+    private String dailyUpdateTime;
 
     @Valid
     @NotNull
@@ -36,6 +47,16 @@ public class LookupConfiguration extends Configuration {
         this.httpClient = httpClient;
     }
 
+    // CORS
+    @JsonProperty
+    private String corsAllowedOrigins = "*";
+
+    @JsonProperty
+    private String corsAllowedMethods = "OPTIONS,GET,PUT,POST,DELETE,HEAD";
+
+    @JsonProperty
+    private String corsAllowedHeaders = "X-Requested-With,Content-Type,Accept,Origin";
+
     private List<String> ignoreCrossRefFields;
 
     private int maxAcceptedRequests;
@@ -45,6 +66,8 @@ public class LookupConfiguration extends Configuration {
     }
 
     public void setStorage(String storage) {
+        // if storage path is relative, we need to adjust to the subproject directory
+        storage = checkPath(storage);
         this.storage = storage;
     }
 
@@ -64,12 +87,24 @@ public class LookupConfiguration extends Configuration {
         return elastic;
     }
 
-    public int getBatchSize() {
-        return batchSize;
+    public Crossref getCrossref() {
+        return crossref;
     }
 
-    public void setBatchSize(int batchSize) {
-        this.batchSize = batchSize;
+    public int getLoadingBatchSize() {
+        return loadingBatchSize;
+    }
+
+    public void setLoadingBatchSize(int loadingBatchSize) {
+        this.loadingBatchSize = loadingBatchSize;
+    }
+
+    public int getBlockSize() {
+        return blockSize;
+    }
+
+    public void setBlockSize(int blockSize) {
+        this.blockSize = blockSize;
     }
 
     public List<String> getIgnoreCrossRefFields() {
@@ -81,20 +116,37 @@ public class LookupConfiguration extends Configuration {
     }
 
     public int getMaxAcceptedRequests() {
-        final int maxAcceptedRequestsNormalised = maxAcceptedRequests < 1 ? Runtime.getRuntime().availableProcessors() : this.maxAcceptedRequests;
-        return maxAcceptedRequestsNormalised;
+        //final int maxAcceptedRequestsNormalised = maxAcceptedRequests < 1 ? Runtime.getRuntime().availableProcessors() : this.maxAcceptedRequests;
+        //return maxAcceptedRequestsNormalised;
+        return maxAcceptedRequests;
     }
 
     public void setMaxAcceptedRequests(int maxAcceptedRequests) {
         this.maxAcceptedRequests = maxAcceptedRequests;
     }
 
-    public String getGrobidPath() {
-        return grobidPath;
+    public String getGrobidHost() {
+        return grobidHost;
     }
 
-    public void setGrobidPath(String grobidPath) {
-        this.grobidPath = grobidPath;
+    public void setGrobidPath(String grobidHost) {
+        this.grobidHost = grobidHost;
+    }
+
+    public String getTimeZone() {
+        return timeZone;
+    }
+
+    public void setTimeZone(String timeZone) {
+        this.timeZone = timeZone;
+    }
+
+    public String getDailyUpdateTime() {
+        return dailyUpdateTime;
+    }
+
+    public void setDailyUpdateTime(String dailyUpdateTime) {
+        this.dailyUpdateTime = dailyUpdateTime;
     }
 
     public class Source {
@@ -124,8 +176,6 @@ public class LookupConfiguration extends Configuration {
         private String host;
         private String index;
 
-        private String type;
-
         public String getHost() {
             return host;
         }
@@ -141,14 +191,103 @@ public class LookupConfiguration extends Configuration {
         public void setIndex(String index) {
             this.index = index;
         }
+    }
 
-        public String getType() {
-            return type;
+    public class Crossref {
+        private String dumpPath;
+        private boolean cleanProcessFiles; 
+        private String mailto;
+        private String token;
+
+        public String getDumpPath() {
+            return dumpPath;
         }
 
-        public void setType(String type) {
-            this.type = type;
+        public void setDumpPath(String dumpPath) {
+            this.dumpPath = dumpPath;
         }
 
+        public String getMailto() {
+            return mailto;
+        }
+
+        public void setMailto(String mailto) {
+            this.mailto = mailto;
+        }
+
+        public String getToken() {
+            return token;
+        }
+
+        public void setToken(String token) {
+            this.token = token;
+        }
+
+        public boolean getCleanProcessFiles() {
+            return this.cleanProcessFiles;
+        }
+
+        public void setCleanProcessFiles(boolean clean) {
+            this.cleanProcessFiles = clean;
+        }
+    }
+
+    public ProxyParameters getProxy() {
+        return this.proxy;
+    }
+
+    public static class ProxyParameters {
+        private String host;
+        private int port;
+
+        public String getHost() {
+            return this.host;
+        }
+
+        public void setHost(String host) {
+            this.host = host;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
+    }
+
+    public String getCorsAllowedOrigins() {
+        return corsAllowedOrigins;
+    }
+
+    public void setCorsAllowedOrigins(String corsAllowedOrigins) {
+        this.corsAllowedOrigins = corsAllowedOrigins;
+    }
+
+    public String getCorsAllowedMethods() {
+        return corsAllowedMethods;
+    }
+
+    public void setCorsAllowedMethods(String corsAllowedMethods) {
+        this.corsAllowedMethods = corsAllowedMethods;
+    }
+
+    public String getCorsAllowedHeaders() {
+        return corsAllowedHeaders;
+    }
+
+    public void setCorsAllowedHeaders(String corsAllowedHeaders) {
+        this.corsAllowedHeaders = corsAllowedHeaders;
+    }
+
+    private static String checkPath(String path) {
+        if (path != null) {
+            File file = new File(path);
+            if (!file.isAbsolute()) {
+                path = ".." + File.separator + path;
+            }
+        }
+        return path;
     }
 }

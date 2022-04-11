@@ -22,10 +22,10 @@ import java.nio.file.Paths;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-public class CrossrefTorrentJsonReader extends CrossrefJsonReader {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CrossrefTorrentJsonReader.class);
+public class CrossrefJsonArrayReader extends CrossrefJsonReader {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CrossrefJsonArrayReader.class);
 
-    public CrossrefTorrentJsonReader(LookupConfiguration configuration) {
+    public CrossrefJsonArrayReader(LookupConfiguration configuration) {
         super(configuration);
         this.configuration = configuration;
     }
@@ -51,6 +51,7 @@ public class CrossrefTorrentJsonReader extends CrossrefJsonReader {
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
             mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+            mapper.configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, false);
             return mapper.readTree(inputLine);
         } catch (JsonGenerationException | JsonMappingException e) {
             LOGGER.error("The input cannot be deserialised. ", e);

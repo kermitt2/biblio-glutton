@@ -5,7 +5,6 @@ import org.apache.commons.lang3.StringUtils;
 import com.scienceminer.glutton.utilities.GluttonConfig;
 import com.scienceminer.glutton.data.db.KBEnvironment;
 import com.scienceminer.glutton.data.db.KBStagingEnvironment;
-import com.scienceminer.glutton.data.db.KBServiceEnvironment;
 import com.scienceminer.glutton.ingestion.IstexPubMedMapper;
 import com.scienceminer.glutton.ingestion.PubMedIndexer;
 import com.scienceminer.glutton.export.PubMedExporter;
@@ -25,7 +24,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  */
 public class Main {
 
-    private static List<String> availableCommands = Arrays.asList("istexPMID", "pubmed", "pubmedExport", "pmcExport");
+    private static List<String> availableCommands = Arrays.asList("istexPMID", "pubmed", "pubmedExport", "pmcExport", "pubmedDump");
 
     /**
      * Arguments of the command.
@@ -71,6 +70,7 @@ public class Main {
             String currArg;
             for (int i = 0; i < pArgs.length; i++) {
                 currArg = pArgs[i];
+
                 if (currArg.equals("-h")) {
                     System.out.println(getHelp());
                     result = false;
@@ -134,7 +134,7 @@ public class Main {
     public static void main(final String[] args) throws Exception {
         gbdArgs = new MainArgs();
 
-        File confFile = new File("config/glutton.yaml");
+        File confFile = new File("../config/glutton.yml");
         if (!confFile.canRead()) {
             System.out.println("'" + args[0] + "' cannot be read");
             System.exit(1);
@@ -197,37 +197,20 @@ public class Main {
                     if (env != null)  
                         env.close();
                 }
-            } 
-
-
-            /*else if (gbdArgs.getProcessMethodName().equals("coreharvesting")) {
-                System.out.println("Harvesting CORE data");
-                KBStagingEnvironment env1 = null;
-                KBServiceEnvironment env2 = null;
+            } else if (gbdArgs.getProcessMethodName().equals("pubmeddump")) {
+                System.out.println("Export the full PubMed bibliographical entries in a dump converted into the Crossref JSON format");
+                KBStagingEnvironment env = null;
                 try {
-                    env1 = new KBStagingEnvironment(conf);
-                    env1.buildEnvironment(false);
+                    env = new KBStagingEnvironment(conf);
+                    env.buildEnvironment(false);
 
-                    env2 = new KBServiceEnvironment(conf);
-                    env2.buildEnvironment(false);
-
-                    CoreIngester coreIngester = new CoreIngester(env1, env2);
-                
-                    // repositories
-                    int nb = coreIngester.fillRepositoryDb();
-                    System.out.println(nb + " repositories added");
-
-                    // biblio entries
-                    //nb = coreIngester.harvest();
-                    //System.out.println(nb + " entries added");
+                    PubMedExporter pubmed = new PubMedExporter(env, conf);
+                    pubmed.exportAsCrossrefDump(gbdArgs.getPathInputDirectory(), gbdArgs.getResultDirectoryPath(), true);
                 } finally {
-                    if (env1 != null)
-                        env1.close();
-                    if (env2 != null)
-                        env2.close();
+                    if (env != null)  
+                        env.close();
                 }
-            }*/
+            } 
         }
     }
-
 }

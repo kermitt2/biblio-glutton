@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 /**
- *  @author Patrice Lopez
+ *  
  */
 public class TestDOILookup {
 	
@@ -40,7 +40,7 @@ public class TestDOILookup {
 		try {
 			ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 			
-			conf = mapper.readValue(new File("config/glutton.yaml"), GluttonConfig.class);
+			conf = mapper.readValue(new File("../config/glutton.yml"), GluttonConfig.class);
             env = new KBStagingEnvironment(conf);
             env.buildEnvironment(false);
         } catch(Exception e) {

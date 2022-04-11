@@ -18,10 +18,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.function.Consumer;
 
-public class CrossrefGreenelabJsonReader extends CrossrefJsonReader{
-    private static final Logger LOGGER = LoggerFactory.getLogger(CrossrefGreenelabJsonReader.class);
+public class CrossrefJsonlReader extends CrossrefJsonReader{
+    private static final Logger LOGGER = LoggerFactory.getLogger(CrossrefJsonlReader.class);
 
-    public CrossrefGreenelabJsonReader(LookupConfiguration configuration) {
+    public CrossrefJsonlReader(LookupConfiguration configuration) {
         super(configuration);
         this.configuration = configuration;
     }

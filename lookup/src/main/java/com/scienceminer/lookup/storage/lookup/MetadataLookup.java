@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.time.LocalDateTime;
 
 import static com.scienceminer.lookup.web.resource.DataController.DEFAULT_MAX_SIZE_LIST;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -30,10 +31,13 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 /**
+ * Singleton class
  * Lookup metadata -> doi
  */
 public class MetadataLookup {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataLookup.class);
+
+    private static volatile MetadataLookup instance;
 
     private Env<ByteBuffer> environment;
     private Dbi<ByteBuffer> dbCrossrefJson;
@@ -45,11 +49,33 @@ public class MetadataLookup {
 
     private LookupConfiguration configuration;
 
-    public MetadataLookup(StorageEnvFactory storageEnvFactory) {
+    // this date keeps track of the latest indexed date of the metadata database
+    private LocalDateTime lastIndexed = null; 
+
+    public static MetadataLookup getInstance(StorageEnvFactory storageEnvFactory) {
+        if (instance == null) {
+            synchronized (MetadataLookup.class) {
+                if (instance == null) {
+                    getNewInstance(storageEnvFactory);
+                }
+            }
+        }
+        return instance;
+    }
+
+    /**
+     * Creates a new instance.
+     */
+    private static synchronized void getNewInstance(StorageEnvFactory storageEnvFactory) {
+        instance = new MetadataLookup(storageEnvFactory);
+    }
+
+
+    private MetadataLookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
 
         configuration = storageEnvFactory.getConfiguration();
-        batchSize = configuration.getBatchSize();
+        batchSize = configuration.getLoadingBatchSize();
         dbCrossrefJson = this.environment.openDbi(NAME_CROSSREF_JSON, DbiFlags.MDB_CREATE);
     }
 
@@ -69,8 +95,6 @@ public class MetadataLookup {
             store(key, crossrefData.toString(), dbCrossrefJson, transactionWrapper.tx);
             meterValidRecord.mark();
             counter.incrementAndGet();
-
-
         });
         transactionWrapper.tx.commit();
         transactionWrapper.tx.close();
@@ -101,6 +125,15 @@ public class MetadataLookup {
         return sizes;
     }
 
+    public Long getFullSize() {
+        long fullsize = 0;
+        Map<String, Long> sizes = getSize();
+        for (Map.Entry<String, Long> entry : sizes.entrySet()) {
+            fullsize += entry.getValue();
+        }
+        return fullsize;
+    }
+
     public String retrieveJsonDocument(String doi) {
         final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
         ByteBuffer cachedData = null;
@@ -118,7 +151,6 @@ public class MetadataLookup {
         }
 
         return record;
-
     }
 
     /**
@@ -167,5 +199,51 @@ public class MetadataLookup {
         }
 
         return values;
+    }
+
+    public synchronized LocalDateTime getLastIndexed() {
+        if (lastIndexed != null)
+            return lastIndexed;
+        else {
+            // get a possible value made persistent in the db
+            final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
+            ByteBuffer cachedData = null;
+            try (Txn<ByteBuffer> tx = environment.txnRead()) {
+                keyBuffer.put(BinarySerialiser.serialize("last-indexed-date")).flip();
+                cachedData = dbCrossrefJson.get(tx, keyBuffer);
+                if (cachedData != null) {
+                    lastIndexed = (LocalDateTime) BinarySerialiser.deserializeAndDecompress(cachedData);
+                }
+            } catch (Env.ReadersFullException e) {
+                throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
+            } catch (Exception e) {
+                LOGGER.error("Cannot retrieve the persistent last indexed date object", e);
+            }
+            return lastIndexed;
+        }
+    }
+
+    public synchronized void setLastIndexed(LocalDateTime lastIndexed) {
+        this.lastIndexed = lastIndexed;
+
+        // persistent store of this date
+        final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
+        try {
+            final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
+            keyBuffer.put(BinarySerialiser.serialize("last-indexed-date")).flip();
+            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(this.lastIndexed);
+            final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
+            valBuffer.put(serializedValue).flip();
+            dbCrossrefJson.put(transactionWrapper.tx, keyBuffer, valBuffer);
+        } catch (Exception e) {
+            LOGGER.error("Cannot store the last-indexed-date");
+        } finally {
+            transactionWrapper.tx.commit();
+            transactionWrapper.tx.close();
+        }
+    }
+
+    public void close() {
+        this.environment.close();
     }
 }

@@ -33,7 +33,6 @@ public class BinarySerialiser {
         return deserialize(b);
     }
 
-
     public static Object deserializeAndDecompress(byte[] data) throws IOException {
         return deserialize(Compressors.decompressSnappy(data));
     }

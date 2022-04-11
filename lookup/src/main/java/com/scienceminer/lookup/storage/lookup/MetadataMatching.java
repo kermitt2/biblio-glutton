@@ -10,6 +10,8 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -21,12 +23,15 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.apache.lucene.search.TotalHits;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.core.*;
@@ -40,49 +45,76 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 public class MetadataMatching {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataMatching.class);
 
+    private static volatile MetadataMatching instance;
+
     private LookupConfiguration configuration;
     private ESClientWrapper esClient;
     private MetadataLookup metadataLookup;
 
     public static final String INDEX_FIELD_NAME_ID = "id";
-    public static final String INDEX_FIELD_NAME_TITLE = "title";
+    public static final String INDEX_FIELD_NAME_ATITLE = "title";
     public static final String INDEX_FIELD_NAME_FIRST_PAGE = "first_page";
     public static final String INDEX_FIELD_NAME_FIRST_AUTHOR = "first_author";
     public static final String INDEX_FIELD_NAME_DOI = "DOI";
     public static final String INDEX_FIELD_NAME_VOLUME = "volume";
     public static final String INDEX_FIELD_NAME_ISSN = "issn";
     public static final String INDEX_FIELD_NAME_BIBLIOGRAPHIC = "bibliographic";
-    public static final String INDEX_FIELD_NAME_JOURNAL_TITLE = "journal";
+    public static final String INDEX_FIELD_NAME_JTITLE = "journal";
     public static final String INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE = "abbreviated_journal";
+    public static final String INDEX_FIELD_NAME_YEAR = "year";
+    public static final String INDEX_FIELD_NAME_ABBREV_TITLE = "abbreviated_journal";
 
     private final String INDEX_FIELD_NAME_JSONDOC = "jsondoc";
 
 
-    public MetadataMatching(LookupConfiguration configuration, MetadataLookup metadataLookup) {
-        this.configuration = configuration;
+    public static MetadataMatching getInstance(LookupConfiguration configuration, 
+                                               MetadataLookup metadataLookup) {
+        if (instance == null) {
+            synchronized (MetadataMatching.class) {
+                if (instance == null) {
+                    getNewInstance(configuration, metadataLookup);
+                }
+            }
+        }
+        return instance;
+    }
 
+    /**
+     * Creates a new instance.
+     */
+    private static synchronized void getNewInstance(LookupConfiguration configuration,
+                                                    MetadataLookup metadataLookup) {
+        instance = new MetadataMatching(configuration, metadataLookup);
+    }
+
+    private MetadataMatching(LookupConfiguration configuration, MetadataLookup metadataLookup) {
+        this.configuration = configuration;
         RestHighLevelClient esClient = new RestHighLevelClient(
                 RestClient.builder(
                         HttpHost.create(configuration.getElastic().getHost()))
                         .setRequestConfigCallback(
                                 requestConfigBuilder -> requestConfigBuilder
                                         .setConnectTimeout(30000)
-                                        .setSocketTimeout(60000))
-                        .setMaxRetryTimeoutMillis(120000));
+                                        .setSocketTimeout(60000)));
 
+        // note: maxRetryTimeoutMillis is deprecated in ES 7 due to implementation issue 
+        // https://github.com/elastic/elasticsearch/pull/38085
+        //                .setMaxRetryTimeoutMillis(120000));
 
         this.esClient = new ESClientWrapper(esClient, configuration.getMaxAcceptedRequests());
 
         this.metadataLookup = metadataLookup;
-
     }
 
     public long getSize() {
         try {
-            SearchRequest searchRequest = new SearchRequest(configuration.getElastic().getIndex());
+            CountRequest countRequest = new CountRequest(); 
+            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder(); 
+            searchSourceBuilder.query(QueryBuilders.matchAllQuery()); 
+            countRequest.source(searchSourceBuilder);
 
-            SearchResponse response = esClient.searchSync(searchRequest, RequestOptions.DEFAULT);
-            return response.getHits().getTotalHits();
+            CountResponse countResponse = esClient.count(countRequest, RequestOptions.DEFAULT);
+            return countResponse.getCount();
         } catch (IOException e) {
             LOGGER.error("Error while contacting Elasticsearch to fetch the size of "
                     + configuration.getElastic().getIndex() + " index.", e);
@@ -92,120 +124,102 @@ public class MetadataMatching {
     }
 
     /**
-     * Lookup by title, firstAuthor
+     * Boolean search by article title, firstAuthor
      **/
-    public MatchingDocument retrieveByMetadata(String title, String firstAuthor) {
-        validateInput(title, firstAuthor);
+    public List<MatchingDocument> retrieveByMetadata(String atitle, 
+                                                     String firstAuthor) {
+        validateInput(atitle, firstAuthor);
 
         final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_TITLE, title))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_ATITLE, atitle))
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
 
         return executeQuery(query);
-    }
-
-    public void retrieveByMetadataAsync(String title, String firstAuthor,
-                                        Consumer<MatchingDocument> callback) {
-        validateInput(title, firstAuthor);
-
-        final BoolQueryBuilder query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_TITLE, title))
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
-
-        executeQueryAsync(query, callback);
-    }
-
-    private void validateInput(String title, String firstAuthor) {
-        if (isBlank(title) || isBlank(firstAuthor)) {
-            throw new ServiceException(400, "Supplied title or firstAuthor are null.");
-        }
     }
 
     /**
-     * Lookup by journal title, journal abbreviated title, volume, first page
+     * Async boolean search by article title, firstAuthor
      **/
-    public MatchingDocument retrieveByMetadata(String title, String volume,
-                                               String firstPage) {
+    public void retrieveByMetadataAsync(String atitle, 
+                                        String firstAuthor,
+                                        Consumer<List<MatchingDocument>> callback) {
+        validateInput(atitle, firstAuthor);
 
-        validateInput(title, volume, firstPage);
-
-        BoolQueryBuilder query = getQueryBuilderJournal(title, volume, firstPage);
-
-        return executeQuery(query);
-    }
-
-    public void retrieveByMetadataAsync(String title, String volume,
-                                        String firstPage,
-                                        Consumer<MatchingDocument> callback) {
-
-        validateInput(title, volume, firstPage);
-
-        BoolQueryBuilder query = getQueryBuilderJournal(title, volume, firstPage);
+        final BoolQueryBuilder query = QueryBuilders.boolQuery()
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_ATITLE, atitle))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
 
         executeQueryAsync(query, callback);
     }
 
-    private BoolQueryBuilder getQueryBuilderJournal(String title, String volume, String firstPage) {
-
-        return QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
-                .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
-                .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
+    private void validateInput(String title, 
+                               String firstAuthor) {
+        if (isBlank(title) || isBlank(firstAuthor)) {
+            throw new ServiceException(400, "Supplied title and/or first author is null.");
+        }
     }
 
     private void validateInput(String title, String volume, String firstPage) {
         if (isBlank(title)
                 || isBlank(volume)
                 || isBlank(firstPage)) {
-            throw new ServiceException(400, "Supplied journalTitle or abbr journal title or volume, or first page are null.");
+            throw new ServiceException(400, 
+                "At least one of supplied journal title, abbreviated journal title, volume, or first page is null.");
         }
     }
-
 
     /**
-     * Lookup by journal title, journal abbreviated title, volume, first page
+     * Boolean search by journal title or abbreviated journal title, volume, first page and first author
      **/
-    public MatchingDocument retrieveByMetadata(String title, String volume,
-                                               String firstPage, String firstAuthor) {
+    public List<MatchingDocument> retrieveByMetadata(String jtitle, 
+                                                     String volume,
+                                                     String firstPage, 
+                                                     String firstAuthor) {
 
-        validateInput(title, volume, firstPage, firstAuthor);
+        validateInput(jtitle, volume, firstPage);
 
-        final BoolQueryBuilder query = getQueryBuilderJournal(title, volume, firstPage, firstAuthor);
+        final BoolQueryBuilder query = getQueryBuilderJournal(jtitle, volume, firstPage, firstAuthor);
 
         return executeQuery(query);
     }
 
-    private void validateInput(String title, String volume, String firstPage, String firstAuthor) {
-        if (isBlank(title)
-                || isBlank(volume)
-                || isBlank(firstPage)
-                || isBlank(firstAuthor)) {
-            throw new ServiceException(400, "Supplied journalTitle or abbr journal title or volume, or first page are null.");
-        }
-    }
+    /**
+     * Async boolean search by journal title or abbreviated journal title, volume, first page and first author
+     **/
+    public void retrieveByMetadataAsync(String jtitle, 
+                                        String volume,
+                                        String firstPage, 
+                                        String firstAuthor,
+                                        Consumer<List<MatchingDocument>> callback) {
 
-    public void retrieveByMetadataAsync(String title, String volume,
-                                        String firstPage, String firstAuthor,
-                                        Consumer<MatchingDocument> callback) {
+        validateInput(jtitle, volume, firstPage);
 
-        validateInput(title, volume, firstPage, firstAuthor);
-
-        final BoolQueryBuilder query = getQueryBuilderJournal(title, volume, firstPage, firstAuthor);
+        final BoolQueryBuilder query = getQueryBuilderJournal(jtitle, volume, firstPage, firstAuthor);
 
         executeQueryAsync(query, callback);
     }
 
-    private BoolQueryBuilder getQueryBuilderJournal(String title, String volume, String firstPage, String firstAuthor) {
-        return QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JOURNAL_TITLE, title))
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, title))
+    private BoolQueryBuilder getQueryBuilderJournal(String jtitle, 
+                                                    String volume, 
+                                                    String firstPage, 
+                                                    String firstAuthor) {
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JTITLE, jtitle))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE, jtitle))
                 .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_VOLUME, volume))
-                .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage))
-                .should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
+                .must(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_PAGE, firstPage));
+
+        if (!isBlank(firstAuthor)) {
+            queryBuilder = queryBuilder.should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
+        } 
+
+        return queryBuilder;
     }
 
-    public MatchingDocument retrieveByBiblio(String biblio) {
+    /**
+     * Search by raw bibliographical reference string
+     */
+    public List<MatchingDocument> retrieveByBiblio(String biblio) {
         if (isBlank(biblio)) {
             throw new ServiceException(400, "Supplied bibliographical string is empty.");
         }
@@ -215,30 +229,37 @@ public class MetadataMatching {
         return executeQuery(query);
     }
 
-    public void retrieveByBiblioAsync(String biblio, Consumer<MatchingDocument> callback) {
+    /**
+     * Async search by raw bibliographical reference string
+     **/
+    public void retrieveByBiblioAsync(String biblio, Consumer<List<MatchingDocument>> callback) {
         if (isBlank(biblio)) {
             throw new ServiceException(400, "Supplied bibliographical string is empty.");
         }
-
         final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
 
         executeQueryAsync(query, callback);
     }
 
-    private MatchingDocument executeQuery(QueryBuilder query) {
+    private List<MatchingDocument> executeQuery(QueryBuilder query) {
         SearchRequest request = prepareQueryExecution(query);
-        final MatchingDocument matchingDocument;
+        final List<MatchingDocument> matchingDocuments;
         try {
             final SearchResponse searchResponse = esClient.searchSync(request, RequestOptions.DEFAULT);
 
-            matchingDocument = processResponse(searchResponse);
+            matchingDocuments = processResponse(searchResponse);
 
-            if (matchingDocument.isException()) {
-                if(matchingDocument.getException() instanceof NotFoundException) {
-                    throw (NotFoundException) matchingDocument.getException();
+            if (matchingDocuments.size() == 0) {
+                // It should not be the case, in case of search failure we have one MatchingDocument
+                // with an exception. We can consider this case as not found case
+                throw new NotFoundException("Cannot find records for the input query.");
+            }
+            else if (matchingDocuments.get(0).isException()) {
+                if(matchingDocuments.get(0).getException() instanceof NotFoundException) {
+                    throw (NotFoundException) matchingDocuments.get(0).getException();
                 }
 
-                throw (Exception) matchingDocument.getException();
+                throw (Exception) matchingDocuments.get(0).getException();
             }
         } catch (IOException e) {
             throw new ServiceException(500, "No response from Elasticsearch. ", e);
@@ -246,11 +267,10 @@ public class MetadataMatching {
             throw new ServiceException(500, "Elasticsearch server error. ", e);
         }
 
-        return matchingDocument;
+        return matchingDocuments;
     }
 
-
-    private void executeQueryAsync(QueryBuilder query, Consumer<MatchingDocument> callback) {
+    private void executeQueryAsync(QueryBuilder query, Consumer<List<MatchingDocument>> callback) {
         SearchRequest searchRequest = prepareQueryExecution(query);
         try {
             RequestOptions options = RequestOptions.DEFAULT;
@@ -260,11 +280,15 @@ public class MetadataMatching {
                 if (exception == null) {
                     callback.accept(processResponse(response));
                 } else {
-                    callback.accept(new MatchingDocument(exception));
+                    List<MatchingDocument> matchingDocuments = new ArrayList<>();
+                    matchingDocuments.add(new MatchingDocument(exception));
+                    callback.accept(matchingDocuments);
                 }
             });
         } catch (Exception e) {
-            callback.accept(new MatchingDocument(e));
+            List<MatchingDocument> matchingDocuments = new ArrayList<>();
+            matchingDocuments.add(new MatchingDocument(e));
+            callback.accept(matchingDocuments);
         }
     }
 
@@ -272,51 +296,86 @@ public class MetadataMatching {
         SearchSourceBuilder builder = new SearchSourceBuilder();
         builder.query(query);
         builder.from(0);
-        builder.size(1);
+        builder.size(configuration.getBlockSize());
 
         String[] includeFields = new String[]
                 {
                         INDEX_FIELD_NAME_ID,
                         INDEX_FIELD_NAME_DOI,
                         INDEX_FIELD_NAME_FIRST_AUTHOR,
-                        INDEX_FIELD_NAME_TITLE
+                        INDEX_FIELD_NAME_ATITLE,
+                        INDEX_FIELD_NAME_JTITLE,
+                        INDEX_FIELD_NAME_YEAR
                 };
-        String[] excludeFields = new String[]{"*"};
+        //String[] excludeFields = new String[]{"*"};
         builder.fetchSource(includeFields, null);
 
         final SearchRequest searchRequest = new SearchRequest(configuration.getElastic().getIndex());
         searchRequest.searchType(SearchType.DFS_QUERY_THEN_FETCH);
         searchRequest.source(builder);
-
         return searchRequest;
     }
 
-    private MatchingDocument processResponse(SearchResponse response) {
+    private List<MatchingDocument> processResponse(SearchResponse response) {
         SearchHits hits = response.getHits();
         Iterator<SearchHit> it = hits.iterator();
-        final MatchingDocument matchingDocument = new MatchingDocument();
+        final List<MatchingDocument> matchingDocuments = new ArrayList<>();
 
-        while (it.hasNext()) {
+        double scoreMin = 1.0;
+        double scoreMax = 0.0;
+
+        while (it.hasNext() && matchingDocuments.size() < configuration.getBlockSize()) {
+            MatchingDocument matchingDocument = new MatchingDocument();
+
             SearchHit hit = it.next();
 
             String DOI = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_DOI);
             String firstAuthor = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_FIRST_AUTHOR);
 
-            final List<String> titles = (List<String>) hit.getSourceAsMap().get(INDEX_FIELD_NAME_TITLE);
-            String title = "";
-            if (CollectionUtils.isNotEmpty(titles)) {
-                title = titles.get(0);
+            final List<String> atitles = (List<String>) hit.getSourceAsMap().get(INDEX_FIELD_NAME_ATITLE);
+            String atitle = "";
+            if (CollectionUtils.isNotEmpty(atitles)) {
+                atitle = atitles.get(0);
+            }
+
+            final List<String> jtitles = (List<String>) hit.getSourceAsMap().get(INDEX_FIELD_NAME_JTITLE);
+            String jtitle = "";
+            if (CollectionUtils.isNotEmpty(jtitles)) {
+                jtitle = jtitles.get(0);
+            }
+
+            final List<String> abbrevTtitles = (List<String>) hit.getSourceAsMap().get(INDEX_FIELD_NAME_ABBREV_TITLE);
+            String abbreviatedTitle = "";
+            if (CollectionUtils.isNotEmpty(abbrevTtitles)) {
+                abbreviatedTitle = abbrevTtitles.get(0);
+            }
+
+            final Integer year = (Integer) hit.getSourceAsMap().get(INDEX_FIELD_NAME_YEAR);
+            String yearStr = null;
+            if (year != null) {
+                yearStr = ""+year; 
             }
 
             matchingDocument.setDOI(DOI);
             matchingDocument.setFirstAuthor(firstAuthor);
-            matchingDocument.setTitle(title);
+            matchingDocument.setATitle(atitle);
+            matchingDocument.setJTitle(jtitle);
+            matchingDocument.setAbbreviatedTitle(abbreviatedTitle);
+            matchingDocument.setYear(yearStr);
+
             final String jsonObject = metadataLookup.retrieveJsonDocument(DOI);
             if (jsonObject == null) {
-                matchingDocument.setException(new NotFoundException("The index returned a result but the body cannot be fetched. Doi: " + DOI));
-                return matchingDocument;
+                LOGGER.warn("The search index returned a result but the corresponding entry cannot be fetched in the metadata db, DOI: " + DOI);
+                continue;
             }
+
             matchingDocument.setJsonObject(jsonObject);
+            double hitScore = hit.getScore();
+            matchingDocument.setBlockingScore(hitScore);
+            if (hitScore > scoreMax)
+                scoreMax = hitScore;
+            if (hitScore < scoreMin)
+                scoreMin = hitScore;
 
             try {
                 ObjectMapper mapper = new ObjectMapper();
@@ -340,12 +399,27 @@ public class MetadataMatching {
                 LOGGER.warn("Invalid JSON object", e);
             }
 
-
-            return matchingDocument;
+            matchingDocuments.add(matchingDocument);
         }
 
-        matchingDocument.setIsException(true);
-        matchingDocument.setException(new NotFoundException("Cannot find records for the input query."));
-        return matchingDocument;
+        if (matchingDocuments.size() == 0) {
+            MatchingDocument matchingDocument = new MatchingDocument();
+            matchingDocument.setIsException(true);
+            matchingDocument.setException(new NotFoundException("Cannot find records for the input query."));
+            matchingDocuments.add(matchingDocument);
+        } else {
+            // normalize search scores in [0.5:1]
+            for(MatchingDocument matchingDocument : matchingDocuments) {
+                double normalizedHitScore = (matchingDocument.getBlockingScore() - scoreMin) / (scoreMax - scoreMin);
+                //normalizedHitScore = 0.5 + (normalizedHitScore/2);
+                matchingDocument.setBlockingScore(normalizedHitScore);
+            }
+        }
+
+        return matchingDocuments;
+    }
+
+    public void close() {
+        this.metadataLookup.close();
     }
 }

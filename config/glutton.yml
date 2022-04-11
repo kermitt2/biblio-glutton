@@ -1,0 +1,108 @@
+version: 0.2
+
+# where the metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings 
+storage: data/db
+#storage: /media/lopez/T5/data/db
+
+# Crossref fields to be ignored when storing metadata, reference field in particular take a lot of space
+ignoreCrossRefFields: 
+  - reference
+  - abstract
+  - indexed
+
+# batch size for preparing the data
+loadingBatchSize: 10000
+indexBatchSize: 500
+
+# max blocking size (number of candidates considered for pairwise matching)
+blockSize: 4
+
+# Grobid server URL
+grobidHost: http://localhost:8070/api
+
+timeZone: UTC
+# the day hour for lauching the automatic daily incremental update, format is HH:MM
+dailyUpdateTime: 03:00
+
+# a node of the elasticsearch cluster to be used and a name for the index
+elastic:
+  #host: localhost:9200
+  host: 0.0.0.0:9200
+  index: crossref
+
+proxy:
+    # proxy to be used when doing external call to crossref or unpaywall
+    host: 
+    port: 
+
+crossref:
+  # a directory where the crossref incremental update files (gap or daily update) will be located
+  # to be changed according to your storage
+  dumpPath: /media/lopez/data2/crossref_metadata_plus_examples
+
+  # indicate if we remove the incremental files after they have been processed (value true) or if
+  # keep them in the above dumpPath (careful the volume of files can be huge after months of daily update!)
+  cleanProcessFiles: true
+
+  # for the crossref REST API and daily update, you need normally to use it politely and to indicate an email 
+  #address here, e.g. 
+  #mailto: "toto@titi.tutu"
+  #mailto: 
+  mailto: patrice.lopez@science-miner.com
+  
+  # to use Crossref metadata plus service (available by subscription)
+  #token: "yourmysteriouscrossrefmetadataplusauthorizationtokentobeputhere"
+  token:
+
+unpaywall:
+  dumpPath: 
+  # a directory where the unpaywall update data feed change files will be located
+  API_key: 
+  # API Key for the Unpaywall subscription is necessary to get the data feed change files for daily update
+
+# CORS parameters 
+corsAllowedOrigins: "*"
+corsAllowedMethods: "OPTIONS,GET,PUT,POST,DELETE,HEAD"
+corsAllowedHeaders: "X-Requested-With,Content-Type,Accept,Origin"
+
+# beyond the following number of requests, a 503 status will be returned (service unavailable) until enough
+# requests are processed to go beyond the max
+maxAcceptedRequests: 2048
+
+server:
+  type: custom
+  applicationConnectors:
+  - type: http
+    port: 8080
+  adminConnectors:
+  - type: http
+    port: 8081
+  registerDefaultExceptionMappers: false
+  maxThreads: 2048
+  maxQueuedRequests: 2048
+  acceptQueueSize: 2048
+
+logging:
+  level: INFO
+  appenders:
+  - type: console
+    threshold: INFO
+    timeZone: UTC
+  - type: file
+    currentLogFilename: logs/lookup-service.log
+    threshold: INFO
+    archive: true
+    archivedLogFilenamePattern: logs/lookup-service-%d.log
+    archivedFileCount: 5
+    timeZone: UTC
+
+# the following is used only for pubmed related enrichments and extractions
+pubmed:
+  # path to the medline resources, to be changed according to your storage
+  pubmedDirectory: /media/lopez/data/biblio/medline2021/
+  # path to PMC mapping data
+  pmcDirectory: data/pmc
+  # elasticsearch index for pubmed, used to create extraction based on MeSH terms
+  index: pubmed
+  # path to the working pubmed databases, to be changed according to your storage 
+  dbDirectory: /media/lopez/T5/data2/db

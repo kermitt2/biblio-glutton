@@ -1,10 +1,27 @@
 package com.scienceminer.lookup.data;
 
+import java.util.List;
+import java.util.ArrayList;
+
 public class MatchingDocument {
     private String DOI;
     private String firstAuthor;
-    private String title;
+    private String atitle;
+    
+    private String jtitle; // all serials
+    private String btitle; // book title (conference proceedings, book containing book chapters, etc.)
+    private String abbreviatedTitle;
+
+    private String year;
+    private String volume;
+    private String issue;
+    private String firstPage;
+    private List<String> authors;
+
     private String jsonObject;
+
+    private double matchingScore = 0.0;
+    private double blockingScore = 0.0;
 
     private boolean isException = false;
     private Throwable exception;
@@ -36,7 +53,7 @@ public class MatchingDocument {
         this.setDOI(otherMatchingDocument.getDOI());
         this.setFirstAuthor(otherMatchingDocument.getFirstAuthor());
         this.setJsonObject(otherMatchingDocument.getJsonObject());
-        this.setTitle(otherMatchingDocument.getTitle());
+        this.setATitle(otherMatchingDocument.getATitle());
     }
 
     public String getJsonObject() {
@@ -63,12 +80,16 @@ public class MatchingDocument {
         this.firstAuthor = firstAuthor;
     }
 
-    public String getTitle() {
-        return title;
+    public String getATitle() {
+        return atitle;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public void setATitle(String atitle) {
+        if (atitle != null) {
+            atitle = atitle.replace("\n", " ");
+            atitle = atitle.replaceAll("( )+", " ");
+        }
+        this.atitle = atitle;
     }
 
     public boolean isException() {
@@ -97,4 +118,96 @@ public class MatchingDocument {
             finalJsonObject = finalJsonObject.replace("\n", "");
         return finalJsonObject;
     }
+
+    public double getMatchingScore() {
+        return matchingScore;
+    }
+
+    public void setMatchingScore(double matchingScore) {
+        this.matchingScore = matchingScore;
+    }
+
+    public double getBlockingScore() {
+        return blockingScore;
+    }
+
+    public void setBlockingScore(double blockingScore) {
+        this.blockingScore = blockingScore;
+    }
+
+    public String getJTitle() {
+        return jtitle;
+    }
+
+    public void setJTitle(String jtitle) {
+        this.jtitle = jtitle;
+    }
+
+    public String getAbbreviatedTitle() {
+        return abbreviatedTitle;
+    }
+
+    public void setAbbreviatedTitle(String abbreviatedTitle) {
+        this.abbreviatedTitle = abbreviatedTitle;
+    }
+
+    public String getBTitle() {
+        return btitle;
+    }
+
+    public void setBTitle(String btitle) {
+        if (btitle != null) {
+            btitle = btitle.replace("\n", " ");
+            btitle = btitle.replaceAll("( )+", " ");
+        }
+        this.btitle = btitle;
+    }
+
+    public String getYear() {
+        return year;
+    }
+
+    public void setYear(String year) {
+        this.year = year;
+    }
+
+    public String getVolume() {
+        return volume;
+    }
+
+    public void setVolume(String volume) {
+        this.volume = volume;
+    }
+
+    public String getIssue() {
+        return issue;
+    }
+
+    public void setIssue(String issue) {
+        this.issue = issue;
+    }
+
+    public String getFirstPage() {
+        return firstPage;
+    }
+
+    public void setFirstPage(String firstPage) {
+        this.firstPage = firstPage;
+    }
+
+    public List<String> getAuthors() {
+        return this.authors;
+    }
+
+    public void addAuthors(String author) {
+        if (this.authors == null) {
+            this.authors = new ArrayList<>();
+        }
+        this.authors.add(author);
+    }
+
+    public void setAuthors(List<String> authors) {
+        this.authors = authors;
+    }
+
 }

@@ -47,4 +47,4 @@ WORKDIR /app/lookup/lookup-service
 
 ENV JAVA_OPTS=-Xmx4g
 
-CMD java -jar lib/lookup-service-1.0-SNAPSHOT-onejar.jar server data/config/config.yml
+CMD java -jar lib/lookup-service-0.2-SNAPSHOT-onejar.jar server data/config/config.yml

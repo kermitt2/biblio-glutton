@@ -1,5 +1,8 @@
 package com.scienceminer.lookup.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class OAResource {
 
     private String oaLink;
