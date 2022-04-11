@@ -2,6 +2,7 @@ version: 0.2
 
 # where the metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings 
 storage: data/db
+#storage: /media/lopez/T5/data/db
 
 # Crossref fields to be ignored when storing metadata, reference field in particular take a lot of space
 ignoreCrossRefFields: 
@@ -21,11 +22,12 @@ grobidHost: http://localhost:8070/api
 
 timeZone: UTC
 # the day hour for lauching the automatic daily incremental update, format is HH:MM
-dailyUpdateTime: 05:00
+dailyUpdateTime: 03:00
 
 # a node of the elasticsearch cluster to be used and a name for the index
 elastic:
-  host: localhost:9200
+  #host: localhost:9200
+  host: 0.0.0.0:9200
   index: crossref
 
 proxy:
@@ -35,6 +37,7 @@ proxy:
 
 crossref:
   # a directory where the crossref incremental update files (gap or daily update) will be located
+  # to be changed according to your storage
   dumpPath: /media/lopez/data2/crossref_metadata_plus_examples
 
   # indicate if we remove the incremental files after they have been processed (value true) or if
@@ -95,11 +98,11 @@ logging:
 
 # the following is used only for pubmed related enrichments and extractions
 pubmed:
-  # path to the medline resources
-  pubmedDirectory: /mnt/data/medline2020
+  # path to the medline resources, to be changed according to your storage
+  pubmedDirectory: /media/lopez/data/biblio/medline2021/
   # path to PMC mapping data
   pmcDirectory: data/pmc
   # elasticsearch index for pubmed, used to create extraction based on MeSH terms
   index: pubmed
-  # path to the working pubmed databases 
+  # path to the working pubmed databases, to be changed according to your storage 
   dbDirectory: /media/lopez/T5/data2/db

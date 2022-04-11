@@ -23,7 +23,7 @@ apply plugin: 'maven-publish'
 apply plugin: 'com.github.johnrengelman.shadow'
 
 group 'com.scienceminer.glutton'
-version '0.2-SNAPSHOT'
+version '0.2'
 
 sourceCompatibility = 1.8
 
@@ -35,6 +35,10 @@ repositories {
     maven { url "file:////home/lopez/biblio-glutton/pubmed-glutton/lib/" }
     mavenLocal()
     mavenCentral()
+}
+
+wrapper {
+    gradleVersion "7.1.1"
 }
 
 // The main class of the application

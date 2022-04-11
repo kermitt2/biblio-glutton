@@ -11,7 +11,6 @@ First build the project:
 > cd pubmed-glutton
 
 > ./gradlew clean build
-
 ```
 
 ### MEDLINE/PubMed data

@@ -1,14 +1,20 @@
 # biblio-glutton
 
+[![License](http://img.shields.io/:license-apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
+[![Demo cloud.science-miner.com/glutton](https://img.shields.io/website-up-down-green-red/https/cloud.science-miner.com/glutton.svg)](http://cloud.science-miner.com/glutton)
+[![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/kermitt2/biblio-glutton/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/kermitt2/biblio-glutton)
+
 Framework dedicated to bibliographic information. It includes:
 
 - a bibliographical reference matching service: from an input such as a raw bibliographical reference and/or a combination of key metadata, the service will return the disambiguated bibliographical object with in particular its DOI and a set of metadata aggregated from CrossRef and other sources, 
 - a fast metadata look-up service: from a "strong" identifier such as DOI, PMID, etc. the service will return a set of metadata aggregated from CrossRef and other sources,
 - various mapping between DOI, PMID, PMC, ISTEX ID and ark, integrated in the bibliographical service,
 - Open Access resolver: Integration of Open Access links via the Unpaywall dataset from Impactstory,
+- Gap and daily update for CrossRef resources (via the CrossRef REST API), so that your glutton data service stays always in sync with CrossRef,
 - MeSH classes mapping for PubMed articles.
 
-The framework is designed both for speed (with several thousands request per second for look-up) and matching accuracy. It can be [scaled](https://github.com/kermitt2/biblio-glutton#architecture) horizontally as needed. 
+The framework is designed both for speed (with several thousands request per second for look-up) and matching accuracy. It can be [scaled](https://github.com/kermitt2/biblio-glutton#architecture) horizontally as needed and can provide high availability. 
+
 Benchmarking against the CrossRef REST API is presented [below](https://github.com/kermitt2/biblio-glutton#matching-accuracy). 
 
 In the Glutton family, the following complementary tools are available for taking advantage of Open Access resources: 
@@ -16,6 +22,8 @@ In the Glutton family, the following complementary tools are available for takin
 * [biblio-glutton-harvester](https://github.com/kermitt2/biblio-glutton-harvester): A robust, fault tolerant, Python utility for harvesting efficiently (multi-threaded) a large Open Access collection of PDF (Unpaywall, PubMed Central), with the possibility to upload content on Amazon S3,
 
 * [biblio-glutton-extension](https://github.com/kermitt2/biblio-glutton-extension): A browser extension (Firefox & Chrome) for providing bibliographical services, like identifying dynamically Open Access resources on web pages and providing contextual citation services.
+
+Current stable version of biblio-glutton is `0.2`. Working version is `0.3-SNAPSHOT`.
 
 ## The bibliographical look-up and matching REST API
 
@@ -35,7 +43,7 @@ cd lookup
 ```sh
 cd lookup/
 ./gradlew clean build
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar server
+java -jar build/libs/lookup-service-0.2-onejar.jar server
 ```
 
 The service will use the default project configuration located under `biblio-glutton/config/glutton.yml`. If you want to use a configuration file in another location, you can can specify it as additional parameter:
@@ -44,7 +52,7 @@ The service will use the default project configuration located under `biblio-glu
 ```sh
 cd lookup/
 ./gradlew clean build
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar server /some/where/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar server /some/where/glutton.yml
 ```
 
 To check if it works, you can view a report of the data used by the service at `host:port/service/data`. For instance:
@@ -53,11 +61,11 @@ To check if it works, you can view a report of the data used by the service at `
 
 ```json
 {
-    "Metadata Lookup Crossref size": "{crossref_Jsondoc=115972357}",
-    "ISTEX size": "{istex_doi2ids=21325689, istex_istex2ids=21401921, istex_pii2ids=6954865}",
-    "Metadata Matching Crossref size": "116074854",
-    "PMID lookup size": "{pmid_doi2ids=24814263, pmid_pmc2ids=7109853, pmid_pmid2ids=33009734}",
-    "DOI OA size": "{unpayWall_doiOAUrl=28373676}"
+    "Metadata Lookup Crossref size":"{crossref_Jsondoc=127887559}",
+    "ISTEX size":"{istex_doi2ids=21325261, istex_istex2ids=21401494, istex_pii2ids=6954799}",
+    "Metadata Matching Crossref size":"127970581",
+    "PMID lookup size":"{pmid_doi2ids=25661624, pmid_pmc2ids=7561377, pmid_pmid2ids=33761382}",
+    "DOI OA size":"{unpayWall_doiOAUrl=30635446}"
 }
 ```
 
@@ -93,7 +101,7 @@ Once everything has booted up, biblio-glutton will be running at http://localhos
 
 To load data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. For example, this command will load Crossref data (as described in more detail [below](https://github.com/kermitt2/biblio-glutton#resources)):
 
-    $ docker-compose run biblio java -jar lib/lookup-service-0.2-SNAPSHOT-onejar.jar crossref --input ../../data/crossref-works.2018-09-05.json.xz config/glutton.yml
+    $ docker-compose run biblio java -jar lib/lookup-service-0.2-onejar.jar crossref --input ../../data/crossref-works.2018-09-05.json.xz config/glutton.yml
 
 You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources). 
 
@@ -309,32 +317,32 @@ All the following commands need to be launched under the subdirectory `lookup/`.
 General command line pattern:
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file path/to/config/file/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar crossref --input /path/to/crossref/json/file path/to/config/file/glutton.yml
 ```
 
 Example with Crossref Metadata Plus snapshot (path to a `.tar.gz` file which archives many json files):
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar crossref --input ~/tmp/crossref_metadata_plus.tar.gz ../config/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar crossref --input ~/tmp/crossref_metadata_plus.tar.gz ../config/glutton.yml
 ```
 
 The last parameter is the project config file normally under `biblio-glutton/config/glutton.yml`:
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar crossref --input /path/to/crossref/json/file ../config/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar crossref --input /path/to/crossref/json/file ../config/glutton.yml
 ```
 
 Example with CrossRef dump Academic Torrent file (path to a repository of `*.json.gz` files):
 
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar crossref --input ~/tmp/crossref_public_data_file_2021_01 ../config/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar crossref --input ~/tmp/crossref_public_data_file_2021_01 ../config/glutton.yml
 ```
 
 Example with xz-compressed file (e.g. GreeneLab dump): 
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar crossref --input crossref-works.2019-09-09.json.xz ../config/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar crossref --input crossref-works.2019-09-09.json.xz ../config/glutton.yml
 ```
 
 **Note:** By default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk  space. The `reference` field is particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `biblio-glutton/config/glutton.yml`, by editing the lines:
@@ -375,13 +383,13 @@ Currently new Crossref Metadata Plus snapshot are available on the 5th of every 
 Using the Crossref web API to cover the remaining gap (from the latest update day in the full snapshot to the current day) is done with the following command (still under `biblio-glutton/lookup/`):
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar gap_crossref path/to/config/file/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar gap_crossref path/to/config/file/glutton.yml
 ```
 
 For instance:
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar gap_crossref ../config/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar gap_crossref ../config/glutton.yml
 ```
 
 Be sure to indicate in the configution file `glutton.yml` your polite usage email and/or crossref matadata plus token for using the Crossref web API. 
@@ -393,13 +401,13 @@ __Warning:__ If an older snapshot is used, like the CrossRef dump Academic Torre
 #### PMID and PMC ID
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar pmid --input /path/to/pmid/csv/file path/to/config/file/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar pmid --input /path/to/pmid/csv/file path/to/config/file/glutton.yml
 ```
 
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar pmid --input PMID_PMCID_DOI.csv.gz ../config/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar pmid --input PMID_PMCID_DOI.csv.gz ../config/glutton.yml
 ```
 
 As of March 2022, the latest mapping covers 34,310,000 PMID, with 25,661,624 having a DOI (which means 8,648,376 PMID are not represented in Crossref).
@@ -407,13 +415,13 @@ As of March 2022, the latest mapping covers 34,310,000 PMID, with 25,661,624 hav
 #### OA via Unpaywall
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar unpaywall --input /path/to/unpaywall/json/file path/to/config/file/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar unpaywall --input /path/to/unpaywall/json/file path/to/config/file/glutton.yml
 ```
 
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar unpaywall --input unpaywall_snapshot_2022-03-09T083001.jsonl.gz ../config/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar unpaywall --input unpaywall_snapshot_2022-03-09T083001.jsonl.gz ../config/glutton.yml
 ```
 
 As of March 2022, the Unpaywall snapshot should provide at least one Open Access link to 30,618,764 Crossref entries. 
@@ -423,13 +431,13 @@ As of March 2022, the Unpaywall snapshot should provide at least one Open Access
 Note that ISTEX mapping is only relevant for ISTEX full text resource users, so only public research institutions in France. So you can generally skip this step. 
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar istex --input /path/to/istex/json/file path/to/config/file/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar istex --input /path/to/istex/json/file path/to/config/file/glutton.yml
 ```
 
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-0.2-SNAPSHOT-onejar.jar istex --input istexIds.all.gz ../config/glutton.yml
+java -jar build/libs/lookup-service-0.2-onejar.jar istex --input istexIds.all.gz ../config/glutton.yml
 ```
 
 Note: see bellow how to create this mapping file `istexIds.all.gz`. 
@@ -554,22 +562,31 @@ consolidation:
 > ./gradlew EvaluateDOIMatching -Pp2t=ABS_PATH_TO_PMC/PMC_sample_1943
 
 
-
 ### Full raw bibliographical reference matching
 
-Runtime correspond to a processing on a single machine running Glutton REST API server, ElasticSearch and GROBID evaluation. In the case of CrossRef API, we use as much as possible the 50 queries per second allowed by the service with the GROBID CrossRef multithreaded client. 
+Runtime corresponds to a processing on a single machine running Glutton REST API server, ElasticSearch and GROBID evaluation with CRF for the citation model, with CrossRef index dated Sept. 2021. 
+
+```
+======= GLUTTON API ======= 
+17015 bibliographical references processed in 1145.593 seconds, 0.06732841610343815 seconds per bibliographical reference.
+Found 16699 DOI
+
+precision:      0.9732918138810708
+recall: 0.9552159858947987
+f-score:        0.9641691878744736
+```
+
+With BiLSTM-CRF_FEATURES model instead of CRF for parsing the raw references prior to matching:
 
 ```
 ======= GLUTTON API ======= 
 
-17015 bibliographical references processed in 2363.978 seconds, 0.13893493975903615 seconds per bibliographical reference.
-Found 16462 DOI
-
-precision:      0.9699307496051512
-recall: 0.9384072876873347
-f-score:        0.953908653702542
-
+precision:      0.9733763132760267
+recall: 0.9583308845136644
+f-score:        0.9657950069594575
 ```
+
+In the case of CrossRef API, we use as much as possible the concurrent queries (usually 50) allowed by the service with the GROBID CrossRef multithreaded client. Results with a smaller index (2019, so in principle easier):
 
 ```
 ======= CROSSREF API ======= 
@@ -582,54 +599,6 @@ recall: 0.9349397590361446
 f-score:        0.9507530480516376
 
 ```
-
-Evaluation produced on 13.02.2019.
-
-### First author lastname + title matching 
-
-```
-======= GLUTTON API ======= 
-
-17015 bibliographical references processed in 673.698 seconds, 0.039594357919482806 seconds per bibliographical reference.
-Found 16165 DOI
-
-precision:      0.9466749149396845
-recall: 0.8993828974434322
-f-score:        0.9224231464737793
-
-```
-
-```
-======= CROSSREF API ======= 
-
-17015 bibliographical references processed in 781.618 seconds, 0.04593699676755804 seconds per bibliographical reference.
-Found 15048 DOI
-
-precision:      0.9356060606060606
-recall: 0.8274463708492507
-f-score:        0.8782085269625426
-```
-
-Evaluation produced on 13.02.2019.
-
-### Mixed strategy
-
-We process bibliographical references with a first author lastname+title matching, then journal name+volume+page when these metadata are extracted by GROBID, and finally a full raw reference string matching is only done when metadata-based look-ups fail. 
-We get a much faster matching rate (3 times faster), at the cost of some accuracy loss (-2. f-score). 
-
-```
-======= GLUTTON API ======= 
-
-17015 bibliographical references processed in 824.658 seconds, 0.04846652953276521 seconds per bibliographical reference.
-Found 16546 DOI
-
-precision:      0.9469962528707845
-recall: 0.9208933294152218
-f-score:        0.9337624027889514
-
-```
-
-Evaluation produced on 13.02.2019.
 
 ## ISTEX mapping
 
@@ -660,6 +629,7 @@ You can then move the json dump (e.g. `istexIds.all`) to the Istex data path ind
 
 The mapping adds PudMed information (in particular MeSH classes) to ISTEX entries. 
 See the instructions [here](pubmed-glutton/Readme.md)
+
 
 ## Main authors and contact
 
