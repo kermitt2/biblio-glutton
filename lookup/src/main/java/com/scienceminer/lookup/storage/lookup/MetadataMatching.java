@@ -95,7 +95,11 @@ public class MetadataMatching {
                         .setRequestConfigCallback(
                                 requestConfigBuilder -> requestConfigBuilder
                                         .setConnectTimeout(30000)
-                                        .setSocketTimeout(60000)));
+                                        .setSocketTimeout(60000))
+                        .setHttpClientConfigCallback(
+                                httpAsyncClientBuilder -> httpAsyncClientBuilder
+                                        .setMaxConnPerRoute(configuration.getElastic().getMaxConnections())
+                                        .setMaxConnTotal(configuration.getElastic().getMaxConnections())));
 
         // note: maxRetryTimeoutMillis is deprecated in ES 7 due to implementation issue 
         // https://github.com/elastic/elasticsearch/pull/38085
