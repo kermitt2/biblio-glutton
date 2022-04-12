@@ -1,7 +1,7 @@
 # biblio-glutton
 
 [![License](http://img.shields.io/:license-apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
-[![Demo cloud.science-miner.com/glutton](https://img.shields.io/website-up-down-green-red/https/cloud.science-miner.com/glutton.svg)](http://cloud.science-miner.com/glutton)
+[![Demo cloud.science-miner.com/glutton](https://img.shields.io/website-up-down-green-red/https/cloud.science-miner.com/glutton/service/data.svg)](http://cloud.science-miner.com/glutton/service/data)
 [![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/kermitt2/biblio-glutton/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/kermitt2/biblio-glutton)
 
 Framework dedicated to bibliographic information. It includes:
