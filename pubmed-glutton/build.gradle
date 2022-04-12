@@ -23,7 +23,7 @@ apply plugin: 'maven-publish'
 apply plugin: 'com.github.johnrengelman.shadow'
 
 group 'com.scienceminer.glutton'
-version '0.2'
+version '0.3-SNAPSHOT'
 
 sourceCompatibility = 1.8
 
