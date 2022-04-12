@@ -587,33 +587,34 @@ Runtime corresponds to a processing on a single machine running Glutton REST API
 17015 bibliographical references processed in 1145.593 seconds, 0.06732841610343815 seconds per bibliographical reference.
 Found 16699 DOI
 
-precision:      0.9732918138810708
-recall: 0.9552159858947987
-f-score:        0.9641691878744736
+precision:      97.33
+recall:         95.52
+F1-score:       96.42
 ```
 
-With BiLSTM-CRF_FEATURES model instead of CRF for parsing the raw references prior to matching:
+With `BiLSTM-CRF` model instead of CRF for parsing the raw references prior to matching:
 
 ```
 ======= GLUTTON API ======= 
 
-precision:      0.9733763132760267
-recall: 0.9583308845136644
-f-score:        0.9657950069594575
+precision:      97.34
+recall:         95.83
+f-score:        96.58
 ```
 
-In the case of CrossRef API, we use as much as possible the concurrent queries (usually 50) allowed by the service with the GROBID CrossRef multithreaded client. Results with a smaller index (2019, so in principle easier):
+In the case of CrossRef API, we use as much as possible the concurrent queries (usually 50) allowed by the service with the GROBID CrossRef multithreaded client. 
 
 ```
 ======= CROSSREF API ======= 
 
-17015 bibliographical references processed in 793.295 seconds, 0.04662327358213341 seconds per bibliographical reference.
-Found 16449 DOI
+17015 bibliographical references processed in 3057.464 seconds, 0.1797 seconds per bibliographical reference.
+Found 16502 DOI
 
-precision:      0.9671104626421059
-recall: 0.9349397590361446
-f-score:        0.9507530480516376
+======= CROSSREF API ======= 
 
+precision:      97.19
+recall:         94.26
+F1-score:       95.69
 ```
 
 ## ISTEX mapping
