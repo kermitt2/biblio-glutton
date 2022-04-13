@@ -175,6 +175,7 @@ public class LookupConfiguration extends Configuration {
 
         private String host;
         private String index;
+        private int maxConnections = 10;
 
         public String getHost() {
             return host;
@@ -190,6 +191,14 @@ public class LookupConfiguration extends Configuration {
 
         public void setIndex(String index) {
             this.index = index;
+        }
+        
+        public int getMaxConnections() {
+            return maxConnections;
+        }
+
+        public void setMaxConnections(int maxConnections) {
+            this.maxConnections = maxConnections;
         }
     }
 
