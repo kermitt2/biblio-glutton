@@ -18,7 +18,7 @@ indexBatchSize: 500
 blockSize: 4
 
 # Grobid server URL
-grobidHost: http://localhost:8070/api
+grobidHost: ${GROBID_URL:- http://localhost:8070/api}
 
 timeZone: UTC
 # the day hour for lauching the automatic daily incremental update, format is HH:MM
@@ -27,7 +27,7 @@ dailyUpdateTime: 03:00
 # a node of the elasticsearch cluster to be used and a name for the index
 elastic:
   #host: localhost:9200
-  host: 0.0.0.0:9200
+  host: ${ELASTIC_URL:- localhost:9200}
   index: crossref
   maxConnections: 20
 
@@ -39,7 +39,7 @@ proxy:
 crossref:
   # a directory where the crossref incremental update files (gap or daily update) will be located
   # to be changed according to your storage
-  dumpPath: /media/lopez/data2/crossref
+  dumpPath: ${DUMP_PATH:- /media/lopez/data2/crossref}
 
   # indicate if we remove the incremental files after they have been processed (value true) or if
   # keep them in the above dumpPath (careful the volume of files can be huge after months of daily update!)
@@ -55,7 +55,7 @@ crossref:
   token:
 
 unpaywall:
-  dumpPath: 
+  dumpPath: ${DUMP_PATH:- /media/lopez/data2/unpaywall}
   # a directory where the unpaywall update data feed change files will be located
   API_key: 
   # API Key for the Unpaywall subscription is necessary to get the data feed change files for daily update
@@ -88,13 +88,16 @@ logging:
   - type: console
     threshold: INFO
     timeZone: UTC
+#Docker-ignore-log-start
   - type: file
     currentLogFilename: logs/lookup-service.log
     threshold: INFO
     archive: true
-    archivedLogFilenamePattern: logs/lookup-service-%d.log
+    archivedLogFilenamePattern: logs/lookup-service-%d-%i.log
     archivedFileCount: 5
     timeZone: UTC
+    maxFileSize: 50MB
+#Docker-ignore-log-end
 
 # the following is used only for pubmed related enrichments and extractions
 pubmed:
