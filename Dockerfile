@@ -19,6 +19,7 @@ VOLUME /app/glutton-source/.gradle
 # source
 COPY lookup/ ./lookup/
 COPY indexing/ ./indexing/
+RUN mkdir config
 
 RUN cd /app/glutton-source/lookup && ./gradlew clean assemble --no-daemon
 
@@ -33,6 +34,7 @@ WORKDIR /app
 
 RUN apt-get update -qq && apt-get -y install nodejs npm
 COPY --from=builder /app/glutton-source/indexing /app/indexing
+COPY --from=builder /app/glutton-source/config /app/lookup/config
 RUN cd indexing; npm install
 
 COPY --from=builder /app/glutton-source/lookup/build/distributions/lookup-service-shadow-*.zip ./lookup-service.zip
@@ -44,6 +46,9 @@ RUN rm *.zip
 
 WORKDIR /app/lookup/lookup-service
 
+RUN #sed -i '/#Docker-ignore-log-start/,/#Docker-ignore-log-end/d'  data/config/config.yml
+
 ENV JAVA_OPTS=-Xmx4g
 
-CMD java -jar lib/lookup-service-0.2-SNAPSHOT-onejar.jar server data/config/config.yml
+CMD ["./bin/lookup-service"]
+#CMD java -jar lib/lookup-service-0.2-SNAPSHOT-onejar.jar server data/config/config.yml
