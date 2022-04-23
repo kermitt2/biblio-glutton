@@ -109,7 +109,7 @@ public class MetadataLookup {
             valBuffer.put(serializedValue).flip();
             db.put(tx, keyBuffer, valBuffer);
         } catch (Exception e) {
-            LOGGER.error("Cannot store the entry " + key + ", " + value, e);
+            LOGGER.error("Cannot store the entry " + key, e);
         }
     }
 
