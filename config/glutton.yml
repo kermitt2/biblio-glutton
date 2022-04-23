@@ -1,13 +1,13 @@
 version: 0.2
 
 # where the metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings 
-storage: data/db
-#storage: /media/lopez/T5/data/db
+#storage: data/db
+storage: /media/lopez/T5/data/db
 
 # Crossref fields to be ignored when storing metadata, reference field in particular take a lot of space
 ignoreCrossRefFields: 
-  - reference
-  - abstract
+#  - reference
+#  - abstract
   - indexed
 
 # batch size for preparing the data
@@ -29,7 +29,7 @@ elastic:
   #host: localhost:9200
   host: 0.0.0.0:9200
   index: crossref
-  maxConnections: 10
+  maxConnections: 20
 
 proxy:
     # proxy to be used when doing external call to crossref or unpaywall
@@ -39,7 +39,7 @@ proxy:
 crossref:
   # a directory where the crossref incremental update files (gap or daily update) will be located
   # to be changed according to your storage
-  dumpPath: /media/lopez/data2/crossref_updates
+  dumpPath: /media/lopez/data2/crossref
 
   # indicate if we remove the incremental files after they have been processed (value true) or if
   # keep them in the above dumpPath (careful the volume of files can be huge after months of daily update!)
@@ -48,8 +48,7 @@ crossref:
   # for the crossref REST API and daily update, you need normally to use it politely and to indicate an email 
   #address here, e.g. 
   #mailto: "toto@titi.tutu"
-  #mailto: 
-  mailto: patrice.lopez@science-miner.com
+  mailto: 
   
   # to use Crossref metadata plus service (available by subscription)
   #token: "yourmysteriouscrossrefmetadataplusauthorizationtokentobeputhere"
