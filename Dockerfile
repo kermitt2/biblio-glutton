@@ -51,4 +51,3 @@ RUN #sed -i '/#Docker-ignore-log-start/,/#Docker-ignore-log-end/d'  data/config/
 ENV JAVA_OPTS=-Xmx4g
 
 CMD ["./bin/lookup-service"]
-#CMD java -jar lib/lookup-service-0.2-SNAPSHOT-onejar.jar server data/config/config.yml

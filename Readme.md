@@ -98,6 +98,32 @@ The docker image does not start without a valid configuration file, this is done
 docker run -v `pwd`/config:/app/lookup/config -it lfoppiano/biblio-glutton-lookup:0.2
 ```
 
+If elasticsearch (and, perhaps Grobid) run on the same host machine, you can reach it from within Docker by adding the parameter `--add-host=host.docker.internal:host-gateway` and setting `host.docker.internal` in the configuration file.
+
+##### Data load
+
+Elasticsearch can be loaded by pointing directly where it is deployed.
+
+To load LMDB data 
+
+Run the service by mounting the `/data` directory as a volume:
+```
+docker run -v `pwd`/config:/app/lookup/config -v `pwd`/data:/app/data -it lfoppiano/biblio-glutton-lookup:0.2
+```
+
+Find the hash corresponding to the container: 
+
+```
+docker ps 
+```
+
+Execute the loading process:
+```
+docker exec  edfd57a6a7cf java -jar lib/lookup-service-0.2-onejar.jar crossref --input /app/data/crossref-works.2018-09-05.json.xz /app/lookup/config/glutton.yml
+```
+
+You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources).
+
 #### Docker compose 
 
 A Docker Compose file is included to make it easier to spin up biblio-glutton, Elasticsearch, and GROBID.
@@ -112,13 +138,16 @@ You can run this command to see aggregated log output:
 
 Once everything has booted up, biblio-glutton will be running at http://localhost:8080 and GROBID will be at http://localhost:8070.
 
-To load data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. 
+##### Data load 
+
+Elasticsearch can be loaded by pointing directly to `localhost:9200`
+
+To load LMDB data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. 
 For example, this command will load Crossref data (as described in more detail [below](https://github.com/kermitt2/biblio-glutton#resources)):
 
-    $ docker-compose run biblio java -jar lib/lookup-service-0.2-onejar.jar crossref --input ../../data/crossref-works.2018-09-05.json.xz config/glutton.yml
+  $ docker-compose run biblio java -jar lib/lookup-service-0.2-onejar.jar crossref --input /app/data/crossref-works.2018-09-05.json.xz /app/lookup/config/glutton.yml
 
-You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources). 
-
+You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources).
 
 
 ### REST API
@@ -276,11 +305,11 @@ One glutton instance: 19,792,280 DOI lookup in 3156 seconds, ~ 6270 queries per 
  
 Processing time for matching 17,015 raw bibliographical reference strings to DOI:
 
-| number of ES cluster nodes | comment  | total runtime (second) | runtime per bib. ref. (second)   | queries per second |
-|----|---|---|---|---|
-|  1 | glutton and Elasticsearch node share the same machine   | 2625  | 0.154  |  6.5  |
-|  1 | glutton and Elasticsearch node on two separate machines   | 1990  | 0.117  |  8.5 |
-|  2 | glutton and one of the Elasticsearch node sharing the same machine  |  1347  |  0.079  | 12.6  |
+| number of ES cluster nodes | comment                                                            | total runtime (second) | runtime per bib. ref. (second) | queries per second |
+|----------------------------|--------------------------------------------------------------------|------------------------|--------------------------------|--------------------|
+| 1                          | glutton and Elasticsearch node share the same machine              | 2625                   | 0.154                          | 6.5                |
+| 1                          | glutton and Elasticsearch node on two separate machines            | 1990                   | 0.117                          | 8.5                |
+| 2                          | glutton and one of the Elasticsearch node sharing the same machine | 1347                   | 0.079                          | 12.6               |
 
 Machines have the same configuration Intel i7 4-cores, 8 threads, 16GB memory, SSD, on Ubuntu 16.04.
 
@@ -540,7 +569,7 @@ We created a dataset of [17,015 bibliographical reference/DOI pairs](doc/referen
 
 Example of the two first of the 17.015 entries: 
 
-```json
+```
 {"reference": "Classen M, Demling L. Endoskopishe shinkterotomie der papilla \nVateri und Stein extraction aus dem Duktus Choledochus [Ger-\nman]. Dtsch Med Wochenschr. 1974;99:496-7.", "doi": "10.1055/s-0028-1107790", "pmid": "4835515", "atitle": "Endoskopishe shinkterotomie der papilla Vateri und Stein extraction aus dem Duktus Choledochus [German]", "firstAuthor": "Classen", "jtitle": "Dtsch Med Wochenschr", "volume": "99", "firstPage": "496"},
 {"reference": "Kawai K, Akasaka Y, Murakami K. Endoscopic sphincterotomy \nof the ampulla of Vater. Gastrointest Endosc. 1974;20:148-51.", "doi": "10.1016/S0016-5107(74)73914-1", "pmid": "4825160", "atitle": "Endoscopic sphincterotomy of the ampulla of Vater", "firstAuthor": "Kawai", "jtitle": "Gastrointest Endosc", "volume": "20", "firstPage": "148"},
 ```

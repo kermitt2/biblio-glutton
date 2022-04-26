@@ -1,24 +1,45 @@
-version: "2"
+version: "3.9"
 services:
   biblio:
-    build: .
+    image: lfoppiano/biblio-glutton-lookup:0.2
     restart: always
     ports:
       - 8080:8080
     volumes:
       - ./data:/app/data
+      - ./config/glutton-docker-compose.yml:/app/lookup/config/glutton.yml:ro
+    networks:
+      - net1
+
   grobid:
-    image: lfoppiano/grobid:0.5.5
+    image: lfoppiano/grobid:0.7.1
     restart: always
     ports:
       - 8070:8070
+    networks:
+      net1:
+        aliases:
+          - "grobid.local"
+
   elasticsearch:
-    image: elasticsearch:6.7.1
+    image: elasticsearch:7.17.3
     environment:
       - "discovery.type=single-node"
+    ports:
+      - 9200:9200
+      - 9300:9300
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
     restart: always
+    networks:
+      net1:
+        aliases:
+          - "elasticsearch.local"
+
 volumes:
   elasticsearch-data:
     driver: local
+
+
+networks:
+  net1:
