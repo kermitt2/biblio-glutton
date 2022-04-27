@@ -95,15 +95,25 @@ The config file has many possible changes therefore we recommend to mount a volu
 The docker image does not start without a valid configuration file, this is done explicitly to avoid starting it without having a configuration file specific for docker
 
 ```
-docker run -v `pwd`/config:/app/lookup/config -it lfoppiano/biblio-glutton-lookup:0.2
+docker run -v /my/disk/path/config:/app/lookup/config -v /my/disk/path/data:/app/data -it lfoppiano/biblio-glutton-lookup:0.2
 ```
 
-If elasticsearch (and, perhaps Grobid) run on the same host machine, you can reach it from within Docker by adding the parameter `--add-host=host.docker.internal:host-gateway` and setting `host.docker.internal` in the configuration file.
+If elasticsearch (and, perhaps Grobid) run on the same host machine, you can reach it from within Docker by adding the parameter `--add-host=host.docker.internal:host-gateway` and setting `host.docker.internal:9200` in the configuration file.
+**NOTE**: make sure you enable elasticsearch to listen on interface `172.17.0.1` which is the one resolving `host.docker.internal` in a normal docker installation. 
+At the time of writing this, I was using version 7.x, which needs the following parameters: 
+``
+discovery.seed_hosts: ["localhost","172.17.0.1"]
+cluster.initial_master_nodes: ['my_cluster']
+``
+
+Check with the manual of the version you're deploying for more and updated information. 
+
 
 ##### Data load
 
 Elasticsearch can be loaded by pointing directly where it is deployed.
 
+**To be tested**
 To load LMDB data 
 
 Run the service by mounting the `/data` directory as a volume:
@@ -138,9 +148,14 @@ You can run this command to see aggregated log output:
 
 Once everything has booted up, biblio-glutton will be running at http://localhost:8080 and GROBID will be at http://localhost:8070.
 
+**NOTE**: The docker-compose.yml file contains aliases `*.local`.
+This are made for the unfortunate people that are behind a proxy.
+You could just exclude the hosts `*.local` from the proxy wraths in the docker configuration.
+
 ##### Data load 
 
-Elasticsearch can be loaded by pointing directly to `localhost:9200`
+**To be tested**
+Elasticsearch can be loaded by pointing directly to `localhost:9200`, which is bound on the host machine at the port 9200.  
 
 To load LMDB data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. 
 For example, this command will load Crossref data (as described in more detail [below](https://github.com/kermitt2/biblio-glutton#resources)):
