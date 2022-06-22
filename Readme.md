@@ -13,6 +13,8 @@ Framework dedicated to bibliographic information. It includes:
 - Gap and daily update for CrossRef resources (via the CrossRef REST API), so that your glutton data service stays always in sync with CrossRef,
 - MeSH classes mapping for PubMed articles.
 
+biblio-glutton should be handy if you need to run and scale a local full "Crossref" database and API, to aggregate Crossref and Pubmed records or to match a large amount of bibliographical records or raw bibliographical reference strings.
+
 The framework is designed both for speed (with several thousands request per second for look-up) and matching accuracy. It can be [scaled](https://github.com/kermitt2/biblio-glutton#architecture) horizontally as needed and can provide high availability. 
 
 Benchmarking against the CrossRef REST API is presented [below](https://github.com/kermitt2/biblio-glutton#matching-accuracy). 
