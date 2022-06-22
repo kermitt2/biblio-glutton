@@ -659,3 +659,5 @@ See the instructions [here](pubmed-glutton/Readme.md)
 ## License
 
 Distributed under [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0). 
+
+If you contribute to this project, you agree to share your contribution following this license. 
