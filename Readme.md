@@ -81,6 +81,11 @@ biblio-glutton takes advantage of GROBID for parsing raw bibliographical referen
 
 While GROBID is not required for running biblio-glutton, in particular if it is used only for bibliographical look-up, it is recommended for performing bibliographical record matching. 
 
+### Windows users
+
+When you clone the repo, remember to add --config core.autocrlf=input to the git command otherwise you'll have strange errors during docker-compose up phase, so it will be:
+
+git clone https://github.com/kermitt2/biblio-glutton.git --config core.autocrlf=input 
 
 ### Running with Docker
 
