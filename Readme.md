@@ -33,6 +33,12 @@ Once the databases and index are built, the bibliographical REST API can be star
 
 You need Java JDK 1.8 installed for building and running the tool. 
 
+**NOTE**: Windows users should add `--config core.autocrlf=input` or configure at system level:
+```
+git clone https://github.com/kermitt2/biblio-glutton.git --config core.autocrlf=input
+```
+
+
 ```sh
 cd lookup
 ./gradlew clean build
@@ -81,12 +87,6 @@ biblio-glutton takes advantage of GROBID for parsing raw bibliographical referen
 
 While GROBID is not required for running biblio-glutton, in particular if it is used only for bibliographical look-up, it is recommended for performing bibliographical record matching. 
 
-### Windows users
-
-When you clone the repo, remember to add --config core.autocrlf=input to the git command otherwise you'll have strange errors during docker-compose up phase, so it will be:
-
-git clone https://github.com/kermitt2/biblio-glutton.git --config core.autocrlf=input 
-
 ### Running with Docker
 
 Biblio-glutton provides a [Docker](https://docs.docker.com/install/) image and a docker-composed file. 
@@ -134,7 +134,7 @@ docker ps
 
 Execute the loading process:
 ```
-docker exec  edfd57a6a7cf java -jar lib/lookup-service-0.2-onejar.jar crossref --input /app/data/crossref-works.2018-09-05.json.xz /app/lookup/config/glutton.yml
+docker exec  CONTAINER_HASH java -jar lib/lookup-service-0.2-onejar.jar crossref --input /app/data/crossref-works.2018-09-05.json.xz /app/lookup/config/glutton.yml
 ```
 
 You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources).
