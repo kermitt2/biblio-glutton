@@ -6,16 +6,16 @@
 
 Framework dedicated to bibliographic information. It includes:
 
-- a bibliographical reference matching service: from an input such as a raw bibliographical reference and/or a combination of key metadata, the service will return the disambiguated bibliographical object with in particular its DOI and a set of metadata aggregated from CrossRef and other sources, 
-- a fast metadata look-up service: from a "strong" identifier such as DOI, PMID, etc. the service will return a set of metadata aggregated from CrossRef and other sources,
+- a bibliographical reference matching service: from an input such as a raw bibliographical reference and/or a combination of key metadata, the service will return the disambiguated bibliographical object with in particular its DOI and a set of metadata aggregated from Crossref and other sources, 
+- a fast metadata look-up service: from a "strong" identifier such as DOI, PMID, etc. the service will return a set of metadata aggregated from Crossref and other sources,
 - various mapping between DOI, PMID, PMC, ISTEX ID and ark, integrated in the bibliographical service,
 - Open Access resolver: Integration of Open Access links via the Unpaywall dataset from Impactstory,
-- Gap and daily update for CrossRef resources (via the CrossRef REST API), so that your glutton data service stays always in sync with CrossRef,
+- Gap and daily update for Crossref resources (via the Crossref REST API), so that your glutton data service stays always in sync with Crossref,
 - MeSH classes mapping for PubMed articles.
 
 The framework is designed both for speed (with several thousands request per second for look-up) and matching accuracy. It can be [scaled](https://github.com/kermitt2/biblio-glutton#architecture) horizontally as needed and can provide high availability. 
 
-Benchmarking against the CrossRef REST API is presented [below](https://github.com/kermitt2/biblio-glutton#matching-accuracy). 
+Benchmarking against the Crossref REST API is presented [below](https://github.com/kermitt2/biblio-glutton#matching-accuracy). 
 
 In the Glutton family, the following complementary tools are available for taking advantage of Open Access resources: 
 
@@ -292,10 +292,10 @@ To set-up a functional biblio-glutton server, resources need to be loaded follow
 
 For building the database and index used by service, you will need these resources:
 
-* CrossRef metadata dump, available:  
+* Crossref metadata dump, available:  
   - strongly recommended: via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service for a current snapshot, or
-  - [public CrossRef dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (2021-01-07 for the latest version, no update in 2022 as far as we known), 
-  - Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909) (2019-09).   
+  - [public Crossref dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (2021-01-07 for the latest version, no update in 2022 as far as we known), 
+  - Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive Crossref [dump](https://archive.org/download/crossref_doi_dump_201909) (2019-09).   
   
 We recommend to use a Crossref Metadata Plus snapshot in order to have a version of the Crossref metadata without large coverage gap. With the `Crossref-Plus-API-Token`, the following command for instance will download the full snapshot for the indicated year/month: 
 
@@ -303,7 +303,7 @@ We recommend to use a Crossref Metadata Plus snapshot in order to have a version
 wget -c --header='Crossref-Plus-API-Token: Bearer __Crossref-Plus-API-Token-Here_' https://api.crossref.org/snapshots/monthly/YYYY/MM/all.json.tar.gz
 ```
 
-Without Metadata Plus subscription, it's possible to use the Academic Torrents CrossRef dumps. For instance, with the Linux command line `aria2` and a high speed internet connection (e.g. 500Mb/s), the dump can be downloaded in a few minutes. However, the coverage gap will be important and updating these older snapshot via the normal CrossRef Web API will take an enormous amount of time. 
+Without Metadata Plus subscription, it's possible to use the Academic Torrents Crossref dumps. For instance, with the Linux command line `aria2` and a high speed internet connection (e.g. 500Mb/s), the dump can be downloaded in a few minutes. However, the coverage gap will be important and updating these older snapshot via the normal Crossref Web API will take an enormous amount of time. 
 
 * DOI to PMID and PMC mapping: available at Europe PMC and regularly updated at ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz,
 
@@ -328,7 +328,7 @@ cd lookup
 
 All the following commands need to be launched under the subdirectory `lookup/`. The loading of the following database can be done in parallel. The default configuration file under `biblio-glutton/config/glutton.yml` will be used if not indicated. To use a configuration file in another location, just add the full path as additional parameter like for running the sevice. 
 
-#### CrossRef metadata
+#### Crossref metadata
 
 General command line pattern:
 
@@ -348,7 +348,7 @@ The last parameter is the project config file normally under `biblio-glutton/con
 java -jar build/libs/lookup-service-0.2-onejar.jar crossref --input /path/to/crossref/json/file ../config/glutton.yml
 ```
 
-Example with CrossRef dump Academic Torrent file (path to a repository of `*.json.gz` files):
+Example with Crossref dump Academic Torrent file (path to a repository of `*.json.gz` files):
 
 
 ```sh
@@ -361,7 +361,7 @@ Example with xz-compressed file (e.g. GreeneLab dump):
 java -jar build/libs/lookup-service-0.2-onejar.jar crossref --input crossref-works.2019-09-09.json.xz ../config/glutton.yml
 ```
 
-**Note:** By default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk  space. The `reference` field is particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `biblio-glutton/config/glutton.yml`, by editing the lines:
+**Note:** By default the `abstract`, the `reference` and the original `indexed` fields included in Crossref records are ignored to save some disk  space. The `reference` field is particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `biblio-glutton/config/glutton.yml`, by editing the lines:
 
 ```
 ignoreCrossRefFields:                                                   
@@ -390,7 +390,7 @@ The 5,472,493 rejected records correspond to all the DOI "components" (given to 
 As a March 2022, we thus have 121,340,014 crossref article records. 
 
 
-#### CrossRef metadata gap coverage
+#### Crossref metadata gap coverage
 
 Once the main Crossref metadata snapshot has been loaded, the metadata and index will be updated daily automatically via the Crossref web API. However, there is always a gap of coverage between the last day covered by the used large snapshot image and the start of the daily update. 
 
@@ -412,7 +412,7 @@ Be sure to indicate in the configution file `glutton.yml` your polite usage emai
 
 This command should thus be launched only one time after the loading of a full Crossref snapshot, it will resync the current metadata and index to the current day, and the daily update will then ensure everything remain in sync with the reference Crossref metadata as long the service is up and running. 
 
-__Warning:__ If an older snapshot is used, like the CrossRef dump Academic Torrent file, the coverage gap is not a few days, but usually several months or more than one year (since Crossref has not updated the Academic Torrent dump in 2022). Using the Crossweb API to cover such a long gap will unfortunately take an enormous amount of time (more than a week) due to API usage rate limitations and is likely not a acceptable solution. In addition, the Crossref web API is not always reliable, which might cause further delays. 
+__Warning:__ If an older snapshot is used, like the Crossref dump Academic Torrent file, the coverage gap is not a few days, but usually several months or more than one year (since Crossref has not updated the Academic Torrent dump in 2022). Using the Crossweb API to cover such a long gap will unfortunately take an enormous amount of time (more than a week) due to API usage rate limitations and is likely not a acceptable solution. In addition, the Crossref web API is not always reliable, which might cause further delays. 
 
 #### PMID and PMC ID
 
@@ -484,13 +484,13 @@ cd biblio-glutton/indexing/
 node main -dump *PATH_TO_THE_CROSSREF_DUMP* index
 ```
 
-Example with CrossRef dump Academic Torrent file (path to a repository of `*.json.gz` files):
+Example with Crossref dump Academic Torrent file (path to a repository of `*.json.gz` files):
 
 ```sh
 node main -dump ~/tmp/crossref_public_data_file_2021_01 index
 ```
 
-Example with CrossRef Metadata Plus snapshot (path to a file `.tar.gz` which archives many json files):
+Example with Crossref Metadata Plus snapshot (path to a file `.tar.gz` which archives many json files):
 
 ```sh
 node main -dump ~/tmp/crossref_sample.tar.gz index
@@ -510,7 +510,7 @@ For getting health check information about the selected ElasticSearch cluster:
 node main health
 ```
 
-Example loading the [public CrossRef dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (2021-01-07), index on SSD, dump files on hard drive, Ubuntu 18.04, 4 cores, 16MB RAM 6 years old machine:
+Example loading the [public Crossref dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (2021-01-07), index on SSD, dump files on hard drive, Ubuntu 18.04, 4 cores, 16MB RAM 6 years old machine:
 
 - 115,972,356 indexed records (perfect match with metadata db)
 - around 6:30 for indexing (working on the same time on the computer), 4797 records/s
@@ -533,11 +533,11 @@ Example of the two first of the 17.015 entries:
 {"reference": "Kawai K, Akasaka Y, Murakami K. Endoscopic sphincterotomy \nof the ampulla of Vater. Gastrointest Endosc. 1974;20:148-51.", "doi": "10.1016/S0016-5107(74)73914-1", "pmid": "4825160", "atitle": "Endoscopic sphincterotomy of the ampulla of Vater", "firstAuthor": "Kawai", "jtitle": "Gastrointest Endosc", "volume": "20", "firstPage": "148"},
 ```
 
-The goal of Glutton matching is to identify the right DOI from raw metadata. We compare the results with the CrossRef REST API, using the `query.bibliographic` field for raw reference string matching, and author/title field queries for first author lastname (`query.author`) plus title matching (`query.title`). 
+The goal of Glutton matching is to identify the right DOI from raw metadata. We compare the results with the Crossref REST API, using the `query.bibliographic` field for raw reference string matching, and author/title field queries for first author lastname (`query.author`) plus title matching (`query.title`). 
 
 Limits: 
 
-- The DOI present in the NLM files are not always reliable (e.g. DOI not valid anymore following some updates in CrossRef). A large amount of the matching errors are actually not due to the matching service, but to NLM reference DOI data quality. However, errors will be the same for all matching services, so it's still valid for comparing them, although for this reason the resulting accuracy is clearly lower than what it should be.
+- The DOI present in the NLM files are not always reliable (e.g. DOI not valid anymore following some updates in Crossref). A large amount of the matching errors are actually not due to the matching service, but to NLM reference DOI data quality. However, errors will be the same for all matching services, so it's still valid for comparing them, although for this reason the resulting accuracy is clearly lower than what it should be.
 
 - GROBID extraction is not always reliable, as well the alignment mechanism with NLM (based on soft match), and some raw reference string might not be complete or include unexpected extra material from the PDF. However, this can be view as part of the matching challenge in real world conditions! 
 
@@ -565,7 +565,7 @@ The evaluation dataset will be saved under `ABS_PATH_TO_PMC/PMC_sample_1943` wit
 
 ```yaml
 consolidation:
-    # define the bibliographical data consolidation service to be used, either "crossref" for CrossRef REST API or 
+    # define the bibliographical data consolidation service to be used, either "crossref" for Crossref REST API or 
     # "glutton" for https://github.com/kermitt2/biblio-glutton
     #service: "crossref"
     service: "glutton"
@@ -580,7 +580,7 @@ consolidation:
 
 ### Full raw bibliographical reference matching
 
-Runtime corresponds to a processing on a single machine running Glutton REST API server, Elasticsearch and GROBID evaluation with CRF for the citation model, with CrossRef index dated Sept. 2021. 
+Runtime corresponds to a processing on a single machine running Glutton REST API server, Elasticsearch and GROBID evaluation with CRF for the citation model, with Crossref index dated Sept. 2021. 
 
 ```
 ======= GLUTTON API ======= 
@@ -602,7 +602,7 @@ recall:         95.83
 f-score:        96.58
 ```
 
-In the case of CrossRef API, we use as much as possible the concurrent queries (usually 50) allowed by the service with the GROBID CrossRef multithreaded client. 
+In the case of Crossref API, we use as much as possible the concurrent queries (usually 50) allowed by the service with the GROBID Crossref multithreaded client. 
 
 ```
 ======= CROSSREF API ======= 
