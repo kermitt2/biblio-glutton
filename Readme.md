@@ -166,9 +166,9 @@ It is also possible to combine a strong identifier with validation metadata. In 
 
     - `GET host:port/service/lookup?doi=DOI&atitle=ARTICLE_TITLE&firstAuthor=FIRST_AUTHOR_SURNAME`
 
-biblio-glutton will make the best use of all the parameters sent to retrieve in the fastest way a record and apply matching threashold to avoid false positive. It is advised to send __as much metadata as possible__ to try to optimize the DOI matching in term of speed and accuracy, and when possible a full raw bibliographical string. 
+biblio-glutton will make the best use of all the parameters sent to retrieve in the fastest way a record and apply matching threshold to avoid false positive. It is advised to send __as much metadata as possible__ to try to optimize the DOI matching in term of speed and accuracy, and when possible a full raw bibliographical string. 
 
-The more metadata are available in the query, the better. The original raw bibliographical string is also be exploited when availableto control the bibliographical record matching.
+The more metadata are available in the query, the better. The original raw bibliographical string is also be exploited when available to control the bibliographical record matching.
 
 For convenience, in case you are only interested by the Open Access URL for a bibliographical object, the open Access resolver API returns the OA PDF link (URL) only via an identifier: 
 
@@ -194,7 +194,7 @@ Bibliographical metadata lookup by DOI:
 curl http://localhost:8080/service/lookup?doi=10.1484/J.QUAESTIO.1.103624
 ```
 
-Matching with title and first authort lastname:
+Matching with title and first author lastname:
 
 ```sh
 curl "http://localhost:8080/service/lookup?atitle=Naturalizing+Intentionality+between+Philosophy+and+Brain+Science.+A+Survey+of+Methodological+and+Metaphysical+Issues&firstAuthor=Pecere"
@@ -248,7 +248,7 @@ curl "http://localhost:8080/service/oa_istex?doi=10.1038/nature12373"
 
 ### Architecture
 
-Below is an overview of the biblio-glutton architecture. The biblio-glutton server manages locally high performance LMDB databases for all metadata look-up tasks (several thousand requests per second with multiple threads). For the costly metadata matching tasks, an Elasticsearch cluster is used. For scaling this sort of queries, simply add more nodes in this elasticsearch cluster, keepping a single biblio-glutton server instance. 
+Below is an overview of the biblio-glutton architecture. The biblio-glutton server manages locally high performance LMDB databases for all metadata look-up tasks (several thousand requests per second with multiple threads). For the costly metadata matching tasks, an Elasticsearch cluster is used. For scaling this sort of queries, simply add more nodes in this Elasticsearch cluster, keeping a single biblio-glutton server instance. 
 
 ![Glutton architecture](doc/glutton-architecture.png) 
 
@@ -286,7 +286,7 @@ To set-up a functional biblio-glutton server, resources need to be loaded follow
 
 5) (Very optional) Loading the ISTEX ID mapping as embedded LMDB
 
-6) Creating the ElasticSearch index
+6) Creating the Elasticsearch index
 
 ### Resources
 
@@ -309,11 +309,11 @@ Without Metadata Plus subscription, it's possible to use the Academic Torrents C
 
 * optionally, but recommended, the Unpaywall dataset to get Open Access links aggregated with the bibliographical metadata, see [here](http://unpaywall.org/products/snapshot) to get the latest database snapshot. 
 
-* optionally, usually not required, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see below. 
+* optionally, usually not required, for getting ISTEX identifier information, you need to build the ISTEX ID mapping, see below. 
 
-The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for blocking via text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
+The bibliographical matching service uses a combination of high-performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for blocking via text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
 
-The databases and elasticsearch index must first be built from the resource files. The full service needs around 300 GB of space for building these index and it is highly recommended to use SSD for best performance.
+The databases and Elasticsearch index must first be built from the resource files. The full service needs around 300 GB of space for building this index and it is highly recommended to use SSD for best performance.
 
 ### Build the embedded LMDB databases
 
@@ -580,7 +580,7 @@ consolidation:
 
 ### Full raw bibliographical reference matching
 
-Runtime corresponds to a processing on a single machine running Glutton REST API server, ElasticSearch and GROBID evaluation with CRF for the citation model, with CrossRef index dated Sept. 2021. 
+Runtime corresponds to a processing on a single machine running Glutton REST API server, Elasticsearch and GROBID evaluation with CRF for the citation model, with CrossRef index dated Sept. 2021. 
 
 ```
 ======= GLUTTON API ======= 
