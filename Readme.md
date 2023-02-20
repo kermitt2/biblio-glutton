@@ -33,6 +33,12 @@ Once the databases and index are built, the bibliographical REST API can be star
 
 You need Java JDK 1.8 installed for building and running the tool. 
 
+**NOTE**: Windows users should add `--config core.autocrlf=input` or configure at system level:
+```
+git clone https://github.com/kermitt2/biblio-glutton.git --config core.autocrlf=input
+```
+
+
 ```sh
 cd lookup
 ./gradlew clean build
@@ -81,13 +87,61 @@ biblio-glutton takes advantage of GROBID for parsing raw bibliographical referen
 
 While GROBID is not required for running biblio-glutton, in particular if it is used only for bibliographical look-up, it is recommended for performing bibliographical record matching. 
 
-<!--- 
-
 ### Running with Docker
 
-A Docker Compose file is included to make it easier to spin up biblio-glutton, Elasticsearch, and GROBID.
+Biblio-glutton provides a [Docker](https://docs.docker.com/install/) image and a docker-composed file. 
+We recommend to use docker-compose as a way to test and play with the biblio-glutton service, because all the service components are bundled into one container. It might also fit simple needs.
+However, it is not a solution for scaling and deploying a service requiring high performance bibliographic matching, see [this section](https://github.com/kermitt2/biblio-glutton#building-the-bibliographical-data-look-up-and-matching-databases) for more information.
 
-First, [install Docker](https://docs.docker.com/install/).
+#### Docker image
+
+The docker image can be deployed by use the instance of grobid and elastic deployed either in the local machine or elsewhere. '
+The config file has many possible changes therefore we recommend to mount a volume that point to a local modified version. 
+The docker image does not start without a valid configuration file, this is done explicitly to avoid starting it without having a configuration file specific for docker
+
+```
+docker run -v /my/disk/path/config:/app/lookup/config -v /my/disk/path/data:/app/data -it lfoppiano/biblio-glutton-lookup:0.2
+```
+
+If elasticsearch (and, perhaps Grobid) run on the same host machine, you can reach it from within Docker by adding the parameter `--add-host=host.docker.internal:host-gateway` and setting `host.docker.internal:9200` in the configuration file.
+**NOTE**: make sure you enable elasticsearch to listen on interface `172.17.0.1` which is the one resolving `host.docker.internal` in a normal docker installation. 
+At the time of writing this, I was using version 7.x, which needs the following parameters: 
+``
+discovery.seed_hosts: ["localhost","172.17.0.1"]
+cluster.initial_master_nodes: ['my_cluster']
+``
+
+Check with the manual of the version you're deploying for more and updated information. 
+
+
+##### Data load
+
+Elasticsearch can be loaded by pointing directly where it is deployed.
+
+**To be tested**
+To load LMDB data 
+
+Run the service by mounting the `/data` directory as a volume:
+```
+docker run -v `pwd`/config:/app/lookup/config -v `pwd`/data:/app/data -it lfoppiano/biblio-glutton-lookup:0.2
+```
+
+Find the hash corresponding to the container: 
+
+```
+docker ps 
+```
+
+Execute the loading process:
+```
+docker exec  CONTAINER_HASH java -jar lib/lookup-service-0.2-onejar.jar crossref --input /app/data/crossref-works.2018-09-05.json.xz /app/lookup/config/glutton.yml
+```
+
+You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources).
+
+#### Docker compose 
+
+A Docker Compose file is included to make it easier to spin up biblio-glutton, Elasticsearch, and GROBID.
 
 Then, run this command to spin everything up:
 
@@ -99,15 +153,22 @@ You can run this command to see aggregated log output:
 
 Once everything has booted up, biblio-glutton will be running at http://localhost:8080 and GROBID will be at http://localhost:8070.
 
-To load data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. For example, this command will load Crossref data (as described in more detail [below](https://github.com/kermitt2/biblio-glutton#resources)):
+**NOTE**: The docker-compose.yml file contains aliases `*.local`.
+This are made for the unfortunate people that are behind a proxy.
+You could just exclude the hosts `*.local` from the proxy wraths in the docker configuration.
 
-    $ docker-compose run biblio java -jar lib/lookup-service-0.2-onejar.jar crossref --input ../../data/crossref-works.2018-09-05.json.xz config/glutton.yml
+##### Data load 
 
-You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources). 
+**To be tested**
+Elasticsearch can be loaded by pointing directly to `localhost:9200`, which is bound on the host machine at the port 9200.  
 
-__Important Note__: this Docker is a way to test and play with the biblio-glutton service, because all the service components are bundled into one container. It might also fit simple needs. However, it is not a solution for scaling and deploying a service requiring high performance bibliographic matching, see [this section](https://github.com/kermitt2/biblio-glutton#building-the-bibliographical-data-look-up-and-matching-databases) for more information. 
+To load LMDB data, you can use the `docker-compose run` command. The `data/` directory is mounted inside the container. 
+For example, this command will load Crossref data (as described in more detail [below](https://github.com/kermitt2/biblio-glutton#resources)):
 
--->
+  $ docker-compose run biblio java -jar lib/lookup-service-0.2-onejar.jar crossref --input /app/data/crossref-works.2018-09-05.json.xz /app/lookup/config/glutton.yml
+
+You will need to load similarly the other resources, as detailed [here](https://github.com/kermitt2/biblio-glutton#resources).
+
 
 ### REST API
 
@@ -264,11 +325,11 @@ One glutton instance: 19,792,280 DOI lookup in 3156 seconds, ~ 6270 queries per 
  
 Processing time for matching 17,015 raw bibliographical reference strings to DOI:
 
-| number of ES cluster nodes | comment  | total runtime (second) | runtime per bib. ref. (second)   | queries per second |
-|----|---|---|---|---|
-|  1 | glutton and Elasticsearch node share the same machine   | 2625  | 0.154  |  6.5  |
-|  1 | glutton and Elasticsearch node on two separate machines   | 1990  | 0.117  |  8.5 |
-|  2 | glutton and one of the Elasticsearch node sharing the same machine  |  1347  |  0.079  | 12.6  |
+| number of ES cluster nodes | comment                                                            | total runtime (second) | runtime per bib. ref. (second) | queries per second |
+|----------------------------|--------------------------------------------------------------------|------------------------|--------------------------------|--------------------|
+| 1                          | glutton and Elasticsearch node share the same machine              | 2625                   | 0.154                          | 6.5                |
+| 1                          | glutton and Elasticsearch node on two separate machines            | 1990                   | 0.117                          | 8.5                |
+| 2                          | glutton and one of the Elasticsearch node sharing the same machine | 1347                   | 0.079                          | 12.6               |
 
 Machines have the same configuration Intel i7 4-cores, 8 threads, 16GB memory, SSD, on Ubuntu 16.04.
 
@@ -528,7 +589,7 @@ We created a dataset of [17,015 bibliographical reference/DOI pairs](doc/referen
 
 Example of the two first of the 17.015 entries: 
 
-```json
+```
 {"reference": "Classen M, Demling L. Endoskopishe shinkterotomie der papilla \nVateri und Stein extraction aus dem Duktus Choledochus [Ger-\nman]. Dtsch Med Wochenschr. 1974;99:496-7.", "doi": "10.1055/s-0028-1107790", "pmid": "4835515", "atitle": "Endoskopishe shinkterotomie der papilla Vateri und Stein extraction aus dem Duktus Choledochus [German]", "firstAuthor": "Classen", "jtitle": "Dtsch Med Wochenschr", "volume": "99", "firstPage": "496"},
 {"reference": "Kawai K, Akasaka Y, Murakami K. Endoscopic sphincterotomy \nof the ampulla of Vater. Gastrointest Endosc. 1974;20:148-51.", "doi": "10.1016/S0016-5107(74)73914-1", "pmid": "4825160", "atitle": "Endoscopic sphincterotomy of the ampulla of Vater", "firstAuthor": "Kawai", "jtitle": "Gastrointest Endosc", "volume": "20", "firstPage": "148"},
 ```

@@ -19,6 +19,8 @@ import com.scienceminer.lookup.storage.lookup.MetadataLookup;
 import com.scienceminer.lookup.storage.StorageEnvFactory;
 
 import io.dropwizard.Application;
+import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
+import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
@@ -149,6 +151,9 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
 
     @Override
     public void initialize(Bootstrap<LookupConfiguration> bootstrap) {
+        bootstrap.setConfigurationSourceProvider(new SubstitutingSourceProvider(
+                bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor(false)));
+
         GuiceBundle<LookupConfiguration> guiceBundle = GuiceBundle.defaultBuilder(LookupConfiguration.class)
                 .modules(getGuiceModules())
                 .build();

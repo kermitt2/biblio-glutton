@@ -18,7 +18,7 @@ indexBatchSize: 500
 blockSize: 4
 
 # Grobid server URL
-grobidHost: ${GROBID_URL:- http://localhost:8070/api}
+grobidHost: ${GROBID_URL:- http://grobid:8070/api}
 
 timeZone: UTC
 # the day hour for lauching the automatic daily incremental update, format is HH:MM
@@ -27,7 +27,7 @@ dailyUpdateTime: 03:00
 # a node of the elasticsearch cluster to be used and a name for the index
 elastic:
   #host: localhost:9200
-  host: ${ELASTIC_URL:- localhost:9200}
+  host: ${ELASTIC_URL:- elasticsearch:9200}
   index: crossref
   maxConnections: 20
 
