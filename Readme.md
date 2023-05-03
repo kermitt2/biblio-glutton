@@ -294,10 +294,10 @@ To set-up a functional biblio-glutton server, resources need to be loaded follow
 
 For building the database and index used by service, you will need these resources:
 
-* CrossRef metadata dump, available:  
+* CrossRef metadata dump, available at different places:  
   - strongly recommended: via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service for a current snapshot, or
-  - [public CrossRef dump](https://www.crossref.org/blog/new-public-data-file-120-million-metadata-records/) available with Academic Torrents (2021-01-07 for the latest version, no update in 2022 as far as we known), 
-  - Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909) (2019-09).   
+  - [public CrossRef dump](https://www.crossref.org/blog/2023-public-data-file-now-available-with-new-and-improved-retrieval-options/) available with Academic Torrents (2023-05-02 for the latest version), 
+  - not recommended: Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909) (2019-09).   
   
 We recommend to use a Crossref Metadata Plus snapshot in order to have a version of the Crossref metadata without large coverage gap. With the `Crossref-Plus-API-Token`, the following command for instance will download the full snapshot for the indicated year/month: 
 
@@ -305,7 +305,7 @@ We recommend to use a Crossref Metadata Plus snapshot in order to have a version
 wget -c --header='Crossref-Plus-API-Token: Bearer __Crossref-Plus-API-Token-Here_' https://api.crossref.org/snapshots/monthly/YYYY/MM/all.json.tar.gz
 ```
 
-Without Metadata Plus subscription, it's possible to use the Academic Torrents CrossRef dumps. For instance, with the Linux command line `aria2` and a high speed internet connection (e.g. 500Mb/s), the dump can be downloaded in a few minutes. However, the coverage gap will be important and updating these older snapshot via the normal CrossRef Web API will take an enormous amount of time. 
+Without Metadata Plus subscription, it's possible to use the Academic Torrents CrossRef dumps. For instance, with the Linux command line `aria2` and a high speed internet connection (e.g. 500Mb/s), the dump can be downloaded in a few minutes. However, the coverage gap will be more important. If the difference between the release date of the public dump and the current date is important (e.g. several months), updating the older snapshot via the normal CrossRef Web API will take an enormous amount of time. 
 
 * DOI to PMID and PMC mapping: available at Europe PMC and regularly updated at ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz,
 
@@ -315,7 +315,7 @@ Without Metadata Plus subscription, it's possible to use the Academic Torrents C
 
 The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for blocking via text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
 
-The databases and elasticsearch index must first be built from the resource files. The full service needs around 300 GB of space for building these index and it is highly recommended to use SSD for best performance.
+The databases and elasticsearch index must first be built from the resource files. The full service needs around 300 GB of space for building these index and it is necessary to use SSD for best performance.
 
 ### Build the embedded LMDB databases
 
