@@ -1,30 +1,23 @@
 package com.scienceminer.lookup.reader;
 
 import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.scienceminer.lookup.configuration.LookupConfiguration;
 import org.apache.commons.lang3.StringUtils;
-
-import java.io.InputStream;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.IOException;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import java.util.function.Consumer;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.function.Consumer;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
@@ -117,6 +110,11 @@ public abstract class CrossrefJsonReader {
             String firstLine = r.readLine();
             if (firstLine.startsWith("{\"items\":["))
                 result = true;
+            else {
+                String secondLine = r.readLine();
+                if (StringUtils.strip(secondLine).startsWith("\"items\": ["))
+                    result = true;
+            }
         } catch(IOException e) {
             LOGGER.error("cannot read input stream when trying to detect json format type", e);
         }
