@@ -112,7 +112,9 @@ public abstract class CrossrefJsonReader {
                 result = true;
             else {
                 String secondLine = r.readLine();
-                if (StringUtils.strip(secondLine).startsWith("\"items\": ["))
+                // NOTE: The 2023 dump has a space before ":"
+                // TODO: Solve this some more idiomatic way
+                if (StringUtils.strip(secondLine).startsWith("\"items\": [")) || (StringUtils.strip(secondLine).startsWith("\"items\" : ["))
                     result = true;
             }
         } catch(IOException e) {
