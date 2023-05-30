@@ -24,7 +24,7 @@ RUN cd /app/glutton-source/lookup && ./gradlew clean assemble --no-daemon
 # -------------------
 FROM golang:latest as indexerbuilder
 # Install the binary
-RUN go install github.com/karatekaneen/crossrefindexer/cmd/crossrefindexer@v0.1.0
+RUN go install github.com/karatekaneen/crossrefindexer/cmd/crossrefindexer@v0.1.1
 
 # -------------------
 # build runtime image
