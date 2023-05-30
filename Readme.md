@@ -476,7 +476,7 @@ incremental changes that are downloaded periodically that uses NDJSON.
 <!---  TODO: Add usage instructions for running the indexing directly from the docker image -->
 
 - Make sure Go 1.20 or above is installed
-- Run `go install github.com/karatekaneen/crossrefindexer/cmd/crossrefindexer@v0.1.0` to install the application.
+- Run `go install github.com/karatekaneen/crossrefindexer/cmd/crossrefindexer@v0.1.8` to install the application.
 - Run `crossrefindexer --help` to see settings available for setting up the Elasticsearch connection. It supports both commandline flags and environment variables.
 
 #### Build the index
