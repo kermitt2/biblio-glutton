@@ -249,6 +249,55 @@ public class Biblio implements Serializable {
 	}
 
 	public void setPubmedId(String pubmedId) {
+		// string might be empty
+		if (pubmedId != null && pubmedId.trim().length() == 0)
+			return;
+
+		// case ID given as "PMID: 34189422"
+		if (pubmedId != null && (pubmedId.startsWith("PMID:") || pubmedId.startsWith("pmid:"))) {
+			pubmedId = pubmedId.replace("PMID:", "");
+			pubmedId = pubmedId.replace("pmid:", "");
+		}
+
+		// case "pubmed.ncbi.nlm.nih.gov/34133859/" or "https://pubmed.ncbi.nlm.nih.gov/25886103/" 
+		// or "http://www.ncbi.nlm.nih.gov/pmc/articles/pmc7813351/"
+		if (pubmedId != null && (pubmedId.startsWith("pubmed.ncbi.nlm.nih.gov/") || 
+			pubmedId.startsWith("https://pubmed.ncbi.nlm.nih.gov/"))) {
+			pubmedId = pubmedId.replace("https://pubmed.ncbi.nlm.nih.gov/", "");
+			pubmedId = pubmedId.replace("pubmed.ncbi.nlm.nih.gov/", "");
+		}
+		if (pubmedId != null && (pubmedId.startsWith("http://www.ncbi.nlm.nih.gov/pmc/articles/pmc") ||
+			 pubmedId.startsWith("https://www.ncbi.nlm.nih.gov/pmc/articles/pmc"))) {
+			pubmedId = pubmedId.replace("http://www.ncbi.nlm.nih.gov/pmc/articles/", "");
+			pubmedId = pubmedId.replace("https://www.ncbi.nlm.nih.gov/pmc/articles/", "");
+		}
+
+		//case ID ends with "/", which is quite common
+		if (pubmedId != null && pubmedId.endsWith("/")) {
+			pubmedId = pubmedId.replace("/", "");
+		}
+
+		// sometimes it's a DOI 
+		if (pubmedId != null && pubmedId.startsWith("10.") && pubmedId.indexOf("/") != -1) {
+			if (getDoi() == null) {
+				setDoi(pubmedId);
+				return;
+			}
+		}
+
+		// sometimes it's a PMC ID "PMC2655142"
+		if (pubmedId != null && (pubmedId.startsWith("PMC") || pubmedId.startsWith("pmc"))) {
+			if (getPmc() == null) {
+				setPmc(pubmedId);
+				return;
+			}
+		}
+
+		// other weird quite common case "22642955DOI"
+		if (pubmedId != null && pubmedId.endsWith("DOI")) {
+			pubmedId = pubmedId.replace("DOI", "");
+		}
+
 		setPublisherAttribute("pubmedid", StringUtils.trim(pubmedId));
 	}
 

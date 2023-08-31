@@ -30,6 +30,12 @@ Convert the downloaded MEDLINE/PubMed metadata XML files into a dump in the Cros
 > java -Xmx1024m -jar build/libs/com.scienceminer.glutton-0.2-SNAPSHOT-onejar.jar -exe pubmedDump -tdata /path/to/medline/ -out /path/to/new/dump/
 ```
 
+After a while (Medline/PubMed 2023):
+
+```
+total PMID entries parsed, converted and written: 38808476
+```
+
 ### MEDLINE/PubMed indexing
 
 Be sure to have the full Medline data downloaded (see https://www.nlm.nih.gov/databases/download/pubmed_medline.html), and indicate in the config file `biblio-glutton/config/glutton.yml` the path to the repository containing the Medline bulk download, e.g. 

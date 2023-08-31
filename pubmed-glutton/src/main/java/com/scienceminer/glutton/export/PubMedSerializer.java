@@ -39,6 +39,8 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 public class PubMedSerializer {
 
+    static String INVALID_MSG = "NOT_FOUND;INVALID_JOURNAL";
+
     /**
      * The export follows the same JSON schema as Crossref JSON (derived from Crossref Unixref)
      */
@@ -411,7 +413,7 @@ public class PubMedSerializer {
 
                 if (reference.getDoi() == null) {
                     // try to get a DOI via PMID and/or PMC
-                    if (reference.getPubmedId() != null) {
+                    if (reference.getPubmedId() != null && !INVALID_MSG.equals(reference.getPubmedId())) {
                         try {
                             String doi = env.getDbPMID2DOI().retrieve(Integer.parseInt(reference.getPubmedId()));
                             if (doi != null) {
@@ -435,7 +437,7 @@ public class PubMedSerializer {
 
                 if (reference.getPmc() == null) {
                     // try to get the PMC via the PMID
-                    if (reference.getPubmedId() != null) {
+                    if (reference.getPubmedId() != null && !INVALID_MSG.equals(reference.getPubmedId())) {
                         try {
                             String pmc = env.getDbPMID2PMC().retrieve(Integer.parseInt(reference.getPubmedId()));
                             if (pmc != null) {
@@ -456,8 +458,6 @@ public class PubMedSerializer {
                 if (reference.getPmc() != null) {
                     builder.append(", \"pmcid\": " + mapper.writeValueAsString(reference.getPmc()));
                 }
-
-
 
                 if (reference.getPii() != null) {
                     builder.append(", \"pii\": " + mapper.writeValueAsString(reference.getPii()));

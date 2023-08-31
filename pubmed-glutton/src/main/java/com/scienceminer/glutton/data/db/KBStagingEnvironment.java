@@ -367,9 +367,9 @@ public class KBStagingEnvironment extends KBEnvironment {
 		dbRepository.loadFromFile(coreData, overwrite);		
 		System.out.println(dbRepository.getDatabaseSize() + " repository objects.");*/
 
-		System.out.println("Building dbPMID2Biblio");
+		/*System.out.println("Building dbPMID2Biblio");
 		dbPMC2OABiblio.loadFromFile(oaData, overwrite);
-		System.out.println(dbPMC2OABiblio.getDatabaseSize() + " Open Access biblio information.");
+		System.out.println(dbPMC2OABiblio.getDatabaseSize() + " Open Access biblio information.");*/
 
 		System.out.println("Environment built");
 	}
@@ -1316,7 +1316,7 @@ System.out.println("isLoaded: " + isLoaded);
 	/**
 	 * Create a database associating a pubmed identifier to its pubmed metadata, including MeSH classes
 	 */
-/*	private KBDatabase<Integer,Biblio> buildPMID2BiblioDatabase() {
+	private KBDatabase<Integer,Biblio> buildPMID2BiblioDatabase() {
 		return new KBDatabase<Integer,Biblio>(this, DatabaseType.biblio, "PMID2Biblio")  {
 
 			public void loadFromFile(File dataDirectory, boolean overwrite) throws IOException {
@@ -1398,6 +1398,6 @@ System.out.println("isLoaded: " + isLoaded);
 				System.out.println("total PMID biblio added: " + totalAdded);
 			}
 		};
-	}*/
+	}
 
 }
