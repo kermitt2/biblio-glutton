@@ -185,6 +185,9 @@ public class Biblio implements Serializable {
 	}
 
 	public void setDoi(String doi) {
+		doi = doi.replace("https://doi.org/", "");
+		doi = doi.replace("http://doi.org/", "");
+		doi = doi.replace("doi.org/", "");
 		setPublisherAttribute("doi", StringUtils.trim(doi));
 	}
 
@@ -260,11 +263,12 @@ public class Biblio implements Serializable {
 		}
 
 		// case "pubmed.ncbi.nlm.nih.gov/34133859/" or "https://pubmed.ncbi.nlm.nih.gov/25886103/" 
-		// or "http://www.ncbi.nlm.nih.gov/pmc/articles/pmc7813351/"
+		// or "http://www.ncbi.nlm.nih.gov/pmc/articles/pmc7813351/" or "www.ncbi.nlm.nih.gov/pubmed/"
 		if (pubmedId != null && (pubmedId.startsWith("pubmed.ncbi.nlm.nih.gov/") || 
 			pubmedId.startsWith("https://pubmed.ncbi.nlm.nih.gov/"))) {
 			pubmedId = pubmedId.replace("https://pubmed.ncbi.nlm.nih.gov/", "");
 			pubmedId = pubmedId.replace("pubmed.ncbi.nlm.nih.gov/", "");
+			pubmedId = pubmedId.replace("www.ncbi.nlm.nih.gov/pubmed/", "");
 		}
 		if (pubmedId != null && (pubmedId.startsWith("http://www.ncbi.nlm.nih.gov/pmc/articles/pmc") ||
 			 pubmedId.startsWith("https://www.ncbi.nlm.nih.gov/pmc/articles/pmc"))) {
@@ -278,7 +282,7 @@ public class Biblio implements Serializable {
 		}
 
 		// sometimes it's a DOI 
-		if (pubmedId != null && pubmedId.startsWith("10.") && pubmedId.indexOf("/") != -1) {
+		if (pubmedId != null && (pubmedId.startsWith("10.") || pubmedId.startsWith("doi.org/10.")) && pubmedId.indexOf("/") != -1) {
 			if (getDoi() == null) {
 				setDoi(pubmedId);
 				return;

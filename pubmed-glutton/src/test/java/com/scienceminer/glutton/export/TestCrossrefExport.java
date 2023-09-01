@@ -58,7 +58,7 @@ public class TestCrossrefExport {
 
             assertThat(biblios.size(), is(1));
 
-            String json = PubMedSerializer.serializeJson(biblios.get(0));
+            String json = PubMedSerializer.serializeJson(biblios.get(0), null);
 
             assertTrue(json.length() > 0);
 
