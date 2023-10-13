@@ -30,7 +30,7 @@ RUN go install github.com/karatekaneen/crossrefindexer/cmd/crossrefindexer@v0.1.
 # build runtime image
 # -------------------
 FROM openjdk:8-jre-slim
-RUN apt-get update -qq && apt-get -qy install curl build-essential unzip
+RUN apt-get update -qq && apt-get -qy install curl build-essential unzip tini
 
 RUN mkdir -p /app
 WORKDIR /app
@@ -49,4 +49,5 @@ WORKDIR /app/lookup/lookup-service
 
 ENV JAVA_OPTS=-Xmx4g
 
+ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD java -jar lib/lookup-service-0.2-onejar.jar server data/config/config.yml
