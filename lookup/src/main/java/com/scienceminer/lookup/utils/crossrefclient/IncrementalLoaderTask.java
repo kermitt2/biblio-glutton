@@ -290,9 +290,9 @@ public class IncrementalLoaderTask implements Runnable {
             System.out.println("indexing: " + crossrefFile.getPath());
 
             ProcessBuilder builder = new ProcessBuilder();
-            // command is: node main -dump ~/tmp/crossref_public_data_file_2021_01 index
-            builder.command("node", "main", "-dump", crossrefFile.getAbsolutePath(), "extend");            
-            builder.directory(new File("../indexing"));
+            // command is: crossrefindexer --file ~/tmp/crossref_public_data_file_2021_01
+            // assuming that the correct env variables are set for elastic connection etc.
+            builder.command("crossrefindexer", "--file", crossrefFile.getAbsolutePath());
 
             try {
                 Process process = builder.start();
