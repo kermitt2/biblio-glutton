@@ -6,7 +6,6 @@ import java.util.*;
 import com.opencsv.*; 
 import org.apache.commons.lang3.StringUtils;
 
-import com.scienceminer.glutton.utilities.GluttonConfig;
 import com.scienceminer.glutton.data.Biblio;
 import com.scienceminer.glutton.data.ClassificationClass;
 import com.scienceminer.glutton.data.MeSHClass;
@@ -18,7 +17,7 @@ import com.scienceminer.glutton.data.Affiliation;
 import com.scienceminer.glutton.data.Reference;
 import com.scienceminer.glutton.data.Grant;
 import com.scienceminer.glutton.data.db.KBStagingEnvironment;
-import com.scienceminer.glutton.utilities.Utilities;
+import com.scienceminer.glutton.utils.Utilities;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -80,7 +79,7 @@ public class PubMedSerializer {
             // try to get a DOI via PMID and/or PMC
 
             if (biblio.getPubmedId() != null && env != null) {
-                String doi = env.getDbPMID2DOI().retrieve(new Integer(biblio.getPubmedId()));
+                String doi = env.getDbPMID2DOI().retrieve(Integer.valueOf(biblio.getPubmedId()));
                 if (doi != null) {
                     biblio.setDoi(doi);
                 }
@@ -289,7 +288,7 @@ public class PubMedSerializer {
             // try to get a PMC via PMID and/or DOI
 
             if (biblio.getPubmedId() != null && env != null) {
-                String pmc = env.getDbPMID2PMC().retrieve(new Integer(biblio.getPubmedId()));
+                String pmc = env.getDbPMID2PMC().retrieve(Integer.valueOf(biblio.getPubmedId()));
                 if (pmc != null) {
                     biblio.setPmc(pmc);
                 }

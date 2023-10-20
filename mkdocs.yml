@@ -1,0 +1,23 @@
+site_name: biblio-glutton Documentation
+repo_url: https://github.com/kermitt2/biblio-glutton/
+repo_name: GitHub
+theme: readthedocs
+site_description: Documentation for biblio-glutton
+docs_dir: doc
+plugins:
+    - search
+theme:
+    name: readthedocs
+nav:
+  - Home: 'index.md'
+  - About:
+    - 'Introduction': 'Introduction.md'
+    - 'Licence': 'License.md'
+  - User manual:
+    - 'Install': 'Install.md'
+    - 'Databases': 'Build-Databases'
+    - 'Index': 'Create-Index'
+    - 'REST API': 'API.md'
+    - 'Frequently asked Questions': 'Frequently-asked-questions.md'
+  - Benchmarking:
+    - 'Matching': 'Benchmarking.md'

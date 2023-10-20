@@ -1,14 +1,9 @@
-version: 0.2
+version: 0.3
 
-# where the metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings 
+# where the compiled metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings, 
+# this is a single location for all compiled resources  
 #storage: data/db
-storage: /media/lopez/T5/data/db
-
-# Crossref fields to be ignored when storing metadata, reference field in particular take a lot of space
-ignoreCrossRefFields: 
-#  - reference
-#  - abstract
-  - indexed
+storage: /media/lopez/T51/data/db
 
 # batch size for preparing the data
 loadingBatchSize: 10000
@@ -37,6 +32,12 @@ proxy:
     port: 
 
 crossref:
+  # Crossref fields to be ignored when storing metadata, reference field in particular take a lot of space
+  ignoreCrossrefFields: 
+    - reference
+    - abstract
+    - indexed
+
   # a directory where the crossref incremental update files (gap or daily update) will be located
   # to be changed according to your storage
   dumpPath: /media/lopez/data2/crossref
@@ -53,6 +54,25 @@ crossref:
   # to use Crossref metadata plus service (available by subscription)
   #token: "yourmysteriouscrossrefmetadataplusauthorizationtokentobeputhere"
   token:
+
+# the following is used only for pubmed related enrichments and extractions
+pubmed:
+  # path to the medline downloaded resources, to be changed according to your storage
+  pubmedDirectory: /media/lopez/data2/medline_2023
+  # path to PMC mapping data
+  pmcDirectory: data/pmc
+  # elasticsearch index for pubmed, used to create extraction based on MeSH terms
+  #index: pubmed
+  # path to the working pubmed databases, to be changed according to your storage 
+  #dbDirectory: /media/lopez/T51/data2/db
+
+hal: 
+  # OAI PMH endpoint for harvesting HAL metadata
+  api: "http://api.archives-ouvertes.fr/oai/hal"
+
+dblp:
+  # URL of the DBLP metadata dump
+  dump: "https://dblp.uni-trier.de/xml/dblp.xml.gz"
 
 unpaywall:
   dumpPath: 
@@ -96,13 +116,3 @@ logging:
     archivedFileCount: 5
     timeZone: UTC
 
-# the following is used only for pubmed related enrichments and extractions
-pubmed:
-  # path to the medline resources, to be changed according to your storage
-  pubmedDirectory: /media/lopez/data/biblio/medline2021/
-  # path to PMC mapping data
-  pmcDirectory: data/pmc
-  # elasticsearch index for pubmed, used to create extraction based on MeSH terms
-  index: pubmed
-  # path to the working pubmed databases, to be changed according to your storage 
-  dbDirectory: /media/lopez/T5/data2/db
