@@ -69,7 +69,7 @@ public class HALOAIPMHHarvester extends Harvester {
             InputStream in = Utilities.request(request);
             List<Biblio> grabbedObjects = this.oaiDom.getGrabbedObjects(in);
 
-            // do something here with the objects
+            // do something here with the Biblio objects
 
             // token if any:
             tokenn = oaiDom.getToken();

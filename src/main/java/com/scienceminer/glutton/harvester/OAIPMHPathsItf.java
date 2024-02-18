@@ -8,7 +8,7 @@ import org.w3c.dom.NodeList;
  * @author Achraf
  */
 
-/* to be reviewed and moved !!*/
+/* to be reviewed */
 
 public interface OAIPMHPathsItf {
     public final static String ListRecordsElement = "ListRecords";

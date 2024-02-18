@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 import static org.apache.commons.lang3.StringUtils.replaceAll;
 
 /**
- * Class responsible for reading the istex ids json file
+ * Class responsible for reading the PMID/PMC/DOI mapping ids csv file
  **/
 public class PmidReader {
 
@@ -28,7 +28,7 @@ public class PmidReader {
 
             stream.forEach(line -> closure.accept(fromCSV(line)));
         } catch (IOException e) {
-            LOGGER.error("Some serious error when processing the input Istex ID file.", e);
+            LOGGER.error("Some serious error when processing the input PMMID/PMC/DOI mapping file.", e);
         }
 
     }
@@ -45,7 +45,7 @@ public class PmidReader {
             });
 
         } catch (IOException e) {
-            LOGGER.error("Some serious error when processing the input Istex ID file.", e);
+            LOGGER.error("Some serious error when processing the input PMMID/PMC/DOI mapping file.", e);
         }
     }
 

@@ -6,7 +6,7 @@ Below is an overview of the biblio-glutton architecture. The biblio-glutton serv
 
 ![Glutton architecture](doc/glutton-architecture.png) 
 
-#### Scaling evaluation
+#### Runtime evaluation
 
 1) *Metadata Lookup*
 

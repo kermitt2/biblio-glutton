@@ -231,52 +231,6 @@ public class HALOAIPMHDomParser {
         return null;
     }
 
-    /*public BinaryFile getFile(Node record, String repositoryDocId, String repositoryDocVersion, String doi, String type) {
-        BinaryFile file = null;
-        try {
-            Element node = (Element) xPath.compile(OAIPMHPathsItf.FileElement).evaluate(record, XPathConstants.NODE);
-            if (node != null) {
-
-                String url = node.getAttribute("target");
-                Element dateNode = (Element) node.getElementsByTagName("date").item(0);
-                String embargoDate = "";
-                if (dateNode != null) {
-                    embargoDate = dateNode.getAttribute("notBefore");
-                }
-                file = new BinaryFile(source, url, repositoryDocId, doi, type, "application/pdf", repositoryDocId + ".pdf", repositoryDocVersion, "", embargoDate);
-                file.setIsAnnexFile(false);
-            } else {
-                throw new DataException();
-            }
-        } catch (DataException | XPathExpressionException ex) {
-            logger.info("\t \t \t \t No file attached .");
-        }
-        return file;
-    }*/
-
-    /*public List<BinaryFile> getAnnexes(Node record, String repositoryDocId, String repositoryDocVersion, String doi, String type) {
-        List<BinaryFile> annexes = new ArrayList<BinaryFile>();
-        NodeList nodes = null;
-        try {
-            nodes = (NodeList) xPath.compile(OAIPMHPathsItf.AnnexesUrlsElement).evaluate(record, XPathConstants.NODESET);
-        } catch (XPathExpressionException ex) {
-            logger.info("\t \t \t \t No annex files attached .");
-        }
-        String url = null;
-        String embargoDate = null;
-        for (int i = nodes.getLength() - 1; i >= 0; i--) {
-            if ((nodes.item(i) instanceof Element)) {
-                Element node = (Element) nodes.item(i);
-                url = node.getAttribute("target");
-                embargoDate = ((Element) node.getElementsByTagName("date").item(0)).getAttribute("notBefore");
-                BinaryFile annex = new BinaryFile(source, url, repositoryDocId, doi, type, "", "", repositoryDocVersion, "", embargoDate);
-                annex.setIsAnnexFile(true);
-                annexes.add(annex);
-            }
-        }
-        return annexes;
-    }*/
-
     public String getTei(Node tei) {
         StringBuilder sb = new StringBuilder();
         sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");

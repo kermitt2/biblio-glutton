@@ -55,27 +55,28 @@ public class PMIdsLookup {
         final AtomicInteger counter = new AtomicInteger(0);
 
         reader.load(is, pmidData -> {
-                    if (counter.get() == batchSize) {
-                        transactionWrapper.tx.commit();
-                        transactionWrapper.tx.close();
-                        transactionWrapper.tx = environment.txnWrite();
-                        counter.set(0);
-                    }
-
-                    if (isNotBlank(pmidData.getDoi())) {
-                        store(dbDoiToIds, lowerCase(pmidData.getDoi()), pmidData, transactionWrapper.tx);
-                    }
-
-                    if (isNotBlank(pmidData.getPmid())) {
-                        store(dbPmidToIds, pmidData.getPmid(), pmidData, transactionWrapper.tx);
-                    }
-
-                    if (isNotBlank(pmidData.getPmcid())) {
-                        store(dbPmcToIds, pmidData.getPmcid(), pmidData, transactionWrapper.tx);
-                    }
-                    metric.mark();
-                    counter.incrementAndGet();
+                if (counter.get() == batchSize) {
+                    transactionWrapper.tx.commit();
+                    transactionWrapper.tx.close();
+                    transactionWrapper.tx = environment.txnWrite();
+                    counter.set(0);
                 }
+
+                if (isNotBlank(pmidData.getDoi())) {
+                    store(dbDoiToIds, lowerCase(pmidData.getDoi()), pmidData, transactionWrapper.tx);
+                }
+
+                if (isNotBlank(pmidData.getPmid())) {
+                    store(dbPmidToIds, pmidData.getPmid(), pmidData, transactionWrapper.tx);
+                }
+
+                if (isNotBlank(pmidData.getPmcid())) {
+                    store(dbPmcToIds, pmidData.getPmcid(), pmidData, transactionWrapper.tx);
+                }
+
+                metric.mark();
+                counter.incrementAndGet();
+            }
         );
         transactionWrapper.tx.commit();
         transactionWrapper.tx.close();
