@@ -74,7 +74,7 @@ dependencies {
     implementation group: 'org.codehaus.woodstox', name: 'stax2-api', version: '4.0.0'
     implementation group: 'org.codehaus.woodstox', name: 'woodstox-core-asl', version: '4.4.1'
 
-    implementation 'org.lmdbjava:lmdbjava:0.8.1'
+    implementation 'org.lmdbjava:lmdbjava:0.9.0'
     implementation 'de.ruedigermoeller:fst:2.56'
     implementation 'org.xerial.snappy:snappy-java:1.1.7.2'
 

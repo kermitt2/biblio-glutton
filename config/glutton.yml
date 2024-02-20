@@ -2,8 +2,8 @@ version: 0.3
 
 # where the compiled metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings, 
 # this is a single location for all compiled resources  
-#storage: data/db
-storage: /media/lopez/T51/data/db
+storage: data/db
+#storage: /media/lopez/T51/data/db
 
 # batch size for preparing the data
 loadingBatchSize: 10000

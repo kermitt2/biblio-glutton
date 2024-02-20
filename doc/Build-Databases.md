@@ -87,32 +87,32 @@ All the following commands need to be launched under the subdirectory `lookup/`.
 General command line pattern:
 
 ```sh
-java -jar build/libs/lookup-service-0.2-onejar.jar crossref --input /path/to/crossref/json/file path/to/config/file/glutton.yml
+java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar crossref --input /path/to/crossref/json/file path/to/config/file/glutton.yml
 ```
 
 Example with Crossref Metadata Plus snapshot (path to a `.tar.gz` file which archives many json files):
 
 ```sh
-java -jar build/libs/lookup-service-0.2-onejar.jar crossref --input ~/tmp/crossref_metadata_plus.tar.gz ../config/glutton.yml
+java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar crossref --input ~/tmp/crossref_metadata_plus.tar.gz config/glutton.yml
 ```
 
 The last parameter is the project config file normally under `biblio-glutton/config/glutton.yml`:
 
 ```sh
-java -jar build/libs/lookup-service-0.2-onejar.jar crossref --input /path/to/crossref/json/file ../config/glutton.yml
+java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar crossref --input /path/to/crossref/json/file config/glutton.yml
 ```
 
 Example with CrossRef dump Academic Torrent file (path to a repository of `*.json.gz` files):
 
 
 ```sh
-java -jar build/libs/lookup-service-0.2-onejar.jar crossref --input ~/tmp/crossref_public_data_file_2021_01 ../config/glutton.yml
+java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar crossref --input ~/tmp/crossref_public_data_file_2021_01 config/glutton.yml
 ```
 
 Example with xz-compressed file (e.g. GreeneLab dump): 
 
 ```sh
-java -jar build/libs/lookup-service-0.2-onejar.jar crossref --input crossref-works.2019-09-09.json.xz ../config/glutton.yml
+java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar crossref --input crossref-works.2019-09-09.json.xz config/glutton.yml
 ```
 
 **Note:** By default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk  space. The `reference` field is particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `biblio-glutton/config/glutton.yml`, by editing the lines:
@@ -153,13 +153,13 @@ Currently new Crossref Metadata Plus snapshot are available on the 5th of every 
 Using the Crossref web API to cover the remaining gap (from the latest update day in the full snapshot to the current day) is done with the following command (still under `biblio-glutton/lookup/`):
 
 ```sh
-java -jar build/libs/lookup-service-0.2-onejar.jar gap_crossref path/to/config/file/glutton.yml
+java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar gap_crossref path/to/config/file/glutton.yml
 ```
 
 For instance:
 
 ```sh
-java -jar build/libs/lookup-service-0.2-onejar.jar gap_crossref ../config/glutton.yml
+java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar gap_crossref config/glutton.yml
 ```
 
 Be sure to indicate in the configution file `glutton.yml` your polite usage email and/or crossref matadata plus token for using the Crossref web API. 
@@ -171,13 +171,13 @@ __Warning:__ If an older snapshot is used, like the CrossRef dump Academic Torre
 #### PMID and PMC ID
 
 ```sh
-java -jar build/libs/lookup-service-0.2-onejar.jar pmid --input /path/to/pmid/csv/file path/to/config/file/glutton.yml
+java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar pmid --input /path/to/pmid/csv/file path/to/config/file/glutton.yml
 ```
 
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-0.2-onejar.jar pmid --input PMID_PMCID_DOI.csv.gz ../config/glutton.yml
+java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar pmid --input PMID_PMCID_DOI.csv.gz config/glutton.yml
 ```
 
 As of March 2022, the latest mapping covers 34,310,000 PMID, with 25,661,624 having a DOI (which means 8,648,376 PMID are not represented in Crossref).
@@ -185,13 +185,13 @@ As of March 2022, the latest mapping covers 34,310,000 PMID, with 25,661,624 hav
 #### OA via Unpaywall
 
 ```sh
-java -jar build/libs/lookup-service-0.2-onejar.jar unpaywall --input /path/to/unpaywall/json/file path/to/config/file/glutton.yml
+java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar unpaywall --input /path/to/unpaywall/json/file path/to/config/file/glutton.yml
 ```
 
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-0.2-onejar.jar unpaywall --input unpaywall_snapshot_2022-03-09T083001.jsonl.gz ../config/glutton.yml
+java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar unpaywall --input unpaywall_snapshot_2022-03-09T083001.jsonl.gz config/glutton.yml
 ```
 
 As of March 2022, the Unpaywall snapshot should provide at least one Open Access link to 30,618,764 Crossref entries. 
@@ -201,13 +201,13 @@ As of March 2022, the Unpaywall snapshot should provide at least one Open Access
 Note that ISTEX mapping is only relevant for ISTEX full text resource users, so only public research institutions in France. So you can generally skip this step. 
 
 ```sh
-java -jar build/libs/lookup-service-0.2-onejar.jar istex --input /path/to/istex/json/file path/to/config/file/glutton.yml
+java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar istex --input /path/to/istex/json/file path/to/config/file/glutton.yml
 ```
 
 Example: 
 
 ```sh
-java -jar build/libs/lookup-service-0.2-onejar.jar istex --input istexIds.all.gz ../config/glutton.yml
+java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar istex --input istexIds.all.gz config/glutton.yml
 ```
 
 Note: see bellow how to create this mapping file `istexIds.all.gz`. 
