@@ -46,7 +46,6 @@ public class HALTEISaxHandler extends DefaultHandler {
     private Identifier identifierObject = null;
     private Identifier authorIdentifierObject = null;
     private String affiliationString = null;
-    private String abstractString = null;
 
     private String langCode = null;
 
@@ -160,7 +159,7 @@ public class HALTEISaxHandler extends DefaultHandler {
                     biblio.setNumber(issue);
             } else if (biblScopeType.equals("pp") || biblScopeType.equals("page")) {
                 String pagination = getText();
-                if ( (pagination != null) && (pagination.length() > 0) && !pagination.equals("n/a")) {
+                if ( (pagination != null) && (pagination.length() > 0) && !pagination.equals("n/a") && !pagination.equals("n/a-n/a")) {
                     //biblio.setPagination(pagination);
                     // we want to detect start/end page when we have a pagination block
                     if ( (pagination != null) && (pagination.length() > 0) ) {
@@ -231,7 +230,7 @@ public class HALTEISaxHandler extends DefaultHandler {
                                 if (matcher.find()) {
                                     if (matcher.groupCount() > 0) {
                                         firstPage = matcher.group(0);
-                                        if ( (firstPage != null) && (firstPage.length() > 0) ) {
+                                        if ( (firstPage != null) && (firstPage.length() > 0) && !firstPage.equals("n/a")) {
                                             biblio.setStartPage(firstPage);
                                             try {
                                                 firstPageVal = Integer.parseInt(firstPage);
@@ -267,7 +266,7 @@ public class HALTEISaxHandler extends DefaultHandler {
                                 if (matcher.find()) {
                                     if (matcher.groupCount() > 1) {
                                         lastPage = matcher.group(1);
-                                        if ( (lastPage != null) && (lastPage.length() > 0) ) {
+                                        if ( (lastPage != null) && (lastPage.length() > 0)  && !lastPage.equals("n/a")) {
                                             biblio.setEndPage(lastPage);
                                             try {
                                                 lastPageVal = Integer.parseInt(lastPage);
@@ -316,7 +315,7 @@ public class HALTEISaxHandler extends DefaultHandler {
             String publisher = getText();
             if ( (publisher != null) && (publisher.length() > 0) ) 
                 biblio.setPublisher(publisher);
-        } else if (qName.equals("Language")) {
+        } else if (qName.equals("language")) {
             // full language name
             String rawLang = getText();
             if ( (rawLang != null) && (rawLang.length() > 0) ) {                
@@ -335,7 +334,8 @@ public class HALTEISaxHandler extends DefaultHandler {
             }
         } else if (qName.equals("abstract") && profileDesc) {
             String abstractString = getText();
-            biblio.setAbstract(abstractString);
+            if ( (abstractString != null) && (abstractString.length() > 0) )
+                biblio.setAbstract(abstractString);
         } else if (qName.equals("forename")) {
             if ("middle".equals(foreNameType))
                 middleName = getText();
@@ -478,8 +478,8 @@ public class HALTEISaxHandler extends DefaultHandler {
                         level = value;
                     else if (name.equals("type") && value.equals("abbrev"))
                         abbrev = true;
-                    else if (name.equals("xml:lang"))
-                        langCode = value;
+                    //else if (name.equals("xml:lang"))
+                    //    langCode = value;
                 }
             }
         } else if (qName.equals("language") && profileDesc) {

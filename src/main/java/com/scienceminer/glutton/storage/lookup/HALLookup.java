@@ -98,7 +98,7 @@ public class HALLookup {
     public void storeObject(Biblio biblio, Txn<ByteBuffer> tx) {
         try {
             String dbBiblioJson = BiblioSerializer.serializeJson(biblio, null, this);
-System.out.println(dbBiblioJson);
+//System.out.println(dbBiblioJson);
             store(biblio.getHalId(), dbBiblioJson, dbHALJson, tx);
             if (!isBlank(biblio.getDoi()))
                 store(biblio.getDoi(), biblio.getHalId(), dbDoiToHal, tx);

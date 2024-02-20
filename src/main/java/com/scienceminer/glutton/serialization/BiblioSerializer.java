@@ -273,6 +273,10 @@ public class BiblioSerializer {
             builder.append(", \"abstract\": " + mapper.writeValueAsString(biblio.getAbstract()));
         }
 
+        if (biblio.getLanguage() != null) {
+            builder.append(", \"language\": " + mapper.writeValueAsString(biblio.getLanguage()));
+        }
+
         if (biblio.getPubmedId() == null) {
             // try to get a PMID via DOI and/or PMC
             if (pmidLookup != null && biblio.getDoi() != null) {

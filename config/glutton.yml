@@ -102,17 +102,40 @@ server:
   maxQueuedRequests: 2048
   acceptQueueSize: 2048
 
+# logging:
+#  level: INFO
+#  appenders:
+#  - type: console
+#    threshold: WARN
+#    timeZone: UTC
+#  - type: file
+#    currentLogFilename: logs/lookup-service.log
+#    threshold: INFO
+#    archive: true
+#    archivedLogFilenamePattern: logs/lookup-service-%d.log
+#    archivedFileCount: 5
+#    timeZone: UTC
+
+# these logging settings apply to the service usage mode
 logging:
   level: INFO
+  loggers:
+    org.glassfish.jersey.internal: "OFF"
+    com.squarespace.jersey2.guice.JerseyGuiceUtils: "OFF"
   appenders:
-  - type: console
-    threshold: INFO
-    timeZone: UTC
-  - type: file
-    currentLogFilename: logs/lookup-service.log
-    threshold: INFO
-    archive: true
-    archivedLogFilenamePattern: logs/lookup-service-%d.log
-    archivedFileCount: 5
-    timeZone: UTC
-
+    - type: console
+      threshold: WARN
+      timeZone: UTC
+      # uncomment to have the logs in json format
+      #layout:
+      #  type: json
+    - type: file
+      currentLogFilename: logs/biblio-glutton.log
+      threshold: INFO
+      archive: true
+      archivedLogFilenamePattern: logs/biblio-glutton-%d.log
+      archivedFileCount: 5
+      timeZone: UTC
+      # uncomment to have the logs in json format
+      #layout:
+      #  type: json
