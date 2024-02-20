@@ -79,42 +79,40 @@ Resource dumps will be compiled in high performance LMDB databases. The system c
 ./gradlew clean build
 ```
 
-All the following commands need to be launched under the project root `biblio-glutton/`. The loading of the following database can be done in parallel. The default configuration file under `biblio-glutton/config/glutton.yml` will be used. 
+All the following commands need to be launched under the project root `biblio-glutton/`. The loading of the following database can be done in parallel. The default configuration file under `biblio-glutton/config/glutton.yml` will be used. For specifying a configuration file in another location add the following argument to a task: `-Pconfig="other/config/path/glutton.yml`, for example:
+
+```sh
+./gradlew hal -Pconfig=new_config/glutton.yml
+```
 
 #### CrossRef metadata
 
 General command line pattern:
 
 ```sh
-./gradlew crossref --input /path/to/crossref/json/file path/to/config/file/glutton.yml
+./gradlew crossref -Pinput=/path/to/crossref/json/file -Pconfig=path/to/config/file/glutton.yml
 ```
 
 Example with Crossref Metadata Plus snapshot (path to a `.tar.gz` file which archives many json files):
 
 ```sh
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar crossref --input ~/tmp/crossref_metadata_plus.tar.gz config/glutton.yml
-```
-
-The last parameter is the project config file normally under `biblio-glutton/config/glutton.yml`:
-
-```sh
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar crossref --input /path/to/crossref/json/file config/glutton.yml
+./gradlew crossref -Pinput=../tmp/crossref_metadata_plus.tar.gz 
 ```
 
 Example with CrossRef dump Academic Torrent file (path to a repository of `*.json.gz` files):
 
 
 ```sh
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar crossref --input ~/tmp/crossref_public_data_file_2021_01 config/glutton.yml
+./gradlew crossref -Pinput=../tmp/crossref_public_data_file_2021_01 
 ```
 
 Example with xz-compressed file (e.g. GreeneLab dump): 
 
 ```sh
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar crossref --input crossref-works.2019-09-09.json.xz config/glutton.yml
+./gradlew crossref -Pinput=crossref-works.2019-09-09.json.xz 
 ```
 
-**Note:** By default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk  space. The `reference` field is particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `biblio-glutton/config/glutton.yml`, by editing the lines:
+**Note:** By default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk space. The `reference` field is particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `biblio-glutton/config/glutton.yml`, by editing the lines:
 
 ```
 ignoreCrossRefFields:                                                   
@@ -140,8 +138,7 @@ crossrefLookup
 ```
 
 The 5,472,493 rejected records correspond to all the DOI "components" (given to figures, tables, etc. part of document) which are filtered out. 
-As a March 2022, we thus have 121,340,014 crossref article records. 
-
+As a March 2022, we have for example 121,340,014 crossref article records. 
 
 #### CrossRef metadata gap coverage
 
@@ -149,19 +146,13 @@ Once the main Crossref metadata snapshot has been loaded, the metadata and index
 
 Currently new Crossref Metadata Plus snapshot are available on the 5th of every month, covering all the metadata updates for until the previous month. It means that in the best case, there will be a coverage gap of 5 days to be recovered. More generally, users of Crossref Metadata Plus snapshot can load first a snapshot of the last month, then an additional snapshot mid-month update is available with the registered content that has changed in the first half of the month. This permits to minimize the coverage gap usually to a few days. 
 
-Using the Crossref web API to cover the remaining gap (from the latest update day in the full snapshot to the current day) is done with the following command (still under `biblio-glutton/lookup/`):
+Using the Crossref web API to cover the remaining gap (from the latest update day in the full snapshot to the current day) is done with the following command (still under root project `biblio-glutton/`):
 
 ```sh
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar gap_crossref path/to/config/file/glutton.yml
+./gradlew crossref gap_crossref
 ```
 
-For instance:
-
-```sh
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar gap_crossref config/glutton.yml
-```
-
-Be sure to indicate in the configution file `glutton.yml` your polite usage email and/or crossref matadata plus token for using the Crossref web API. 
+Be sure to indicate in the configution file `glutton.yml` your polite usage email and/or crossref metadata plus token for using the Crossref web API. 
 
 This command should thus be launched only one time after the loading of a full Crossref snapshot, it will resync the current metadata and index to the current day, and the daily update will then ensure everything remain in sync with the reference Crossref metadata as long the service is up and running. 
 
@@ -169,44 +160,44 @@ __Warning:__ If an older snapshot is used, like the CrossRef dump Academic Torre
 
 #### PMID and PMC ID
 
-```sh
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar pmid --input /path/to/pmid/csv/file path/to/config/file/glutton.yml
-```
-
-Example: 
+Launch the following command and go grab a coffee:
 
 ```sh
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar pmid --input PMID_PMCID_DOI.csv.gz config/glutton.yml
+./gradlew pmid 
 ```
 
-As of March 2022, the latest mapping covers 34,310,000 PMID, with 25,661,624 having a DOI (which means 8,648,376 PMID are not represented in Crossref).
+As of March 2022, the latest mapping covers 34,310,000 PMID, with 25,661,624 having a DOI (which means 8,648,376 PMID are not represented in Crossref and do not have a DOI).
 
 #### OA via Unpaywall
 
+Pre-requisite is to download an Unpaywall snapshot. Public snapshots were available and updated from time to time, and it might still be possile to download a fresh up-to-date snapshot when subscribing to OpenAlex Premium. Supporting OpenAlex would be of course a clear future requirement for biblio-glutton. 
+
+The following command will load the Open Access information to biblio-glutton to enrich the response metadata records:
+
 ```sh
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar unpaywall --input /path/to/unpaywall/json/file path/to/config/file/glutton.yml
+./gradlew unpaywall -Pinput=/path/to/unpaywall/json/file -Pconfig=path/to/config/file/glutton.yml
 ```
 
 Example: 
 
 ```sh
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar unpaywall --input unpaywall_snapshot_2022-03-09T083001.jsonl.gz config/glutton.yml
+./gradlew unpaywall --input unpaywall_snapshot_2022-03-09T083001.jsonl.gz
 ```
 
-As of March 2022, the Unpaywall snapshot should provide at least one Open Access link to 30,618,764 Crossref entries. 
+As of March 2022, the Unpaywall snapshot should provide at least one Open Access information to 30,618,764 Crossref entries. 
 
 #### ISTEX
 
 Note that ISTEX mapping is only relevant for ISTEX full text resource users, so only public research institutions in France. So you can generally skip this step. 
 
 ```sh
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar istex --input /path/to/istex/json/file path/to/config/file/glutton.yml
+./gradlew istex -Pinput=/path/to/istex/json/file -Pconfig=path/to/config/file/glutton.yml
 ```
 
 Example: 
 
 ```sh
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar istex --input istexIds.all.gz config/glutton.yml
+./gradlew istex -Pinput=istexIds.all.gz 
 ```
 
-Note: see bellow how to create this mapping file `istexIds.all.gz`. 
+**Note:** see the [FAQ](Frequently-asked-questions.md) on how to create this mapping file `istexIds.all.gz`. 

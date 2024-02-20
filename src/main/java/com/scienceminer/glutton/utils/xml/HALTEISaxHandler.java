@@ -157,6 +157,12 @@ public class HALTEISaxHandler extends DefaultHandler {
                 String issue = getText();
                 if ( (issue != null) && (issue.length() > 0) && !issue.equals("n/a") ) 
                     biblio.setNumber(issue);
+            } else if (biblScopeType.equals("serie") || biblScopeType.equals("series")) {
+                // this is a bit weird, but the collection name is given here, despite being the host for the volume 
+                // that normally contains the paper
+                String collection = getText();
+                if ( (collection != null) && (collection.length() > 0) && !collection.equals("n/a") ) 
+                    biblio.setCollectionTitle(collection);
             } else if (biblScopeType.equals("pp") || biblScopeType.equals("page")) {
                 String pagination = getText();
                 if ( (pagination != null) && (pagination.length() > 0) && !pagination.equals("n/a") && !pagination.equals("n/a-n/a")) {
@@ -298,7 +304,7 @@ public class HALTEISaxHandler extends DefaultHandler {
                 if ( (journalTitleAbbrev != null) && (journalTitleAbbrev.length() > 0) ) 
                     biblio.setJournalAbbrev(journalTitleAbbrev);
             } else if ("m".equals(level) && monogr) {
-                // full journal title
+                // proceedings, report or book title
                 String title = getText();
                 if ( (title != null) && (title.length() > 0) ) 
                     biblio.setTitle(title);
@@ -330,12 +336,17 @@ public class HALTEISaxHandler extends DefaultHandler {
             if ((dateString != null) && (dateString.length() > 0)) {
                 if ("datePub".equals(dateType)) {
                     this.dateProcessing(biblio, "publication", dateString);
+                } else if ("dateDefended".equals(dateType)) {
+                    // for thesis, this can be considered as publication date too
+                    this.dateProcessing(biblio, "publication", dateString);
                 }
             }
         } else if (qName.equals("abstract") && profileDesc) {
             String abstractString = getText();
-            if ( (abstractString != null) && (abstractString.length() > 0) )
-                biblio.setAbstract(abstractString);
+            if ( (abstractString != null) && (abstractString.length() > 0) ) {
+                // to be reviewed
+                //biblio.setAbstract(abstractString);
+            }
         } else if (qName.equals("forename")) {
             if ("middle".equals(foreNameType))
                 middleName = getText();

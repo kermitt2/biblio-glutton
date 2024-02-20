@@ -1,4 +1,12 @@
-### Build the Elasticsearch index
+## Build the Elasticsearch index
+
+### Architecture
+
+Below is an overview of the biblio-glutton architecture. The biblio-glutton server manages locally high performance LMDB databases for all metadata look-up tasks (several thousand requests per second with multiple threads). For the costly metadata matching tasks, an Elasticsearch cluster is used. For scaling this sort of queries, simply add more nodes in this elasticsearch cluster, keepping a single biblio-glutton server instance. 
+
+![Glutton architecture](doc/glutton-architecture.png) 
+
+### Create the index
 
 Elasticsearch `7.*` is required. `node.js` version 10 or more should work fine. 
 

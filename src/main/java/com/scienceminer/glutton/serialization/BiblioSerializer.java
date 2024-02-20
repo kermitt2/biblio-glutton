@@ -148,7 +148,14 @@ public class BiblioSerializer {
 
         if (StringUtils.isNotEmpty(biblio.getTitle())) {
             String localTitle = Utilities.simpleCleanField(biblio.getTitle());
-            builder.append(", \"container-title\": [" + mapper.writeValueAsString(localTitle) + "]");
+            builder.append(", \"container-title\": [" + mapper.writeValueAsString(localTitle));
+
+            // in case of series (e.g. LNCS), the name of the collection is added after the title of the volume
+            if (StringUtils.isNotEmpty(biblio.getCollectionTitle())) {
+                String collectionTitle = Utilities.simpleCleanField(biblio.getCollectionTitle());
+                builder.append(", " + mapper.writeValueAsString(localTitle) + "]");
+            } else 
+                builder.append("]");
         }
 
          if (StringUtils.isNotEmpty(biblio.getJournalAbbrev())) {

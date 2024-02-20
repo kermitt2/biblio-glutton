@@ -123,9 +123,7 @@ public class HALOAIPMHDomParser {
             //if not the current version normally we don't need the update.
 //            if (docVersion.equals(currentVersion)) {
             String tei = getTei(theRecord);
-
 //System.out.println(tei);
-
             try {
                 InputSource is = new InputSource(new StringReader(tei));
 

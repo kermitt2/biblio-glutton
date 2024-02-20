@@ -16,7 +16,11 @@ You need Java JDK 1.9 or more installed for building and running the tool.
 ./gradlew server
 ```
 
-The service will use the default project configuration located under `biblio-glutton/config/glutton.yml`.
+The service will use the default project configuration located under `biblio-glutton/config/glutton.yml`. To select a configuration file in another location use the additional parameter `-Pconfig=/other/path/glutton.yml` as follow: 
+
+```sh
+./gradlew server -Pconfig=/other/path/glutton.yml
+```
 
 To check if it works, you can view a report of the data used by the service at `host:port/service/data`. For instance:
 
