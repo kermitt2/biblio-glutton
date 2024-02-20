@@ -8,7 +8,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.scienceminer.glutton.storage.lookup.MetadataLookup;
+import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
 import com.scienceminer.glutton.storage.lookup.MetadataMatching;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.reader.CrossrefJsonlReader;
@@ -42,7 +42,7 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 public class IncrementalLoaderTask implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(IncrementalLoaderTask.class);
 
-    private MetadataLookup metadataLookup;
+    private CrossrefMetadataLookup metadataLookup;
     private LocalDateTime lastIndexed; 
     private LookupConfiguration configuration;
     private CrossrefClient client;
@@ -58,7 +58,7 @@ public class IncrementalLoaderTask implements Runnable {
     private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("YYYY-MM-dd");
     private LocalDate today;
 
-    public IncrementalLoaderTask(MetadataLookup metadataLookup, 
+    public IncrementalLoaderTask(CrossrefMetadataLookup metadataLookup, 
                                  LocalDateTime lastIndexed, 
                                  LookupConfiguration configuration,
                                  Meter meter,

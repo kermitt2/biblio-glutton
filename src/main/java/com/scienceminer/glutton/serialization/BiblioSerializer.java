@@ -1,4 +1,4 @@
-package com.scienceminer.glutton.export;
+package com.scienceminer.glutton.serialization;
 
 import java.io.*;
 import java.util.*;
@@ -9,7 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.scienceminer.glutton.data.*;
 //import com.scienceminer.glutton.data.db.KBStagingEnvironment;
 import com.scienceminer.glutton.utils.Utilities;
-import com.scienceminer.glutton.storage.lookup.PMIdsLookup;
+import com.scienceminer.glutton.storage.lookup.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -26,21 +26,29 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
- * Class for serializing PubMed biblio objects to the Crossref JSON schema without information loss. 
+ * Class for serializing biblio objects to the Crossref JSON schema without information loss from PubMed metadata
+ * and HAL metadata. 
  */
 
-public class PubMedSerializer {
+public class BiblioSerializer {
 
     static String INVALID_MSG = "NOT_FOUND;INVALID_JOURNAL";
 
     /**
-     * The export follows the same JSON schema as Crossref JSON (derived from Crossref Unixref)
+     * The export follows the same JSON schema as Crossref JSON (derived from Crossref Unixref).
+     * For a Biblio object coming from PubMed medaline metadata, pmidLookup should not be null.
+     * For a Biblio object coming from HAL metadata, halLookup should not be null.
      */
-    public static String serializeJson(Biblio biblio, PMIdsLookup pmidLookup) throws JsonProcessingException {
+    public static String serializeJson(Biblio biblio, PMIdsLookup pmidLookup, HALLookup halLookup) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         StringBuilder builder = new StringBuilder();
         builder.append("{");
-        builder.append("\"source\": \"pubmed\"");
+        if (pmidLookup != null)
+            builder.append("\"source\": \"pubmed\"");
+        else if (halLookup != null) 
+            builder.append("\"source\": \"hal\"");
+        else 
+            builder.append("\"source\": \"unknown\"");
 
         // last update
         if (biblio.getLastUpdateDate() != null) {
@@ -71,7 +79,7 @@ public class PubMedSerializer {
         if (biblio.getDoi() == null) {
             // try to get a DOI via PMID and/or PMC
 
-            if (biblio.getPubmedId() != null) {
+            if (pmidLookup != null && biblio.getPubmedId() != null) {
                 String doi = null;
                 final PmidData pmidData = pmidLookup.retrieveIdsByPmid(biblio.getPubmedId());
                 if (pmidData != null && isNotBlank(pmidData.getDoi())) {
@@ -83,7 +91,7 @@ public class PubMedSerializer {
                 }
             }
 
-            if (biblio.getDoi() == null && biblio.getPmc() != null) {
+            if (pmidLookup != null && biblio.getDoi() == null && biblio.getPmc() != null) {
                 String doi = null;
                 final PmidData pmidData = pmidLookup.retrieveIdsByPmc(biblio.getPmc());
                 if (pmidData != null && isNotBlank(pmidData.getDoi())) {
@@ -267,7 +275,7 @@ public class PubMedSerializer {
 
         if (biblio.getPubmedId() == null) {
             // try to get a PMID via DOI and/or PMC
-            if (biblio.getDoi() != null) {
+            if (pmidLookup != null && biblio.getDoi() != null) {
                 String pmid = null;
                 final PmidData pmidData = pmidLookup.retrieveIdsByDoi(biblio.getDoi());
                 if (pmidData != null && isNotBlank(pmidData.getPmid())) {
@@ -279,7 +287,7 @@ public class PubMedSerializer {
                 }
             }
 
-            if (biblio.getPubmedId() == null && biblio.getPmc() != null) {
+            if (pmidLookup != null && biblio.getPubmedId() == null && biblio.getPmc() != null) {
                 String pmid = null;
                 final PmidData pmidData = pmidLookup.retrieveIdsByPmc(biblio.getPmc());
                 if (pmidData != null && isNotBlank(pmidData.getPmid())) {
@@ -298,7 +306,7 @@ public class PubMedSerializer {
 
         if (biblio.getPmc() == null) {
             // try to get a PMC via PMID and/or DOI
-            if (biblio.getPubmedId() != null) {
+            if (pmidLookup != null && biblio.getPubmedId() != null) {
                 String pmc = null;
                 final PmidData pmidData = pmidLookup.retrieveIdsByPmid(biblio.getPubmedId());
                 if (pmidData != null && isNotBlank(pmidData.getPmcid())) {
@@ -310,7 +318,7 @@ public class PubMedSerializer {
                 }
             }
 
-            if (biblio.getPmc() == null && biblio.getDoi() != null) {
+            if (pmidLookup != null && biblio.getPmc() == null && biblio.getDoi() != null) {
                 String pmc = null;
                 final PmidData pmidData = pmidLookup.retrieveIdsByDoi(biblio.getDoi());
                 if (pmidData != null && isNotBlank(pmidData.getPmcid())) {
@@ -329,6 +337,14 @@ public class PubMedSerializer {
 
         if (biblio.getPii() != null) {
             builder.append(", \"pii\": " + mapper.writeValueAsString(biblio.getPii()));
+        }
+
+        if (biblio.getHalId() != null) {
+            builder.append(", \"halId\": " + mapper.writeValueAsString(biblio.getHalId()));
+        }
+
+        if (biblio.getHalUri() != null) {
+            builder.append(", \"halUri\": " + mapper.writeValueAsString(biblio.getHalUri()));
         }
 
         if (biblio.getGrants() != null && biblio.getGrants().size() > 0) {
@@ -371,7 +387,7 @@ public class PubMedSerializer {
         }
 
         // license information injected for PMC
-        {
+        if (pmidLookup != null) {
             String license = null;
             String subpath = null;
             final PmidData pmidData = pmidLookup.retrieveIdsByPmc(biblio.getPmc());
@@ -432,7 +448,7 @@ public class PubMedSerializer {
 
                 if (reference.getDoi() == null) {
                     // try to get a DOI via PMID and/or PMC
-                    if (reference.getPubmedId() != null && !INVALID_MSG.equals(reference.getPubmedId())) {
+                    if (pmidLookup != null && reference.getPubmedId() != null && !INVALID_MSG.equals(reference.getPubmedId())) {
                         try {
                             String doi = null;
                             final PmidData pmidData = pmidLookup.retrieveIdsByPmid(reference.getPubmedId());
@@ -448,7 +464,7 @@ public class PubMedSerializer {
                         }
                     }
 
-                    if (reference.getDoi() == null && reference.getPmc() != null) {
+                    if (pmidLookup != null && reference.getDoi() == null && reference.getPmc() != null) {
                         String doi = null;
                         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(reference.getPmc());
                         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
@@ -466,7 +482,7 @@ public class PubMedSerializer {
 
                 if (reference.getPmc() == null) {
                     // try to get the PMC via the PMID
-                    if (reference.getPubmedId() != null && !INVALID_MSG.equals(reference.getPubmedId())) {
+                    if (pmidLookup != null && reference.getPubmedId() != null && !INVALID_MSG.equals(reference.getPubmedId())) {
                         try {
                             String pmc = null;
                             final PmidData pmidData = pmidLookup.retrieveIdsByPmid(reference.getPubmedId());
@@ -482,7 +498,7 @@ public class PubMedSerializer {
                         }
                     }
 
-                    if (reference.getPmc() == null && reference.getDoi() != null) {
+                    if (pmidLookup != null && reference.getPmc() == null && reference.getDoi() != null) {
                         String pmc = null;
                         final PmidData pmidData = pmidLookup.retrieveIdsByPmid(reference.getDoi());
                         if (pmidData != null && isNotBlank(pmidData.getPmcid())) {

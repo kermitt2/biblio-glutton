@@ -2,31 +2,21 @@
 
 Once the databases and index are built, the bibliographical REST API can be started. For building the databases and index, see the next sections below. 
 
-### Build the service lookup 
+### Build the service  
 
-You need Java JDK 1.8 installed for building and running the tool. 
+You need Java JDK 1.9 or more installed for building and running the tool. 
 
 ```sh
-cd lookup
 ./gradlew clean build
 ```
 
 ### Start the server
 
 ```sh
-cd lookup/
-./gradlew clean build
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar server
+./gradlew server
 ```
 
-The service will use the default project configuration located under `biblio-glutton/config/glutton.yml`. If you want to use a configuration file in another location, you can can specify it as additional parameter:
-
-
-```sh
-cd lookup/
-./gradlew clean build
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar server /some/where/glutton.yml
-```
+The service will use the default project configuration located under `biblio-glutton/config/glutton.yml`.
 
 To check if it works, you can view a report of the data used by the service at `host:port/service/data`. For instance:
 

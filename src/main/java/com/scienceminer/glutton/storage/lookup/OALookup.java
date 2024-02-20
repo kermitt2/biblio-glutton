@@ -25,7 +25,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 /**
- * Lookup doi -> best OA Location
+ * Lookup doi -> best OA Location via Unpaywall
  */
 public class OALookup {
     private static final Logger LOGGER = LoggerFactory.getLogger(OALookup.class);

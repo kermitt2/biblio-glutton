@@ -49,7 +49,7 @@ public class MetadataMatching {
 
     private LookupConfiguration configuration;
     private ESClientWrapper esClient;
-    private MetadataLookup metadataLookup;
+    private CrossrefMetadataLookup metadataLookup;
 
     public static final String INDEX_FIELD_NAME_ID = "id";
     public static final String INDEX_FIELD_NAME_ATITLE = "title";
@@ -68,7 +68,7 @@ public class MetadataMatching {
 
 
     public static MetadataMatching getInstance(LookupConfiguration configuration, 
-                                               MetadataLookup metadataLookup) {
+                                               CrossrefMetadataLookup metadataLookup) {
         if (instance == null) {
             synchronized (MetadataMatching.class) {
                 if (instance == null) {
@@ -83,11 +83,11 @@ public class MetadataMatching {
      * Creates a new instance.
      */
     private static synchronized void getNewInstance(LookupConfiguration configuration,
-                                                    MetadataLookup metadataLookup) {
+                                                    CrossrefMetadataLookup metadataLookup) {
         instance = new MetadataMatching(configuration, metadataLookup);
     }
 
-    private MetadataMatching(LookupConfiguration configuration, MetadataLookup metadataLookup) {
+    private MetadataMatching(LookupConfiguration configuration, CrossrefMetadataLookup metadataLookup) {
         this.configuration = configuration;
         RestHighLevelClient esClient = new RestHighLevelClient(
                 RestClient.builder(

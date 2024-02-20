@@ -3,11 +3,7 @@ package com.scienceminer.glutton.web;
 import com.google.common.collect.Lists;
 import com.google.inject.Module;
 
-import com.scienceminer.glutton.command.LoadCrossrefCommand;
-import com.scienceminer.glutton.command.GapUpdateCrossrefCommand;
-import com.scienceminer.glutton.command.LoadIstexIdsCommand;
-import com.scienceminer.glutton.command.LoadPMIDCommand;
-import com.scienceminer.glutton.command.LoadUnpayWallCommand;
+import com.scienceminer.glutton.command.*;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.web.healthcheck.LookupHealthCheck;
 import com.scienceminer.glutton.web.module.LookupServiceModule;
@@ -15,7 +11,7 @@ import com.scienceminer.glutton.web.module.NotFoundExceptionMapper;
 import com.scienceminer.glutton.web.module.ServiceExceptionMapper;
 import com.scienceminer.glutton.web.module.ServiceOverloadedExceptionMapper;
 import com.scienceminer.glutton.utils.crossrefclient.IncrementalLoaderTask;
-import com.scienceminer.glutton.storage.lookup.MetadataLookup;
+import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 
 import io.dropwizard.Application;
@@ -54,7 +50,7 @@ import org.slf4j.LoggerFactory;
 public final class LookupServiceApplication extends Application<LookupConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(LookupConfiguration.class);
     private static final String RESOURCES = "/service";
-    private static final String[] DEFAULT_CONF_LOCATIONS = {"../config/glutton.yml"};
+    private static final String[] DEFAULT_CONF_LOCATIONS = {"config/glutton.yml"};
 
     // ========== Application ==========
     @Override
@@ -90,7 +86,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         long initalDelay = duration.getSeconds();
 
         //StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
-        MetadataLookup metadataLookup = MetadataLookup.getInstance(storageEnvFactory);
+        CrossrefMetadataLookup metadataLookup = CrossrefMetadataLookup.getInstance(storageEnvFactory);
 
         final MetricRegistry metrics = new MetricRegistry();
         final Meter meter = metrics.meter("crossrefDailyUpdate");
@@ -159,6 +155,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         bootstrap.addCommand(new LoadPMIDCommand());
         bootstrap.addCommand(new LoadCrossrefCommand());
         bootstrap.addCommand(new GapUpdateCrossrefCommand());
+        bootstrap.addCommand(new LoadHALCommand());
     }
 
     public static void main(String... args) throws Exception {

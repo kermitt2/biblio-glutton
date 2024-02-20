@@ -39,11 +39,11 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
     public void configure(Subparser subparser) {
         super.configure(subparser);
         
-        subparser.addArgument("--input")
+        /*subparser.addArgument("--input")
                 .dest(PMID_SOURCE)
                 .type(String.class)
                 .required(true)
-                .help("The path to the source file for pmid mapping");
+                .help("The path to the source file for pmid mapping");*/
     }
 
     @Override
@@ -81,7 +81,7 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
 
         long start = System.nanoTime();
         
-        PMIdsLookup pmidLookup = new PMIdsLookup(storageEnvFactory);
+        PMIdsLookup pmidLookup = PMIdsLookup.getInstance(storageEnvFactory);
         InputStream inputStreampmidMapping = Files.newInputStream(Paths.get(pmidMappingPath));
         if (pmidMappingPath.endsWith(".gz")) {
             inputStreampmidMapping = new GZIPInputStream(inputStreampmidMapping);
@@ -94,7 +94,7 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
         if (file1Path.endsWith(".gz")) {
             inputStreampmidMapping = new GZIPInputStream(inputStreampmidMapping);
         }
-        pmidLookup.loadFromFileExtra(inputStreampmidMapping, new PmidReader(), metrics.meter("pmidLookupExtra"));
+        pmidLookup.loadFromFileExtra(inputStreampmidMapping, metrics.meter("pmidLookupExtra"));
         LOGGER.info("PubMed lookup extra infos loaded in " + pmidLookup.getSize() + " records. ");
 
         LOGGER.info("Cleaning downloaded resource files");

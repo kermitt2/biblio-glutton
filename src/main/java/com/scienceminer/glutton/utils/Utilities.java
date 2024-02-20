@@ -251,7 +251,8 @@ public class Utilities {
     static {
         int todayMonth = toDay.get(Calendar.MONTH) + 1;
         int todayDay = toDay.get(Calendar.DAY_OF_MONTH) + 1;
-        for (int year = 1960; year <= todayYear; year++) {
+        //for (int year = 1960; year <= todayYear; year++) {
+        for (int year = 2010; year <= todayYear; year++) {
             int monthYear = (year == todayYear) ? todayMonth : 12;
             for (int month = 1; month <= monthYear; month++) {
                 for (int day = 1; day <= daysInMonth(year, month); day++) {

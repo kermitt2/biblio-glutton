@@ -32,7 +32,7 @@ public abstract class Harvester {
     // Source of the harvesting
     public enum Source {
         HAL("hal"),
-        //ISTEX("istex"),
+        ISTEX("istex"),
         ARXIV("arxiv");
 
         private String name;
@@ -62,10 +62,7 @@ public abstract class Harvester {
 
     abstract public void fetchAllDocuments() throws IOException, SAXException, ParserConfigurationException, ParseException;
 
-    //abstract public void fetchListDocuments() throws IOException, SAXException, ParserConfigurationException, ParseException;
-    
     abstract public void sample() throws IOException, SAXException, ParserConfigurationException, ParseException;
-    
     
     public Source getSource() {
         return source;

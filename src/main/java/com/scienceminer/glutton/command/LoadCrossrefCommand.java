@@ -10,7 +10,7 @@ import com.scienceminer.glutton.reader.CrossrefJsonReader;
 import com.scienceminer.glutton.reader.CrossrefJsonlReader;
 import com.scienceminer.glutton.reader.CrossrefJsonArrayReader;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
-import com.scienceminer.glutton.storage.lookup.MetadataLookup;
+import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
 import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -79,7 +79,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         reporter.start(15, TimeUnit.SECONDS);
 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
-        MetadataLookup metadataLookup = MetadataLookup.getInstance(storageEnvFactory);
+        CrossrefMetadataLookup metadataLookup = CrossrefMetadataLookup.getInstance(storageEnvFactory);
 
         final String crossrefFilePathString = namespace.get(CROSSREF_SOURCE);
         Path crossrefFilePath = Paths.get(crossrefFilePathString);

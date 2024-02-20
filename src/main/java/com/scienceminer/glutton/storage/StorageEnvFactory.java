@@ -23,12 +23,12 @@ public class StorageEnvFactory {
 
     public Env<ByteBuffer> getEnv(String envName) {
         Env<ByteBuffer> environment = null;
-
+System.out.println("path db: " + this.storagePath + File.separator + envName);
         File thePath = new File(this.storagePath + File.separator + envName);
         if (!thePath.exists()) {
             thePath.mkdirs();
         }
-
+System.out.println("path file created db: " + thePath.getPath());
         environment = Env.create()
                 .setMapSize(1024L * 1024L * 1024L * 1024L)
                 .setMaxReaders(configuration.getMaxAcceptedRequests())

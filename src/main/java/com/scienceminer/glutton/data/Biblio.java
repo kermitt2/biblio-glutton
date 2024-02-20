@@ -191,6 +191,22 @@ public class Biblio implements Serializable {
 		setPublisherAttribute("doi", StringUtils.trim(doi));
 	}
 
+	public String getHalId() {
+		return (String) getAttributeValue("halid");
+	}
+
+	public void setHalId(String halid) {
+		setPublisherAttribute("halid", StringUtils.trim(halid));
+	}
+
+	public String getHalUri() {
+		return (String) getAttributeValue("haluri");
+	}
+
+	public void setHalUri(String haluri) {
+		setPublisherAttribute("haluri", StringUtils.trim(haluri));
+	}
+
 	public String getRawPublicationType() {
 		return (String) getAttributeValue("rawPublicationType");
 	}
@@ -801,7 +817,10 @@ public class Biblio implements Serializable {
 			return getStartPage();
 		}*/
 		if (StringUtils.isNotBlank(getStartPage()) && StringUtils.isNotBlank(getEndPage())) {
-			return getStartPage() + "-" + getEndPage();
+			if (getStartPage().equals(getEndPage()))
+				return getStartPage();
+			else
+				return getStartPage() + "-" + getEndPage();
 		}
 		if (StringUtils.isNotBlank(getStartPage())) {
 			return getStartPage();

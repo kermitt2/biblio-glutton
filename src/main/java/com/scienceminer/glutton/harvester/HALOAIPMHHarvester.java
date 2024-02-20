@@ -22,13 +22,19 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
+import com.scienceminer.glutton.storage.lookup.TransactionWrapper;
+import com.scienceminer.glutton.storage.lookup.HALLookup;
+
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * HAL OAI-PMH harvester implementation.
  *
- * @author Achraf
+ * @author Achraf, Patrice
  */
 public class HALOAIPMHHarvester extends Harvester {
     private static final Logger LOGGER = LoggerFactory.getLogger(HALOAIPMHHarvester.class);
@@ -36,42 +42,53 @@ public class HALOAIPMHHarvester extends Harvester {
     private static String OAI_FORMAT = "xml-tei";
 
     // the api url
-    protected String oai_url = "http://api.archives-ouvertes.fr/oai/hal";
+    protected String oai_url = "https://api.archives-ouvertes.fr/oai/hal";
     
     // hal url for harvesting from a file list
     //private static String halUrl = "https://hal.archives-ouvertes.fr/";
     
     private HALOAIPMHDomParser oaiDom;
 
-    public HALOAIPMHHarvester() {
+    private TransactionWrapper transactionWrapper;
+
+    private HALLookup halLookup;
+
+    public HALOAIPMHHarvester(TransactionWrapper transactionWrapper) {
         super();
         this.oaiDom = new HALOAIPMHDomParser();
+        this.transactionWrapper = transactionWrapper;
     }
 
     /**
     * Gets results given a date as suggested by OAI-PMH.
     */
-    protected void fetchDocumentsByDate(String date) throws MalformedURLException {
+    protected void fetchDocumentsByDate(String date, Meter meterValidRecord, Counter counterInvalidRecords) throws MalformedURLException {
         boolean stop = false;
         String tokenn = null;
         while (!stop) {
             String request = String.format("%s/?verb=ListRecords&metadataPrefix=%s&from=%s&until=%s",
                     this.oai_url, OAI_FORMAT, date, date);
-            /*if (HarvestProperties.getCollection() != null) {
-                request += String.format("&set=collection:%s", HarvestProperties.getCollection());
-            }*/
 
             if (tokenn != null) {
                 request = String.format("%s/?verb=ListRecords&resumptionToken=%s", this.oai_url, tokenn);
             }
-            logger.info("\t Sending: " + request);
+            logger.info("Sending: " + request);
 
             InputStream in = Utilities.request(request);
-            List<Biblio> grabbedObjects = this.oaiDom.getGrabbedObjects(in);
+            List<Biblio> grabbedObjects = this.oaiDom.getGrabbedObjects(in, counterInvalidRecords);
 
-            // do something here with the Biblio objects
+            for (Biblio biblioObj : grabbedObjects) {
+                if (biblioObj != null && biblioObj.getHalId() != null) {                    
+                    // storing those things
+                    halLookup.storeObject(biblioObj, transactionWrapper.tx);
+                    meterValidRecord.mark();
+                }
+            }
 
-            // token if any:
+            if (grabbedObjects.size()>0)
+                halLookup.commitTransactions(transactionWrapper);
+
+            // token if any
             tokenn = oaiDom.getToken();
             if (tokenn == null) {
                 stop = true;
@@ -86,12 +103,17 @@ public class HALOAIPMHHarvester extends Harvester {
 
     @Override
     public void fetchAllDocuments() {
+        throw new UnsupportedOperationException("Use halLookup argument"); 
+    }
+
+    public void fetchAllDocuments(HALLookup halLookup, Meter meterValidRecord, Counter counterInvalidRecords) {
+        this.halLookup = halLookup;
         String currentDate = "";
         try {
             for (String date : Utilities.getDates()) {
                 logger.info("Extracting publications TEIs for : " + date);
                 currentDate = date;
-                fetchDocumentsByDate(date);
+                fetchDocumentsByDate(date, meterValidRecord, counterInvalidRecords);
             }
         } catch (MalformedURLException mue) {
             logger.error(mue.getMessage(), mue);
@@ -159,7 +181,7 @@ public class HALOAIPMHHarvester extends Harvester {
 
     @Override
     public void sample() throws IOException, SAXException, ParserConfigurationException, ParseException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        throw new UnsupportedOperationException("Not supported yet."); 
     }
 
 }

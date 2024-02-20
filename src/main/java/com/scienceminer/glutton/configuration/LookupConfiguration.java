@@ -293,7 +293,7 @@ public class LookupConfiguration extends Configuration {
         if (path != null) {
             File file = new File(path);
             if (!file.isAbsolute()) {
-                path = ".." + File.separator + path;
+                path = "." + File.separator + path;
             }
         }
         return path;

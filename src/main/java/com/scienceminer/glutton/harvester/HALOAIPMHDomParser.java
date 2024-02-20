@@ -12,8 +12,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -21,7 +20,13 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.ls.DOMImplementationLS;
 import org.w3c.dom.ls.LSSerializer;
+
 import org.xml.sax.SAXException;
+import org.xml.sax.InputSource;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import com.scienceminer.glutton.utils.xml.DumbEntityResolver;
+
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
@@ -34,11 +39,18 @@ import javax.xml.transform.stream.StreamResult;
 import com.scienceminer.glutton.data.Biblio;
 import com.scienceminer.glutton.exception.*;
 import com.scienceminer.glutton.utils.Utilities;
+import com.scienceminer.glutton.utils.xml.HALTEISaxHandler;
+
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Extract and parse records from OAI-PMH response.
  *
- * @author Achraf
+ * @author Achraf, Patrice
  */
 public class HALOAIPMHDomParser {
 
@@ -57,7 +69,7 @@ public class HALOAIPMHDomParser {
     /*
     ** Collectes Biblio objects from the inputStream, and saves the metadata.
     */
-    public List<Biblio> getGrabbedObjects(InputStream in) {
+    public List<Biblio> getGrabbedObjects(InputStream in, Counter counterInvalidRecords) {
         List<Biblio> biblioobjs = new ArrayList<Biblio>();
         setDoc(parse(in));
         if (doc != null) {
@@ -67,7 +79,7 @@ public class HALOAIPMHDomParser {
             //XPath xPath = XPathFactory.newInstance().newXPath();//play with it  
             //NodeList nodes = (NodeList)xPath.evaluate("/OAI-PMH/ListRecords/record/metadata", rootElement, XPathConstants.NODESET);
             setToken(rootElement);
-            logger.info("\t \t " + listRecords.getLength() + " records found. processing...");
+            logger.info(listRecords.getLength() + " records found");
 
             if (listRecords.getLength() >= 1) {
                 for (int i = listRecords.getLength() - 1; i >= 0; i--) {
@@ -79,13 +91,15 @@ public class HALOAIPMHDomParser {
                         for (int o = metadataNodes.getLength() - 1; o >= 0; o--) {
                             if ((metadataNodes.item(o) instanceof Element)) {
                                 Element element = (Element) metadataNodes.item(o);
-                                element.setAttribute("xmlns:tei", "http://www.tei-c.org/ns/1.0");//BOF
+                                element.setAttribute("xmlns:tei", "http://www.tei-c.org/ns/1.0"); 
                                 //HAL OAI PMH adds a tei namespace before each tag
                                 renameNode(element);
 
                                 Biblio biblio = processRecord(element);
                                 if (biblio != null) {
                                     biblioobjs.add(biblio);
+                                } else {
+                                    counterInvalidRecords.inc();
                                 }
                             }
                         }
@@ -97,18 +111,41 @@ public class HALOAIPMHDomParser {
         return biblioobjs;
     }
 
-    public Biblio processRecord(Element record) {
+    public Biblio processRecord(Element theRecord) {
         Biblio biblioObj = null;
 
-        String type = getPublicationType(record);
-        if (isConsideredType(type.split("_")[0])) {
-            String repositoryDocId = getRepositoryDocId(record);
-            String currentVersion = getCurrentVersion(record);
+        String type = getPublicationType(theRecord);
+        //if (isConsideredType(type.split("_")[0])) 
+        {
+            String repositoryDocId = getRepositoryDocId(theRecord);
+            String currentVersion = getCurrentVersion(theRecord);
 //            String docVersion = Utilities.getVersionFromURI(completeRepositoryDocId);
             //if not the current version normally we don't need the update.
 //            if (docVersion.equals(currentVersion)) {
-            String tei = getTei(record);
-            biblioObj = new Biblio(null, source, repositoryDocId, tei);
+            String tei = getTei(theRecord);
+
+//System.out.println(tei);
+
+            try {
+                InputSource is = new InputSource(new StringReader(tei));
+
+                // SAX parser for the TEI metadata of the record
+                HALTEISaxHandler handler = new HALTEISaxHandler();
+                SAXParserFactory spf = SAXParserFactory.newInstance();
+                spf.setValidating(false);
+                spf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+
+                // get a new instance of parser
+                SAXParser saxParser = spf.newSAXParser();
+                saxParser.getXMLReader().setEntityResolver(new DumbEntityResolver());
+                saxParser.parse(is, handler);
+
+                biblioObj = handler.getBiblio();
+            } catch (Exception e) {
+                logger.warn("Failed to parse HAL TEI XML", e);
+            } 
+
+            /*biblioObj = new Biblio(null, source, repositoryDocId, tei);
             biblioObj.setRepositoryDocId(repositoryDocId);
             biblioObj.setRepositoryDocVersion(currentVersion);
             biblioObj.setDoi(getDoi(record));
@@ -118,9 +155,9 @@ public class HALOAIPMHDomParser {
 
             //biblioObj.setPdf(getFile(record, repositoryDocId, currentVersion, biblioObj.getDoi(), type));
 
-            biblioObj.setMetadataURL("https://hal.archives-ouvertes.fr/" + repositoryDocId + "/tei");
+            biblioObj.setMetadataURL("https://hal.archives-ouvertes.fr/" + repositoryDocId + "/tei");*/
 
-            logger.info("\t \t \t tei of " + repositoryDocId + " extracted.");
+            //logger.info("TEI of " + repositoryDocId + " extracted.");
         }
         return biblioObj;
     }
@@ -131,7 +168,7 @@ public class HALOAIPMHDomParser {
             Element node = (Element) xPath.compile(OAIPMHPathsItf.EditionElement).evaluate(record, XPathConstants.NODE);
             currentVersion = node.getAttribute("n");
         } catch (DataException | XPathExpressionException ex) {
-            logger.info("\t \t \t \t No current edition found .");
+            logger.info("No current version found .");
         }
         return currentVersion;
     }
@@ -147,7 +184,7 @@ public class HALOAIPMHDomParser {
                 throw new DataException();
             }
         } catch (DataException | XPathExpressionException | DOMException ex) {
-            logger.info("\t \t \t \t hal ref not found");
+            logger.info("hal ref not found");
         }
         return reference;
     }
@@ -162,7 +199,7 @@ public class HALOAIPMHDomParser {
                 throw new DataException();
             }
         } catch (DataException | XPathExpressionException | DOMException ex) {
-            logger.info("\t \t \t \t doi not found");
+            logger.info("DOI not found");
         }
         return doi;
     }
@@ -183,7 +220,7 @@ public class HALOAIPMHDomParser {
                 throw new DataException();
             }
         } catch (DataException | XPathExpressionException | DOMException ex) {
-            logger.info("\t \t \t \t no publication type found");
+            logger.info("no publication type found");
         }
         return domains;
     }
@@ -198,7 +235,7 @@ public class HALOAIPMHDomParser {
                 throw new DataException();
             }
         } catch (DataException | XPathExpressionException | DOMException ex) {
-            logger.info("\t \t \t \t no publication type found");
+            logger.info("no publication type found");
         }
         return type;
     }
@@ -209,7 +246,9 @@ public class HALOAIPMHDomParser {
 
     private void setToken(Element rootElement) {
         try {
-            this.token = URLEncoder.encode(rootElement.getElementsByTagName(OAIPMHPathsItf.ResumptionToken).item(0).getTextContent(), StandardCharsets.UTF_8.toString());
+            this.token = URLEncoder.encode(
+                rootElement.getElementsByTagName(OAIPMHPathsItf.ResumptionToken).item(0).getTextContent(), 
+                                                 StandardCharsets.UTF_8.toString());
         } catch (Exception ex) {
             this.token = null;
         }
@@ -280,7 +319,7 @@ public class HALOAIPMHDomParser {
                 throw new DataException();
             }
         } catch (DataException | XPathExpressionException | DOMException ex) {
-            logger.info("\t \t \t \t no publication repository id found");
+            logger.info("no publication repository id found");
         }
         return repositoryDocId;
     }

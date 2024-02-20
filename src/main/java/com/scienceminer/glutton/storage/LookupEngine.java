@@ -37,9 +37,10 @@ public class LookupEngine {
 
     private IstexIdsLookup istexLookup = null;
 
-    private MetadataLookup metadataLookup = null;
+    private CrossrefMetadataLookup metadataLookup = null;
     private MetadataMatching metadataMatching = null;
     private PMIdsLookup pmidLookup = null;
+    private HALLookup halLookup = null;
 
     // DOI matching regex from GROBID
     public static Pattern DOIPattern = Pattern.compile("\"DOI\"\\s?:\\s?\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
@@ -56,9 +57,10 @@ public class LookupEngine {
     public LookupEngine(StorageEnvFactory storageFactory) {
         this.oaDoiLookup = new OALookup(storageFactory);
         this.istexLookup = new IstexIdsLookup(storageFactory);
-        this.metadataLookup = MetadataLookup.getInstance(storageFactory);
+        this.metadataLookup = CrossrefMetadataLookup.getInstance(storageFactory);
         this.metadataMatching = MetadataMatching.getInstance(storageFactory.getConfiguration(), metadataLookup);
-        this.pmidLookup = new PMIdsLookup(storageFactory);
+        this.pmidLookup = PMIdsLookup.getInstance(storageFactory);
+        this.halLookup = HALLookup.getInstance(storageFactory);
     }
 
     /**
@@ -903,7 +905,7 @@ public class LookupEngine {
         this.istexLookup = istexLookup;
     }
 
-    public void setMetadataLookup(MetadataLookup metadataLookup) {
+    public void setCrossrefMetadataLookup(CrossrefMetadataLookup metadataLookup) {
         this.metadataLookup = metadataLookup;
     }
 

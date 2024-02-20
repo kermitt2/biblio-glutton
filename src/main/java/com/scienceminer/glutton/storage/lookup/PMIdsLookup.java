@@ -12,7 +12,10 @@ import org.lmdbjava.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,9 +27,12 @@ import static com.scienceminer.glutton.web.resource.DataController.DEFAULT_MAX_S
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
+import org.apache.commons.lang3.StringUtils;
 
 public class PMIdsLookup {
     private static final Logger LOGGER = LoggerFactory.getLogger(PMIdsLookup.class);
+
+    private static volatile PMIdsLookup instance;
 
     public static final String ENV_NAME = "pmid";
 
@@ -41,7 +47,25 @@ public class PMIdsLookup {
 
     private final int batchSize;
 
-    public PMIdsLookup(StorageEnvFactory storageEnvFactory) {
+    public static PMIdsLookup getInstance(StorageEnvFactory storageEnvFactory) {
+        if (instance == null) {
+            synchronized (PMIdsLookup.class) {
+                if (instance == null) {
+                    getNewInstance(storageEnvFactory);
+                }
+            }
+        }
+        return instance;
+    }
+
+    /**
+     * Creates a new instance.
+     */
+    private static synchronized void getNewInstance(StorageEnvFactory storageEnvFactory) {
+        instance = new PMIdsLookup(storageEnvFactory);
+    }
+
+    private PMIdsLookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
         batchSize = storageEnvFactory.getConfiguration().getLoadingBatchSize();
 
@@ -83,6 +107,58 @@ public class PMIdsLookup {
 
         LOGGER.info("Cross checking number of records processed:: " + metric.getCount());
     }
+
+    public void loadFromFileExtra(InputStream is, Meter metric) {
+        final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
+        final AtomicInteger counter = new AtomicInteger(0);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        try {
+            while(reader.ready()) {
+                if (counter.get() == batchSize) {
+                    transactionWrapper.tx.commit();
+                    transactionWrapper.tx.close();
+                    transactionWrapper.tx = environment.txnWrite();
+                    counter.set(0);
+                }
+
+                String line = reader.readLine();
+                final String[] split = StringUtils.splitPreserveAllTokens(line, ",");
+
+                // retrieve pmidData by PMC ID (position 2)
+                PmidData pmidData = retrieveIdsByPmc(split[2]);
+                if (split[0].length()>0)
+                    pmidData.setLicense(split[0]);
+                if (split[4].length()>0)
+                    pmidData.setSubpath(split[4]);
+
+                // update pmidData
+                if (isNotBlank(pmidData.getDoi())) {
+                    store(dbDoiToIds, lowerCase(pmidData.getDoi()), pmidData, transactionWrapper.tx);
+                }
+
+                if (isNotBlank(pmidData.getPmid())) {
+                    store(dbPmidToIds, pmidData.getPmid(), pmidData, transactionWrapper.tx);
+                }
+
+                if (isNotBlank(pmidData.getPmcid())) {
+                    store(dbPmcToIds, pmidData.getPmcid(), pmidData, transactionWrapper.tx);
+                }
+
+                metric.mark();
+                counter.incrementAndGet();
+
+            }
+
+            transactionWrapper.tx.commit();
+            transactionWrapper.tx.close();
+        } catch (IOException e) {
+            LOGGER.error("Some serious error when processing the PMC oa list file.", e);
+        }
+
+        LOGGER.info("Cross checking number of records processed:: " + metric.getCount());
+    }
+
 
     public PmidData retrieveIdsByDoi(String doi) {
         final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());

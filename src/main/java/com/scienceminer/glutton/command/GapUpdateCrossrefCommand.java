@@ -6,7 +6,7 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
-import com.scienceminer.glutton.storage.lookup.MetadataLookup;
+import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
 import com.scienceminer.glutton.utils.crossrefclient.IncrementalLoaderTask;
 import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
@@ -55,7 +55,7 @@ public class GapUpdateCrossrefCommand extends ConfiguredCommand<LookupConfigurat
         reporter.start(15, TimeUnit.SECONDS);
 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
-        MetadataLookup metadataLookup = MetadataLookup.getInstance(storageEnvFactory);
+        CrossrefMetadataLookup metadataLookup = CrossrefMetadataLookup.getInstance(storageEnvFactory);
 
         final String crossrefFilePathString = configuration.getCrossref().getDumpPath();
         Path crossrefFilePath = Paths.get(crossrefFilePathString);

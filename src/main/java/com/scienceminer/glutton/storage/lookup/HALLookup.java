@@ -4,9 +4,11 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.data.MatchingDocument;
+import com.scienceminer.glutton.data.Biblio;
+import com.scienceminer.glutton.harvester.HALOAIPMHHarvester;
 import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.exception.ServiceOverloadedException;
-import com.scienceminer.glutton.reader.CrossrefJsonReader;
+import com.scienceminer.glutton.serialization.BiblioSerializer;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.utils.BinarySerialiser;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -31,20 +33,25 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 /**
+ * Warning: this is HAL metadata
  * Singleton class
- * Lookup metadata -> doi
+ * Lookup hal id -> metadata 
+ * Lookup doi -> hal id
  */
-public class MetadataLookup {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MetadataLookup.class);
+public class HALLookup {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HALLookup.class);
 
-    private static volatile MetadataLookup instance;
+    private static volatile HALLookup instance;
 
     private Env<ByteBuffer> environment;
-    private Dbi<ByteBuffer> dbCrossrefJson;
+    private Dbi<ByteBuffer> dbHALJson;
+    private Dbi<ByteBuffer> dbDoiToHal;
 
-    public static final String ENV_NAME = "crossref";
+    public static final String ENV_NAME = "hal";
 
-    public static final String NAME_CROSSREF_JSON = ENV_NAME + "_Jsondoc";
+    public static final String NAME_HAL_JSON = ENV_NAME + "_Jsondoc";
+    public static final String NAME_DOI2HAL = ENV_NAME + "_doi2hal";
+
     private final int batchSize;
 
     private LookupConfiguration configuration;
@@ -52,9 +59,9 @@ public class MetadataLookup {
     // this date keeps track of the latest indexed date of the metadata database
     private LocalDateTime lastIndexed = null; 
 
-    public static MetadataLookup getInstance(StorageEnvFactory storageEnvFactory) {
+    public static HALLookup getInstance(StorageEnvFactory storageEnvFactory) {
         if (instance == null) {
-            synchronized (MetadataLookup.class) {
+            synchronized (HALLookup.class) {
                 if (instance == null) {
                     getNewInstance(storageEnvFactory);
                 }
@@ -67,37 +74,37 @@ public class MetadataLookup {
      * Creates a new instance.
      */
     private static synchronized void getNewInstance(StorageEnvFactory storageEnvFactory) {
-        instance = new MetadataLookup(storageEnvFactory);
+        instance = new HALLookup(storageEnvFactory);
     }
 
-
-    private MetadataLookup(StorageEnvFactory storageEnvFactory) {
+    private HALLookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
 
         configuration = storageEnvFactory.getConfiguration();
         batchSize = configuration.getLoadingBatchSize();
-        dbCrossrefJson = this.environment.openDbi(NAME_CROSSREF_JSON, DbiFlags.MDB_CREATE);
+
+        dbHALJson = this.environment.openDbi(NAME_HAL_JSON, DbiFlags.MDB_CREATE);
+        dbDoiToHal = this.environment.openDbi(NAME_DOI2HAL, DbiFlags.MDB_CREATE);
     }
 
-    public void loadFromFile(InputStream is, CrossrefJsonReader reader, Meter meterValidRecord, Counter counterInvalidRecords) {
+    public void loadFromOAIPMH(Meter meterValidRecord, Counter counterInvalidRecords) {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counter = new AtomicInteger(0);
 
-        reader.load(is, counterInvalidRecords, crossrefData -> {
-            if (counter.get() == batchSize) {
-                transactionWrapper.tx.commit();
-                transactionWrapper.tx.close();
-                transactionWrapper.tx = environment.txnWrite();
-                counter.set(0);
-            }
-            String key = lowerCase(crossrefData.get("DOI").asText());
+        HALOAIPMHHarvester harvester = new HALOAIPMHHarvester(transactionWrapper);
+        harvester.fetchAllDocuments(this, meterValidRecord, counterInvalidRecords);
+    }
 
-            store(key, crossrefData.toString(), dbCrossrefJson, transactionWrapper.tx);
-            meterValidRecord.mark();
-            counter.incrementAndGet();
-        });
-        transactionWrapper.tx.commit();
-        transactionWrapper.tx.close();
+    public void storeObject(Biblio biblio, Txn<ByteBuffer> tx) {
+        try {
+            String dbBiblioJson = BiblioSerializer.serializeJson(biblio, null, this);
+System.out.println(dbBiblioJson);
+            store(biblio.getHalId(), dbBiblioJson, dbHALJson, tx);
+            if (!isBlank(biblio.getDoi()))
+                store(biblio.getDoi(), biblio.getHalId(), dbDoiToHal, tx);
+        } catch (Exception e) {
+            LOGGER.error("Cannot serialize the metadata", e);
+        }
     }
 
     private void store(String key, String value, Dbi<ByteBuffer> db, Txn<ByteBuffer> tx) {
@@ -113,11 +120,17 @@ public class MetadataLookup {
         }
     }
 
+    public void commitTransactions(TransactionWrapper transactionWrapper) {       
+        transactionWrapper.tx.commit();
+        transactionWrapper.tx.close();
+        transactionWrapper.tx = environment.txnWrite();
+    }
+
     public Map<String, Long> getSize() {
 
         Map<String, Long> sizes = new HashMap<>();
         try (final Txn<ByteBuffer> txn = this.environment.txnRead()) {
-            sizes.put(NAME_CROSSREF_JSON, dbCrossrefJson.stat(txn).entries);
+            sizes.put(NAME_HAL_JSON, dbHALJson.stat(txn).entries);
         } catch (Env.ReadersFullException e) {
             throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         }
@@ -134,39 +147,58 @@ public class MetadataLookup {
         return fullsize;
     }
 
-    public String retrieveJsonDocument(String doi) {
+    public String retrieveJsonDocument(String halID) {
         final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
         ByteBuffer cachedData = null;
         String record = null;
         try (Txn<ByteBuffer> tx = environment.txnRead()) {
-            keyBuffer.put(BinarySerialiser.serialize(doi)).flip();
-            cachedData = dbCrossrefJson.get(tx, keyBuffer);
+            keyBuffer.put(BinarySerialiser.serialize(halID)).flip();
+            cachedData = dbHALJson.get(tx, keyBuffer);
             if (cachedData != null) {
                 record = (String) BinarySerialiser.deserializeAndDecompress(cachedData);
             }
         } catch (Env.ReadersFullException e) {
             throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
         } catch (Exception e) {
-            LOGGER.error("Cannot retrieve Crossref document by DOI:  " + doi, e);
+            LOGGER.error("Cannot retrieve HAL metadata by HAL ID:  " + halID, e);
         }
 
         return record;
     }
 
     /**
-     * Lookup by DOI
+     * Lookup by HAL ID
      **/
-    public MatchingDocument retrieveByMetadata(String doi) {
-        if (isBlank(doi)) {
-            throw new ServiceException(400, "The supplied DOI is null.");
+    public MatchingDocument retrieveByHalId(String halID) {
+        if (isBlank(halID)) {
+            throw new ServiceException(400, "The supplied HAL ID is null.");
         }
-        final String jsonDocument = retrieveJsonDocument(lowerCase(doi));
+        final String jsonDocument = retrieveJsonDocument(lowerCase(halID));
 
-        return new MatchingDocument(doi, jsonDocument);
+        return new MatchingDocument(halID, jsonDocument);
+    }
+
+    public String retrieveHalIdByDoi(String doi) {
+        final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
+        ByteBuffer cachedData = null;
+        String halId = null;
+        try (Txn<ByteBuffer> tx = environment.txnRead()) {
+            keyBuffer.put(BinarySerialiser.serialize(lowerCase(doi))).flip();
+            cachedData = dbDoiToHal.get(tx, keyBuffer);
+            if (cachedData != null) {
+                halId = (String) BinarySerialiser.deserialize(cachedData);
+            }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
+        } catch (Exception e) {
+            LOGGER.error("Cannot retrieve HAL ID by DOI: " + doi, e);
+        }
+
+        return halId;
     }
 
     public List<Pair<String, String>> retrieveList(Integer total) {
-        return retrieveList(total, dbCrossrefJson);
+        return retrieveList(total, dbHALJson);
     }
 
     public List<Pair<String, String>> retrieveList(Integer total, Dbi<ByteBuffer> db) {
@@ -210,7 +242,7 @@ public class MetadataLookup {
             ByteBuffer cachedData = null;
             try (Txn<ByteBuffer> tx = environment.txnRead()) {
                 keyBuffer.put(BinarySerialiser.serialize("last-indexed-date")).flip();
-                cachedData = dbCrossrefJson.get(tx, keyBuffer);
+                cachedData = dbHALJson.get(tx, keyBuffer);
                 if (cachedData != null) {
                     lastIndexed = (LocalDateTime) BinarySerialiser.deserializeAndDecompress(cachedData);
                 }
@@ -234,7 +266,7 @@ public class MetadataLookup {
             final byte[] serializedValue = BinarySerialiser.serializeAndCompress(this.lastIndexed);
             final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
             valBuffer.put(serializedValue).flip();
-            dbCrossrefJson.put(transactionWrapper.tx, keyBuffer, valBuffer);
+            dbHALJson.put(transactionWrapper.tx, keyBuffer, valBuffer);
         } catch (Exception e) {
             LOGGER.error("Cannot store the last-indexed-date");
         } finally {

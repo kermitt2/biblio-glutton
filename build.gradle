@@ -125,3 +125,40 @@ artifacts {
 //    archives shadowDistZip
 //    archives shadowDistTar
 }
+
+/*
+java 
+--add-opens java.base/java.nio=ALL-UNNAMED 
+--add-opens java.base/java.lang=ALL-UNNAMED 
+--add-opens java.base/java.math=ALL-UNNAMED 
+--add-opens java.base/java.util=ALL-UNNAMED 
+--add-opens java.base/java.util.concurrent=ALL-UNNAMED 
+--add-opens java.base/java.net=ALL-UNNAMED 
+--add-opens java.base/java.text=ALL-UNNAMED 
+--add-opens java.base/sun.nio.ch=ALL-UNNAMED   
+
+-jar build/libs/lookup-service-0.3-SNAPSHOT-onejar.jar hal config/glutton.yml
+*/
+
+task server(dependsOn: 'classes', type: JavaExec, group: 'service') {
+    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    classpath = sourceSets.main.runtimeClasspath
+    args 'server', 'config/glutton.yml'
+    if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
+        jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED" 
+    } else {
+        jvmArgs '-Xmx3072m'
+    }
+}
+
+task hal(dependsOn: 'classes', type: JavaExec, group: 'data') {
+    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    classpath = sourceSets.main.runtimeClasspath
+    args 'hal', 'config/glutton.yml'
+    if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
+        jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"
+    } else {
+        jvmArgs '-Xmx3072m'
+    }
+}
+

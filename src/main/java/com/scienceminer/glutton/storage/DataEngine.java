@@ -14,9 +14,10 @@ public class DataEngine {
 
     private OALookup oaDoiLookup = null;
     private IstexIdsLookup istexLookup = null;
-    private MetadataLookup metadataLookup = null;
+    private CrossrefMetadataLookup metadataLookup = null;
     private MetadataMatching metadataMatching = null;
     private PMIdsLookup pmidLookup = null;
+    private HALLookup halLookup = null;
 
     public static Pattern DOIPattern = Pattern.compile("\"DOI\":\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
 
@@ -26,9 +27,10 @@ public class DataEngine {
     public DataEngine(StorageEnvFactory storageFactory) {
         this.oaDoiLookup = new OALookup(storageFactory);
         this.istexLookup = new IstexIdsLookup(storageFactory);
-        this.metadataLookup = MetadataLookup.getInstance(storageFactory);
+        this.metadataLookup = CrossrefMetadataLookup.getInstance(storageFactory);
+        this.pmidLookup = PMIdsLookup.getInstance(storageFactory);
+        this.halLookup = HALLookup.getInstance(storageFactory);
         this.metadataMatching = MetadataMatching.getInstance(storageFactory.getConfiguration(), metadataLookup);
-        this.pmidLookup = new PMIdsLookup(storageFactory);
     }
 
 
@@ -82,7 +84,7 @@ public class DataEngine {
         this.istexLookup = istexLookup;
     }
 
-    protected void setMetadataLookup(MetadataLookup metadataLookup) {
+    protected void setCrossrefMetadataLookup(CrossrefMetadataLookup metadataLookup) {
         this.metadataLookup = metadataLookup;
     }
 

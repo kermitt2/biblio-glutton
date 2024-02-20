@@ -76,18 +76,17 @@ Resource dumps will be compiled in high performance LMDB databases. The system c
 #### Build the data loader 
 
 ```sh
-cd lookup
 ./gradlew clean build
 ```
 
-All the following commands need to be launched under the subdirectory `lookup/`. The loading of the following database can be done in parallel. The default configuration file under `biblio-glutton/config/glutton.yml` will be used if not indicated. To use a configuration file in another location, just add the full path as additional parameter like for running the sevice. 
+All the following commands need to be launched under the project root `biblio-glutton/`. The loading of the following database can be done in parallel. The default configuration file under `biblio-glutton/config/glutton.yml` will be used. 
 
 #### CrossRef metadata
 
 General command line pattern:
 
 ```sh
-java --add-opens java.base/java.nio=ALL-UNNAMED -jar build/libs/lookup-service-0.2-onejar.jar crossref --input /path/to/crossref/json/file path/to/config/file/glutton.yml
+./gradlew crossref --input /path/to/crossref/json/file path/to/config/file/glutton.yml
 ```
 
 Example with Crossref Metadata Plus snapshot (path to a `.tar.gz` file which archives many json files):

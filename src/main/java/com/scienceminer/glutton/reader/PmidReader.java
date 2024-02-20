@@ -28,7 +28,7 @@ public class PmidReader {
 
             stream.forEach(line -> closure.accept(fromCSV(line)));
         } catch (IOException e) {
-            LOGGER.error("Some serious error when processing the input PMMID/PMC/DOI mapping file.", e);
+            LOGGER.error("Some serious error when processing the input PMID/PMC/DOI mapping file.", e);
         }
 
     }
@@ -45,7 +45,7 @@ public class PmidReader {
             });
 
         } catch (IOException e) {
-            LOGGER.error("Some serious error when processing the input PMMID/PMC/DOI mapping file.", e);
+            LOGGER.error("Some serious error when processing the input PMID/PMC/DOI mapping file.", e);
         }
     }
 

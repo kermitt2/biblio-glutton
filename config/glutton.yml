@@ -32,7 +32,7 @@ proxy:
     port: 
 
 crossref:
-  # Crossref fields to be ignored when storing metadata, reference field in particular take a lot of space
+  # Crossref fields to be ignored when storing metadata, reference field in particular takes a lot of space
   ignoreCrossrefFields: 
     - reference
     - abstract
