@@ -511,6 +511,14 @@ public class Biblio implements Serializable {
 		setPublisherAttribute("number", number);
 	}
 
+	public String getOriginalDocumentype() {
+		return (String) getAttributeValue("originalDocumentype");
+	}
+
+	public void setOriginalDocumentype(String theType) {
+		setPublisherAttribute("originalDocumentype", theType);
+	}
+
 	public String getIsbn() {
 		return (String) getAttributeValue("isbn13");
 	}

@@ -1,17 +1,20 @@
 package com.scienceminer.glutton.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.dropwizard.Configuration;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.dropwizard.client.HttpClientConfiguration;
+import io.dropwizard.core.Configuration;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.io.File;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class LookupConfiguration extends Configuration {
 
     private int loadingBatchSize = 10000;
+    private int indexingBatchSize = 500;
 
     private int blockSize = 0;
 
@@ -21,7 +24,11 @@ public class LookupConfiguration extends Configuration {
 
     private Source source;
 
+    private String searchEngine;
+
     private Elastic elastic;
+
+    private Solr solr;
 
     private Crossref crossref;
 
@@ -77,12 +84,24 @@ public class LookupConfiguration extends Configuration {
         this.version = version;
     }
 
+    public String getSearchEngine() {
+        return searchEngine;
+    }
+
+    public void setSearchEngine(String searchEnginesearchEngine) {
+        this.searchEngine = searchEngine;
+    }
+
     public Source getSource() {
         return source;
     }
 
     public Elastic getElastic() {
         return elastic;
+    }
+
+    public Solr getSolr() {
+        return solr;
     }
 
     public Crossref getCrossref() {
@@ -95,6 +114,14 @@ public class LookupConfiguration extends Configuration {
 
     public void setLoadingBatchSize(int loadingBatchSize) {
         this.loadingBatchSize = loadingBatchSize;
+    }
+
+    public int getIndexingBatchSize() {
+        return indexingBatchSize;
+    }
+
+    public void setIndexingBatchSize(int indexingBatchSize) {
+        this.indexingBatchSize = indexingBatchSize;
     }
 
     public int getBlockSize() {
@@ -189,6 +216,28 @@ public class LookupConfiguration extends Configuration {
 
         public void setMaxConnections(int maxConnections) {
             this.maxConnections = maxConnections;
+        }
+    }
+
+    public class Solr {
+
+        private String host;
+        private String core;
+
+        public String getHost() {
+            return host;
+        }
+
+        public void setHost(String host) {
+            this.host = host;
+        }
+
+        public String getCore() {
+            return core;
+        }
+
+        public void setCore(String core) {
+            this.core = core;
         }
     }
 

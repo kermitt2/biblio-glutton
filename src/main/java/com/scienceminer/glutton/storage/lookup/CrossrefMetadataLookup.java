@@ -7,6 +7,7 @@ import com.scienceminer.glutton.data.MatchingDocument;
 import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.exception.ServiceOverloadedException;
 import com.scienceminer.glutton.reader.CrossrefJsonReader;
+import com.scienceminer.glutton.indexing.ElasticSearchIndexer;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.utils.BinarySerialiser;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -70,7 +71,6 @@ public class CrossrefMetadataLookup {
     private static synchronized void getNewInstance(StorageEnvFactory storageEnvFactory) {
         instance = new CrossrefMetadataLookup(storageEnvFactory);
     }
-
 
     private CrossrefMetadataLookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
@@ -242,6 +242,10 @@ public class CrossrefMetadataLookup {
             transactionWrapper.tx.commit();
             transactionWrapper.tx.close();
         }
+    }
+
+    public void indexMetadata(ElasticSearchIndexer indexer, Meter meter, Counter counterIndexedRecords) {
+        indexer.indexCollection(environment, dbCrossrefJson, false, meter, counterIndexedRecords);
     }
 
     public void close() {

@@ -66,7 +66,6 @@ public class MetadataMatching {
 
     private final String INDEX_FIELD_NAME_JSONDOC = "jsondoc";
 
-
     public static MetadataMatching getInstance(LookupConfiguration configuration, 
                                                CrossrefMetadataLookup metadataLookup) {
         if (instance == null) {

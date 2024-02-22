@@ -4,7 +4,8 @@ import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Binder;
 import com.google.inject.Provides;
-import com.hubspot.dropwizard.guicier.DropwizardAwareModule;
+//import com.hubspot.dropwizard.guicier.DropwizardAwareModule;
+import ru.vyarus.dropwizard.guice.module.support.DropwizardAwareModule;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.web.resource.DataController;
@@ -12,27 +13,26 @@ import com.scienceminer.glutton.web.resource.LookupController;
 import com.scienceminer.glutton.web.resource.OAController;
 import com.scienceminer.glutton.web.resource.OaIstexController;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
 
 public class LookupServiceModule extends DropwizardAwareModule<LookupConfiguration> {
 
-
     @Override
-    public void configure(Binder binder) {
+    public void configure() {
         //REST
-        binder.bind(LookupController.class);
-        binder.bind(DataController.class);
-        binder.bind(OAController.class);
-        binder.bind(OaIstexController.class);
+        bind(LookupController.class);
+        bind(DataController.class);
+        bind(OAController.class);
+        bind(OaIstexController.class);
 
         //LMDB
-        binder.bind(StorageEnvFactory.class);
+        bind(StorageEnvFactory.class);
     }
 
     @Provides
     protected ObjectMapper getObjectMapper() {
-        return getEnvironment().getObjectMapper();
+        return environment().getObjectMapper();
     }
 
     @Provides
@@ -42,7 +42,7 @@ public class LookupServiceModule extends DropwizardAwareModule<LookupConfigurati
 
     //for unit tests
     protected MetricRegistry getMetricRegistry() {
-        return getEnvironment().metrics();
+        return environment().metrics();
     }
 
     @Provides

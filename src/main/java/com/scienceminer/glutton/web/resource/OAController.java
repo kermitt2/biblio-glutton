@@ -9,8 +9,8 @@ import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.storage.LookupEngine;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 

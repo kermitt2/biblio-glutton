@@ -69,10 +69,11 @@ public class HALOAIPMHHarvester extends Harvester {
             String request = String.format("%s/?verb=ListRecords&metadataPrefix=%s&from=%s&until=%s",
                     this.oai_url, OAI_FORMAT, date, date);
 
-            if (tokenn != null) {
+            if (tokenn != null && tokenn.length()>0) {
                 request = String.format("%s/?verb=ListRecords&resumptionToken=%s", this.oai_url, tokenn);
             }
             logger.info("Sending: " + request);
+            System.out.println(request);
 
             InputStream in = Utilities.request(request);
             List<Biblio> grabbedObjects = this.oaiDom.getGrabbedObjects(in, counterInvalidRecords);

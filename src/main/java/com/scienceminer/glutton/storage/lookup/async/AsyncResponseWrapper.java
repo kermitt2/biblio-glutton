@@ -1,6 +1,6 @@
 package com.scienceminer.glutton.storage.lookup.async;
 
-import javax.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.container.AsyncResponse;
 
 public class AsyncResponseWrapper {
 

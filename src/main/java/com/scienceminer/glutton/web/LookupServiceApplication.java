@@ -14,11 +14,14 @@ import com.scienceminer.glutton.utils.crossrefclient.IncrementalLoaderTask;
 import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 
-import io.dropwizard.Application;
 import io.dropwizard.forms.MultiPartBundle;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
-import com.hubspot.dropwizard.guicier.GuiceBundle;
+import io.dropwizard.core.Application;
+import io.dropwizard.core.setup.Bootstrap;
+import io.dropwizard.core.setup.Environment;
+
+//import com.hubspot.dropwizard.guicier.GuiceBundle;
+import ru.vyarus.dropwizard.guice.GuiceBundle;
+import com.google.inject.AbstractModule;
 
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.eclipse.jetty.servlets.QoSFilter;
@@ -30,8 +33,8 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterRegistration;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.FilterRegistration;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -139,15 +142,24 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         scheduleDailyUpdate(configuration, storageEnvFactory);
     }
 
-    private List<? extends Module> getGuiceModules() {
+    /*private List<? extends Module> getGuiceModules() {
         return Lists.newArrayList(new LookupServiceModule());
+    }*/
+
+    private AbstractModule getGuiceModules() {
+        return new LookupServiceModule();
     }
 
     @Override
     public void initialize(Bootstrap<LookupConfiguration> bootstrap) {
-        GuiceBundle<LookupConfiguration> guiceBundle = GuiceBundle.defaultBuilder(LookupConfiguration.class)
+        /*GuiceBundle<LookupConfiguration> guiceBundle = GuiceBundle.defaultBuilder(LookupConfiguration.class)
                 .modules(getGuiceModules())
-                .build();
+                .build();*/
+
+        GuiceBundle guiceBundle = GuiceBundle.builder()
+            .modules(getGuiceModules())
+            .build();
+
         bootstrap.addBundle(guiceBundle);
         bootstrap.addBundle(new MultiPartBundle());
         bootstrap.addCommand(new LoadUnpayWallCommand());
@@ -156,6 +168,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         bootstrap.addCommand(new LoadCrossrefCommand());
         bootstrap.addCommand(new GapUpdateCrossrefCommand());
         bootstrap.addCommand(new LoadHALCommand());
+        bootstrap.addCommand(new IndexCommand());
     }
 
     public static void main(String... args) throws Exception {

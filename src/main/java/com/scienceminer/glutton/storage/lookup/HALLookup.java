@@ -10,6 +10,7 @@ import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.exception.ServiceOverloadedException;
 import com.scienceminer.glutton.serialization.BiblioSerializer;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
+import com.scienceminer.glutton.indexing.ElasticSearchIndexer;
 import com.scienceminer.glutton.utils.BinarySerialiser;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -273,6 +274,10 @@ public class HALLookup {
             transactionWrapper.tx.commit();
             transactionWrapper.tx.close();
         }
+    }
+
+    public void indexMetadata(ElasticSearchIndexer indexer, Meter meter, Counter counterIndexedRecords) {
+        indexer.indexCollection(environment, dbHALJson, false, meter, counterIndexedRecords);
     }
 
     public void close() {

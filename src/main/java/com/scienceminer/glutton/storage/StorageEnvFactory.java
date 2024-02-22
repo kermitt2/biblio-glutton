@@ -4,8 +4,8 @@ import com.scienceminer.glutton.configuration.LookupConfiguration;
 import org.lmdbjava.Env;
 import org.lmdbjava.EnvFlags;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.io.File;
 import java.nio.ByteBuffer;
 

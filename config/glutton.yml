@@ -2,12 +2,12 @@ version: 0.3
 
 # where the compiled metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings, 
 # this is a single location for all compiled resources  
-storage: data/db
-#storage: /media/lopez/T51/data/db
+#storage: data/db
+storage: /media/lopez/data2/glutton-data/data/db
 
 # batch size for preparing the data
 loadingBatchSize: 10000
-indexBatchSize: 500
+indexingBatchSize: 500
 
 # max blocking size (number of candidates considered for pairwise matching)
 blockSize: 4
@@ -19,12 +19,22 @@ timeZone: UTC
 # the day hour for lauching the automatic daily incremental update, format is HH:MM
 dailyUpdateTime: 03:00
 
-# a node of the elasticsearch cluster to be used and a name for the index
+# define the search infrastructure to be used, possible values are "elasticSearch" or "solr"
+searchEngine: elasticSearch
+#searchEngine: solr
+
+# a node of the ElasticSearch cluster to be used and a name for the main index
 elastic:
   #host: localhost:9200
-  host: 0.0.0.0:9200
-  index: crossref
+  #host: 0.0.0.0:9200
+  host: 192.168.1.30:9200
+  index: glutton
   maxConnections: 20
+
+# solr settings
+solr:
+  host: 0.0.0.0:8983
+  core: glutton
 
 proxy:
     # proxy to be used when doing external call to crossref or unpaywall
@@ -56,11 +66,11 @@ crossref:
   token:
 
 # the following is used only for pubmed related enrichments and extractions
-pubmed:
+#pubmed:
   # path to the medline downloaded resources, to be changed according to your storage
-  pubmedDirectory: /media/lopez/data2/medline_2023
+  #pubmedDirectory: /media/lopez/data2/medline_2023
   # path to PMC mapping data
-  pmcDirectory: data/pmc
+  #pmcDirectory: data/pmc
   # elasticsearch index for pubmed, used to create extraction based on MeSH terms
   #index: pubmed
   # path to the working pubmed databases, to be changed according to your storage 
@@ -100,7 +110,9 @@ server:
   registerDefaultExceptionMappers: false
   maxThreads: 2048
   maxQueuedRequests: 2048
-  acceptQueueSize: 2048
+  # change the following for having all http requests logged
+  requestLog:
+    appenders: []
 
 # logging:
 #  level: INFO

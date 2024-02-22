@@ -675,6 +675,7 @@ public class HALTEISaxHandler extends DefaultHandler {
     public void mapDocumentType(Biblio biblio, String codeType) {
         if (codeType == null) 
             return;
+        biblio.setOriginalDocumentype(codeType);
         if (codeType.equals("ART")) {
             biblio.setDocumentType(BiblioDefinitions.ARTICLE);
             biblio.setHostType(BiblioDefinitions.JOURNAL);

@@ -11,8 +11,8 @@ import com.scienceminer.glutton.reader.CrossrefJsonlReader;
 import com.scienceminer.glutton.reader.CrossrefJsonArrayReader;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
-import io.dropwizard.cli.ConfiguredCommand;
-import io.dropwizard.setup.Bootstrap;
+import io.dropwizard.core.cli.ConfiguredCommand;
+import io.dropwizard.core.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
