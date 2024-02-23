@@ -76,7 +76,7 @@ public class CrossrefMetadataLookup {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
 
         configuration = storageEnvFactory.getConfiguration();
-        batchSize = configuration.getLoadingBatchSize();
+        batchSize = configuration.getStoringBatchSize();
         dbCrossrefJson = this.environment.openDbi(NAME_CROSSREF_JSON, DbiFlags.MDB_CREATE);
     }
 

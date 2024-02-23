@@ -31,87 +31,272 @@ public class MetadataObjBuilder {
     public static MetadataObj createMetadataObj(String recordJson) {
         MetadataObj metadataObj = null;
         try {
-            JsonNode jsonNode = objectMapper.readTree(recordJson);
+            JsonNode rootNode = objectMapper.readTree(recordJson);
             metadataObj = new MetadataObj();
-            /*        
-            // - migrate id from "_id" to "id"
-            if ("_id" in data && "$oid" in data._id) {
-                obj._id = data._id.$oid;
-                delete data._id;
+
+            String source = null;
+            JsonNode sourceNode = rootNode.get("source");
+            if (sourceNode != null && (!sourceNode.isMissingNode())) {
+                source = sourceNode.asText();
             }
 
-            // Just keep the fields we want to index
+            if (source == null) {
+                logger.error("The source of the metadata record is not specified! The record will be ignored");
+                return null;
+            }
 
-            // - Main fields (in the mapping)
-            obj.title = data.title;
-            // normally it's an array of string
-            if (typeof obj.title === "string") {
-                obj.title = obj.title.replace("\n", " ");
-                obj.title = obj.title.replace("( )+", " ");
-                obj.title = [ obj.title ];
+            // set strong identifier, and canonical record identifier (prefix is the source, then the source identifier)
+            JsonNode doiNode = rootNode.get("DOI");
+            if (doiNode != null && (!doiNode.isMissingNode())) {
+                metadataObj.DOI = doiNode.asText();
+            } 
+
+            JsonNode halIdNode = rootNode.get("halId");
+            if (halIdNode != null && (!halIdNode.isMissingNode())) {
+                metadataObj.halId = halIdNode.asText();
+            }
+
+            if ("hal".equals(source)) {
+                if (metadataObj._id == null)
+                    metadataObj._id = source+":"+metadataObj.halId;
+            } else if ("crossref".equals(source)) {
+                if (metadataObj._id == null)
+                    metadataObj._id = source+":"+metadataObj.DOI;
             } else {
-                // it's an array
-                for(var pos in obj.title) {
-                    obj.title[pos] = obj.title[pos].replace("\n", " ");
-                    obj.title[pos] = obj.title[pos].replace("( )+", " ");
+                logger.error("The source of the metadata record is not supported: " + source);
+            }
+
+            // we go through the fields we want to index
+
+            JsonNode titleNode = rootNode.get("title");
+            if (titleNode != null && (!titleNode.isMissingNode())) {
+                if (titleNode.isArray() && ((ArrayNode)titleNode).size() > 0) {
+                    Iterator<JsonNode> oneTitleIter = ((ArrayNode)titleNode).elements();
+                    while (oneTitleIter.hasNext()) {
+                        JsonNode oneDocNode = oneTitleIter.next();
+                        String localTitle = oneDocNode.asText();
+                        localTitle = localTitle.replace("\n", " ");
+                        localTitle = localTitle.replaceAll("( )+", " ");
+                        if (metadataObj.title == null)
+                            metadataObj.title = new ArrayList<>();
+                        if (isNotBlank(localTitle)) 
+                            metadataObj.title.add(localTitle);
+                    }
+                } else {
+                    String localTitle = titleNode.asText();
+                    localTitle = localTitle.replace("\n", " ");
+                    localTitle = localTitle.replaceAll("( )+", " ");
+                    if (isNotBlank(localTitle)) 
+                        metadataObj.title = Arrays.asList(localTitle);
                 }
             }
 
-            obj.DOI = data.DOI;
+            JsonNode authorNode = rootNode.get("author");
+            if (authorNode != null && (!authorNode.isMissingNode())) {
+                if (authorNode.isArray() && ((ArrayNode)authorNode).size() > 0) {
+                    Iterator<JsonNode> oneAuthorIter = ((ArrayNode)authorNode).elements();
+                    boolean firstAuthorSet = false;
+                    int rank = 0;
+                    String first_author_family_name = null;
+                    while (oneAuthorIter.hasNext()) {
+                        JsonNode oneAuthorNode = oneAuthorIter.next();
 
-            if (data.author) {
-                obj.author = "";
-                var firstAuthorSet = false;
-                for (var aut in data.author) {
-                    if (data.author[aut].sequence === "first") {
-                        if (data.author[aut].family) {
-                            obj.first_author = data.author[aut].family;
-                            firstAuthorSet = true;
+                        JsonNode sequenceNode = oneAuthorNode.get("sequence");
+                        String sequenceValue = "";
+                        if (sequenceNode != null && (!sequenceNode.isMissingNode())) {
+                            sequenceValue = sequenceNode.asText();
                         }
-                        //else {
-                        //    obj.first_author = data.author[aut].name;
-                        //    console.log(data.author[aut]);
-                        //}
-                    }
-                    if (data.author[aut].family)
-                        obj.author += data.author[aut].family + " ";
-                    //else 
-                    //    console.log(data.author[aut]);
-                }
-                obj.author = obj.author.trim();
 
-                if (!firstAuthorSet) {
-                    // not sequence information apparently, so as fallback we use the first
-                    // author in the author list
-                    if (data.author.length > 0) {
-                        if (data.author[0].family) {
-                            obj.first_author = data.author[0].family;
-                            firstAuthorSet = true;
+                        if ("first".equals(sequenceValue)) {
+                            JsonNode familyNode = oneAuthorNode.get("family");
+                            if (familyNode != null && (!familyNode.isMissingNode())) {
+                                metadataObj.first_author = familyNode.asText();
+                                firstAuthorSet = true;
+                            }
+                        }
+
+                        JsonNode familyNode = oneAuthorNode.get("family");
+                        if (familyNode != null && (!familyNode.isMissingNode())) {
+                            if (metadataObj.author == null)
+                                metadataObj.author = "";
+                            metadataObj.author += familyNode.asText() + " ";
+                            if (rank == 0)
+                                first_author_family_name = familyNode.asText();
+                        }
+
+                        rank++;
+                    }
+
+                    if (!firstAuthorSet) {
+                        // no sequence information apparently, so as fallback we use the first
+                        // author in the author list
+                        if (first_author_family_name != null) {
+                            metadataObj.first_author = first_author_family_name;
                         }
                     }
                 }
             }
 
+            
             // parse page metadata to get the first page only
-            if (data.page) {
+            JsonNode pageNode = rootNode.get("page");
+            if (pageNode != null && (!pageNode.isMissingNode())) {
+                String pageChunk = pageNode.asText();
+                pageChunk = pageChunk.trim();
+                String[] pagePieces = pageChunk.split(",|-| ");
+                if (pagePieces.length > 0) {
+                    metadataObj.first_page = pagePieces[0];
+                }
+            }
+
+            /*if (data.page) {
                 var pagePieces = data.page.split(/,|-| /g);
                 if (pagePieces && pagePieces.length > 0) {
                     obj.first_page = pagePieces[0];
                     //console.log(data.page, obj.first_page);
                 }
+            }*/
+
+            JsonNode containerTitleNode = rootNode.get("container-title");
+            if (containerTitleNode != null && (!containerTitleNode.isMissingNode())) {
+                if (containerTitleNode.isArray() && ((ArrayNode)containerTitleNode).size() > 0) {
+                    Iterator<JsonNode> oneTitleIter = ((ArrayNode)containerTitleNode).elements();
+                    while (oneTitleIter.hasNext()) {
+                        JsonNode oneTitleNode = oneTitleIter.next();
+                        String localTitle = oneTitleNode.asText();
+                        localTitle = localTitle.replace("\n", " ");
+                        localTitle = localTitle.replaceAll("( )+", " ");
+                        if (isNotBlank(localTitle)) {
+                            metadataObj.journal = localTitle;
+                            break;
+                        }
+                    }
+                }
             }
 
-            obj.journal = data["container-title"];
-            if ("short-container-title" in data)
-                obj.abbreviated_journal = data["short-container-title"];
+            JsonNode containerShortTitleNode = rootNode.get("short-container-title");
+            if (containerShortTitleNode != null && (!containerShortTitleNode.isMissingNode())) {
+                if (containerShortTitleNode.isArray() && ((ArrayNode)containerShortTitleNode).size() > 0) {
 
-            obj.volume = data.volume;
-            if (data.issue) {
-                obj.issue = data.issue;
+                    Iterator<JsonNode> containerShortTitleIter = ((ArrayNode)containerShortTitleNode).elements();
+                    while (containerShortTitleIter.hasNext()) {
+                        JsonNode oneContainerShortTitleNode = containerShortTitleIter.next();
+                        String localTitle = oneContainerShortTitleNode.asText();
+                        localTitle = localTitle.replace("\n", " ");
+                        localTitle = localTitle.replaceAll("( )+", " ");
+                        if (isNotBlank(localTitle)) {
+                            metadataObj.abbreviated_journal = localTitle;
+                            break;
+                        }
+                    }
+                }
             }
 
-            // year is a date part (first one) in issued or created or published-online (we follow this order)
-            if (data.issued) {
+            JsonNode volumeNode = rootNode.get("volume");
+            if (volumeNode != null && (!volumeNode.isMissingNode())) {
+                String volumeString = volumeNode.asText();
+                if (isNotBlank(volumeString))
+                    metadataObj.volume = volumeString;
+            }
+
+            // year is a date part (first one) in issued or created or published-online or published-print (we follow this order)
+            JsonNode yearNode = rootNode.get("issued");
+            if (yearNode != null && (!yearNode.isMissingNode())) {
+                JsonNode datePartsNode = yearNode.get("date-parts");
+                if (datePartsNode != null && (!datePartsNode.isMissingNode())) {
+                    if (datePartsNode.isArray() && ((ArrayNode)datePartsNode).size() > 0) {
+                        Iterator<JsonNode> datePartsNodeIter = ((ArrayNode)datePartsNode).elements();
+                        while (datePartsNodeIter.hasNext()) {
+                            JsonNode yearPartsNodeIterNode = datePartsNodeIter.next();
+                            String year = yearPartsNodeIterNode.asText();
+                            if (isNotBlank(year)) 
+                                metadataObj.year = year;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (metadataObj.year == null) {
+                yearNode = rootNode.get("published");
+                if (yearNode != null && (!yearNode.isMissingNode())) {
+                    JsonNode datePartsNode = yearNode.get("date-parts");
+                    if (datePartsNode != null && (!datePartsNode.isMissingNode())) {
+                        if (datePartsNode.isArray() && ((ArrayNode)datePartsNode).size() > 0) {
+                            Iterator<JsonNode> datePartsNodeIter = ((ArrayNode)datePartsNode).elements();
+                            while (datePartsNodeIter.hasNext()) {
+                                JsonNode yearPartsNodeIterNode = datePartsNodeIter.next();
+                                String year = yearPartsNodeIterNode.asText();
+                                if (isNotBlank(year)) 
+                                    metadataObj.year = year;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (metadataObj.year == null) {
+                yearNode = rootNode.get("published-online");
+                if (yearNode != null && (!yearNode.isMissingNode())) {
+                    JsonNode datePartsNode = yearNode.get("date-parts");
+                    if (datePartsNode != null && (!datePartsNode.isMissingNode())) {
+                        if (datePartsNode.isArray() && ((ArrayNode)datePartsNode).size() > 0) {
+                            Iterator<JsonNode> datePartsNodeIter = ((ArrayNode)datePartsNode).elements();
+                            while (datePartsNodeIter.hasNext()) {
+                                JsonNode yearPartsNodeIterNode = datePartsNodeIter.next();
+                                String year = yearPartsNodeIterNode.asText();
+                                if (isNotBlank(year)) 
+                                    metadataObj.year = year;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (metadataObj.year == null) {
+                yearNode = rootNode.get("published-print");
+                if (yearNode != null && (!yearNode.isMissingNode())) {
+                    JsonNode datePartsNode = yearNode.get("date-parts");
+                    if (datePartsNode != null && (!datePartsNode.isMissingNode())) {
+                        if (datePartsNode.isArray() && ((ArrayNode)datePartsNode).size() > 0) {
+                            Iterator<JsonNode> datePartsNodeIter = ((ArrayNode)datePartsNode).elements();
+                            while (datePartsNodeIter.hasNext()) {
+                                JsonNode yearPartsNodeIterNode = datePartsNodeIter.next();
+                                String year = yearPartsNodeIterNode.asText();
+                                if (isNotBlank(year)) 
+                                    metadataObj.year = year;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // this is deposit date, normally we will never use it, but it will ensure 
+            // that we always have a date as conservative fallback
+            if (metadataObj.year == null) {
+                yearNode = rootNode.get("created");
+                if (yearNode != null && (!yearNode.isMissingNode())) {
+                    JsonNode datePartsNode = yearNode.get("date-parts");
+                    if (datePartsNode != null && (!datePartsNode.isMissingNode())) {
+                        if (datePartsNode.isArray() && ((ArrayNode)datePartsNode).size() > 0) {
+                            Iterator<JsonNode> datePartsNodeIter = ((ArrayNode)datePartsNode).elements();
+                            while (datePartsNodeIter.hasNext()) {
+                                JsonNode yearPartsNodeIterNode = datePartsNodeIter.next();
+                                String year = yearPartsNodeIterNode.asText();
+                                if (isNotBlank(year)) 
+                                    metadataObj.year = year;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            
+            /*if (data.issued) {
                 if (data.issued["date-parts"]) {
                     obj.year = data.issued["date-parts"][0][0]
                 }
@@ -132,24 +317,31 @@ public class MetadataObjBuilder {
                 if (data.created["date-parts"]) {
                     obj.year = data.created["date-parts"][0][0]
                 }
-            }
+            }*/
             //console.log(obj.year);
 
-            // bibliograohic field is the concatenation of usual bibliographic metadata
-            var biblio = buildBibliographicField(obj);
-            if (biblio && biblio.length > 0) {
-                obj.bibliographic = biblio;
+            // bibliographic field is the concatenation of usual bibliographic metadata
+            String biblio = buildBibliographicField(metadataObj);
+            if (isNotBlank(biblio)) {
+                metadataObj.bibliographic = biblio;
             }
 
-            obj.type = data.type;*/
+            JsonNode typeNode = rootNode.get("type");
+            if (typeNode != null && (!typeNode.isMissingNode())) {
+                String localType = typeNode.asText();
+                if (isNotBlank(localType)) 
+                    metadataObj.type = localType;
+            }
+
         } catch(Exception e) {
             logger.error("fail to parse the JSON document prior to indexing", e);
+            logger.error(recordJson);
         }
 
         return metadataObj;
     }
 
-    public static String createSignature(MetadataObj obj) {
+    public static String buildBibliographicField(MetadataObj obj) {
         StringBuilder res = new StringBuilder();
 
         if (isNotBlank(obj.author))
@@ -157,8 +349,8 @@ public class MetadataObjBuilder {
         else if (isNotBlank(obj.first_author))
             res.append(obj.first_author);
 
-        if (isNotBlank(obj.title))
-            res.append(" ").append(obj.title);
+        if (obj.title != null && obj.title.size()>0)
+            res.append(" ").append(obj.title.get(0));
 
         if (isNotBlank(obj.journal))
             res.append(" ").append(obj.journal);

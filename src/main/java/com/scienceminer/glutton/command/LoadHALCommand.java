@@ -45,7 +45,7 @@ public class LoadHALCommand extends ConfiguredCommand<LookupConfiguration> {
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
                 .build();
 
-        reporter.start(15, TimeUnit.SECONDS);
+        reporter.start(30, TimeUnit.SECONDS);
 
         LOGGER.info("Preparing the system. Loading data for HAL via OAI-PMH...");
 
@@ -55,10 +55,12 @@ public class LoadHALCommand extends ConfiguredCommand<LookupConfiguration> {
         
         HALLookup halLookup = HALLookup.getInstance(storageEnvFactory);
 
-        final Meter meter = metrics.meter("HALDataLoading");
-        final Counter counterInvalidRecords = metrics.counter("HALDataLoading_rejectedRecords");
+        final Meter meter = metrics.meter("HAL_stored_records");
+        final Counter counterInvalidRecords = metrics.counter("HAL_rejected_records");
+        final Counter counterIndexedRecords = metrics.counter("HAL_indexed_records");
+        final Counter counterFailedIndexedRecords = metrics.counter("HAL_failed_indexed_records");
 
-        halLookup.loadFromOAIPMH(meter, counterInvalidRecords);
+        halLookup.loadFromHALAPI(meter, counterInvalidRecords, counterIndexedRecords, counterFailedIndexedRecords);
 
         LOGGER.info("HAL loaded " + halLookup.getSize() + " records. ");
 

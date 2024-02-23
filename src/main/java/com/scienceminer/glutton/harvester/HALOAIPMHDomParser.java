@@ -61,9 +61,17 @@ public class HALOAIPMHDomParser {
     private Document doc;
     private String token;
     private XPath xPath;
+    private SAXParserFactory spf;
 
     public HALOAIPMHDomParser() {
         xPath = XPathFactory.newInstance().newXPath();
+        spf = SAXParserFactory.newInstance();
+        try { 
+            spf.setValidating(false);
+            spf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        } catch (Exception e) {
+            logger.warn("SAXParserFactory is not happy", e);
+        }
     }
 
     /*
@@ -129,9 +137,6 @@ public class HALOAIPMHDomParser {
 
                 // SAX parser for the TEI metadata of the record
                 HALTEISaxHandler handler = new HALTEISaxHandler();
-                SAXParserFactory spf = SAXParserFactory.newInstance();
-                spf.setValidating(false);
-                spf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
 
                 // get a new instance of parser
                 SAXParser saxParser = spf.newSAXParser();

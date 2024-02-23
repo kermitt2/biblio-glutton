@@ -3,10 +3,11 @@ version: 0.3
 # where the compiled metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings, 
 # this is a single location for all compiled resources  
 #storage: data/db
-storage: /media/lopez/data2/glutton-data/data/db
+#storage: /media/lopez/data2/glutton-data/data/db
+storage: /media/lopez/data2/glutton-data2/data/db
 
 # batch size for preparing the data
-loadingBatchSize: 10000
+storingBatchSize: 10000
 indexingBatchSize: 500
 
 # max blocking size (number of candidates considered for pairwise matching)
@@ -136,7 +137,7 @@ logging:
     com.squarespace.jersey2.guice.JerseyGuiceUtils: "OFF"
   appenders:
     - type: console
-      threshold: WARN
+      threshold: INFO
       timeZone: UTC
       # uncomment to have the logs in json format
       #layout:

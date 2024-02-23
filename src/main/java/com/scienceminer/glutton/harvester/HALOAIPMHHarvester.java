@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * HAL OAI-PMH harvester implementation.
+ * HAL OAI-PMH harvester implementation
  *
  * @author Achraf, Patrice
  */
@@ -122,63 +122,6 @@ public class HALOAIPMHHarvester extends Harvester {
             logger.error(e.getMessage(), e);
         }
     }
-    
-     /**
-     * Get a list of HAL documents based on a list of HAL ID given in a file.
-     * The ID file path is available in the HarvestProperties object.
-     */
-    /* note: add a source parameter to identify the target repository and
-	 * the id type */
-    /*@Override
-    public void fetchListDocuments() {
-        BufferedReader br = null;
-        try {
-            // read the file with one hal id per line
-            String docID = null;
-            br = new BufferedReader(new FileReader(HarvestProperties.getListFile()));
-            while ((docID = br.readLine()) != null) {
-                if (docID.trim().length() == 0) {
-                    continue;
-                }
-                if (!HarvestProperties.isReset() && mm.isSavedObject(docID, null)) {
-                    logger.info("\t\t Already grabbed, Skipping...");
-                    continue;
-                }
-                String teiUrl = halUrl + docID + "/tei";
-
-                // get TEI file 
-                String teiString = IOUtils.toString(new URL(teiUrl), "UTF-8");
-                DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-                docFactory.setValidating(false);
-                Document teiDoc = null;
-                try {
-                    DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
-                    teiDoc = docBuilder.parse(new ByteArrayInputStream(teiString.getBytes()));
-                } catch (SAXException | ParserConfigurationException | IOException e) {
-                    e.printStackTrace();
-                }
-                Element rootElement = teiDoc.getDocumentElement();
-                BiblioObject biblioObject = this.oaiDom.processRecord((Element) rootElement);
-                if (biblioObject != null) {
-                    grabbedObjects.add(biblioObject);
-                }
-            }
-            saveObjects();
-        } catch (MalformedURLException mue) {
-            logger.error(mue.getMessage(), mue);
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        } finally {
-            try {
-                if (br != null) {
-                    br.close();
-                }
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-            }
-        }
-        
-    }*/
 
     @Override
     public void sample() throws IOException, SAXException, ParserConfigurationException, ParseException {

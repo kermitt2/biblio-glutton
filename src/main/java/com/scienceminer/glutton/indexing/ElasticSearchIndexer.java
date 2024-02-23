@@ -124,21 +124,6 @@ public class ElasticSearchIndexer {
                     .withJson(input)
                     .index(indexName)
                     .build());
-
-                // Create the index
-                /*CreateIndexResponse indexRequest = elasticsearchClient.indices().create(createIndexBuilder -> createIndexBuilder
-                        .index(indexName)
-                    );*/
-                
-                /*CreateIndexRequest request =
-                    CreateIndexRequest.of(builder -> builder.index(indexName).withJson(mappingJsonString));
-                CreateIndexResponse createResponse = elasticsearchClient.indices().create(request);*/
-                //boolean ack = Boolean.TRUE.equals(createResponse.acknowledged());
-                
-                /*CreateIndexResponse indexRequest = elasticsearchClient.indices()
-                    .create(createIndexRequest -> createIndexRequest.index(indexName)
-                        .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper)));*/
-
                 logger.info("Create index successfully - \n" + createResponse.toString());
             } catch (IOException ioException) {
                 logger.error("Create index failed", ioException);
@@ -179,13 +164,17 @@ public class ElasticSearchIndexer {
 
                         MetadataObj objToIndex = MetadataObjBuilder.createMetadataObj(value);
                         if (objToIndex != null && !MetadataObjBuilder.isFilteredType(objToIndex)) {
+                            objToIndex.type = null;
+                            String localIdentifier = objToIndex._id;
+                            objToIndex._id = null;
+
                             if (br == null) 
                                 br = new BulkRequest.Builder();
 
                             br.operations(op -> op           
                                 .index(idx -> idx            
                                     .index(configuration.getElastic().getIndex())       
-                                    .id(objToIndex._id)
+                                    .id(localIdentifier)
                                     .document(objToIndex)
                                 )
                             );
@@ -258,8 +247,72 @@ public class ElasticSearchIndexer {
      * Already existing keys are skipt if update is false.
      * 
      **/
-    public void indexDocuments(Env<ByteBuffer> environment, Dbi<ByteBuffer> jsonMetadataDb, List<String> documents, boolean update) {
+    public void indexDocuments(List<String> documents, boolean update, Counter counterIndexedRecords) {
+        BulkRequest.Builder br = new BulkRequest.Builder();
+        for(String document : documents) {
+            MetadataObj objToIndex = MetadataObjBuilder.createMetadataObj(document);
+            if (objToIndex != null && !MetadataObjBuilder.isFilteredType(objToIndex)) {
+                objToIndex.type = null;
+                String localIdentifier = objToIndex._id;
+                objToIndex._id = null;
+                br.operations(op -> op           
+                    .index(idx -> idx            
+                        .index(configuration.getElastic().getIndex())       
+                        .id(localIdentifier)
+                        .document(objToIndex)
+                    )
+                );
+            }
+        }
 
+        try {
+            BulkResponse result = this.elasticsearchClient.bulk(br.build());                            
+            if (result.errors()) {
+                logger.error("Bulk had errors");
+                for (BulkResponseItem item: result.items()) {
+                    if (item.error() != null) {
+                        logger.error(item.error().reason());
+                    }
+                }
+            }
+            counterIndexedRecords.inc(documents.size());
+        } catch (IOException e) {
+            logger.error("Batch indexing failed", e);
+        }
+    }
+
+    public void asyncIndexDocuments(List<String> documents, boolean update, Counter counterIndexedRecords) {
+        BulkRequest.Builder br = new BulkRequest.Builder();
+        for(String document : documents) {
+            MetadataObj objToIndex = MetadataObjBuilder.createMetadataObj(document);
+            if (objToIndex != null && !MetadataObjBuilder.isFilteredType(objToIndex)) {
+                objToIndex.type = null;
+                String localIdentifier = objToIndex._id;
+                objToIndex._id = null;
+                br.operations(op -> op           
+                    .index(idx -> idx            
+                        .index(configuration.getElastic().getIndex())       
+                        .id(localIdentifier)
+                        .document(objToIndex)
+                    )
+                );
+            }
+        }
+
+        try {
+            BulkResponse result = this.elasticsearchClient.bulk(br.build());                            
+            if (result.errors()) {
+                logger.error("Bulk had errors");
+                for (BulkResponseItem item: result.items()) {
+                    if (item.error() != null) {
+                        logger.error(item.error().reason());
+                    }
+                }
+            }
+            counterIndexedRecords.inc(documents.size());
+        } catch (IOException e) {
+            logger.error("Batch indexing failed", e);
+        }
     }
 
     public boolean indexExists(String indexName) {

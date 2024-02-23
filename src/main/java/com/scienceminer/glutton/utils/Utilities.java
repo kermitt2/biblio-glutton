@@ -203,7 +203,7 @@ public class Utilities {
             try {
                 if (delay) {
                     try {
-                        Thread.sleep(900000);
+                        Thread.sleep(2000);
                     } catch (InterruptedException ex) {
                         Thread.currentThread().interrupt();
                     }

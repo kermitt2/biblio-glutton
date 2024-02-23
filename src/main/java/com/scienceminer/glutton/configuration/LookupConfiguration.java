@@ -13,7 +13,7 @@ import java.io.File;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class LookupConfiguration extends Configuration {
 
-    private int loadingBatchSize = 10000;
+    private int storingBatchSize = 10000;
     private int indexingBatchSize = 500;
 
     private int blockSize = 0;
@@ -108,12 +108,12 @@ public class LookupConfiguration extends Configuration {
         return crossref;
     }
 
-    public int getLoadingBatchSize() {
-        return loadingBatchSize;
+    public int getStoringBatchSize() {
+        return storingBatchSize;
     }
 
-    public void setLoadingBatchSize(int loadingBatchSize) {
-        this.loadingBatchSize = loadingBatchSize;
+    public void setStoringBatchSize(int storingBatchSize) {
+        this.storingBatchSize = storingBatchSize;
     }
 
     public int getIndexingBatchSize() {

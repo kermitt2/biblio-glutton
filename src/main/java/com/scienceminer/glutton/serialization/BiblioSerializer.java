@@ -130,7 +130,7 @@ public class BiblioSerializer {
 
         if (StringUtils.isNotEmpty(biblio.getNumber())) {
             String localNumber = Utilities.simpleCleanField(biblio.getNumber());
-            builder.append(", \"journal-issue\": { \"issue\": \"" + localNumber + "\"}");
+            builder.append(", \"journal-issue\": { \"issue\": " + mapper.writeValueAsString(localNumber) + "}");
             builder.append(", \"issue\": " + mapper.writeValueAsString(localNumber));
         } 
         

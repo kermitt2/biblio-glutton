@@ -6,11 +6,13 @@ import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.data.MatchingDocument;
 import com.scienceminer.glutton.data.Biblio;
 import com.scienceminer.glutton.harvester.HALOAIPMHHarvester;
+import com.scienceminer.glutton.harvester.HALAPIHarvester;
 import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.exception.ServiceOverloadedException;
 import com.scienceminer.glutton.serialization.BiblioSerializer;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.indexing.ElasticSearchIndexer;
+import com.scienceminer.glutton.indexing.ElasticSearchAsyncIndexer;
 import com.scienceminer.glutton.utils.BinarySerialiser;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -53,7 +55,8 @@ public class HALLookup {
     public static final String NAME_HAL_JSON = ENV_NAME + "_Jsondoc";
     public static final String NAME_DOI2HAL = ENV_NAME + "_doi2hal";
 
-    private final int batchSize;
+    private final int batchStoringSize;
+    private final int batchIndexingSize;
 
     private LookupConfiguration configuration;
 
@@ -82,12 +85,26 @@ public class HALLookup {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
 
         configuration = storageEnvFactory.getConfiguration();
-        batchSize = configuration.getLoadingBatchSize();
+        batchStoringSize = configuration.getStoringBatchSize();
+        batchIndexingSize = configuration.getIndexingBatchSize();
 
         dbHALJson = this.environment.openDbi(NAME_HAL_JSON, DbiFlags.MDB_CREATE);
         dbDoiToHal = this.environment.openDbi(NAME_DOI2HAL, DbiFlags.MDB_CREATE);
     }
 
+    public void loadFromHALAPI(Meter meterValidRecord, 
+                            Counter counterInvalidRecords, 
+                            Counter counterIndexedRecords, 
+                            Counter counterFailedIndexedRecords) {
+        final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
+        final AtomicInteger counter = new AtomicInteger(0);
+
+        HALAPIHarvester harvester = new HALAPIHarvester(transactionWrapper);
+        harvester.fetchAllDocuments(this, meterValidRecord, counterInvalidRecords, 
+            counterIndexedRecords, counterFailedIndexedRecords);
+    }
+
+    @Deprecated
     public void loadFromOAIPMH(Meter meterValidRecord, Counter counterInvalidRecords) {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counter = new AtomicInteger(0);
@@ -277,7 +294,30 @@ public class HALLookup {
     }
 
     public void indexMetadata(ElasticSearchIndexer indexer, Meter meter, Counter counterIndexedRecords) {
-        indexer.indexCollection(environment, dbHALJson, false, meter, counterIndexedRecords);
+        ElasticSearchIndexer.getInstance(configuration)
+            .indexCollection(environment, dbHALJson, true, meter, counterIndexedRecords);
+    }
+
+    public void indexDocuments(List<Biblio> documents, boolean update, Counter counterIndexedRecords, Counter counterFailedIndexedRecords) {
+        List<String> jsonRecords = new ArrayList<>();
+        for(Biblio document : documents) {
+            // convert Biblio object into crossref json format
+            try{
+                jsonRecords.add(BiblioSerializer.serializeJson(document, null, this));
+            } catch (Exception e) {
+            LOGGER.error("Cannot serialize the metadata", e);
+        }
+        }
+        ElasticSearchAsyncIndexer.getInstance(configuration)
+            .asyncIndexDocuments(jsonRecords, update, counterIndexedRecords, counterFailedIndexedRecords);
+    }
+
+    public int getStoringBatchSize() {
+        return this.batchStoringSize;
+    }
+
+    public int getIndexingBatchSize() {
+        return this.batchIndexingSize;
     }
 
     public void close() {

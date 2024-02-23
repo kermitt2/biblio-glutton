@@ -67,7 +67,7 @@ public class PMIdsLookup {
 
     private PMIdsLookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
-        batchSize = storageEnvFactory.getConfiguration().getLoadingBatchSize();
+        batchSize = storageEnvFactory.getConfiguration().getStoringBatchSize();
 
         dbDoiToIds = this.environment.openDbi(NAME_DOI2IDS, DbiFlags.MDB_CREATE);
         dbPmidToIds = this.environment.openDbi(NAME_PMID2IDS, DbiFlags.MDB_CREATE);
