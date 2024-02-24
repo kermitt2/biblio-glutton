@@ -13,8 +13,8 @@ public class MetadataObj {
     public String first_author;
     public String author;
     public String first_page;
-    public String journal;
-    public String abbreviated_journal;
+    public List<String> journal;
+    public List<String> abbreviated_journal;
     public String volume;
     public String issue;
     public String year;
@@ -31,8 +31,8 @@ public class MetadataObj {
         builder.append("first_author: ").append(first_author).append(", ");
         builder.append("author: ").append(author).append(", ");
         builder.append("first_page: ").append(first_page).append(", ");
-        builder.append("journal: ").append(journal).append(", ");
-        builder.append("abbreviated_journal: ").append(abbreviated_journal).append(", ");
+        builder.append("journal: ").append(journal.toString()).append(", ");
+        builder.append("abbreviated_journal: ").append(abbreviated_journal.toString()).append(", ");
         builder.append("volume: ").append(volume).append(", ");
         builder.append("issue: ").append(issue).append(", ");
         builder.append("year: ").append(year).append(", ");

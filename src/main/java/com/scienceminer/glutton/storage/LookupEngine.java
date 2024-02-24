@@ -37,7 +37,7 @@ public class LookupEngine {
 
     private IstexIdsLookup istexLookup = null;
 
-    private CrossrefMetadataLookup metadataLookup = null;
+    private CrossrefMetadataLookup crossrefMetadataLookup = null;
     private MetadataMatching metadataMatching = null;
     private PMIdsLookup pmidLookup = null;
     private HALLookup halLookup = null;
@@ -57,10 +57,11 @@ public class LookupEngine {
     public LookupEngine(StorageEnvFactory storageFactory) {
         this.oaDoiLookup = new OALookup(storageFactory);
         this.istexLookup = new IstexIdsLookup(storageFactory);
-        this.metadataLookup = CrossrefMetadataLookup.getInstance(storageFactory);
-        this.metadataMatching = MetadataMatching.getInstance(storageFactory.getConfiguration(), metadataLookup);
-        this.pmidLookup = PMIdsLookup.getInstance(storageFactory);
+        this.crossrefMetadataLookup = CrossrefMetadataLookup.getInstance(storageFactory);
         this.halLookup = HALLookup.getInstance(storageFactory);
+        this.pmidLookup = PMIdsLookup.getInstance(storageFactory);
+        this.metadataMatching = 
+            MetadataMatching.getInstance(storageFactory.getConfiguration(), crossrefMetadataLookup, halLookup);
     }
 
     /**
@@ -164,6 +165,7 @@ public class LookupEngine {
                 if (parseReference) {
                     try {
                         grobidClient.ping();
+                        // no consolidation when calling Grobid !!
                         GrobidResponse response = grobidClient.processCitation(biblio, "0");
 
                         // TBD: extract more metadata from Grobid result to improve the pairwise ranking
@@ -192,8 +194,7 @@ public class LookupEngine {
                             jtitle1 = response.getJtitle();
 
 //System.out.println(biblio + " -> " + firstAuthor1 + " | " + atitle1 + " | " + year1 + " | " + jtitle1);
-                        List<MatchingDocument> rankedMatchingDocuments = //pairwiseRanking(atitle1, firstAuthor1, year1, matchingDocuments);
-                                pairwiseRanking(atitle1, firstAuthor1, jtitle1, 
+                        List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle1, firstAuthor1, jtitle1, 
                                     null, year1, null, null, null, null, matchingDocuments);
 
                         final MatchingDocument localResultDocument = rankedMatchingDocuments.get(0);
@@ -270,7 +271,17 @@ public class LookupEngine {
                                 String firstAuthor, 
                                 String atitle,
                                 String year) throws NotFoundException {
-        MatchingDocument outputData = metadataLookup.retrieveByMetadata(doi);
+        MatchingDocument outputData = crossrefMetadataLookup.retrieveByDoi(doi);
+        // TBD: also use year for post validation of strong identifier
+        outputData = validateJsonBody(firstAuthor, atitle, outputData);
+        return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
+    }
+
+    public String retrieveByHalId(String halid, 
+                                String firstAuthor, 
+                                String atitle,
+                                String year) throws NotFoundException {
+        MatchingDocument outputData = halLookup.retrieveByHalId(halid);
         // TBD: also use year for post validation of strong identifier
         outputData = validateJsonBody(firstAuthor, atitle, outputData);
         return injectIdsByDoi(outputData.getJsonObject(), outputData.getDOI());
@@ -352,12 +363,12 @@ public class LookupEngine {
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi()) && isNotBlank(istexData.getDoi().get(0))) {
             final String doi = istexData.getDoi().get(0);
-            MatchingDocument outputData = metadataLookup.retrieveByMetadata(doi);
+            MatchingDocument outputData = crossrefMetadataLookup.retrieveByDoi(doi);
 
             outputData = validateJsonBody(firstAuthor, atitle, outputData);
 
             final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
-            return injectIdsAndOALink(outputData.getJsonObject(), doi, istexData, oaLink);
+            return injectIdsAndOALink(outputData.getJsonObject(), doi, istexData, oaLink, null);
         }
 
         throw new NotFoundException("Cannot find bibliographical record with ISTEX ID " + istexid);
@@ -368,12 +379,12 @@ public class LookupEngine {
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi()) && isNotBlank(istexData.getDoi().get(0))) {
             final String doi = istexData.getDoi().get(0);
-            MatchingDocument outputData = metadataLookup.retrieveByMetadata(doi);
+            MatchingDocument outputData = crossrefMetadataLookup.retrieveByDoi(doi);
 
             outputData = validateJsonBody(firstAuthor, atitle, outputData);
 
             final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
-            return injectIdsAndOALink(outputData.getJsonObject(), doi, istexData, oaLink);
+            return injectIdsAndOALink(outputData.getJsonObject(), doi, istexData, oaLink, null);
         }
 
         throw new NotFoundException("Cannot find bibliographical record by PII " + pii);
@@ -622,6 +633,7 @@ public class LookupEngine {
                 atitleScore = ratcliffObershelpDistance(referenceDocument.getATitle(), matchingDocument.getATitle(), false);
             }
             accumulatedScore += atitleScore;
+//System.out.println("atitleScore: " + atitleScore);
         }
 
         // first author component
@@ -632,14 +644,17 @@ public class LookupEngine {
                 firstAuthorScore = ratcliffObershelpDistance(referenceDocument.getFirstAuthor(), matchingDocument.getFirstAuthor(), false);
             } 
             accumulatedScore += firstAuthorScore;
+//System.out.println("firstAuthorScore: " + firstAuthorScore);
         }
 
         double blockingScore = matchingDocument.getBlockingScore();
+//System.out.println("blocking score: " + blockingScore);
         nbCriteria++;
         accumulatedScore += blockingScore;
 
         // journal name component
-        if (isNotBlank(referenceDocument.getJTitle())) {
+        // note if we have a pure HAL metadata record, journal name is less reliable because of preprints
+        if (isNotBlank(referenceDocument.getJTitle()) && (matchingDocument.getDOI() != null || matchingDocument.getPmid() != null)) {
             nbCriteria++;
             Double jtitleScore = 0.0;
             if (isNotBlank(matchingDocument.getJTitle()) || isNotBlank(matchingDocument.getAbbreviatedTitle())) {
@@ -653,6 +668,7 @@ public class LookupEngine {
                     }
                 }
             } 
+//System.out.println("jtitleScore score: " + jtitleScore);
             accumulatedScore += jtitleScore;
         }
 
@@ -665,6 +681,7 @@ public class LookupEngine {
                     yearScore = 1.0;
             }
             accumulatedScore += yearScore;
+//System.out.println("yearScore score: " + yearScore);
         }
 
         // btitle: currently in the search index jtitle contains all container titles (journal names and book title names)
@@ -743,7 +760,6 @@ public class LookupEngine {
      * Introduce a minimum matching threshold based on the pairwise ranking
      */
     private boolean areMetadataMatching(MatchingDocument result) {
-//System.out.println(result.getMatchingScore());
         return (result.getMatchingScore() < THRESHOLD_MATCHING) ? false : true;
     }
 
@@ -771,13 +787,13 @@ public class LookupEngine {
 
     protected String injectIdsByDoi(String jsonobj, String doi) {
         final IstexData istexData = istexLookup.retrieveByDoi(doi);
-
         final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
+        final String halId = halLookup.retrieveHalIdByDoi(doi);
 
-        return injectIdsAndOALink(jsonobj, doi, istexData, oaLink);
+        return injectIdsAndOALink(jsonobj, doi, istexData, oaLink, halId);
     }
 
-    protected String injectIdsAndOALink(String jsonobj, String doi, IstexData istexData, String oaLink) {
+    protected String injectIdsAndOALink(String jsonobj, String doi, IstexData istexData, String oaLink, String halId) {
         boolean pmid = false;
         boolean pmc = false;
         boolean foundIstexData = false;
@@ -875,6 +891,20 @@ public class LookupEngine {
             }
         }
 
+        if (isBlank(halId)) {
+            final String localHalId = halLookup.retrieveHalIdByDoi(doi);
+            if (localHalId != null) {
+                if (isNotBlank(localHalId)) {
+                    if (!first) {
+                        sb.append(", ");
+                    } else {
+                        first = false;
+                    }
+                    sb.append("\"halId\":\"" + localHalId + "\"");
+                }
+            }
+        }
+
         if (isNotBlank(oaLink)) {
             if (!first) {
                 sb.append(", ");
@@ -905,8 +935,8 @@ public class LookupEngine {
         this.istexLookup = istexLookup;
     }
 
-    public void setCrossrefMetadataLookup(CrossrefMetadataLookup metadataLookup) {
-        this.metadataLookup = metadataLookup;
+    public void setCrossrefMetadataLookup(CrossrefMetadataLookup crossrefMetadataLookup) {
+        this.crossrefMetadataLookup = crossrefMetadataLookup;
     }
 
     public void setPmidLookup(PMIdsLookup pmidLookup) {

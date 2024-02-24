@@ -529,6 +529,13 @@ public class LookupController {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @Path("/halid/{halid}")
+    public String getByHalId(@PathParam("halid") String halid) {
+        return lookupEngine.retrieveByHalId(halid, null, null, null);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("/pmid/{pmid}")
     public String getByPmid(@PathParam("pmid") String pmid) {
         return lookupEngine.retrieveByPmid(pmid, null, null, null);

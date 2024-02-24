@@ -4,7 +4,12 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class MatchingDocument {
+    private String id;
+
     private String DOI;
+    private String halId;
+    private String pmid;
+
     private String firstAuthor;
     private String atitle;
     
@@ -32,12 +37,28 @@ public class MatchingDocument {
         this.exception = throwable;
     }
 
-    public MatchingDocument(String DOI) {
-        this.DOI = DOI;
+    public MatchingDocument(String identifier) {
+        this.id = identifier;
+        if (identifier.startsWith("crossref"))
+            this.DOI = identifier;
+        else if (identifier.startsWith("hal"))
+            this.halId = identifier;
+        else if (identifier.startsWith("pubmed"))
+            this.pmid = identifier;
+        else 
+            this.DOI = DOI;
     }
 
-    public MatchingDocument(String DOI, String jsonObject) {
-        this.DOI = DOI;
+    public MatchingDocument(String identifier, String jsonObject) {
+        this.id = identifier;
+        if (identifier.startsWith("crossref"))
+            this.DOI = identifier;
+        else if (identifier.startsWith("hal"))
+            this.halId = identifier;
+        else if (identifier.startsWith("pubmed"))
+            this.pmid = identifier;
+        else 
+            this.DOI = DOI;
         this.jsonObject = jsonObject;
     }
 
@@ -50,7 +71,10 @@ public class MatchingDocument {
     }
 
     public void fillFromMatchindDocument(MatchingDocument otherMatchingDocument) {
+        this.setId(otherMatchingDocument.getId());
         this.setDOI(otherMatchingDocument.getDOI());
+        this.setHalId(otherMatchingDocument.getHalId());
+        this.setPmid(otherMatchingDocument.getPmid());
         this.setFirstAuthor(otherMatchingDocument.getFirstAuthor());
         this.setJsonObject(otherMatchingDocument.getJsonObject());
         this.setATitle(otherMatchingDocument.getATitle());
@@ -64,12 +88,36 @@ public class MatchingDocument {
         this.jsonObject = jsonObject;
     }
 
+    public String getId() {
+        return this.id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public String getDOI() {
         return DOI;
     }
 
     public void setDOI(String DOI) {
         this.DOI = DOI;
+    }
+
+    public String getHalId() {
+        return halId;
+    }
+
+    public void setHalId(String halId) {
+        this.halId = halId;
+    }
+
+    public String getPmid() {
+        return pmid;
+    }
+
+    public void setPmid(String pmid) {
+        this.pmid = pmid;
     }
 
     public String getFirstAuthor() {

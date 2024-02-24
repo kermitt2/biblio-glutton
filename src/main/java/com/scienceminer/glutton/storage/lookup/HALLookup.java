@@ -102,6 +102,7 @@ public class HALLookup {
         HALAPIHarvester harvester = new HALAPIHarvester(transactionWrapper);
         harvester.fetchAllDocuments(this, meterValidRecord, counterInvalidRecords, 
             counterIndexedRecords, counterFailedIndexedRecords);
+        ElasticSearchIndexer.getInstance(configuration).refreshIndex(configuration.getElastic().getIndex());
     }
 
     @Deprecated
@@ -117,9 +118,9 @@ public class HALLookup {
         try {
             String dbBiblioJson = BiblioSerializer.serializeJson(biblio, null, this);
 //System.out.println(dbBiblioJson);
-            store(biblio.getHalId(), dbBiblioJson, dbHALJson, tx);
+            store(lowerCase(biblio.getHalId()), dbBiblioJson, dbHALJson, tx);
             if (!isBlank(biblio.getDoi()))
-                store(biblio.getDoi(), biblio.getHalId(), dbDoiToHal, tx);
+                store(biblio.getDoi(), lowerCase(biblio.getHalId()), dbDoiToHal, tx);
         } catch (Exception e) {
             LOGGER.error("Cannot serialize the metadata", e);
         }
@@ -168,12 +169,12 @@ public class HALLookup {
     public String retrieveJsonDocument(String halID) {
         final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
         ByteBuffer cachedData = null;
-        String record = null;
+        String theRecord = null;
         try (Txn<ByteBuffer> tx = environment.txnRead()) {
-            keyBuffer.put(BinarySerialiser.serialize(halID)).flip();
+            keyBuffer.put(BinarySerialiser.serialize(lowerCase(halID))).flip();
             cachedData = dbHALJson.get(tx, keyBuffer);
             if (cachedData != null) {
-                record = (String) BinarySerialiser.deserializeAndDecompress(cachedData);
+                theRecord = (String) BinarySerialiser.deserializeAndDecompress(cachedData);
             }
         } catch (Env.ReadersFullException e) {
             throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
@@ -181,7 +182,7 @@ public class HALLookup {
             LOGGER.error("Cannot retrieve HAL metadata by HAL ID:  " + halID, e);
         }
 
-        return record;
+        return theRecord;
     }
 
     /**
@@ -193,7 +194,7 @@ public class HALLookup {
         }
         final String jsonDocument = retrieveJsonDocument(lowerCase(halID));
 
-        return new MatchingDocument(halID, jsonDocument);
+        return new MatchingDocument("hal:"+halID, jsonDocument);
     }
 
     public String retrieveHalIdByDoi(String doi) {

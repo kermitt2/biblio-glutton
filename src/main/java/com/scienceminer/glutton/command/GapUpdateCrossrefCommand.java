@@ -61,8 +61,10 @@ public class GapUpdateCrossrefCommand extends ConfiguredCommand<LookupConfigurat
         Path crossrefFilePath = Paths.get(crossrefFilePathString);
         LOGGER.info("Preparing the system. Loading data from Crossref REST API, saving them into " + crossrefFilePathString);
 
-        final Meter meter = metrics.meter("crossrefGapUpdate");
-        final Counter counterInvalidRecords = metrics.counter("crossrefGapUpdate_rejectedRecords");
+        final Meter meter = metrics.meter("crossref_gap_update_load");
+        final Counter counterInvalidRecords = metrics.counter("crossref_gap_update_loading_rejected_records");
+        final Counter counterIndexedRecords = metrics.counter("crossref_gap_update_indexed_records");
+        final Counter counterFailedIndexedRecords = metrics.counter("crossref_gap_update_failed_indexed_records");
 
         System.out.println("Run gap update...");
 
@@ -72,7 +74,9 @@ public class GapUpdateCrossrefCommand extends ConfiguredCommand<LookupConfigurat
                                                   configuration, 
                                                   meter, 
                                                   counterInvalidRecords,
-                                                  false, // no ES indexing
+                                                  counterIndexedRecords,
+                                                  counterFailedIndexedRecords,
+                                                  true,   // with indexing
                                                   false); // not daily incremental update
         Future future = executor.submit(task);
         // wait until done (in ms)

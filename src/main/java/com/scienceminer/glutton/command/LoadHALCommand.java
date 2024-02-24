@@ -8,6 +8,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.storage.lookup.HALLookup;
+import com.scienceminer.glutton.indexing.ElasticSearchIndexer;
 import io.dropwizard.core.cli.ConfiguredCommand;
 import io.dropwizard.core.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -55,10 +56,12 @@ public class LoadHALCommand extends ConfiguredCommand<LookupConfiguration> {
         
         HALLookup halLookup = HALLookup.getInstance(storageEnvFactory);
 
-        final Meter meter = metrics.meter("HAL_stored_records");
+        final Meter meter = metrics.meter("HAL_storing_records");
         final Counter counterInvalidRecords = metrics.counter("HAL_rejected_records");
         final Counter counterIndexedRecords = metrics.counter("HAL_indexed_records");
         final Counter counterFailedIndexedRecords = metrics.counter("HAL_failed_indexed_records");
+
+        ElasticSearchIndexer.getInstance(configuration).setupIndex(true);
 
         halLookup.loadFromHALAPI(meter, counterInvalidRecords, counterIndexedRecords, counterFailedIndexedRecords);
 
@@ -66,5 +69,7 @@ public class LoadHALCommand extends ConfiguredCommand<LookupConfiguration> {
 
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
+
+        System.exit(0);
     }
 }

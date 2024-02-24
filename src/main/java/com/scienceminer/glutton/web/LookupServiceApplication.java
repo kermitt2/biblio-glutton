@@ -92,8 +92,10 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         CrossrefMetadataLookup metadataLookup = CrossrefMetadataLookup.getInstance(storageEnvFactory);
 
         final MetricRegistry metrics = new MetricRegistry();
-        final Meter meter = metrics.meter("crossrefDailyUpdate");
-        final Counter counterInvalidRecords = metrics.counter("crossrefDailyUpdate_rejectedRecords");
+        final Meter meter = metrics.meter("crossref_daily_update_loading");
+        final Counter counterInvalidRecords = metrics.counter("crossref_daily_update_rejected_records");
+        final Counter counterIndexedRecords = metrics.counter("crossref_gap_update_indexed_records");
+        final Counter counterFailedIndexedRecords = metrics.counter("crossref_gap_update_failed_indexed_records");
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         Runnable task = new IncrementalLoaderTask(metadataLookup, 
@@ -101,7 +103,9 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
                                                   configuration, 
                                                   meter, 
                                                   counterInvalidRecords,
-                                                  true, // with ES indexing
+                                                  counterIndexedRecords,
+                                                  counterFailedIndexedRecords,
+                                                  true, // with indexing
                                                   true); // this is daily incremental update
 
         ScheduledFuture<?> scheduledFuture = executor.scheduleAtFixedRate(task, initalDelay, TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);

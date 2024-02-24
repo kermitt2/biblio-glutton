@@ -23,5 +23,5 @@ public class SolrIndexer {
 
     private LookupConfiguration configuration;
 
-
+    
 }

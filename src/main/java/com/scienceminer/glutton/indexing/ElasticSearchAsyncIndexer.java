@@ -21,6 +21,10 @@ import co.elastic.clients.elasticsearch.indices.ExistsRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import co.elastic.clients.elasticsearch.core.bulk.*;
 
+import com.fasterxml.jackson.databind.node.*;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.*;
+
 import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.exception.ServiceOverloadedException;
 import com.scienceminer.glutton.utils.BinarySerialiser;
@@ -98,7 +102,10 @@ public class ElasticSearchAsyncIndexer {
      * Already existing keys are skipt if update is false.
      * 
      **/
-    public void asyncIndexDocuments(List<String> documents, boolean update, Counter counterIndexedRecords, Counter counterFailedIndexedRecords) {
+    public void asyncIndexDocuments(List<String> documents, 
+                                    boolean update, 
+                                    Counter counterIndexedRecords, 
+                                    Counter counterFailedIndexedRecords) {
         BulkRequest.Builder br = new BulkRequest.Builder();
         for(String document : documents) {
             MetadataObj objToIndex = MetadataObjBuilder.createMetadataObj(document);
@@ -122,7 +129,54 @@ public class ElasticSearchAsyncIndexer {
         }
 
         try {
-            //BulkResponse result = this.elasticsearchClient.bulk(br.build()); 
+            this.elasticsearchAsyncClient.bulk(
+                br.build()
+            ).whenComplete((response, exception) -> {
+                if (exception != null) {
+                    logger.error("Batch indexing failed", exception);
+                } else {
+                    counterIndexedRecords.inc(documents.size());
+                }
+
+                if (response.errors()) {
+                    logger.error("Bulk had errors");
+                    for (BulkResponseItem item: response.items()) {
+                        if (item.error() != null) {
+                            logger.error(item.error().reason());
+                        }
+                    }
+                }
+            });
+            
+        } catch (Exception e) {
+            logger.error("Batch indexing failed", e);
+        }
+    }
+
+    public void asyncIndexJsonObjects(List<JsonNode> documents, boolean update, Counter counterIndexedRecords, Counter counterFailedIndexedRecords) {
+        BulkRequest.Builder br = new BulkRequest.Builder();
+        for(JsonNode document : documents) {
+            MetadataObj objToIndex = MetadataObjBuilder.createMetadataObjFromJsonNode(document);
+            if (objToIndex != null && !MetadataObjBuilder.isFilteredType(objToIndex)) {
+                objToIndex.type = null;
+                String localIdentifier = objToIndex._id;
+                objToIndex._id = null;
+                br.operations(op -> op           
+                    .index(idx -> idx            
+                        .index(configuration.getElastic().getIndex())       
+                        .id(localIdentifier)
+                        .document(objToIndex)
+                    )
+                );
+            } 
+
+            if (objToIndex == null) {
+                // counter here for records that failed to index
+                counterFailedIndexedRecords.inc();
+            }
+        }
+
+        try {
             this.elasticsearchAsyncClient.bulk(
                 br.build()
             ).whenComplete((response, exception) -> {

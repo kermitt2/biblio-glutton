@@ -8,6 +8,7 @@ import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.exception.ServiceOverloadedException;
 import com.scienceminer.glutton.reader.CrossrefJsonReader;
 import com.scienceminer.glutton.indexing.ElasticSearchIndexer;
+import com.scienceminer.glutton.indexing.ElasticSearchAsyncIndexer;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.utils.BinarySerialiser;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -25,6 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.databind.node.*;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.*;
 
 import static com.scienceminer.glutton.web.resource.DataController.DEFAULT_MAX_SIZE_LIST;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -47,7 +52,9 @@ public class CrossrefMetadataLookup {
     public static final String ENV_NAME = "crossref";
 
     public static final String NAME_CROSSREF_JSON = ENV_NAME + "_Jsondoc";
-    private final int batchSize;
+    
+    private final int batchStoringSize;
+    private final int batchIndexingSize;
 
     private LookupConfiguration configuration;
 
@@ -76,29 +83,52 @@ public class CrossrefMetadataLookup {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
 
         configuration = storageEnvFactory.getConfiguration();
-        batchSize = configuration.getStoringBatchSize();
+        batchStoringSize = configuration.getStoringBatchSize();
+        batchIndexingSize = configuration.getIndexingBatchSize();
         dbCrossrefJson = this.environment.openDbi(NAME_CROSSREF_JSON, DbiFlags.MDB_CREATE);
     }
 
-    public void loadFromFile(InputStream is, CrossrefJsonReader reader, Meter meterValidRecord, Counter counterInvalidRecords) {
+    public void loadFromFile(InputStream is, 
+                            CrossrefJsonReader reader, 
+                            Meter meterValidRecord, 
+                            Counter counterInvalidRecords, 
+                            Counter counterIndexedRecords,
+                            Counter counterFailedIndexedRecords) {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
-        final AtomicInteger counter = new AtomicInteger(0);
+        final AtomicInteger counterStoring = new AtomicInteger(0);
+        final AtomicInteger counterIndexing = new AtomicInteger(0);
+        final List<JsonNode> documents = new ArrayList<>();
 
         reader.load(is, counterInvalidRecords, crossrefData -> {
-            if (counter.get() == batchSize) {
+            if (counterStoring.get() == batchStoringSize) {
                 transactionWrapper.tx.commit();
                 transactionWrapper.tx.close();
                 transactionWrapper.tx = environment.txnWrite();
-                counter.set(0);
+                counterStoring.set(0);
             }
-            String key = lowerCase(crossrefData.get("DOI").asText());
+            if (counterIndexing.get() == batchIndexingSize) {
+                indexDocuments(documents, true, counterIndexedRecords, counterFailedIndexedRecords);
+                counterIndexing.set(0);
+                documents.clear();
+            }
 
-            store(key, crossrefData.toString(), dbCrossrefJson, transactionWrapper.tx);
+            String key = lowerCase(crossrefData.get("DOI").asText());
+            String crossrefDataJsonString = crossrefData.toString();
+            store(key, crossrefDataJsonString, dbCrossrefJson, transactionWrapper.tx);
             meterValidRecord.mark();
-            counter.incrementAndGet();
+            documents.add(crossrefData);
+            counterStoring.incrementAndGet();
+            counterIndexing.incrementAndGet();
         });
+
+        // last batch
         transactionWrapper.tx.commit();
         transactionWrapper.tx.close();
+
+        indexDocuments(documents, true, counterIndexedRecords, counterFailedIndexedRecords);
+
+        // finally refresh the index
+        ElasticSearchIndexer.getInstance(configuration).refreshIndex(configuration.getElastic().getIndex());
     }
 
     private void store(String key, String value, Dbi<ByteBuffer> db, Txn<ByteBuffer> tx) {
@@ -157,13 +187,13 @@ public class CrossrefMetadataLookup {
     /**
      * Lookup by DOI
      **/
-    public MatchingDocument retrieveByMetadata(String doi) {
+    public MatchingDocument retrieveByDoi(String doi) {
         if (isBlank(doi)) {
             throw new ServiceException(400, "The supplied DOI is null.");
         }
         final String jsonDocument = retrieveJsonDocument(lowerCase(doi));
 
-        return new MatchingDocument(doi, jsonDocument);
+        return new MatchingDocument("crossref:"+doi, jsonDocument);
     }
 
     public List<Pair<String, String>> retrieveList(Integer total) {
@@ -242,6 +272,11 @@ public class CrossrefMetadataLookup {
             transactionWrapper.tx.commit();
             transactionWrapper.tx.close();
         }
+    }
+
+    public void indexDocuments(List<JsonNode> documents, boolean update, Counter counterIndexedRecords, Counter counterFailedIndexedRecords) {
+        ElasticSearchAsyncIndexer.getInstance(configuration)
+            .asyncIndexJsonObjects(documents, update, counterIndexedRecords, counterFailedIndexedRecords);
     }
 
     public void indexMetadata(ElasticSearchIndexer indexer, Meter meter, Counter counterIndexedRecords) {

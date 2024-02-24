@@ -11,6 +11,7 @@ import com.scienceminer.glutton.reader.CrossrefJsonlReader;
 import com.scienceminer.glutton.reader.CrossrefJsonArrayReader;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
+import com.scienceminer.glutton.indexing.ElasticSearchIndexer;
 import io.dropwizard.core.cli.ConfiguredCommand;
 import io.dropwizard.core.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -85,8 +86,13 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         Path crossrefFilePath = Paths.get(crossrefFilePathString);
         LOGGER.info("Preparing the system. Loading data from Crossref dump from " + crossrefFilePathString);
 
-        final Meter meter = metrics.meter("crossrefLookup");
-        final Counter counterInvalidRecords = metrics.counter("crossrefLookup_rejectedRecords");
+        final Meter meter = metrics.meter("crossref_storing");
+        final Counter counterInvalidRecords = metrics.counter("crossref_storing_rejected_records");
+        final Counter counterIndexedRecords = metrics.counter("crossref_indexed_records");
+        final Counter counterFailedIndexedRecords = metrics.counter("crossref_failed_indexed_records");
+
+        ElasticSearchIndexer.getInstance(configuration).setupIndex(true);
+        
         if (Files.isDirectory(crossrefFilePath)) {
             try (Stream<Path> stream = Files.walk(crossrefFilePath, 1)) {
                 CrossrefJsonArrayReader readerJsonArray = new CrossrefJsonArrayReader(configuration);
@@ -109,7 +115,12 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
 
                                 if (reader != null) {
                                     try (InputStream inputStreamCrossref = selectStream(dumpFile)) {
-                                        metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
+                                        metadataLookup.loadFromFile(inputStreamCrossref, 
+                                            reader, 
+                                            meter, 
+                                            counterInvalidRecords, 
+                                            counterIndexedRecords,
+                                            counterFailedIndexedRecords);
                                         // possibly update with the lastest indexed date obtained from this file
                                         if (metadataLookup.getLastIndexed() == null || 
                                             metadataLookup.getLastIndexed().isBefore(reader.getLastIndexed()))
@@ -132,7 +143,12 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
                     //System.out.println("processing file " + currentEntry.getName());
                     try {
                         CrossrefJsonArrayReader reader = new CrossrefJsonArrayReader(configuration);
-                        metadataLookup.loadFromFile(tarInput, reader, meter, counterInvalidRecords);
+                        metadataLookup.loadFromFile(tarInput, 
+                            reader, 
+                            meter, 
+                            counterInvalidRecords, 
+                            counterIndexedRecords,
+                            counterFailedIndexedRecords);
                         // possibly update with the lastest indexed date obtained from this file
                         if (metadataLookup.getLastIndexed() == null || 
                             metadataLookup.getLastIndexed().isBefore(reader.getLastIndexed()))
@@ -159,7 +175,12 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
 
             if (reader != null) {
                 try (InputStream inputStreamCrossref = selectStream(crossrefFilePath)) {
-                    metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
+                    metadataLookup.loadFromFile(inputStreamCrossref, 
+                        reader, 
+                        meter, 
+                        counterInvalidRecords, 
+                        counterIndexedRecords,
+                        counterFailedIndexedRecords);
                     metadataLookup.setLastIndexed(reader.getLastIndexed());
                 } catch (Exception e) {
                     LOGGER.error("Error while processing " + crossrefFilePath, e);

@@ -110,7 +110,10 @@ dependencies {
 
     implementation 'org.elasticsearch.client:elasticsearch-rest-high-level-client:7.14.1'
     implementation 'co.elastic.clients:elasticsearch-java:8.12.1'
-    implementation group: 'org.apache.solr', name: 'solr-solrj', version: '9.5.0'
+    implementation ('org.apache.solr:solr-solrj:9.5.0') {
+        exclude group: 'org.eclipse.jetty', module: 'jetty-http2'
+        exclude group: 'org.eclipse.jetty.http2', module: 'http2-client'
+    }
 
 //    compile group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.5.3'
     implementation 'org.apache.commons:commons-collections4:4.1'

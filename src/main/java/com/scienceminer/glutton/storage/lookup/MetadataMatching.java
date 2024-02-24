@@ -41,6 +41,7 @@ import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.io.*;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 public class MetadataMatching {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataMatching.class);
@@ -49,13 +50,16 @@ public class MetadataMatching {
 
     private LookupConfiguration configuration;
     private ESClientWrapper esClient;
-    private CrossrefMetadataLookup metadataLookup;
+    private CrossrefMetadataLookup crossrefMetadataLookup;
+    private HALLookup halLookup;
 
     public static final String INDEX_FIELD_NAME_ID = "id";
     public static final String INDEX_FIELD_NAME_ATITLE = "title";
     public static final String INDEX_FIELD_NAME_FIRST_PAGE = "first_page";
     public static final String INDEX_FIELD_NAME_FIRST_AUTHOR = "first_author";
     public static final String INDEX_FIELD_NAME_DOI = "DOI";
+    public static final String INDEX_FIELD_NAME_HALID = "halId";
+    public static final String INDEX_FIELD_NAME_PMID = "pmid";
     public static final String INDEX_FIELD_NAME_VOLUME = "volume";
     public static final String INDEX_FIELD_NAME_ISSN = "issn";
     public static final String INDEX_FIELD_NAME_BIBLIOGRAPHIC = "bibliographic";
@@ -67,11 +71,12 @@ public class MetadataMatching {
     private final String INDEX_FIELD_NAME_JSONDOC = "jsondoc";
 
     public static MetadataMatching getInstance(LookupConfiguration configuration, 
-                                               CrossrefMetadataLookup metadataLookup) {
+                                               CrossrefMetadataLookup crossrefMetadataLookup,
+                                               HALLookup halLookup) {
         if (instance == null) {
             synchronized (MetadataMatching.class) {
                 if (instance == null) {
-                    getNewInstance(configuration, metadataLookup);
+                    getNewInstance(configuration, crossrefMetadataLookup, halLookup);
                 }
             }
         }
@@ -82,11 +87,14 @@ public class MetadataMatching {
      * Creates a new instance.
      */
     private static synchronized void getNewInstance(LookupConfiguration configuration,
-                                                    CrossrefMetadataLookup metadataLookup) {
-        instance = new MetadataMatching(configuration, metadataLookup);
+                                                    CrossrefMetadataLookup crossrefMetadataLookup,
+                                                    HALLookup halLookup) {
+        instance = new MetadataMatching(configuration, crossrefMetadataLookup, halLookup);
     }
 
-    private MetadataMatching(LookupConfiguration configuration, CrossrefMetadataLookup metadataLookup) {
+    private MetadataMatching(LookupConfiguration configuration, 
+                            CrossrefMetadataLookup crossrefMetadataLookup, 
+                            HALLookup halLookup) {
         this.configuration = configuration;
         RestHighLevelClient esClient = new RestHighLevelClient(
                 RestClient.builder(
@@ -106,7 +114,8 @@ public class MetadataMatching {
 
         this.esClient = new ESClientWrapper(esClient, configuration.getMaxAcceptedRequests());
 
-        this.metadataLookup = metadataLookup;
+        this.crossrefMetadataLookup = crossrefMetadataLookup;
+        this.halLookup = halLookup;
     }
 
     public long getSize() {
@@ -305,6 +314,7 @@ public class MetadataMatching {
                 {
                         INDEX_FIELD_NAME_ID,
                         INDEX_FIELD_NAME_DOI,
+                        INDEX_FIELD_NAME_HALID,
                         INDEX_FIELD_NAME_FIRST_AUTHOR,
                         INDEX_FIELD_NAME_ATITLE,
                         INDEX_FIELD_NAME_JTITLE,
@@ -332,7 +342,10 @@ public class MetadataMatching {
 
             SearchHit hit = it.next();
 
+            String id = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_ID);
             String DOI = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_DOI);
+            String halId = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_HALID);
+            //String pmid = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_PMID);
             String firstAuthor = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_FIRST_AUTHOR);
 
             final List<String> atitles = (List<String>) hit.getSourceAsMap().get(INDEX_FIELD_NAME_ATITLE);
@@ -353,22 +366,34 @@ public class MetadataMatching {
                 abbreviatedTitle = abbrevTtitles.get(0);
             }
 
-            final Integer year = (Integer) hit.getSourceAsMap().get(INDEX_FIELD_NAME_YEAR);
+            final String year = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_YEAR);
             String yearStr = null;
             if (year != null) {
                 yearStr = ""+year; 
             }
 
+            matchingDocument.setId(id);
             matchingDocument.setDOI(DOI);
+            matchingDocument.setHalId(halId);
+            //matchingDocument.setPmid(pmid);
             matchingDocument.setFirstAuthor(firstAuthor);
             matchingDocument.setATitle(atitle);
             matchingDocument.setJTitle(jtitle);
             matchingDocument.setAbbreviatedTitle(abbreviatedTitle);
             matchingDocument.setYear(yearStr);
 
-            final String jsonObject = metadataLookup.retrieveJsonDocument(DOI);
+            String jsonObject = null;
+            if (isNotBlank(DOI)) {
+                jsonObject = crossrefMetadataLookup.retrieveJsonDocument(DOI);    
+            }
+
+            if (jsonObject == null && isNotBlank(halId)) {
+                jsonObject = halLookup.retrieveJsonDocument(halId);
+            }
+
             if (jsonObject == null) {
-                LOGGER.warn("The search index returned a result but the corresponding entry cannot be fetched in the metadata db, DOI: " + DOI);
+                LOGGER.warn("The search index returned a result but the corresponding entry cannot be fetched in the metadata db, DOI: " + 
+                    DOI + ", Hal ID: " + halId);// + ", PMID: " + pmid);
                 continue;
             }
 
@@ -423,6 +448,6 @@ public class MetadataMatching {
     }
 
     public void close() {
-        this.metadataLookup.close();
+        this.crossrefMetadataLookup.close();
     }
 }

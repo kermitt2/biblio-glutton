@@ -49,6 +49,8 @@ public class IncrementalLoaderTask implements Runnable {
 
     private Meter meter;
     private Counter counterInvalidRecords;
+    private Counter counterIndexedRecords;
+    private Counter counterFailedIndexedRecords;
 
     // if true, we will also index the incremental dump files in elasticsearch during the task via 
     // the external indexing module
@@ -59,12 +61,14 @@ public class IncrementalLoaderTask implements Runnable {
     private LocalDate today;
 
     public IncrementalLoaderTask(CrossrefMetadataLookup metadataLookup, 
-                                 LocalDateTime lastIndexed, 
-                                 LookupConfiguration configuration,
-                                 Meter meter,
-                                 Counter counterInvalidRecords,
-                                 boolean indexing,
-                                 boolean daily) {
+                                LocalDateTime lastIndexed, 
+                                LookupConfiguration configuration,
+                                Meter meter,
+                                Counter counterInvalidRecords,
+                                Counter counterIndexedRecords,
+                                Counter counterFailedIndexedRecords,
+                                boolean indexing,
+                                boolean daily) {
         this.metadataLookup = metadataLookup;
         this.lastIndexed = lastIndexed;
         this.configuration = configuration;
@@ -74,6 +78,8 @@ public class IncrementalLoaderTask implements Runnable {
 
         this.meter = meter;
         this.counterInvalidRecords = counterInvalidRecords;
+        this.counterIndexedRecords = counterIndexedRecords;
+        this.counterFailedIndexedRecords = counterFailedIndexedRecords;
 
         this.indexing = indexing;
         this.daily = daily;
@@ -179,7 +185,8 @@ public class IncrementalLoaderTask implements Runnable {
 
             // load in another thread
             ExecutorService executorLoading = Executors.newSingleThreadExecutor();
-            Runnable taskLoading = new LoadCrossrefFile(crossrefFile, jsonObjectsStr, this.configuration, meter, counterInvalidRecords);
+            Runnable taskLoading = new LoadCrossrefFile(crossrefFile, 
+                jsonObjectsStr, this.configuration, meter, counterInvalidRecords, counterIndexedRecords, counterFailedIndexedRecords);
             executorLoading.submit(taskLoading);
 
             nbFiles++;
@@ -203,7 +210,7 @@ public class IncrementalLoaderTask implements Runnable {
         // note: rather than managing termination of threads, we look at storage/index size
         // for convenience
         MetadataMatching metadataMatching = 
-            MetadataMatching.getInstance(this.configuration, this.metadataLookup);
+            MetadataMatching.getInstance(this.configuration, this.metadataLookup, null);
 
         if (configuration.getCrossref().getCleanProcessFiles()) {
 
@@ -247,17 +254,23 @@ public class IncrementalLoaderTask implements Runnable {
         private LookupConfiguration configuration;
         private Meter meter;
         private Counter counterInvalidRecords;
+        private Counter counterIndexedRecords;
+        private Counter counterFailedIndexedRecords;
 
         public LoadCrossrefFile(File crossrefFile, 
                                 List<String> results, 
                                 LookupConfiguration configuration, 
                                 Meter meter,
-                                Counter counterInvalidRecords) { 
+                                Counter counterInvalidRecords,
+                                Counter counterIndexedRecords,
+                                Counter counterFailedIndexedRecords) { 
             this.crossrefFile = crossrefFile;
             this.results = results;
             this.configuration = configuration;
             this.meter = meter;
             this.counterInvalidRecords = counterInvalidRecords;
+            this.counterIndexedRecords = counterIndexedRecords;
+            this.counterFailedIndexedRecords = counterFailedIndexedRecords;
         } 
 
         @Override
@@ -265,7 +278,8 @@ public class IncrementalLoaderTask implements Runnable {
             CrossrefJsonlReader reader = new CrossrefJsonlReader(configuration);
             if (StringUtils.endsWithIgnoreCase(crossrefFile.getName().toString(), ".json.gz")) {
                 try (InputStream inputStreamCrossref = new GZIPInputStream(new FileInputStream(crossrefFile))) {
-                    metadataLookup.loadFromFile(inputStreamCrossref, reader, meter, counterInvalidRecords);
+                    metadataLookup.loadFromFile(inputStreamCrossref, 
+                        reader, meter, counterInvalidRecords, counterIndexedRecords, counterFailedIndexedRecords);
                 } catch (Exception e) {
                     LOGGER.error("Error while processing " + crossrefFile.getPath(), e);
                 }  
