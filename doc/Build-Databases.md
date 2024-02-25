@@ -1,46 +1,24 @@
 ## Building the bibliographical data look-up and matching databases
 
-### Architecture
-
-Below is an overview of the biblio-glutton architecture. The biblio-glutton server manages locally high performance LMDB databases for all metadata look-up tasks (several thousand requests per second with multiple threads). For the costly metadata matching tasks, an Elasticsearch cluster is used. For scaling this sort of queries, simply add more nodes in this elasticsearch cluster, keepping a single biblio-glutton server instance. 
-
-![Glutton architecture](doc/glutton-architecture.png) 
-
-#### Runtime evaluation
-
-1) *Metadata Lookup*
-
-One glutton instance: 19,792,280 DOI lookup in 3156 seconds, ~ 6270 queries per second. 
-
-2) *Bibliographical reference matching* 
-
-*(to be completed with more nodes!)*
- 
-Processing time for matching 17,015 raw bibliographical reference strings to DOI:
-
-| number of ES cluster nodes | comment  | total runtime (second) | runtime per bib. ref. (second)   | queries per second |
-|----|---|---|---|---|
-|  1 | glutton and Elasticsearch node share the same machine   | 2625  | 0.154  |  6.5  |
-|  1 | glutton and Elasticsearch node on two separate machines   | 1990  | 0.117  |  8.5 |
-|  2 | glutton and one of the Elasticsearch node sharing the same machine  |  1347  |  0.079  | 12.6  |
-
-Machines have the same configuration Intel i7 4-cores, 8 threads, 16GB memory, SSD, on Ubuntu 16.04.
+The loading of bibliographical metadata records and their indexing in the search cluster is done in one step. 
 
 ### Loading resources
 
 To set-up a functional biblio-glutton server, resources need to be loaded following these steps: 
 
-1) Loading of a Crossref full metadata dump as embedded LMDB
+1) Loading and indexing of a Crossref full metadata dump as embedded LMDB
 
-2) Loading the coverage gap between the Crossref dump and the current day (updates are then realized automatically daily as the service is up and running) in the embedded LMDB
+2) Loading and indexing got the coverage gap between the Crossref dump and the current day (updates are then realized automatically daily as the service is up and running) in the embedded LMDB
 
-3) Loading the DOI to PMID and PMC ID mapping as embedded LMDB
+3) (Optional) Loading and indexing of HAL archive metadata
 
-4) (Optional) Loading the Open Access information from an Unpaywall datset snapshot as embedded LMDB
+4) (Optional) Loading the DOI to PMID and PMC ID mapping (as embedded LMDB)
 
-5) (Very optional) Loading the ISTEX ID mapping as embedded LMDB
+5) (Optional) Loading the Open Access information from an Unpaywall datset snapshot as embedded LMDB
 
-6) Creating the ElasticSearch index
+6) (Very optional) Loading the ISTEX ID mapping as embedded LMDB
+
+It is possible to only load HAL archive metadata, skipping entirely CrossRef, but the service will be much more limited - so we suggest to always start with CrossRef. It is also possible to skip HAL archive resources. Step 4) is fast and we suggest to also always include it.  
 
 ### Resources
 
@@ -93,7 +71,7 @@ General command line pattern:
 ./gradlew crossref -Pinput=/path/to/crossref/json/file -Pconfig=path/to/config/file/glutton.yml
 ```
 
-Example with Crossref Metadata Plus snapshot (path to a `.tar.gz` file which archives many json files):
+Example with Crossref Metadata Plus snapshot (path to a `.tar.gz` file which archives many json files, usually called `all.json.tar.gz`):
 
 ```sh
 ./gradlew crossref -Pinput=../tmp/crossref_metadata_plus.tar.gz 
@@ -113,6 +91,8 @@ Example with xz-compressed file (e.g. GreeneLab dump):
 ```
 
 **Note:** By default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk space. The `reference` field is particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `biblio-glutton/config/glutton.yml`, by editing the lines:
+
+**Note:** Crossref records of type `component` are filtered out, because they do not correspond to a document, but to a part of document (figures, tables, etc.).
 
 ```
 ignoreCrossRefFields:                                                   
@@ -137,8 +117,7 @@ crossrefLookup
     15-minute rate = 7240.26 events/second
 ```
 
-The 5,472,493 rejected records correspond to all the DOI "components" (given to figures, tables, etc. part of document) which are filtered out. 
-As a March 2022, we have for example 121,340,014 crossref article records. 
+The 5,472,493 rejected records correspond to all the DOI entries of type "components" (part of document), which are filtered out. As a March 2022, we have for example 121,340,014 crossref article records. 
 
 #### CrossRef metadata gap coverage
 
@@ -167,6 +146,16 @@ Launch the following command and go grab a coffee:
 ```
 
 As of March 2022, the latest mapping covers 34,310,000 PMID, with 25,661,624 having a DOI (which means 8,648,376 PMID are not represented in Crossref and do not have a DOI).
+
+#### HAL archive
+
+Launch the following command and go grab a lunch:
+
+```sh
+./gradlew hal 
+```
+
+HAL archive contains around 3.5M records, with curated metadadata. 
 
 #### OA via Unpaywall
 

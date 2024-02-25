@@ -29,7 +29,7 @@ Current stable version of biblio-glutton is `0.3`. Working version is `0.4-SNAPS
 
 ## Documentation
 
-The full documentation is available [here](https://biblio-glutton.readthedocs.io/en/latest/).
+The full documentation is available [here](https://biblio-glutton.readthedocs.io/en/latest/), including an evaluation of the bibliographical reference matching and some expected runtime information.
 
 ## How to cite
 
@@ -40,7 +40,7 @@ If you want to cite this work, please refer to the present GitHub project, toget
     title = {biblio-glutton},
     url = {https://github.com/kermitt2/biblio-glutton},
     publisher = {GitHub},
-    year = {2018--2023},
+    year = {2018--2024},
     archivePrefix = {swh},
     eprint = {1:dir:a5a4585625424d7c7428654dbe863837aeda8fa7}
 }

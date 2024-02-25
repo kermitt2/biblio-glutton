@@ -1,6 +1,6 @@
 ## Matching accuracy
 
-Here is some evaluation on the bibliographical reference matching.
+Here is an evaluation of the bibliographical reference matching accuracy against CrossRef DOI, based on 17,015 bibliographical references. It includes a comparison with the CrossRef REST API used for the same task. 
 
 ### Dataset
 

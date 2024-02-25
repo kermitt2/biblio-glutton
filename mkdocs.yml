@@ -16,7 +16,6 @@ nav:
   - User manual:
     - 'Install': 'Install.md'
     - 'Databases': 'Build-Databases'
-    - 'Index': 'Create-Index'
     - 'REST API': 'API.md'
     - 'Frequently asked Questions': 'Frequently-asked-questions.md'
   - Benchmarking:
