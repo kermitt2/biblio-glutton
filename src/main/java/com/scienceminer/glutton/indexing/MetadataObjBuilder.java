@@ -52,7 +52,8 @@ public class MetadataObjBuilder {
         if (source == null) {
             logger.error("The source of the metadata record is not specified! The record will be ignored");
             return null;
-        }
+        } else 
+            source = source.toLowerCase();
 
         // set strong identifier, and canonical record identifier (prefix is the source, then the source identifier)
         JsonNode doiNode = rootNode.get("DOI");

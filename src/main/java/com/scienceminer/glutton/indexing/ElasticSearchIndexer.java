@@ -342,7 +342,7 @@ public class ElasticSearchIndexer {
     public void refreshIndex(String indexName) {
         try {
             RefreshResponse resultResponse = elasticsearchClient.indices().refresh(RefreshRequest.of(e -> e.index(indexName)));
-            logger.info("Refresh existing ElasicSearch index...");
+            //logger.info("Refresh existing ElasicSearch index...");
         } catch (IOException ioException) {
             logger.error("Refresh index failed", ioException);
         }

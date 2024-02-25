@@ -185,7 +185,7 @@ task server(dependsOn: 'classes', type: JavaExec, group: 'service') {
 task crossref(dependsOn: 'classes', type: JavaExec, group: 'data') {
     main = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
-    args 'crossref', getArg('input', ''), getArg('config', 'config/glutton.yml') 
+    args 'crossref', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
         jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"
     } else {
@@ -218,7 +218,7 @@ task hal(dependsOn: 'classes', type: JavaExec, group: 'data') {
 task pmid(dependsOn: 'classes', type: JavaExec, group: 'service') {
     main = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
-    args 'pmid', 'config/glutton.yml'
+    args 'pmid', getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
         jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED" 
     } else {
@@ -229,7 +229,7 @@ task pmid(dependsOn: 'classes', type: JavaExec, group: 'service') {
 task unpaywall(dependsOn: 'classes', type: JavaExec, group: 'data') {
     main = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
-    args 'unpaywall', getArg('input', ''), getArg('config', 'config/glutton.yml') 
+    args 'unpaywall', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
         jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"
     } else {
@@ -240,7 +240,7 @@ task unpaywall(dependsOn: 'classes', type: JavaExec, group: 'data') {
 task istex(dependsOn: 'classes', type: JavaExec, group: 'data') {
     main = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
-    args 'istex', getArg('input', ''), getArg('config', 'config/glutton.yml') 
+    args 'istex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
         jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"
     } else {
@@ -248,6 +248,7 @@ task istex(dependsOn: 'classes', type: JavaExec, group: 'data') {
     }
 }
 
+// deprecated, do not use this
 task index(dependsOn: 'classes', type: JavaExec, group: 'search') {
     main = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
