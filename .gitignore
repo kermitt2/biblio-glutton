@@ -27,3 +27,4 @@ build
 **/package-lock.json
 data/db/*
 pubmed-glutton/*
+indexing/*

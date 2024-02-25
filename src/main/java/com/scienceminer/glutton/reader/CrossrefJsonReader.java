@@ -119,6 +119,11 @@ public abstract class CrossrefJsonReader {
             String firstLine = r.readLine();
             if (firstLine.startsWith("{\"items\":["))
                 result = true;
+            else {
+                String secondLine = r.readLine();
+                if (StringUtils.strip(secondLine).startsWith("\"items\": ["))
+                    result = true;
+            }
         } catch(IOException e) {
             LOGGER.error("cannot read input stream when trying to detect json format type", e);
         }
