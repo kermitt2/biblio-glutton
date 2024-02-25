@@ -120,7 +120,7 @@ public class HALLookup {
 //System.out.println(dbBiblioJson);
             store(lowerCase(biblio.getHalId()), dbBiblioJson, dbHALJson, tx);
             if (!isBlank(biblio.getDoi()))
-                store(biblio.getDoi(), lowerCase(biblio.getHalId()), dbDoiToHal, tx);
+                store(lowerCase(biblio.getDoi()), lowerCase(biblio.getHalId()), dbDoiToHal, tx);
         } catch (Exception e) {
             LOGGER.error("Cannot serialize the metadata", e);
         }

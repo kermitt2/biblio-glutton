@@ -60,6 +60,7 @@ public class LookupController {
     @Path("/")
     public void getByQueryAsync(
             @QueryParam("doi") String doi,
+            @QueryParam("halid") String halid,
             @QueryParam("pmid") String pmid,
             @QueryParam("pmc") String pmc,
             @QueryParam("pii") String pii,
@@ -84,7 +85,7 @@ public class LookupController {
         if (parseReference == null) 
             parseReference = Boolean.TRUE;
 
-        processByQuery(doi, pmid, pmc, pii, istexid, firstAuthor, atitle,
+        processByQuery(doi, halid, pmid, pmc, pii, istexid, firstAuthor, atitle,
                 jtitle, volume, firstPage, year, biblio, parseReference, asyncResponse);
     }
 
@@ -94,6 +95,7 @@ public class LookupController {
     @Path("/")
     public void postByQueryAsync(
             @FormParam("doi") String doi,
+            @FormParam("halid") String halid,
             @FormParam("pmid") String pmid,
             @FormParam("pmc") String pmc,
             @FormParam("pii") String pii,
@@ -118,12 +120,12 @@ public class LookupController {
         if (parseReference == null) 
             parseReference = Boolean.TRUE;
 
-        processByQuery(doi, pmid, pmc, pii, istexid, firstAuthor, atitle,
+        processByQuery(doi, halid, pmid, pmc, pii, istexid, firstAuthor, atitle,
             jtitle, volume, firstPage, year, biblio, parseReference, asyncResponse);
     }
 
     @Deprecated
-    protected void processByQueryMixedMode(
+    /*protected void processByQueryMixedMode(
             String doi,
             String pmid,
             String pmc,
@@ -321,10 +323,11 @@ public class LookupController {
         } else {
             throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
         }
-    }
+    }*/
 
     protected void processByQuery(
             String doi,
+            String halid,
             String pmid,
             String pmc,
             String pii, 
@@ -356,6 +359,22 @@ public class LookupController {
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
                 LOGGER.warn("DOI did not matched or did not pass post validation");
+                throw new ServiceException(404, messagesSb.toString());
+            }
+        }
+
+        if (isNotBlank(halid)) {
+            areParametersEnoughToLookup = true;
+            try {
+                final String response = lookupEngine.retrieveByHalId(halid, firstAuthor, atitle, year);
+
+                if (isNotBlank(response)) {
+                    asyncResponse.resume(response);
+                    return;
+                }
+            } catch (NotFoundException e) {
+                messagesSb.append(e.getMessage());
+                LOGGER.warn("HAL ID did not matched or did not pass post validation");
                 throw new ServiceException(404, messagesSb.toString());
             }
         }

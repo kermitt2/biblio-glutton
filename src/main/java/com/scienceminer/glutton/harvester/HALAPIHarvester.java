@@ -68,7 +68,7 @@ public class HALAPIHarvester extends Harvester {
                         this.api_url, "docid%20asc", previousCursorMark);
 
                 logger.info("Sending: " + request);
-                System.out.println(request);
+                //System.out.println(request);
 
                 InputStream in = null;
                 try { 

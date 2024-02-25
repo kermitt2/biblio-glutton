@@ -786,6 +786,9 @@ public class LookupEngine {
     }
 
     protected String injectIdsByDoi(String jsonobj, String doi) {
+        if (doi == null)
+            return jsonobj;
+
         final IstexData istexData = istexLookup.retrieveByDoi(doi);
         final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
         final String halId = halLookup.retrieveHalIdByDoi(doi);
@@ -800,6 +803,7 @@ public class LookupEngine {
         boolean foundPmidData = false;
         boolean first = false;
         boolean foundOaLink = false;
+        boolean foundHalId = false;
 
         StringBuilder sb = new StringBuilder();
         if (isBlank(jsonobj)) {
@@ -901,6 +905,7 @@ public class LookupEngine {
                         first = false;
                     }
                     sb.append("\"halId\":\"" + localHalId + "\"");
+                    foundHalId = true;
                 }
             }
         }
@@ -915,7 +920,7 @@ public class LookupEngine {
             foundOaLink = true;
         }
 
-        if (foundIstexData || foundPmidData || foundOaLink) {
+        if (foundIstexData || foundPmidData || foundOaLink || foundHalId) {
             sb.append("}");
             return sb.toString();
         } else {
