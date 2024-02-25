@@ -120,7 +120,7 @@ public class HALLookup {
 //System.out.println(dbBiblioJson);
             store(lowerCase(biblio.getHalId()), dbBiblioJson, dbHALJson, tx);
             if (!isBlank(biblio.getDoi()))
-                store(lowerCase(biblio.getDoi()), lowerCase(biblio.getHalId()), dbDoiToHal, tx);
+                storeNoCompression(lowerCase(biblio.getDoi()), lowerCase(biblio.getHalId()), dbDoiToHal, tx);
         } catch (Exception e) {
             LOGGER.error("Cannot serialize the metadata", e);
         }
@@ -131,6 +131,19 @@ public class HALLookup {
             final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
             keyBuffer.put(BinarySerialiser.serialize(key)).flip();
             final byte[] serializedValue = BinarySerialiser.serializeAndCompress(value);
+            final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
+            valBuffer.put(serializedValue).flip();
+            db.put(tx, keyBuffer, valBuffer);
+        } catch (Exception e) {
+            LOGGER.error("Cannot store the entry " + key, e);
+        }
+    }
+
+    private void storeNoCompression(String key, String value, Dbi<ByteBuffer> db, Txn<ByteBuffer> tx) {
+        try {
+            final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
+            keyBuffer.put(BinarySerialiser.serialize(key)).flip();
+            final byte[] serializedValue = BinarySerialiser.serialize(value);
             final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
             valBuffer.put(serializedValue).flip();
             db.put(tx, keyBuffer, valBuffer);
