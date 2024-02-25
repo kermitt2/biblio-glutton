@@ -359,6 +359,7 @@ public class LookupController {
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
                 LOGGER.warn("DOI did not matched or did not pass post validation");
+                //if (isBlank(halid) && isBlank(pmid))
                 throw new ServiceException(404, messagesSb.toString());
             }
         }
