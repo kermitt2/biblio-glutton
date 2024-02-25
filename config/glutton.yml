@@ -4,11 +4,11 @@ version: 0.3
 # this is a single location for all compiled resources  
 #storage: data/db
 #storage: /media/lopez/data2/glutton-data/data/db
-storage: /media/lopez/data2/glutton-data2/data/db
+storage: /media/lopez/Samsung_T515/glutton/data/db/
 
 # batch size for preparing the data
 storingBatchSize: 10000
-indexingBatchSize: 500
+indexingBatchSize: 10000
 
 # max blocking size (number of candidates considered for pairwise matching)
 blockSize: 4
@@ -27,8 +27,8 @@ searchEngine: elasticSearch
 # a node of the ElasticSearch cluster to be used and a name for the main index
 elastic:
   #host: localhost:9200
-  #host: 0.0.0.0:9200
-  host: 192.168.1.30:9200
+  host: 0.0.0.0:9200
+  #host: 192.168.1.30:9200
   index: glutton
   maxConnections: 20
 
