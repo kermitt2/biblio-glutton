@@ -108,6 +108,7 @@ public class HALAPIResponseParser {
             biblioObj = handler.getBiblio();
         } catch (Exception e) {
             logger.warn("Failed to parse HAL TEI XML", e);
+            logger.error(tei);
         } 
         
         return biblioObj;

@@ -18,10 +18,14 @@ import org.apache.commons.lang3.StringUtils;
 
 import org.joda.time.Partial;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  *  A generic loosy data model for bibliographical data.
  */
 public class Biblio implements Serializable {
+	private static final Logger LOGGER = LoggerFactory.getLogger(Biblio.class);
 
 	// to ensure unique ID for multi-threaded object creation
 	static AtomicInteger nextId = new AtomicInteger();
@@ -527,7 +531,13 @@ public class Biblio implements Serializable {
 		String isbn = StringUtils.replace(isbn13, "-", "");
 
 		if (isbn.length() == 10) {
-			isbn = BiblioUtils.isbn10to13(isbn);
+			try {
+				isbn = BiblioUtils.isbn10to13(isbn);
+			} catch(Exception e) {
+				// log this invalid isbn
+				LOGGER.error("Invalid ISBN format: " + isbn13);
+				return;
+			}
 		}
 
 		setPublisherAttribute("isbn13", isbn);

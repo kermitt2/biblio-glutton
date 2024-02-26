@@ -24,13 +24,19 @@ public final class BiblioUtils {
 
 		int checksum = 0;
 		for (int i = 1; i <= isbn13.length(); i++) {
-			int a = Integer.parseInt(String.valueOf(isbn13.charAt(i - 1)));
 
-			if (i % 2 == 1) {
-				checksum += a;
-			}
-			else {
-				checksum += 3 * a;
+			try {
+				int a = Integer.parseInt(String.valueOf(isbn13.charAt(i - 1)));
+
+				if (i % 2 == 1) {
+					checksum += a;
+				}
+				else {
+					checksum += 3 * a;
+				}
+			} catch(Exception e) {
+				// nothing to be done then
+				throw new IllegalArgumentException("Invalid ISBN10, it must be only digits: " + isbn);
 			}
 		}
 
