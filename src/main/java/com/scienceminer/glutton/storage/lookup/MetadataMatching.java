@@ -67,6 +67,7 @@ public class MetadataMatching {
     public static final String INDEX_FIELD_ABBREVIATED_JOURNAL_TITLE = "abbreviated_journal";
     public static final String INDEX_FIELD_NAME_YEAR = "year";
     public static final String INDEX_FIELD_NAME_ABBREV_TITLE = "abbreviated_journal";
+    public static final String INDEX_FIELD_NAME_SOURCE = "source";
 
     private final String INDEX_FIELD_NAME_JSONDOC = "jsondoc";
 
@@ -244,11 +245,40 @@ public class MetadataMatching {
     /**
      * Async search by raw bibliographical reference string
      **/
-    public void retrieveByBiblioAsync(String biblio, Consumer<List<MatchingDocument>> callback) {
+    public void retrieveByBiblioAsync(String biblio, 
+                                    Consumer<List<MatchingDocument>> callback) {
         if (isBlank(biblio)) {
             throw new ServiceException(400, "Supplied bibliographical string is empty.");
         }
         final MatchQueryBuilder query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
+
+        executeQueryAsync(query, callback);
+    }
+
+    /**
+     * Async search by raw bibliographical reference string
+     **/
+    public void retrieveByBiblioAsyncConditional(String biblio, 
+                                    List<String> sources, 
+                                    String toIgnore,
+                                    Consumer<List<MatchingDocument>> callback) {
+        if (isBlank(biblio)) {
+            throw new ServiceException(400, "Supplied bibliographical string is empty.");
+        }
+        //MatchQueryBuilder query = null;
+        BoolQueryBuilder query = null;
+        if (toIgnore == null) {
+            // usual case
+            //query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
+            query = QueryBuilders.boolQuery()
+                .must(QueryBuilders.existsQuery("DOI"))
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio));
+        } else {
+            //query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
+            query = QueryBuilders.boolQuery()
+                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio))
+                .mustNot(QueryBuilders.termQuery("_id", toIgnore));
+        }
 
         executeQueryAsync(query, callback);
     }

@@ -67,6 +67,8 @@ public class IndexCommand extends ConfiguredCommand<LookupConfiguration> {
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
         LOGGER.info("Metadata record indexing task completed");
+
+        System.exit(0);
     }
 
 }

@@ -227,11 +227,23 @@ task istex(dependsOn: 'classes', type: JavaExec, group: 'data') {
     }
 }
 
-// deprecated, do not use this
+// only used it to re-create the search index from scratch, keeping the LMDB unchanged
 task index(dependsOn: 'classes', type: JavaExec, group: 'search') {
     main = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
     args 'index', getArg('config', 'config/glutton.yml') 
+    if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
+        jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"
+    } else {
+        jvmArgs '-Xmx3072m'
+    }
+}
+
+// experimental
+task hal_audit(dependsOn: 'classes', type: JavaExec, group: 'search') {
+    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    classpath = sourceSets.main.runtimeClasspath
+    args 'hal_audit', getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
         jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"
     } else {

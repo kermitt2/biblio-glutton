@@ -30,6 +30,8 @@ public class MatchingDocument {
 
     private boolean isException = false;
     private Throwable exception;
+
+    // TBD: rename, it's a JSON string, not a JSON object
     private String finalJsonObject;
 
     public MatchingDocument(Throwable throwable) {
@@ -157,10 +159,12 @@ public class MatchingDocument {
         this.isException = true;
     }
 
+    // TBD: rename, it's a JSON string, not a JSON object
     public void setFinalJsonObject(String finalJsonObject) {
         this.finalJsonObject = finalJsonObject;
     }
 
+    // TBD: rename, it's a JSON string, not a JSON object
     public String getFinalJsonObject() {
         if (finalJsonObject != null)
             finalJsonObject = finalJsonObject.replace("\n", "");

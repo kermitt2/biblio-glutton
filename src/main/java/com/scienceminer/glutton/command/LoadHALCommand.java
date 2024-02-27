@@ -48,7 +48,7 @@ public class LoadHALCommand extends ConfiguredCommand<LookupConfiguration> {
 
         reporter.start(30, TimeUnit.SECONDS);
 
-        LOGGER.info("Preparing the system. Loading data for HAL via OAI-PMH...");
+        LOGGER.info("Preparing the system. Loading metadadata for HAL via HAL web API...");
 
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
 

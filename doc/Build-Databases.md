@@ -101,7 +101,7 @@ ignoreCrossRefFields:
   - indexed
 ```
 
-Example loading the Crossref Metadata Plus snapshot of March 2022, loading time around 4 hours (dump files on slow hard drive).
+Example loading the Crossref Metadata Plus snapshot of March 2022, loading time around 4 hours (dump files on SSD).
 
 ```
 -- Counters --------------------------------------------------------------------
@@ -117,7 +117,9 @@ crossrefLookup
     15-minute rate = 7240.26 events/second
 ```
 
-The 5,472,493 rejected records correspond to all the DOI entries of type "components" (part of document), which are filtered out. As a March 2022, we have for example 121,340,014 crossref article records. 
+On the above example, the 5,472,493 rejected records correspond to all the DOI entries of type "components" (part of document), which are filtered out. 
+
+As a February 2024, we have for example 146,808,255 accepted crossref records and 8,015,190 rejected component records (last indexed date in dump file is 2024-02-02). 
 
 #### CrossRef metadata gap coverage
 

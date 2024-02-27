@@ -2,6 +2,7 @@ package com.scienceminer.glutton.storage.lookup;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
+
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.data.MatchingDocument;
 import com.scienceminer.glutton.data.Biblio;
@@ -11,28 +12,39 @@ import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.exception.ServiceOverloadedException;
 import com.scienceminer.glutton.serialization.BiblioSerializer;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
-import com.scienceminer.glutton.indexing.ElasticSearchIndexer;
-import com.scienceminer.glutton.indexing.ElasticSearchAsyncIndexer;
+import com.scienceminer.glutton.indexing.*;
 import com.scienceminer.glutton.utils.BinarySerialiser;
+import com.scienceminer.glutton.storage.LookupEngine;
+
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.lmdbjava.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.node.*;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.core.io.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.*;
+import java.nio.file.*;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.time.LocalDateTime;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.file.StandardOpenOption;
 
 import static com.scienceminer.glutton.web.resource.DataController.DEFAULT_MAX_SIZE_LIST;
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 /**
@@ -332,6 +344,169 @@ public class HALLookup {
 
     public int getIndexingBatchSize() {
         return this.batchIndexingSize;
+    }
+
+    public void analyzeHALRecords(LookupEngine lookupEngine,
+                                Meter meter, 
+                                Counter counterDuplicatedRecords, 
+                                Counter counterHasDOIRecords,
+                                Counter counterMissingDOILookup,
+                                Counter counterMissingDOIRecords, 
+                                Path duplicatedRecordsReport, 
+                                Path missingDOIReport) {
+        // go throught every HAL records 
+        // 1) check DOI matching if DOI is missing
+        // 2) check HAL matching with normal blocking/pairwise comparison, ignoring CrossRef records
+        long total = getFullSize();
+        long counter = 0;
+
+        try {
+            AsynchronousFileChannel asyncMissingDOIReportFile = AsynchronousFileChannel.open(missingDOIReport, 
+                StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            AsynchronousFileChannel asyncDuplicatedRecordsReportFile = AsynchronousFileChannel.open(duplicatedRecordsReport,
+                StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+
+            try (Txn<ByteBuffer> txn = environment.txnRead()) {
+                try (CursorIterable<ByteBuffer> it = dbHALJson.iterate(txn, KeyRange.all())) {
+                    for (final CursorIterable.KeyVal<ByteBuffer> kv : it) {
+                        String key = null;
+                        try {
+                            key = (String) BinarySerialiser.deserialize(kv.key());
+                            String recordJson = (String) BinarySerialiser.deserializeAndDecompress(kv.val());
+
+                            try {
+                                MetadataObj metadataObj = MetadataObjBuilder.createMetadataObj(recordJson);
+                                
+                                // check DOI
+                                /*checkMissingDOI(lookupEngine, 
+                                                metadataObj, 
+                                                counterHasDOIRecords, 
+                                                counterMissingDOILookup, 
+                                                counterMissingDOIRecords, 
+                                                asyncMissingDOIReportFile);*/
+
+                                // check duplicate
+                                checkDuplicate(lookupEngine, 
+                                                metadataObj, 
+                                                counterDuplicatedRecords, 
+                                                asyncDuplicatedRecordsReportFile);
+
+                            } catch(Exception e) {
+                                LOGGER.error("fail to parse the JSON document prior to indexing", e);
+                                LOGGER.error(recordJson);
+                            }
+
+                            meter.mark();
+                        } catch (IOException e) {
+                            LOGGER.error("Cannot decompress document with key: " + key, e);
+                        }
+                        if (counter == total) {
+                            txn.close();
+                            asyncMissingDOIReportFile.close();
+                            asyncDuplicatedRecordsReportFile.close();
+                            break;
+                        }
+                        counter++;
+                    }
+                }
+            } catch (Env.ReadersFullException e) {
+                throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void checkMissingDOI(LookupEngine lookupEngine,
+                                MetadataObj metadataObj, 
+                                Counter counterHasDOIRecords,
+                                Counter counterMissingDOILookup,
+                                Counter counterMissingDOIRecords, 
+                                AsynchronousFileChannel missingDOIReport) {
+        final String DOI = metadataObj.DOI;
+        if (isNotBlank(DOI)) {
+            counterHasDOIRecords.inc();
+            return;
+        } 
+
+        final String biblio = metadataObj.bibliographic;
+        if (isBlank(biblio)) {
+            // not enough metadata
+            return;
+        } 
+
+        // create a query for the record
+        final String halId = metadataObj.halId;
+        
+        final String firstAuthor = metadataObj.first_author;
+        String theTitle = null;
+        if (metadataObj.title != null && metadataObj.title.size()>0)
+            theTitle = metadataObj.title.get(0);
+        final String atitle = theTitle;
+        String theJtitle = null;
+        if (metadataObj.journal != null && metadataObj.journal.size()>0)
+            theJtitle = metadataObj.journal.get(0);
+        final String jtitle= theJtitle;
+        final String year = metadataObj.year;
+
+        List<String> sources = Arrays.asList("crossref");
+
+        counterMissingDOILookup.inc();
+        lookupEngine.retrieveByBiblioAsyncConditional(biblio, firstAuthor, atitle, jtitle, year, false, sources, null, matchingDocumentBiblio -> {
+            if (!matchingDocumentBiblio.isException()) {
+                if (isNotBlank(matchingDocumentBiblio.getDOI())) {
+                    String reportLine = halId+"\t"+matchingDocumentBiblio.getDOI()+"\t"+matchingDocumentBiblio.getMatchingScore()+"\n";
+                    counterMissingDOIRecords.inc();
+                    System.out.println(reportLine);
+                    //missingDOIReport.write(ByteBuffer.wrap(reportLine.getBytes()), 0);
+                }
+            }
+        });
+    }
+
+    public void checkDuplicate(LookupEngine lookupEngine,
+                                MetadataObj metadataObj, 
+                                Counter counterDuplicatedRecords, 
+                                AsynchronousFileChannel duplicatedRecordsReport) {
+        // create a query for the record
+        final String halId = metadataObj.halId;
+        if (isBlank(halId)) {
+            // it should never be the case!
+            return;
+        }
+
+        final String biblio = metadataObj.bibliographic;
+        if (isBlank(biblio)) {
+            // not enough metadata
+            return;
+        } 
+
+        final String firstAuthor = metadataObj.first_author;
+        String theTitle = null;
+        if (metadataObj.title != null && metadataObj.title.size()>0)
+            theTitle = metadataObj.title.get(0);
+        final String atitle = theTitle;
+        String theJtitle = null;
+        if (metadataObj.journal != null && metadataObj.journal.size()>0)
+            theJtitle = metadataObj.journal.get(0);
+        final String jtitle= theJtitle;
+        final String year = metadataObj.year;
+
+        List<String> sources = Arrays.asList("hal");
+        String toIgnore = "hal:"+halId;
+
+        //System.out.println("Deduplication lookup for " + halId);
+
+        lookupEngine.retrieveByBiblioAsyncConditional(biblio, firstAuthor, atitle, jtitle, year, false, sources, toIgnore, matchingDocumentBiblio -> {
+            if (!matchingDocumentBiblio.isException()) {
+                if (isNotBlank(matchingDocumentBiblio.getHalId()) && !halId.equals(matchingDocumentBiblio.getHalId())) {
+                    String reportLine = halId+"\t"+matchingDocumentBiblio.getHalId()+"\t"+matchingDocumentBiblio.getMatchingScore()+"\n";
+                    counterDuplicatedRecords.inc();
+                    System.out.println(reportLine);
+                    //duplicatedRecordsReport.write(ByteBuffer.wrap(reportLine.getBytes()), 0);
+                }
+            }
+        });
     }
 
     public void close() {

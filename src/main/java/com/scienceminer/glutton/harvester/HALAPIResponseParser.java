@@ -60,22 +60,26 @@ public class HALAPIResponseParser {
         try {
             JsonNode rootNode = objectMapper.readTree(in);
             JsonNode jsonNode = rootNode.get("response");
-            JsonNode docsNode = jsonNode.get("docs");
-            if (docsNode != null && (!docsNode.isMissingNode()) && docsNode.isArray() && ((ArrayNode)docsNode).size() > 0) {
-                Iterator<JsonNode> docIter = ((ArrayNode)docsNode).elements();
-                while (docIter.hasNext()) {
-                    JsonNode docNode = docIter.next();
-                    JsonNode teiNode = docNode.get("label_xml");
-                    if (teiNode != null && (!teiNode.isMissingNode())) {
-                        String tei = teiNode.asText();
-                        Biblio biblio = processRecord(tei);
-                        if (biblio != null) {
-                            biblioobjs.add(biblio);
-                        } else {
-                            counterInvalidRecords.inc();
+            if (jsonNode != null && (!jsonNode.isMissingNode())) {
+                JsonNode docsNode = jsonNode.get("docs");
+                if (docsNode != null && (!docsNode.isMissingNode()) && docsNode.isArray() && ((ArrayNode)docsNode).size() > 0) {
+                    Iterator<JsonNode> docIter = ((ArrayNode)docsNode).elements();
+                    while (docIter.hasNext()) {
+                        JsonNode docNode = docIter.next();
+                        JsonNode teiNode = docNode.get("label_xml");
+                        if (teiNode != null && (!teiNode.isMissingNode())) {
+                            String tei = teiNode.asText();
+                            Biblio biblio = processRecord(tei);
+                            if (biblio != null) {
+                                biblioobjs.add(biblio);
+                            } else {
+                                counterInvalidRecords.inc();
+                            }
                         }
                     }
                 }
+            } else {
+                logger.warn("Response without any documents, continuing harvesting...");
             }
 
             JsonNode cursorNode = rootNode.get("nextCursorMark");

@@ -194,6 +194,8 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         }
         else
             LOGGER.info("Crossref latest indexed date is not set.");
+
+        System.exit(0);
     }
 
     private InputStream selectStream(Path crossrefFilePath) throws IOException {

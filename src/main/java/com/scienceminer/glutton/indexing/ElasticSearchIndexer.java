@@ -181,9 +181,9 @@ public class ElasticSearchIndexer {
                             bulkSize++;
                         }
 
-                        if (bulkSize == configuration.getIndexingBatchSize()) {
+                        if (bulkSize >= configuration.getIndexingBatchSize()) {
                             try {
-                                BulkResponse result = this.elasticsearchClient.bulk(br.build());                            
+                                BulkResponse result = this.elasticsearchClient.bulk(br.build()); 
                                 if (result.errors()) {
                                     logger.error("Bulk had errors");
                                     for (BulkResponseItem item: result.items()) {
@@ -204,7 +204,7 @@ public class ElasticSearchIndexer {
                     } catch (IOException e) {
                         logger.error("Cannot decompress document with key: " + key, e);
                     }
-                    if (counter == total) {
+                    if (counter >= total) {
                         txn.close();
                         break;
                     }
