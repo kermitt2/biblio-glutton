@@ -65,10 +65,10 @@ public class HALAuditCommand extends ConfiguredCommand<LookupConfiguration> {
         final Counter counterMissingDOIRecords = metrics.counter("HAL_missing_DOI_records");
 
         // file for reporting duplicated records
-        Path duplicatedRecordsReport = FileSystems.getDefault().getPath("duplicatedRecordsReport.txt");
+        String duplicatedRecordsReport = "duplicatedRecordsReport.txt";
 
         // file for reporting missing DOI
-        Path missingDOIReport = FileSystems.getDefault().getPath("missingDOIReport.txt");
+        String missingDOIReport = "missingDOIReport.txt";
 
         halLookup.analyzeHALRecords(lookupEngine, 
                                     meter, 

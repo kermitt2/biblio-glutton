@@ -352,66 +352,91 @@ public class HALLookup {
                                 Counter counterHasDOIRecords,
                                 Counter counterMissingDOILookup,
                                 Counter counterMissingDOIRecords, 
-                                Path duplicatedRecordsReport, 
-                                Path missingDOIReport) {
+                                String duplicatedRecordsReport, 
+                                String missingDOIReport) {
         // go throught every HAL records 
         // 1) check DOI matching if DOI is missing
         // 2) check HAL matching with normal blocking/pairwise comparison, ignoring CrossRef records
         long total = getFullSize();
         long counter = 0;
+        
+        final List<String> missingDOIReportRows = new ArrayList<>();
+        final List<String> duplicateReportRows = new ArrayList<>();
 
-        try {
-            AsynchronousFileChannel asyncMissingDOIReportFile = AsynchronousFileChannel.open(missingDOIReport, 
-                StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            AsynchronousFileChannel asyncDuplicatedRecordsReportFile = AsynchronousFileChannel.open(duplicatedRecordsReport,
-                StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        try (Txn<ByteBuffer> txn = environment.txnRead()) {
+            try (CursorIterable<ByteBuffer> it = dbHALJson.iterate(txn, KeyRange.all())) {
+                for (final CursorIterable.KeyVal<ByteBuffer> kv : it) {
+                    String key = null;
+                    try {
+                        key = (String) BinarySerialiser.deserialize(kv.key());
+                        String recordJson = (String) BinarySerialiser.deserializeAndDecompress(kv.val());
 
-            try (Txn<ByteBuffer> txn = environment.txnRead()) {
-                try (CursorIterable<ByteBuffer> it = dbHALJson.iterate(txn, KeyRange.all())) {
-                    for (final CursorIterable.KeyVal<ByteBuffer> kv : it) {
-                        String key = null;
                         try {
-                            key = (String) BinarySerialiser.deserialize(kv.key());
-                            String recordJson = (String) BinarySerialiser.deserializeAndDecompress(kv.val());
+                            MetadataObj metadataObj = MetadataObjBuilder.createMetadataObj(recordJson);
+                            
+                            // check DOI
+                            checkMissingDOI(lookupEngine, 
+                                            metadataObj, 
+                                            counterHasDOIRecords, 
+                                            counterMissingDOILookup, 
+                                            counterMissingDOIRecords, 
+                                            missingDOIReportRows);
 
-                            try {
-                                MetadataObj metadataObj = MetadataObjBuilder.createMetadataObj(recordJson);
-                                
-                                // check DOI
-                                /*checkMissingDOI(lookupEngine, 
-                                                metadataObj, 
-                                                counterHasDOIRecords, 
-                                                counterMissingDOILookup, 
-                                                counterMissingDOIRecords, 
-                                                asyncMissingDOIReportFile);*/
+                            // check duplicate
+                            checkDuplicate(lookupEngine, 
+                                            metadataObj, 
+                                            counterDuplicatedRecords, 
+                                            duplicateReportRows);
 
-                                // check duplicate
-                                checkDuplicate(lookupEngine, 
-                                                metadataObj, 
-                                                counterDuplicatedRecords, 
-                                                asyncDuplicatedRecordsReportFile);
-
-                            } catch(Exception e) {
-                                LOGGER.error("fail to parse the JSON document prior to indexing", e);
-                                LOGGER.error(recordJson);
-                            }
-
-                            meter.mark();
-                        } catch (IOException e) {
-                            LOGGER.error("Cannot decompress document with key: " + key, e);
+                        } catch(Exception e) {
+                            LOGGER.error("fail to parse the JSON document prior to indexing", e);
+                            LOGGER.error(recordJson);
                         }
-                        if (counter == total) {
-                            txn.close();
-                            asyncMissingDOIReportFile.close();
-                            asyncDuplicatedRecordsReportFile.close();
-                            break;
-                        }
-                        counter++;
+
+                        meter.mark();
+                    } catch (IOException e) {
+                        LOGGER.error("Cannot decompress document with key: " + key, e);
                     }
+                    if (counter == total) {
+                        txn.close();
+                        break;
+                    }
+                    counter++;
                 }
-            } catch (Env.ReadersFullException e) {
-                throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
             }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
+        }
+
+        try{
+            File missingDOIReportFile = new File(missingDOIReport);
+            File duplicatedRecordsReportFile = new File(duplicatedRecordsReport);
+
+            // write results
+            FileWriter fileWriter = new FileWriter(missingDOIReportFile);
+            PrintWriter printWriter = new PrintWriter(fileWriter);
+            synchronized(missingDOIReportRows) {
+                for(String rowReport : missingDOIReportRows) {
+                    printWriter.print(rowReport);
+                }
+            }
+            printWriter.close();
+
+            try {
+                // wait a bit to be sure that last matches are completed
+                Thread.sleep(60000);
+            } catch(Exception e) {
+                LOGGER.warn("Problem with sleep()");
+            }
+
+            fileWriter = new FileWriter(duplicatedRecordsReport);
+            printWriter = new PrintWriter(fileWriter);
+            synchronized(missingDOIReportRows) {
+                for(String rowReport : duplicateReportRows) {
+                    printWriter.print(rowReport);
+                }
+            }
+            printWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -422,7 +447,7 @@ public class HALLookup {
                                 Counter counterHasDOIRecords,
                                 Counter counterMissingDOILookup,
                                 Counter counterMissingDOIRecords, 
-                                AsynchronousFileChannel missingDOIReport) {
+                                List<String> missingDOIReportRows) {
         final String DOI = metadataObj.DOI;
         if (isNotBlank(DOI)) {
             counterHasDOIRecords.inc();
@@ -455,10 +480,13 @@ public class HALLookup {
         lookupEngine.retrieveByBiblioAsyncConditional(biblio, firstAuthor, atitle, jtitle, year, false, sources, null, matchingDocumentBiblio -> {
             if (!matchingDocumentBiblio.isException()) {
                 if (isNotBlank(matchingDocumentBiblio.getDOI())) {
-                    String reportLine = halId+"\t"+matchingDocumentBiblio.getDOI()+"\t"+matchingDocumentBiblio.getMatchingScore()+"\n";
+                    final String reportLine = halId+"\t"+matchingDocumentBiblio.getDOI()+"\t"+matchingDocumentBiblio.getMatchingScore()+"\n";
                     counterMissingDOIRecords.inc();
-                    System.out.println(reportLine);
+                    //System.out.println(reportLine);
                     //missingDOIReport.write(ByteBuffer.wrap(reportLine.getBytes()), 0);
+                    synchronized(missingDOIReportRows) {
+                        missingDOIReportRows.add(reportLine);
+                    }
                 }
             }
         });
@@ -467,7 +495,7 @@ public class HALLookup {
     public void checkDuplicate(LookupEngine lookupEngine,
                                 MetadataObj metadataObj, 
                                 Counter counterDuplicatedRecords, 
-                                AsynchronousFileChannel duplicatedRecordsReport) {
+                                List<String> duplicateReportRows) {
         // create a query for the record
         final String halId = metadataObj.halId;
         if (isBlank(halId)) {
@@ -502,8 +530,11 @@ public class HALLookup {
                 if (isNotBlank(matchingDocumentBiblio.getHalId()) && !halId.equals(matchingDocumentBiblio.getHalId())) {
                     String reportLine = halId+"\t"+matchingDocumentBiblio.getHalId()+"\t"+matchingDocumentBiblio.getMatchingScore()+"\n";
                     counterDuplicatedRecords.inc();
-                    System.out.println(reportLine);
+                    //System.out.println(reportLine);
                     //duplicatedRecordsReport.write(ByteBuffer.wrap(reportLine.getBytes()), 0);
+                    synchronized(duplicateReportRows) {
+                        duplicateReportRows.add(reportLine);
+                    }
                 }
             }
         });

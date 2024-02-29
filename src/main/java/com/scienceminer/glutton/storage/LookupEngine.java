@@ -903,10 +903,14 @@ public class LookupEngine {
         if (doi == null)
             return jsonobj;
 
+        if (doi.startsWith("crossref:"))
+            doi = doi.replace("crossref:", "");
+
         final IstexData istexData = istexLookup.retrieveByDoi(doi);
         final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
-        final String halId = halLookup.retrieveHalIdByDoi(doi);
-
+        String halId = halLookup.retrieveHalIdByDoi(doi);
+        if (halId != null && halId.startsWith("hal:"))
+            halId = halId.replace("hal:", "");
         return injectIdsAndOALink(jsonobj, doi, istexData, oaLink, halId);
     }
 
@@ -1009,19 +1013,14 @@ public class LookupEngine {
             }
         }
 
-        if (isBlank(halId)) {
-            final String localHalId = halLookup.retrieveHalIdByDoi(doi);
-            if (localHalId != null) {
-                if (isNotBlank(localHalId)) {
-                    if (!first) {
-                        sb.append(", ");
-                    } else {
-                        first = false;
-                    }
-                    sb.append("\"halId\":\"" + localHalId + "\"");
-                    foundHalId = true;
-                }
+        if (isNotBlank(halId)) {
+            if (!first) {
+                sb.append(", ");
+            } else {
+                first = false;
             }
+            sb.append("\"halId\":\"" + halId + "\"");
+            foundHalId = true;
         }
 
         if (isNotBlank(oaLink)) {
