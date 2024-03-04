@@ -1,6 +1,6 @@
 {
   "name": "indexing",
-  "version": "0.2",
+  "version": "0.3",
   "description": "indexing CrossRef DOI metadata",
   "main": "main.js",
   "scripts": {
@@ -19,6 +19,7 @@
     "lzma-native": "^6.0.1",
     "async": "^2.6.1",
     "js-yaml": "^4.1.0",
-    "tar-stream": "^2.2.0"
+    "tar-stream": "^2.2.0",
+    "requestretry": "^7.0.2"
   }
 }

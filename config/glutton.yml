@@ -1,18 +1,14 @@
-version: 0.2
+version: 0.3
 
-# where the metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings 
-storage: data/db
-#storage: /media/lopez/T5/data/db
-
-# Crossref fields to be ignored when storing metadata, reference field in particular take a lot of space
-ignoreCrossRefFields: 
-  - reference
-  - abstract
-  - indexed
+# where the compiled metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings, 
+# this is a single location for all compiled resources  
+#storage: data/db
+#storage: /media/lopez/data2/glutton-data/data/db
+storage: /media/lopez/Samsung_T515/glutton/data/db/
 
 # batch size for preparing the data
-loadingBatchSize: 10000
-indexBatchSize: 500
+storingBatchSize: 10000
+indexingBatchSize: 10000
 
 # max blocking size (number of candidates considered for pairwise matching)
 blockSize: 4
@@ -24,12 +20,22 @@ timeZone: UTC
 # the day hour for lauching the automatic daily incremental update, format is HH:MM
 dailyUpdateTime: 03:00
 
-# a node of the elasticsearch cluster to be used and a name for the index
+# define the search infrastructure to be used, possible values are "elasticSearch" or "solr"
+searchEngine: elasticSearch
+#searchEngine: solr
+
+# a node of the ElasticSearch cluster to be used and a name for the main index
 elastic:
   #host: localhost:9200
   host: 0.0.0.0:9200
-  index: crossref
+  #host: 192.168.1.30:9200
+  index: glutton
   maxConnections: 20
+
+# solr settings
+solr:
+  host: 0.0.0.0:8983
+  core: glutton
 
 proxy:
     # proxy to be used when doing external call to crossref or unpaywall
@@ -37,6 +43,12 @@ proxy:
     port: 
 
 crossref:
+  # Crossref fields to be ignored when storing metadata, reference field in particular takes a lot of space
+  ignoreCrossrefFields: 
+    - reference
+    - abstract
+    - indexed
+
   # a directory where the crossref incremental update files (gap or daily update) will be located
   # to be changed according to your storage
   dumpPath: /media/lopez/data2/crossref
@@ -53,6 +65,25 @@ crossref:
   # to use Crossref metadata plus service (available by subscription)
   #token: "yourmysteriouscrossrefmetadataplusauthorizationtokentobeputhere"
   token:
+
+# the following is used only for pubmed related enrichments and extractions
+#pubmed:
+  # path to the medline downloaded resources, to be changed according to your storage
+  #pubmedDirectory: /media/lopez/data2/medline_2023
+  # path to PMC mapping data
+  #pmcDirectory: data/pmc
+  # elasticsearch index for pubmed, used to create extraction based on MeSH terms
+  #index: pubmed
+  # path to the working pubmed databases, to be changed according to your storage 
+  #dbDirectory: /media/lopez/T51/data2/db
+
+hal: 
+  # OAI PMH endpoint for harvesting HAL metadata
+  api: "http://api.archives-ouvertes.fr/oai/hal"
+
+dblp:
+  # URL of the DBLP metadata dump
+  dump: "https://dblp.uni-trier.de/xml/dblp.xml.gz"
 
 unpaywall:
   dumpPath: 
@@ -80,29 +111,44 @@ server:
   registerDefaultExceptionMappers: false
   maxThreads: 2048
   maxQueuedRequests: 2048
-  acceptQueueSize: 2048
+  # change the following for having all http requests logged
+  requestLog:
+    appenders: []
 
+# logging:
+#  level: INFO
+#  appenders:
+#  - type: console
+#    threshold: WARN
+#    timeZone: UTC
+#  - type: file
+#    currentLogFilename: logs/lookup-service.log
+#    threshold: INFO
+#    archive: true
+#    archivedLogFilenamePattern: logs/lookup-service-%d.log
+#    archivedFileCount: 5
+#    timeZone: UTC
+
+# these logging settings apply to the service usage mode
 logging:
   level: INFO
+  loggers:
+    org.glassfish.jersey.internal: "OFF"
+    com.squarespace.jersey2.guice.JerseyGuiceUtils: "OFF"
   appenders:
-  - type: console
-    threshold: INFO
-    timeZone: UTC
-  - type: file
-    currentLogFilename: logs/lookup-service.log
-    threshold: INFO
-    archive: true
-    archivedLogFilenamePattern: logs/lookup-service-%d.log
-    archivedFileCount: 5
-    timeZone: UTC
-
-# the following is used only for pubmed related enrichments and extractions
-pubmed:
-  # path to the medline resources, to be changed according to your storage
-  pubmedDirectory: /media/lopez/data/biblio/medline2021/
-  # path to PMC mapping data
-  pmcDirectory: data/pmc
-  # elasticsearch index for pubmed, used to create extraction based on MeSH terms
-  index: pubmed
-  # path to the working pubmed databases, to be changed according to your storage 
-  dbDirectory: /media/lopez/T5/data2/db
+    - type: console
+      threshold: INFO
+      timeZone: UTC
+      # uncomment to have the logs in json format
+      #layout:
+      #  type: json
+    - type: file
+      currentLogFilename: logs/biblio-glutton.log
+      threshold: INFO
+      archive: true
+      archivedLogFilenamePattern: logs/biblio-glutton-%d.log
+      archivedFileCount: 5
+      timeZone: UTC
+      # uncomment to have the logs in json format
+      #layout:
+      #  type: json

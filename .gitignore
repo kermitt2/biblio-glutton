@@ -19,11 +19,12 @@ data/db
 scripts/dump.json
 scripts/dump.json.gz
 scripts/node_modules
-lookup/build
+build
 .gradle
 *.mdb
 **/node_modules/**
 **/out
 **/package-lock.json
-lookup/data/db/*
-pubmed-glutton/build/*
+data/db/*
+pubmed-glutton/*
+indexing/*

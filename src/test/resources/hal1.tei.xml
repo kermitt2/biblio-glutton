@@ -1,0 +1,682 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<TEI xmlns:hal="http://hal.archives-ouvertes.fr/" xmlns:tei="http://www.tei-c.org/ns/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.1" xsi:schemaLocation="http://www.tei-c.org/ns/1.0 http://api.archives-ouvertes.fr/documents/aofr-sword.xsd">
+      
+    <teiHeader>
+            
+        <fileDesc>
+                  
+            <titleStmt>
+                        
+                <title>HAL TEI export of inserm-00444410</title>
+                      
+            </titleStmt>
+                  
+            <publicationStmt>
+                        
+                <distributor>CCSD</distributor>
+                        
+                <availability status="restricted">
+                              
+                    <licence target="http://creativecommons.org/licenses/by/4.0/">Distributed under a Creative Commons Attribution 4.0 International License</licence>
+                            
+                </availability>
+                        
+                <date when="2024-02-19T18:14:56+01:00"/>
+                      
+            </publicationStmt>
+                  
+            <sourceDesc>
+                        
+                <p part="N">HAL API platform</p>
+                      
+            </sourceDesc>
+                
+        </fileDesc>
+          
+    </teiHeader>
+      
+    <text>
+            
+        <body>
+                  
+            <listBibl>
+                        
+                <biblFull>
+                              
+                    <titleStmt>
+                                    
+                        <title xml:lang="en">Studies on the mechanism of RNAi-dependent heterochromatin assembly.</title>
+                                    
+                        <author role="aut">
+                                          
+                            <persName>
+                                                
+                                <forename type="first">Danesh</forename>
+                                                
+                                <surname>Moazed</surname>
+                                              
+                            </persName>
+                                          
+                            <idno type="halauthorid">360195-0</idno>
+                                          
+                            <affiliation ref="#struct-81217"/>
+                                        
+                        </author>
+                                    
+                        <author role="aut">
+                                          
+                            <persName>
+                                                
+                                <forename type="first">Marc</forename>
+                                                
+                                <surname>Bühler</surname>
+                                              
+                            </persName>
+                                          
+                            <idno type="halauthorid">360211-0</idno>
+                                          
+                            <affiliation ref="#struct-81217"/>
+                                        
+                        </author>
+                                    
+                        <author role="aut">
+                                          
+                            <persName>
+                                                
+                                <forename type="first">S. M.</forename>
+                                                
+                                <surname>Buker</surname>
+                                              
+                            </persName>
+                                          
+                            <idno type="halauthorid">435145-0</idno>
+                                          
+                            <affiliation ref="#struct-81217"/>
+                                        
+                        </author>
+                                    
+                        <author role="aut">
+                                          
+                            <persName>
+                                                
+                                <forename type="first">Serafin</forename>
+                                                
+                                <forename type="middle">U.</forename>
+                                                
+                                <surname>Colmenares</surname>
+                                              
+                            </persName>
+                                          
+                            <idno type="halauthorid">435146-0</idno>
+                                          
+                            <affiliation ref="#struct-81217"/>
+                                        
+                        </author>
+                                    
+                        <author role="aut">
+                                          
+                            <persName>
+                                                
+                                <forename type="first">E. L.</forename>
+                                                
+                                <surname>Gerace</surname>
+                                              
+                            </persName>
+                                          
+                            <idno type="halauthorid">435147-0</idno>
+                                          
+                            <affiliation ref="#struct-81217"/>
+                                        
+                        </author>
+                                    
+                        <author role="aut">
+                                          
+                            <persName>
+                                                
+                                <forename type="first">S. A.</forename>
+                                                
+                                <surname>Gerber</surname>
+                                              
+                            </persName>
+                                          
+                            <idno type="halauthorid">435148-0</idno>
+                                          
+                            <affiliation ref="#struct-81217"/>
+                                        
+                        </author>
+                                    
+                        <author role="aut">
+                                          
+                            <persName>
+                                                
+                                <forename type="first">E.-J. E.</forename>
+                                                
+                                <surname>Hong</surname>
+                                              
+                            </persName>
+                                          
+                            <idno type="halauthorid">435149-0</idno>
+                                          
+                            <affiliation ref="#struct-81217"/>
+                                        
+                        </author>
+                                    
+                        <author role="aut">
+                                          
+                            <persName>
+                                                
+                                <forename type="first">Mohammad</forename>
+                                                
+                                <forename type="middle">R.</forename>
+                                                
+                                <surname>Motamedi</surname>
+                                              
+                            </persName>
+                                          
+                            <idno type="halauthorid">435150-0</idno>
+                                          
+                            <affiliation ref="#struct-81217"/>
+                                        
+                        </author>
+                                    
+                        <author role="aut">
+                                          
+                            <persName>
+                                                
+                                <forename type="first">André</forename>
+                                                
+                                <surname>Verdel</surname>
+                                              
+                            </persName>
+                                          
+                            <email type="md5">e1d9764e9b28b89ea3b7178aad37e8db</email>
+                                          
+                            <email type="domain">univ-grenoble-alpes.fr</email>
+                                          
+                            <idno notation="numeric" type="idhal">760474</idno>
+                                          
+                            <idno notation="string" type="halauthorid">360191-760474</idno>
+                                          
+                            <idno type="ORCID">https://orcid.org/0000-0001-6048-3794</idno>
+                                          
+                            <idno type="IDREF">https://www.idref.fr/065126343</idno>
+                                          
+                            <affiliation ref="#struct-81217"/>
+                                        
+                        </author>
+                                    
+                        <author role="aut">
+                                          
+                            <persName>
+                                                
+                                <forename type="first">J.</forename>
+                                                
+                                <surname>Villén</surname>
+                                              
+                            </persName>
+                                          
+                            <idno type="halauthorid">435151-0</idno>
+                                          
+                            <affiliation ref="#struct-81217"/>
+                                        
+                        </author>
+                                    
+                        <author role="aut">
+                                          
+                            <persName>
+                                                
+                                <forename type="first">Serge</forename>
+                                                
+                                <forename type="middle">P.</forename>
+                                                
+                                <surname>Gygi</surname>
+                                              
+                            </persName>
+                                          
+                            <idno type="halauthorid">435152-0</idno>
+                                          
+                            <affiliation ref="#struct-81217"/>
+                                        
+                        </author>
+                                    
+                        <editor role="depositor">
+                                          
+                            <persName>
+                                                
+                                <forename>Andre</forename>
+                                                
+                                <surname>Verdel</surname>
+                                              
+                            </persName>
+                                          
+                            <email type="md5">7199d1be51e9bb88fbbd73645c4e9890</email>
+                                          
+                            <email type="domain">ujf-grenoble.fr.invalid</email>
+                                        
+                        </editor>
+                                  
+                    </titleStmt>
+                              
+                    <editionStmt>
+                                    
+                        <edition n="v1" type="current">
+                                          
+                            <date type="whenSubmitted">2010-01-06 15:30:32</date>
+                                          
+                            <date type="whenModified">2010-01-07 14:46:18</date>
+                                          
+                            <date type="whenReleased">2010-01-07 14:46:18</date>
+                                          
+                            <date type="whenProduced">2006</date>
+                                          
+                            <ref target="http://symposium.cshlp.org/content/71/461.full.pdf" type="externalLink"/>
+                                        
+                        </edition>
+                                    
+                        <respStmt>
+                                          
+                            <resp>contributor</resp>
+                                          
+                            <name key="132547">
+                                                
+                                <persName>
+                                                      
+                                    <forename>Andre</forename>
+                                                      
+                                    <surname>Verdel</surname>
+                                                    
+                                </persName>
+                                                
+                                <email type="md5">7199d1be51e9bb88fbbd73645c4e9890</email>
+                                                
+                                <email type="domain">ujf-grenoble.fr.invalid</email>
+                                              
+                            </name>
+                                        
+                        </respStmt>
+                                  
+                    </editionStmt>
+                              
+                    <publicationStmt>
+                                    
+                        <distributor>CCSD</distributor>
+                                    
+                        <idno type="halId">inserm-00444410</idno>
+                                    
+                        <idno type="halUri">https://inserm.hal.science/inserm-00444410</idno>
+                                    
+                        <idno type="halBibtex">moazed:inserm-00444410</idno>
+                                    
+                        <idno type="halRefHtml">&lt;i&gt;Cold Spring Harbor Symposia on Quantitative Biology&lt;/i&gt;, 2006, 71, pp.461-71. &lt;a target="_blank" href="https://dx.doi.org/10.1101/sqb.2006.71.044"&gt;&amp;#x27E8;10.1101/sqb.2006.71.044&amp;#x27E9;&lt;/a&gt;</idno>
+                                    
+                        <idno type="halRef">Cold Spring Harbor Symposia on Quantitative Biology, 2006, 71, pp.461-71. &amp;#x27E8;10.1101/sqb.2006.71.044&amp;#x27E9;</idno>
+                                  
+                    </publicationStmt>
+                              
+                    <seriesStmt>
+                                    
+                        <idno n="INSERM" type="stamp">INSERM - Institut national de la santé et de la recherche médicale</idno>
+                                  
+                    </seriesStmt>
+                              
+                    <notesStmt>
+                                    
+                        <note n="2" type="audience">International</note>
+                                    
+                        <note n="0" type="popular">No</note>
+                                    
+                        <note n="1" type="peer">Yes</note>
+                                  
+                    </notesStmt>
+                              
+                    <sourceDesc>
+                                    
+                        <biblStruct>
+                                          
+                            <analytic>
+                                                
+                                <title xml:lang="en">Studies on the mechanism of RNAi-dependent heterochromatin assembly.</title>
+                                                
+                                <author role="aut">
+                                                      
+                                    <persName>
+                                                            
+                                        <forename type="first">Danesh</forename>
+                                                            
+                                        <surname>Moazed</surname>
+                                                          
+                                    </persName>
+                                                      
+                                    <idno type="halauthorid">360195-0</idno>
+                                                      
+                                    <affiliation ref="#struct-81217"/>
+                                                    
+                                </author>
+                                                
+                                <author role="aut">
+                                                      
+                                    <persName>
+                                                            
+                                        <forename type="first">Marc</forename>
+                                                            
+                                        <surname>Bühler</surname>
+                                                          
+                                    </persName>
+                                                      
+                                    <idno type="halauthorid">360211-0</idno>
+                                                      
+                                    <affiliation ref="#struct-81217"/>
+                                                    
+                                </author>
+                                                
+                                <author role="aut">
+                                                      
+                                    <persName>
+                                                            
+                                        <forename type="first">S. M.</forename>
+                                                            
+                                        <surname>Buker</surname>
+                                                          
+                                    </persName>
+                                                      
+                                    <idno type="halauthorid">435145-0</idno>
+                                                      
+                                    <affiliation ref="#struct-81217"/>
+                                                    
+                                </author>
+                                                
+                                <author role="aut">
+                                                      
+                                    <persName>
+                                                            
+                                        <forename type="first">Serafin</forename>
+                                                            
+                                        <forename type="middle">U.</forename>
+                                                            
+                                        <surname>Colmenares</surname>
+                                                          
+                                    </persName>
+                                                      
+                                    <idno type="halauthorid">435146-0</idno>
+                                                      
+                                    <affiliation ref="#struct-81217"/>
+                                                    
+                                </author>
+                                                
+                                <author role="aut">
+                                                      
+                                    <persName>
+                                                            
+                                        <forename type="first">E. L.</forename>
+                                                            
+                                        <surname>Gerace</surname>
+                                                          
+                                    </persName>
+                                                      
+                                    <idno type="halauthorid">435147-0</idno>
+                                                      
+                                    <affiliation ref="#struct-81217"/>
+                                                    
+                                </author>
+                                                
+                                <author role="aut">
+                                                      
+                                    <persName>
+                                                            
+                                        <forename type="first">S. A.</forename>
+                                                            
+                                        <surname>Gerber</surname>
+                                                          
+                                    </persName>
+                                                      
+                                    <idno type="halauthorid">435148-0</idno>
+                                                      
+                                    <affiliation ref="#struct-81217"/>
+                                                    
+                                </author>
+                                                
+                                <author role="aut">
+                                                      
+                                    <persName>
+                                                            
+                                        <forename type="first">E.-J. E.</forename>
+                                                            
+                                        <surname>Hong</surname>
+                                                          
+                                    </persName>
+                                                      
+                                    <idno type="halauthorid">435149-0</idno>
+                                                      
+                                    <affiliation ref="#struct-81217"/>
+                                                    
+                                </author>
+                                                
+                                <author role="aut">
+                                                      
+                                    <persName>
+                                                            
+                                        <forename type="first">Mohammad</forename>
+                                                            
+                                        <forename type="middle">R.</forename>
+                                                            
+                                        <surname>Motamedi</surname>
+                                                          
+                                    </persName>
+                                                      
+                                    <idno type="halauthorid">435150-0</idno>
+                                                      
+                                    <affiliation ref="#struct-81217"/>
+                                                    
+                                </author>
+                                                
+                                <author role="aut">
+                                                      
+                                    <persName>
+                                                            
+                                        <forename type="first">André</forename>
+                                                            
+                                        <surname>Verdel</surname>
+                                                          
+                                    </persName>
+                                                      
+                                    <email type="md5">e1d9764e9b28b89ea3b7178aad37e8db</email>
+                                                      
+                                    <email type="domain">univ-grenoble-alpes.fr</email>
+                                                      
+                                    <idno notation="numeric" type="idhal">760474</idno>
+                                                      
+                                    <idno notation="string" type="halauthorid">360191-760474</idno>
+                                                      
+                                    <idno type="ORCID">https://orcid.org/0000-0001-6048-3794</idno>
+                                                      
+                                    <idno type="IDREF">https://www.idref.fr/065126343</idno>
+                                                      
+                                    <affiliation ref="#struct-81217"/>
+                                                    
+                                </author>
+                                                
+                                <author role="aut">
+                                                      
+                                    <persName>
+                                                            
+                                        <forename type="first">J.</forename>
+                                                            
+                                        <surname>Villén</surname>
+                                                          
+                                    </persName>
+                                                      
+                                    <idno type="halauthorid">435151-0</idno>
+                                                      
+                                    <affiliation ref="#struct-81217"/>
+                                                    
+                                </author>
+                                                
+                                <author role="aut">
+                                                      
+                                    <persName>
+                                                            
+                                        <forename type="first">Serge</forename>
+                                                            
+                                        <forename type="middle">P.</forename>
+                                                            
+                                        <surname>Gygi</surname>
+                                                          
+                                    </persName>
+                                                      
+                                    <idno type="halauthorid">435152-0</idno>
+                                                      
+                                    <affiliation ref="#struct-81217"/>
+                                                    
+                                </author>
+                                              
+                            </analytic>
+                                          
+                            <monogr>
+                                                
+                                <idno status="VALID" type="halJournalId">3991</idno>
+                                                
+                                <idno type="issn">0091-7451</idno>
+                                                
+                                <title level="j">Cold Spring Harbor Symposia on Quantitative Biology</title>
+                                                
+                                <imprint>
+                                                      
+                                    <publisher>Cold Spring Harbor Laboratory; 1999</publisher>
+                                                      
+                                    <biblScope unit="volume">71</biblScope>
+                                                      
+                                    <biblScope unit="pp">461-71</biblScope>
+                                                      
+                                    <date type="datePub">2006</date>
+                                                    
+                                </imprint>
+                                              
+                            </monogr>
+                                          
+                            <idno type="doi">10.1101/sqb.2006.71.044</idno>
+                                          
+                            <idno type="pubmed">17381328</idno>
+                                        
+                        </biblStruct>
+                                  
+                    </sourceDesc>
+                              
+                    <profileDesc>
+                                    
+                        <langUsage>
+                                          
+                            <language ident="en">English</language>
+                                        
+                        </langUsage>
+                                    
+                        <textClass>
+                                          
+                            <classCode scheme="mesh">Centromere</classCode>
+                                          
+                            <classCode scheme="mesh">Chromatin Assembly and Disassembly</classCode>
+                                          
+                            <classCode scheme="mesh">RNA, Small Interfering</classCode>
+                                          
+                            <classCode scheme="mesh">Schizosaccharomyces</classCode>
+                                          
+                            <classCode scheme="mesh">Schizosaccharomyces pombe Proteins</classCode>
+                                          
+                            <classCode scheme="mesh">Chromosomes, Fungal</classCode>
+                                          
+                            <classCode scheme="mesh">Genes, Fungal</classCode>
+                                          
+                            <classCode scheme="mesh">Heterochromatin</classCode>
+                                          
+                            <classCode scheme="mesh">Models, Biological</classCode>
+                                          
+                            <classCode scheme="mesh">Models, Genetic</classCode>
+                                          
+                            <classCode scheme="mesh">Multiprotein Complexes</classCode>
+                                          
+                            <classCode scheme="mesh">RNA Interference</classCode>
+                                          
+                            <classCode scheme="mesh">RNA, Fungal</classCode>
+                                          
+                            <classCode n="sdv.gen" scheme="halDomain">Life Sciences [q-bio]/Genetics</classCode>
+                                          
+                            <classCode n="ART" scheme="halTypology">Journal articles</classCode>
+                                          
+                            <classCode n="ART" scheme="halOldTypology">Journal articles</classCode>
+                                          
+                            <classCode n="ART" scheme="halTreeTypology">Journal articles</classCode>
+                                        
+                        </textClass>
+                                    
+                        <abstract xml:lang="en">
+                                          
+                            <p>Assembly of heterochromatin at centromeric DNA regions in the fission yeast Schizosaccharomyces pombe involves an intimate interplay between chromatin modifying complexes and components of the RNAi pathway. The RNA-induced transcriptional silencing (RITS) complex, containing Chp1, Ago1, Tas3, and centromeric siRNAs, localizes to centromeric DNA repeats and is required for the assembly and maintenance of heterochromatin. RITS brings together two types of molecular recognition modules: a chromodomain protein, which binds to lysine 9 methylated histone H3 (H3K9), and Argonaute, which binds to specific sequences by siRNA-directed base-pairing interactions. The RNA-directed RNA polymerase complex (RDRC), composed of Rdp1, the Hrr1 helicase, and the Cid12 Poly(A) polymerase family member, synthesizes double-stranded RNA and creates the substrate for Dicer to generate siRNAs. RDRC physically associates with RITS, and both complexes localize to noncoding centromeric RNAs and centromeric DNA repeats, suggesting that recognition of nascent RNA transcripts may be involved in localization of these complexes to specific chromosome regions. In support of this possibility, tethering of the RITS complex to the transcript of the normally euchromatic ura4 (+) gene results in siRNA generation and RNAi- and heterochromatin-dependent silencing of the ura4 (+) gene. Finally, silencing of a subset of endogenous and transgene promoters within heterochromatic DNA domains occurs by RNAi-dependent degradation of nascent transcripts by a mechanism that we have termed co-transcriptional gene silencing (CTGS).</p>
+                                        
+                        </abstract>
+                                  
+                    </profileDesc>
+                            
+                </biblFull>
+                      
+            </listBibl>
+                
+        </body>
+            
+        <back>
+                  
+            <listOrg type="structures">
+                        
+                <org status="INCOMING" type="laboratory" xml:id="struct-81217">
+                              
+                    <orgName>Department of cell biology</orgName>
+                              
+                    <desc>
+                                    
+                        <address>
+                                          
+                            <addrLine>Boston, MA 02115</addrLine>
+                                          
+                            <country key="US"/>
+                                        
+                        </address>
+                                  
+                    </desc>
+                              
+                    <listRelation>
+                                    
+                        <relation active="#struct-130467" type="direct"/>
+                                  
+                    </listRelation>
+                            
+                </org>
+                        
+                <org status="VALID" type="institution" xml:id="struct-130467">
+                              
+                    <idno type="ROR">https://ror.org/03wevmz92</idno>
+                              
+                    <orgName>Harvard Medical School [Boston]</orgName>
+                              
+                    <orgName type="acronym">HMS</orgName>
+                              
+                    <desc>
+                                    
+                        <address>
+                                          
+                            <addrLine>25 Shattuck Street Boston, MA 02115</addrLine>
+                                          
+                            <country key="US"/>
+                                        
+                        </address>
+                                    
+                        <ref type="url">http://www.hms.harvard.edu</ref>
+                                  
+                    </desc>
+                            
+                </org>
+                      
+            </listOrg>
+                
+        </back>
+          
+    </text>
+    
+</TEI>
