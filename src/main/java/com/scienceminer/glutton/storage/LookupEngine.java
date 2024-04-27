@@ -1053,6 +1053,10 @@ public class LookupEngine {
         this.istexLookup = istexLookup;
     }
 
+    public void setHALLookup(HALLookup halLookup) {
+        this.halLookup = halLookup;
+    }
+
     public void setCrossrefMetadataLookup(CrossrefMetadataLookup crossrefMetadataLookup) {
         this.crossrefMetadataLookup = crossrefMetadataLookup;
     }

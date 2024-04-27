@@ -1,16 +1,17 @@
-package com.scienceminer.lookup.storage;
+package com.scienceminer.glutton.storage;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.scienceminer.lookup.data.IstexData;
-import com.scienceminer.lookup.data.PmidData;
-import com.scienceminer.lookup.storage.lookup.OALookup;
+import com.scienceminer.glutton.data.IstexData;
+import com.scienceminer.glutton.data.PmidData;
+import com.scienceminer.glutton.storage.lookup.OALookup;
+import com.scienceminer.glutton.storage.lookup.HALLookup;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import com.scienceminer.lookup.storage.lookup.IstexIdsLookup;
-import com.scienceminer.lookup.storage.lookup.PMIdsLookup;
+import com.scienceminer.glutton.storage.lookup.IstexIdsLookup;
+import com.scienceminer.glutton.storage.lookup.PMIdsLookup;
 
 import java.util.Collections;
 
@@ -25,6 +26,7 @@ public class LookupEngineTest {
     private PMIdsLookup mockPmidLookup;
     private IstexIdsLookup mockIstexLookup;
     private OALookup mockOALookup;
+    private HALLookup mockHALLookup;
 
     @Before
     public void setUp() throws Exception {
@@ -33,10 +35,12 @@ public class LookupEngineTest {
         mockPmidLookup = createMock(PMIdsLookup.class);
         mockIstexLookup = createMock(IstexIdsLookup.class);
         mockOALookup = createMock(OALookup.class);
+        mockHALLookup = createMock(HALLookup.class);
 
         target.setIstexLookup(mockIstexLookup);
         target.setPmidLookup(mockPmidLookup);
         target.setOaDoiLookup(mockOALookup);
+        target.setHALLookup(mockHALLookup);
     }
 
     @Test

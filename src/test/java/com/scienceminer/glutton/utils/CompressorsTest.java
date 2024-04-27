@@ -1,4 +1,4 @@
-package com.scienceminer.lookup.utils;
+package com.scienceminer.glutton.utils;
 
 import org.junit.Test;
 

@@ -1,6 +1,6 @@
-package com.scienceminer.lookup.reader;
+package com.scienceminer.glutton.reader;
 
-import com.scienceminer.lookup.data.PmidData;
+import com.scienceminer.glutton.data.PmidData;
 import org.junit.Before;
 import org.junit.Test;
 

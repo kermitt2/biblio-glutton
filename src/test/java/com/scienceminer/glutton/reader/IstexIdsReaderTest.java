@@ -1,6 +1,6 @@
-package com.scienceminer.lookup.reader;
+package com.scienceminer.glutton.reader;
 
-import com.scienceminer.lookup.data.IstexData;
+import com.scienceminer.glutton.data.IstexData;
 import org.junit.Before;
 import org.junit.Test;
 

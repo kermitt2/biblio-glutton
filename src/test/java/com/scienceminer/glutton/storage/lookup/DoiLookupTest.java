@@ -1,4 +1,4 @@
-package com.scienceminer.lookup.storage.lookup;
+package com.scienceminer.glutton.storage.lookup;
 
 import org.junit.After;
 import org.junit.Before;
@@ -11,13 +11,13 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 
 @Ignore("Integration test")
-public class IstexLookupTest {
+public class DoiLookupTest {
 
-    private IstexIdsLookup target;
+    private OALookup target;
 
     @Before
     public void setUp() throws Exception {
-//        target = new DoiIstexIdsLookup("/tmp/test");
+//        target = new MetadataDoiLookup("/tmp/test");
     }
 
     @After
@@ -30,7 +30,7 @@ public class IstexLookupTest {
 
 //    @Test
 //    public void testSimpleFile() throws Exception {
-//        target.loadFromFile(new FileInputStream("/Users/lfoppiano/development/scienceminer/consolidation data/sample-istex-ids.json"), new IstexIdsReader());
+//        target.loadFromFile(new FileInputStream("/Users/lfoppiano/development/scienceminer/consolidationData/unpaywall_sample.json"), new UnpaidWallReader());
 //    }
 
 }

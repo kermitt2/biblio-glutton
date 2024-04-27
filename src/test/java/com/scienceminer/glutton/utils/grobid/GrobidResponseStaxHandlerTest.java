@@ -1,7 +1,7 @@
-package com.scienceminer.lookup.utils.grobid;
+package com.scienceminer.glutton.utils.grobid;
 
 import com.ctc.wstx.stax.WstxInputFactory;
-import com.scienceminer.lookup.utils.xml.StaxUtils;
+import com.scienceminer.glutton.utils.xml.StaxUtils;
 import org.codehaus.stax2.XMLStreamReader2;
 import org.junit.Before;
 import org.junit.Test;
