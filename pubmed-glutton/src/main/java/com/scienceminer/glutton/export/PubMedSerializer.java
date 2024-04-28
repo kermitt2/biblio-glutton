@@ -34,10 +34,12 @@ import org.joda.time.Partial;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 /**
- * Class for serializing PubMed biblio objects in different formats. 
+ * Class for serializing PubMed biblio objects to the Crossref JSON schema without information loss. 
  */
 
 public class PubMedSerializer {
+
+    static String INVALID_MSG = "NOT_FOUND;INVALID_JOURNAL";
 
     /**
      * The export follows the same JSON schema as Crossref JSON (derived from Crossref Unixref)
@@ -77,14 +79,14 @@ public class PubMedSerializer {
         if (biblio.getDoi() == null) {
             // try to get a DOI via PMID and/or PMC
 
-            if (biblio.getPubmedId() != null) {
+            if (biblio.getPubmedId() != null && env != null) {
                 String doi = env.getDbPMID2DOI().retrieve(new Integer(biblio.getPubmedId()));
                 if (doi != null) {
                     biblio.setDoi(doi);
                 }
             }
 
-            if (biblio.getDoi() == null && biblio.getPmc() != null) {
+            if (biblio.getDoi() == null && biblio.getPmc() != null && env != null) {
                 String doi = env.getDbPMC2DOI().retrieve(biblio.getPmc());
                 if (doi != null) {
                     biblio.setDoi(doi);
@@ -264,14 +266,14 @@ public class PubMedSerializer {
         if (biblio.getPubmedId() == null) {
             // try to get a PMID via DOI and/or PMC
 
-            if (biblio.getDoi() != null) {
+            if (biblio.getDoi() != null && env != null) {
                 Integer pmid = env.getDbDOI2PMID().retrieve(biblio.getDoi());
                 if (pmid != null) {
                     biblio.setPubmedId(""+pmid);
                 }
             }
 
-            if (biblio.getPubmedId() == null && biblio.getPmc() != null) {
+            if (biblio.getPubmedId() == null && biblio.getPmc() != null && env != null) {
                 Integer pmid = env.getDbPMC2PMID().retrieve(biblio.getPmc());
                 if (pmid != null) {
                     biblio.setPubmedId(""+pmid);
@@ -286,14 +288,14 @@ public class PubMedSerializer {
         if (biblio.getPmc() == null) {
             // try to get a PMC via PMID and/or DOI
 
-            if (biblio.getPubmedId() != null) {
+            if (biblio.getPubmedId() != null && env != null) {
                 String pmc = env.getDbPMID2PMC().retrieve(new Integer(biblio.getPubmedId()));
                 if (pmc != null) {
                     biblio.setPmc(pmc);
                 }
             }
 
-            if (biblio.getPmc() == null && biblio.getDoi() != null) {
+            if (biblio.getPmc() == null && biblio.getDoi() != null && env != null) {
                 String pmc = env.getDbDOI2PMC().retrieve(biblio.getDoi());
                 if (pmc != null) {
                     biblio.setPmc(pmc);
@@ -349,45 +351,47 @@ public class PubMedSerializer {
         }
 
         // license information injected for PMC
-        String jsonLicense = env.getDbPMC2OABiblio().retrieve(biblio.getPmc());
-        String urlValue = null;
-        if (jsonLicense != null) {
+        if (env != null) {
+            String jsonLicense = env.getDbPMC2OABiblio().retrieve(biblio.getPmc());
+            String urlValue = null;
+            if (jsonLicense != null) {
 
-            JsonNode treeNode = mapper.readTree(jsonLicense);
-            JsonNode infoNode = treeNode.get("localInfo");
-            if (infoNode != null && infoNode.isObject()) {
-//System.out.println(jsonLicense);
-                JsonNode licenseNode = infoNode.get("license");
-                if (licenseNode != null && licenseNode.isObject()) {
-                    builder.append(", \"license\": [");
-                    builder.append("{\"code\": " + mapper.writeValueAsString(licenseNode.textValue()));
-                    builder.append("}]");
+                JsonNode treeNode = mapper.readTree(jsonLicense);
+                JsonNode infoNode = treeNode.get("localInfo");
+                if (infoNode != null && infoNode.isObject()) {
+    //System.out.println(jsonLicense);
+                    JsonNode licenseNode = infoNode.get("license");
+                    if (licenseNode != null && licenseNode.isObject()) {
+                        builder.append(", \"license\": [");
+                        builder.append("{\"code\": " + mapper.writeValueAsString(licenseNode.textValue()));
+                        builder.append("}]");
+                    }
+                    JsonNode urlNode = infoNode.get("url");
+                    if (urlNode != null) {
+                        urlValue = urlNode.textValue();
+                    }
                 }
-                JsonNode urlNode = infoNode.get("url");
-                if (urlNode != null) {
-                    urlValue = urlNode.textValue();
+            }
+        
+            if (urlValue != null || biblio.getPmc() != null) {
+                builder.append(", \"link\": [");
+
+                if (urlValue != null) {
+                    builder.append("{\"URL\": " + mapper.writeValueAsString(urlValue));
+                    builder.append(", \"content-type\": \"application/tar+gzip\"}"); 
                 }
+                        
+                if (biblio.getPmc() != null) {
+                    if (urlValue != null)
+                        builder.append(", ");
+
+                    String pmcPdf = "https://www.ncbi.nlm.nih.gov/pmc/articles/" + biblio.getPmc() + "/pdf/";
+                    builder.append("{\"URL\": " + mapper.writeValueAsString(pmcPdf));
+                    builder.append(", \"content-type\": \"application/pdf\"}"); 
+                }
+
+                builder.append("]");
             }
-        }
-
-        if (urlValue != null || biblio.getPmc() != null) {
-            builder.append(", \"link\": [");
-
-            if (urlValue != null) {
-                builder.append("{\"URL\": " + mapper.writeValueAsString(urlValue));
-                builder.append(", \"content-type\": \"application/tar+gzip\"}"); 
-            }
-                    
-            if (biblio.getPmc() != null) {
-                if (urlValue != null)
-                    builder.append(", ");
-
-                String pmcPdf = "https://www.ncbi.nlm.nih.gov/pmc/articles/" + biblio.getPmc() + "/pdf/";
-                builder.append("{\"URL\": " + mapper.writeValueAsString(pmcPdf));
-                builder.append(", \"content-type\": \"application/pdf\"}"); 
-            }
-
-            builder.append("]");
         }
 
         if (biblio.getReferenceCount() != null) {
@@ -411,7 +415,7 @@ public class PubMedSerializer {
 
                 if (reference.getDoi() == null) {
                     // try to get a DOI via PMID and/or PMC
-                    if (reference.getPubmedId() != null) {
+                    if (reference.getPubmedId() != null && !INVALID_MSG.equals(reference.getPubmedId()) && env != null) {
                         try {
                             String doi = env.getDbPMID2DOI().retrieve(Integer.parseInt(reference.getPubmedId()));
                             if (doi != null) {
@@ -422,7 +426,7 @@ public class PubMedSerializer {
                         }
                     }
 
-                    if (reference.getDoi() == null && reference.getPmc() != null) {
+                    if (reference.getDoi() == null && reference.getPmc() != null && env != null) {
                         String doi = env.getDbPMC2DOI().retrieve(reference.getPmc());
                         if (doi != null) {
                             reference.setDoi(doi);
@@ -435,7 +439,7 @@ public class PubMedSerializer {
 
                 if (reference.getPmc() == null) {
                     // try to get the PMC via the PMID
-                    if (reference.getPubmedId() != null) {
+                    if (reference.getPubmedId() != null && !INVALID_MSG.equals(reference.getPubmedId()) && env != null) {
                         try {
                             String pmc = env.getDbPMID2PMC().retrieve(Integer.parseInt(reference.getPubmedId()));
                             if (pmc != null) {
@@ -446,7 +450,7 @@ public class PubMedSerializer {
                         }
                     }
 
-                    if (reference.getPmc() == null && reference.getDoi() != null) {
+                    if (reference.getPmc() == null && reference.getDoi() != null && env != null) {
                         String pmc = env.getDbDOI2PMC().retrieve(reference.getDoi());
                         if (pmc != null) {
                             reference.setPmc(pmc);
@@ -456,8 +460,6 @@ public class PubMedSerializer {
                 if (reference.getPmc() != null) {
                     builder.append(", \"pmcid\": " + mapper.writeValueAsString(reference.getPmc()));
                 }
-
-
 
                 if (reference.getPii() != null) {
                     builder.append(", \"pii\": " + mapper.writeValueAsString(reference.getPii()));
