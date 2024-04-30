@@ -250,3 +250,17 @@ task hal_audit(dependsOn: 'classes', type: JavaExec, group: 'search') {
         jvmArgs '-Xmx3072m'
     }
 }
+
+test {
+    useJUnitPlatform()
+        
+    testLogging.showStandardStreams = true
+    // enable for having separate test executor for different tests
+    forkEvery = 1
+    maxHeapSize = "1024m"        
+
+    if (JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
+        jvmArgs "--add-opens", "java.base/java.util.stream=ALL-UNNAMED", 
+        "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"
+    }
+}
