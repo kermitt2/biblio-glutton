@@ -37,7 +37,7 @@ wget -c --header='Crossref-Plus-API-Token: Bearer __Crossref-Plus-API-Token-Here
 
 Without Metadata Plus subscription, it's possible to use the Academic Torrents CrossRef dumps. For instance, with the Linux command line `aria2` and a high speed internet connection (e.g. 500Mb/s), the dump can be downloaded in a few minutes. However, the coverage gap will be more important. If the difference between the release date of the public dump and the current date is important (e.g. several months), updating the older snapshot via the normal CrossRef Web API will take an enormous amount of time. 
 
-* DOI to PMID and PMC mapping: available at Europe PMC and regularly updated at ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz,
+* DOI to PMID and PMC mapping: available at Europe PMC and regularly updated at ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz, and https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_file_list.txt for license associated to full text files, both files will be automatically downloaded by biblio-glutton by default.
 
 * optionally, but recommended, the Unpaywall dataset to get Open Access links aggregated with the bibliographical metadata, see [here](http://unpaywall.org/products/snapshot) to get the latest database snapshot. 
 
@@ -141,7 +141,7 @@ __Warning:__ If an older snapshot is used, like the CrossRef dump Academic Torre
 
 #### PMID and PMC ID
 
-Launch the following command and go grab a coffee:
+Launch the following command and go grab a coffee - the PMID/PMCID/DOI mapping file will be automatically donwloaded when using this command, as well as the Open Access file for setting the correct license to Open Access full text files:
 
 ```sh
 ./gradlew pmid 

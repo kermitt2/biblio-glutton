@@ -111,6 +111,7 @@ public class PMIdsLookup {
     public void loadFromFileExtra(InputStream is, Meter metric) {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counter = new AtomicInteger(0);
+        int nbMissingPMC = 0;
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
         try {
@@ -123,35 +124,48 @@ public class PMIdsLookup {
                 }
 
                 String line = reader.readLine();
-                final String[] split = StringUtils.splitPreserveAllTokens(line, ",");
+                final String[] split = StringUtils.splitPreserveAllTokens(line, "\t");
 
                 // retrieve pmidData by PMC ID (position 2)
-                PmidData pmidData = retrieveIdsByPmc(split[2]);
-                if (split[0].length()>0)
-                    pmidData.setLicense(split[0]);
-                if (split[4].length()>0)
-                    pmidData.setSubpath(split[4]);
+                try {
+                    PmidData pmidData = retrieveIdsByPmc(split[2]);
 
-                // update pmidData
-                if (isNotBlank(pmidData.getDoi())) {
-                    store(dbDoiToIds, lowerCase(pmidData.getDoi()), pmidData, transactionWrapper.tx);
+                    if (pmidData == null) {
+                        nbMissingPMC++;
+                        continue;
+                    }
+
+                    if (split[0].length()>0)
+                        pmidData.setLicense(split[0]);
+                    if (split[4].length()>0)
+                        pmidData.setSubpath(split[4]);
+
+                    // update pmidData
+                    if (isNotBlank(pmidData.getDoi())) {
+                        store(dbDoiToIds, lowerCase(pmidData.getDoi()), pmidData, transactionWrapper.tx);
+                    }
+
+                    if (isNotBlank(pmidData.getPmid())) {
+                        store(dbPmidToIds, pmidData.getPmid(), pmidData, transactionWrapper.tx);
+                    }
+
+                    if (isNotBlank(pmidData.getPmcid())) {
+                        store(dbPmcToIds, pmidData.getPmcid(), pmidData, transactionWrapper.tx);
+                    }
+
+                    metric.mark();
+                    counter.incrementAndGet();
+                } catch (Exception e) {
+                    LOGGER.error("Fail to segment the PMC oa list file: |" + line + "| nb tokens: "+split.length, e);
                 }
-
-                if (isNotBlank(pmidData.getPmid())) {
-                    store(dbPmidToIds, pmidData.getPmid(), pmidData, transactionWrapper.tx);
-                }
-
-                if (isNotBlank(pmidData.getPmcid())) {
-                    store(dbPmcToIds, pmidData.getPmcid(), pmidData, transactionWrapper.tx);
-                }
-
-                metric.mark();
-                counter.incrementAndGet();
-
             }
 
             transactionWrapper.tx.commit();
             transactionWrapper.tx.close();
+
+            if (nbMissingPMC>0)
+                System.out.println("warning: total PMC references from OA file not found in DOI/PMC mapping file:" + nbMissingPMC);
+
         } catch (IOException e) {
             LOGGER.error("Some serious error when processing the PMC oa list file.", e);
         }

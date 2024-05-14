@@ -91,7 +91,7 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
 
         // adding license and subpath information
         inputStreampmidMapping = Files.newInputStream(Paths.get(file2Path));
-        if (file1Path.endsWith(".gz")) {
+        if (file2Path.endsWith(".gz")) {
             inputStreampmidMapping = new GZIPInputStream(inputStreampmidMapping);
         }
         pmidLookup.loadFromFileExtra(inputStreampmidMapping, metrics.meter("pmidLookupExtra"));
