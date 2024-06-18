@@ -2,9 +2,9 @@ version: 0.3
 
 # where the compiled metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings, 
 # this is a single location for all compiled resources  
-#storage: data/db
+storage: data/db
 #storage: /media/lopez/data2/glutton-data/data/db
-storage: /media/lopez/Samsung_T515/glutton/data/db/
+#storage: /media/lopez/Samsung_T515/glutton/data/db/
 
 # batch size for preparing the data
 storingBatchSize: 10000
