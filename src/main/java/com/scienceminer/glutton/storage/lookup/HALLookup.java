@@ -312,7 +312,7 @@ public class HALLookup {
             valBuffer.put(serializedValue).flip();
             dbHALJson.put(transactionWrapper.tx, keyBuffer, valBuffer);
         } catch (Exception e) {
-            LOGGER.error("Cannot store the last-indexed-date");
+            LOGGER.error("Cannot store the last-indexed-date", e);
         } finally {
             transactionWrapper.tx.commit();
             transactionWrapper.tx.close();

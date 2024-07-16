@@ -157,7 +157,7 @@ Launch the following command and go grab a lunch:
 ./gradlew hal 
 ```
 
-HAL archive contains around 3.5M records, with curated metadadata. 
+HAL archive contains around 3.5M records, with curated metadadata. Note that the batch loading is using high volume, so it can take a couple of minutes before the metrics start indicating counts and measurements above 0.  
 
 #### OA via Unpaywall
 

@@ -191,12 +191,12 @@ public class IncrementalLoaderTask implements Runnable {
 
             nbFiles++;
             
-            if (indexing) {
+            /*if (indexing) {
                 // index in another thread 
                 ExecutorService executorIndexing = Executors.newSingleThreadExecutor();
                 Runnable taskIndexing = new IndexCrossrefFile(crossrefFile, configuration);
                 executorIndexing.submit(taskIndexing);
-            }
+            }*/
 
             if (jsonObjectsStr == null || jsonObjectsStr.size() == 0)
                 responseEmpty = true;
@@ -287,6 +287,7 @@ public class IncrementalLoaderTask implements Runnable {
         }
     }
 
+    @Deprecated
     class IndexCrossrefFile implements Runnable { 
         /** 
          * Index a crossref incremental file via a background external process
