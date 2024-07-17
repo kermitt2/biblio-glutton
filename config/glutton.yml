@@ -2,9 +2,8 @@ version: 0.3
 
 # where the compiled metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings, 
 # this is a single location for all compiled resources  
-#storage: data/db
-#storage: /media/lopez/data2/glutton-data/data/db
-storage: /media/lopez/Samsung_T515/glutton/data/db/
+storage: data/db
+#storage: /media/lopez/data/glutton-data/data/db
 
 # batch size for preparing the data
 storingBatchSize: 10000
@@ -51,7 +50,7 @@ crossref:
 
   # a directory where the crossref incremental update files (gap or daily update) will be located
   # to be changed according to your storage
-  dumpPath: /media/lopez/data2/crossref
+  dumpPath: /media/lopez/data/crossref
 
   # indicate if we remove the incremental files after they have been processed (value true) or if
   # keep them in the above dumpPath (careful the volume of files can be huge after months of daily update!)
@@ -79,7 +78,7 @@ crossref:
 
 hal: 
   # OAI PMH endpoint for harvesting HAL metadata
-  api: "http://api.archives-ouvertes.fr/oai/hal"
+  api: "https://api.archives-ouvertes.fr/oai/hal"
 
 dblp:
   # URL of the DBLP metadata dump
