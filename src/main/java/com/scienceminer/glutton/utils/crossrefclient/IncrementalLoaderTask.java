@@ -118,7 +118,7 @@ public class IncrementalLoaderTask implements Runnable {
 
         File crossrefFileDirectory = new File(configuration.getCrossref().getDumpPath() + 
             File.separator + todayStr);
-        if (crossrefFileDirectory.mkdirs() == false) {
+        if (!crossrefFileDirectory.mkdirs()) {
             LOGGER.error("Error when creating the directory for storing crossref incremental file: " + 
                 crossrefFileDirectory.getPath());
         }

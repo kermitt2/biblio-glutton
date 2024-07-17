@@ -86,7 +86,9 @@ public class GapUpdateCrossrefCommand extends ConfiguredCommand<LookupConfigurat
 
         LOGGER.info("Number of additional Crossref records processed: " + meter.getCount());
         LOGGER.info("New Crossref lookup size (with gap update) " + metadataLookup.getSize() + " records.");
-        LOGGER.info("Crossref metadata are up to date.");            
+        LOGGER.info("Crossref metadata are up to date.");        
+
+        System.exit(0);    
     }
 
 }
