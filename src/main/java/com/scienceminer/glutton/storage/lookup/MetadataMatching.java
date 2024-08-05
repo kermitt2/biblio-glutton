@@ -1,5 +1,8 @@
 package com.scienceminer.glutton.storage.lookup;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.data.MatchingDocument;
 import com.scienceminer.glutton.exception.NotFoundException;
@@ -10,12 +13,12 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.WarningsHandler;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -23,28 +26,21 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.apache.lucene.search.TotalHits;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.function.Consumer;
-
-import com.fasterxml.jackson.core.*;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.node.*;
-import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.core.io.*;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 public class MetadataMatching {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataMatching.class);
+
+    public final static List<String> preprintPrefixes = List.of("10.1101", "10.36227", "10.48550");
+    public final static Double preprintThreshold = 0.99;
 
     private static volatile MetadataMatching instance;
 
@@ -320,7 +316,22 @@ public class MetadataMatching {
             builder.setWarningsHandler(WarningsHandler.PERMISSIVE);
             esClient.searchAsync(searchRequest, builder.build(), (response, exception) -> {
                 if (exception == null) {
-                    callback.accept(processResponse(response));
+                    List<MatchingDocument> matchingDocuments = processResponse(response);
+                    if (matchingDocuments.size() > 1 && matchingDocuments.get(1).getBlockingScore() > matchingDocuments.get(0).getBlockingScore() * preprintThreshold) {
+                        for (String preprintPrefix : preprintPrefixes) {
+                            if (matchingDocuments.get(0).getDOI().startsWith(preprintPrefix) ) {
+                                Collections.swap(matchingDocuments, 0, 1);
+                                break;
+                            }
+                        }
+                    }
+                    LOGGER.info("Found {} matching documents: {}",
+                            matchingDocuments.size(),
+                            Arrays.toString(
+                                    matchingDocuments.stream()
+                                            .map(d -> d.getDOI() + "###" + d.getBlockingScore())
+                                            .toArray()));
+                    callback.accept(matchingDocuments);
                 } else {
                     List<MatchingDocument> matchingDocuments = new ArrayList<>();
                     matchingDocuments.add(new MatchingDocument(exception));

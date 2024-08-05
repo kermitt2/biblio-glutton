@@ -10,19 +10,16 @@ import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.storage.LookupEngine;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.utils.grobid.GrobidClient;
-import io.dropwizard.client.HttpClientBuilder;
-import io.dropwizard.core.setup.Environment;
-
-import org.apache.http.client.HttpClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.container.AsyncResponse;
 import jakarta.ws.rs.container.Suspended;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -446,17 +443,17 @@ public class LookupController {
         if (isNotBlank(biblio)) {
             areParametersEnoughToLookup = true;
 
+            AtomicBoolean finished = new AtomicBoolean(false);
             LOGGER.debug("Match with biblio string");
             lookupEngine.retrieveByBiblioAsync(biblio, firstAuthor, atitle, jtitle, year, parseReference, matchingDocumentBiblio -> {
-                if (matchingDocumentBiblio.isException()) {
-                    asyncResponse.resume(matchingDocumentBiblio.getException());
-                    //messagesSb.append(matchingDocumentBiblio.getException().getMessage());
-                } else {
+                if (!matchingDocumentBiblio.isException()) {
                     asyncResponse.resume(matchingDocumentBiblio.getFinalJsonObject());
-                    return;
+                    finished.set(true);
                 }
             });
-            return;
+            if (finished.get()) {
+                return;
+            }
         }
 
         if (isNotBlank(atitle) && isNotBlank(firstAuthor)) {
