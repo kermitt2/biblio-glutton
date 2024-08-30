@@ -78,3 +78,32 @@ biblio-glutton takes advantage of GROBID for parsing raw bibliographical referen
 * Update if necessary the host and port information of GROBID in the biblio-glutton config file under `biblio-glutton/config/glutton.yml` (parameter `grobidPath`).
 
 While GROBID is not required for running biblio-glutton, in particular if it is used only for bibliographical look-up, it is strongly recommended for performing bibliographical record matching. And vice-vera, configuration the biblio-glutton service for Grobid will provide high quality consolidation services to resolve the bibliographical references automatically extracted by Grobid. 
+
+### Troubleshooting
+
+#### Issues with the elasticsearch index  
+
+It might happens that logs from Grobid show messages with error 500: 
+```
+INFO  [2024-08-30 12:50:17,897] org.grobid.core.utilities.Consolidation: Consolidation service returns error (500) : Server Error
+```
+corresponding to the following error on the biblio-glutton side: 
+```
+35.175.72.198 - - [30/Aug/2024:12:21:13 +0000] "GET /service/lookup?parseReference=false&atitle=Latent+Dirichlet+Allocation&firstAuthor=Blei HTTP/1.1" 500 0 "-" "Apache-HttpClient/4.5.3 (Java/17.0.11)" 1710
+```
+
+You can double check and verify that the Storage works correctly, by calling the lookup:
+```
+curl http://localhost:8080/service/lookup?doi=10.1371/journal.pone.0265361
+```
+
+If the lookup works but calling the direct matching does't (error 500) it's probably a problem with the elasticsearch node.
+```
+curl http://localhost:8080/service/lookup?parseReference=false&atitle=Latent+Dirichlet+Allocation&firstAuthor=Blei
+```
+
+NOTE that code 404 or 400 are normal and should not be considered as an error.
+
+
+
+
