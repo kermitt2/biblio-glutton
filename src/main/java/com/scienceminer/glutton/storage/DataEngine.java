@@ -38,12 +38,12 @@ public class DataEngine {
     public Map<String, String> getDataInformation() {
         Map<String, String> returnMap = new HashMap<>();
 
-        returnMap.put("Crossref Metadata stored size", String.valueOf(crossrefMetadataLookup.getSize()));
-        returnMap.put("HAL Metadata stored size", String.valueOf(halLookup.getSize()));
-        returnMap.put("Total metadata indexed size", String.valueOf(metadataMatching.getSizeByIndexes()));
-        returnMap.put("PMID size", String.valueOf(pmidLookup.getSize()));
-        returnMap.put("ISTEX size", String.valueOf(istexLookup.getSize()));
-        returnMap.put("DOI OA size", String.valueOf(oaDoiLookup.getSize()));
+        returnMap.put("Crossref metadata stored size (LMDB)", String.valueOf(crossrefMetadataLookup.getSize()));
+        returnMap.put("Crossref metadata indexed size (elastic)", String.valueOf(metadataMatching.getSizeByIndexes()));
+        returnMap.put("HAL Metadata stored size (LMDB)", String.valueOf(halLookup.getSize()));
+        returnMap.put("PMID size (LMDB)", String.valueOf(pmidLookup.getSize()));
+        returnMap.put("ISTEX size (LMDB)", String.valueOf(istexLookup.getSize()));
+        returnMap.put("DOI OA (Unpaywall) size (LMDB)", String.valueOf(oaDoiLookup.getSize()));
 
         return returnMap;
     }
