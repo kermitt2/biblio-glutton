@@ -7,6 +7,7 @@ import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.storage.lookup.async.ESClientWrapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.http.HttpHost;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -29,9 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.core.*;
@@ -71,7 +70,7 @@ public class MetadataMatching {
 
     private final String INDEX_FIELD_NAME_JSONDOC = "jsondoc";
 
-    public static MetadataMatching getInstance(LookupConfiguration configuration, 
+    public static MetadataMatching getInstance(LookupConfiguration configuration,
                                                CrossrefMetadataLookup crossrefMetadataLookup,
                                                HALLookup halLookup) {
         if (instance == null) {
@@ -93,13 +92,13 @@ public class MetadataMatching {
         instance = new MetadataMatching(configuration, crossrefMetadataLookup, halLookup);
     }
 
-    private MetadataMatching(LookupConfiguration configuration, 
-                            CrossrefMetadataLookup crossrefMetadataLookup, 
-                            HALLookup halLookup) {
+    private MetadataMatching(LookupConfiguration configuration,
+                             CrossrefMetadataLookup crossrefMetadataLookup,
+                             HALLookup halLookup) {
         this.configuration = configuration;
         RestHighLevelClient esClient = new RestHighLevelClient(
                 RestClient.builder(
-                        HttpHost.create(configuration.getElastic().getHost()))
+                                HttpHost.create(configuration.getElastic().getHost()))
                         .setRequestConfigCallback(
                                 requestConfigBuilder -> requestConfigBuilder
                                         .setConnectTimeout(30000)
@@ -120,26 +119,35 @@ public class MetadataMatching {
     }
 
     public long getSize() {
+        long count = 0L;
         try {
-            CountRequest countRequest = new CountRequest(); 
-            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder(); 
-            searchSourceBuilder.query(QueryBuilders.matchAllQuery()); 
+            CountRequest countRequest = new CountRequest();
+            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+            searchSourceBuilder.query(QueryBuilders.matchAllQuery());
             countRequest.source(searchSourceBuilder);
 
             CountResponse countResponse = esClient.count(countRequest, RequestOptions.DEFAULT);
-            return countResponse.getCount();
-        } catch (IOException e) {
+            count = countResponse.getCount();
+        } catch (IOException | ElasticsearchException e) {
             LOGGER.error("Error while contacting Elasticsearch to fetch the size of "
                     + configuration.getElastic().getIndex() + " index.", e);
         }
 
-        return 0L;
+        return count;
+    }
+
+    public Map<String, Long> getSizeByIndexes() {
+        Long count = getSize();
+
+        Map<String, Long> result = new HashMap<>();
+        result.put(this.configuration.getElastic().getIndex(), count);
+        return result;
     }
 
     /**
      * Boolean search by article title, firstAuthor
      **/
-    public List<MatchingDocument> retrieveByMetadata(String atitle, 
+    public List<MatchingDocument> retrieveByMetadata(String atitle,
                                                      String firstAuthor) {
         validateInput(atitle, firstAuthor);
 
@@ -153,7 +161,7 @@ public class MetadataMatching {
     /**
      * Async boolean search by article title, firstAuthor
      **/
-    public void retrieveByMetadataAsync(String atitle, 
+    public void retrieveByMetadataAsync(String atitle,
                                         String firstAuthor,
                                         Consumer<List<MatchingDocument>> callback) {
         validateInput(atitle, firstAuthor);
@@ -165,7 +173,7 @@ public class MetadataMatching {
         executeQueryAsync(query, callback);
     }
 
-    private void validateInput(String title, 
+    private void validateInput(String title,
                                String firstAuthor) {
         if (isBlank(title) || isBlank(firstAuthor)) {
             throw new ServiceException(400, "Supplied title and/or first author is null.");
@@ -176,17 +184,17 @@ public class MetadataMatching {
         if (isBlank(title)
                 || isBlank(volume)
                 || isBlank(firstPage)) {
-            throw new ServiceException(400, 
-                "At least one of supplied journal title, abbreviated journal title, volume, or first page is null.");
+            throw new ServiceException(400,
+                    "At least one of supplied journal title, abbreviated journal title, volume, or first page is null.");
         }
     }
 
     /**
      * Boolean search by journal title or abbreviated journal title, volume, first page and first author
      **/
-    public List<MatchingDocument> retrieveByMetadata(String jtitle, 
+    public List<MatchingDocument> retrieveByMetadata(String jtitle,
                                                      String volume,
-                                                     String firstPage, 
+                                                     String firstPage,
                                                      String firstAuthor) {
 
         validateInput(jtitle, volume, firstPage);
@@ -199,9 +207,9 @@ public class MetadataMatching {
     /**
      * Async boolean search by journal title or abbreviated journal title, volume, first page and first author
      **/
-    public void retrieveByMetadataAsync(String jtitle, 
+    public void retrieveByMetadataAsync(String jtitle,
                                         String volume,
-                                        String firstPage, 
+                                        String firstPage,
                                         String firstAuthor,
                                         Consumer<List<MatchingDocument>> callback) {
 
@@ -212,9 +220,9 @@ public class MetadataMatching {
         executeQueryAsync(query, callback);
     }
 
-    private BoolQueryBuilder getQueryBuilderJournal(String jtitle, 
-                                                    String volume, 
-                                                    String firstPage, 
+    private BoolQueryBuilder getQueryBuilderJournal(String jtitle,
+                                                    String volume,
+                                                    String firstPage,
                                                     String firstAuthor) {
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
                 .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_JTITLE, jtitle))
@@ -224,7 +232,7 @@ public class MetadataMatching {
 
         if (!isBlank(firstAuthor)) {
             queryBuilder = queryBuilder.should(QueryBuilders.termQuery(INDEX_FIELD_NAME_FIRST_AUTHOR, firstAuthor));
-        } 
+        }
 
         return queryBuilder;
     }
@@ -245,8 +253,8 @@ public class MetadataMatching {
     /**
      * Async search by raw bibliographical reference string
      **/
-    public void retrieveByBiblioAsync(String biblio, 
-                                    Consumer<List<MatchingDocument>> callback) {
+    public void retrieveByBiblioAsync(String biblio,
+                                      Consumer<List<MatchingDocument>> callback) {
         if (isBlank(biblio)) {
             throw new ServiceException(400, "Supplied bibliographical string is empty.");
         }
@@ -258,10 +266,10 @@ public class MetadataMatching {
     /**
      * Async search by raw bibliographical reference string
      **/
-    public void retrieveByBiblioAsyncConditional(String biblio, 
-                                    List<String> sources, 
-                                    String toIgnore,
-                                    Consumer<List<MatchingDocument>> callback) {
+    public void retrieveByBiblioAsyncConditional(String biblio,
+                                                 List<String> sources,
+                                                 String toIgnore,
+                                                 Consumer<List<MatchingDocument>> callback) {
         if (isBlank(biblio)) {
             throw new ServiceException(400, "Supplied bibliographical string is empty.");
         }
@@ -271,13 +279,13 @@ public class MetadataMatching {
             // usual case
             //query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
             query = QueryBuilders.boolQuery()
-                .must(QueryBuilders.existsQuery("DOI"))
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio));
+                    .must(QueryBuilders.existsQuery("DOI"))
+                    .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio));
         } else {
             //query = QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio);
             query = QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio))
-                .mustNot(QueryBuilders.termQuery("_id", toIgnore));
+                    .should(QueryBuilders.matchQuery(INDEX_FIELD_NAME_BIBLIOGRAPHIC, biblio))
+                    .mustNot(QueryBuilders.termQuery("_id", toIgnore));
         }
 
         executeQueryAsync(query, callback);
@@ -295,9 +303,8 @@ public class MetadataMatching {
                 // It should not be the case, in case of search failure we have one MatchingDocument
                 // with an exception. We can consider this case as not found case
                 throw new NotFoundException("Cannot find records for the input query.");
-            }
-            else if (matchingDocuments.get(0).isException()) {
-                if(matchingDocuments.get(0).getException() instanceof NotFoundException) {
+            } else if (matchingDocuments.get(0).isException()) {
+                if (matchingDocuments.get(0).getException() instanceof NotFoundException) {
                     throw (NotFoundException) matchingDocuments.get(0).getException();
                 }
 
@@ -399,7 +406,7 @@ public class MetadataMatching {
             final String year = (String) hit.getSourceAsMap().get(INDEX_FIELD_NAME_YEAR);
             String yearStr = null;
             if (year != null) {
-                yearStr = ""+year; 
+                yearStr = "" + year;
             }
 
             matchingDocument.setId(id);
@@ -414,7 +421,7 @@ public class MetadataMatching {
 
             String jsonObject = null;
             if (isNotBlank(DOI)) {
-                jsonObject = crossrefMetadataLookup.retrieveJsonDocument(DOI);    
+                jsonObject = crossrefMetadataLookup.retrieveJsonDocument(DOI);
             }
 
             if (jsonObject == null && isNotBlank(halId)) {
@@ -422,8 +429,8 @@ public class MetadataMatching {
             }
 
             if (jsonObject == null) {
-                LOGGER.warn("The search index returned a result but the corresponding entry cannot be fetched in the metadata db, DOI: " + 
-                    DOI + ", Hal ID: " + halId);// + ", PMID: " + pmid);
+                LOGGER.warn("The search index returned a result but the corresponding entry cannot be fetched in the metadata db, DOI: " +
+                        DOI + ", Hal ID: " + halId);// + ", PMID: " + pmid);
                 continue;
             }
 
@@ -440,9 +447,9 @@ public class MetadataMatching {
                 JsonNode item = mapper.readTree(jsonObject);
                 if (item.isObject()) {
                     JsonNode authorsNode = item.get("author");
-                    if (authorsNode != null && (!authorsNode.isMissingNode()) && 
-                        authorsNode.isArray() && (((ArrayNode)authorsNode).size() > 0)) {
-                        Iterator<JsonNode> authorIt = ((ArrayNode)authorsNode).elements();
+                    if (authorsNode != null && (!authorsNode.isMissingNode()) &&
+                            authorsNode.isArray() && (((ArrayNode) authorsNode).size() > 0)) {
+                        Iterator<JsonNode> authorIt = ((ArrayNode) authorsNode).elements();
                         while (authorIt.hasNext()) {
                             JsonNode authorNode = authorIt.next();
 
@@ -467,7 +474,7 @@ public class MetadataMatching {
             matchingDocuments.add(matchingDocument);
         } else {
             // normalize search scores in [0.5:1]
-            for(MatchingDocument matchingDocument : matchingDocuments) {
+            for (MatchingDocument matchingDocument : matchingDocuments) {
                 double normalizedHitScore = (matchingDocument.getBlockingScore() - scoreMin) / (scoreMax - scoreMin);
                 //normalizedHitScore = 0.5 + (normalizedHitScore/2);
                 matchingDocument.setBlockingScore(normalizedHitScore);
