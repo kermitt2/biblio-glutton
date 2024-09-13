@@ -40,7 +40,7 @@ public class DataEngine {
 
         returnMap.put("Crossref Metadata stored size", String.valueOf(crossrefMetadataLookup.getSize()));
         returnMap.put("HAL Metadata stored size", String.valueOf(halLookup.getSize()));
-        returnMap.put("Total metadata indexed size", String.valueOf(crossrefMetadataLookup.getSize()));
+        returnMap.put("Total metadata indexed size", String.valueOf(metadataMatching.getSizeByIndexes()));
         returnMap.put("PMID size", String.valueOf(pmidLookup.getSize()));
         returnMap.put("ISTEX size", String.valueOf(istexLookup.getSize()));
         returnMap.put("DOI OA size", String.valueOf(oaDoiLookup.getSize()));
