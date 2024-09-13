@@ -59,13 +59,16 @@ To check if it works, you can view a report of the data used by the service at `
 
 ```json
 {
-    "Metadata Lookup Crossref size":"{crossref_Jsondoc=127887559}",
-    "ISTEX size":"{istex_doi2ids=21325261, istex_istex2ids=21401494, istex_pii2ids=6954799}",
-    "Metadata Matching Crossref size":"127970581",
-    "PMID lookup size":"{pmid_doi2ids=25661624, pmid_pmc2ids=7561377, pmid_pmid2ids=33761382}",
-    "DOI OA size":"{unpayWall_doiOAUrl=30635446}"
+  "ISTEX size (LMDB)": "{istex_doi2ids=0, istex_istex2ids=0, istex_pii2ids=0}",
+  "Crossref metadata stored size": "{crossref_Jsondoc=149817829}",
+  "Crossref metadata indexed size (elastic)": "{glutton=149812959}",
+  "HAL Metadata stored size (LMDB)": "{hal_Jsondoc=3780904}",
+  "PMID size (LMDB)": "{pmid_doi2ids=946688, pmid_pmc2ids=850087, pmid_pmid2ids=1287533}",
+  "DOI OA size (LMDB)": "{unpayWall_doiOAUrl=0}"
 }
 ```
+
+Each item represent a data storage. By default they are LMDB storage and their databases (e.g. for PMID there are three databases `pmid_doi2ids` which stored the lookup from doi to PMID, etc..) except for `Total Metadata indexed size` which measure the records indexed in Elasticsearch (the name, like in this case `glutton` is the configured index name). 
 
 ### Start optional additional GROBID service
 
