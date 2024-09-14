@@ -5,7 +5,8 @@ import com.scienceminer.glutton.data.PmidData;
 import com.scienceminer.glutton.storage.lookup.*;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -36,11 +37,11 @@ public class DataEngine {
 
 
     public Map<String, String> getDataInformation() {
-        Map<String, String> returnMap = new HashMap<>();
+        Map<String, String> returnMap = new LinkedHashMap<>();
 
         returnMap.put("Crossref metadata stored size (LMDB)", String.valueOf(crossrefMetadataLookup.getSize()));
-        returnMap.put("Crossref metadata indexed size (elastic)", String.valueOf(metadataMatching.getSizeByIndexes()));
         returnMap.put("HAL Metadata stored size (LMDB)", String.valueOf(halLookup.getSize()));
+        returnMap.put("Total metadata indexed size (elastic)", String.valueOf(Collections.singletonMap(metadataMatching.getIndexName(), metadataMatching.getSize())));
         returnMap.put("PMID size (LMDB)", String.valueOf(pmidLookup.getSize()));
         returnMap.put("ISTEX size (LMDB)", String.valueOf(istexLookup.getSize()));
         returnMap.put("DOI OA (Unpaywall) size (LMDB)", String.valueOf(oaDoiLookup.getSize()));

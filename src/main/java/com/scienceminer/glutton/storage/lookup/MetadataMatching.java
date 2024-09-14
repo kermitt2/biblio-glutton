@@ -24,7 +24,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.apache.lucene.search.TotalHits;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,11 +32,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
-import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.*;
-import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.core.io.*;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -47,10 +43,10 @@ public class MetadataMatching {
 
     private static volatile MetadataMatching instance;
 
-    private LookupConfiguration configuration;
-    private ESClientWrapper esClient;
-    private CrossrefMetadataLookup crossrefMetadataLookup;
-    private HALLookup halLookup;
+    private final LookupConfiguration configuration;
+    private final ESClientWrapper esClient;
+    private final CrossrefMetadataLookup crossrefMetadataLookup;
+    private final HALLookup halLookup;
 
     public static final String INDEX_FIELD_NAME_ID = "id";
     public static final String INDEX_FIELD_NAME_ATITLE = "title";
@@ -136,12 +132,8 @@ public class MetadataMatching {
         return count;
     }
 
-    public Map<String, Long> getSizeByIndexes() {
-        Long count = getSize();
-
-        Map<String, Long> result = new HashMap<>();
-        result.put(this.configuration.getElastic().getIndex(), count);
-        return result;
+    public String getIndexName() {
+        return this.configuration.getElastic().getIndex();
     }
 
     /**
@@ -467,7 +459,7 @@ public class MetadataMatching {
             matchingDocuments.add(matchingDocument);
         }
 
-        if (matchingDocuments.size() == 0) {
+        if (CollectionUtils.isEmpty(matchingDocuments)) {
             MatchingDocument matchingDocument = new MatchingDocument();
             matchingDocument.setIsException(true);
             matchingDocument.setException(new NotFoundException("Cannot find records for the input query."));
