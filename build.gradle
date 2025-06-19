@@ -90,9 +90,9 @@ dependencies {
     implementation group: 'org.codehaus.woodstox', name: 'stax2-api', version: '4.0.0'
     implementation group: 'org.codehaus.woodstox', name: 'woodstox-core-asl', version: '4.4.1'
 
-    implementation 'org.lmdbjava:lmdbjava:0.9.0'
+    implementation 'org.lmdbjava:lmdbjava:0.9.1'
     implementation 'de.ruedigermoeller:fst:2.56'
-    implementation 'org.xerial.snappy:snappy-java:1.1.7.2'
+    implementation 'org.xerial.snappy:snappy-java:1.1.10.4'
 
     implementation 'org.elasticsearch.client:elasticsearch-rest-high-level-client:7.17.2'
     implementation 'co.elastic.clients:elasticsearch-java:8.12.1'
@@ -110,7 +110,7 @@ dependencies {
 
     implementation "com.fasterxml.jackson.core:jackson-core:2.14.3"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.14.3"
-    implementation "com.fasterxml.jackson.module:jackson-module-afterburner:2.14.3"
+//    implementation "com.fasterxml.jackson.module:jackson-module-afterburner:2.14.3"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.3"
 
     implementation group: 'com.opencsv', name: 'opencsv', version: '5.0'
