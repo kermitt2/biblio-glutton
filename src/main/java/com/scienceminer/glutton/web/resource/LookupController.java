@@ -10,18 +10,14 @@ import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.storage.LookupEngine;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.utils.grobid.GrobidClient;
-import io.dropwizard.client.HttpClientBuilder;
-import io.dropwizard.core.setup.Environment;
-
-import org.apache.http.client.HttpClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.container.AsyncResponse;
 import jakarta.ws.rs.container.Suspended;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -82,7 +78,7 @@ public class LookupController {
                 )
         );
         asyncResponse.setTimeout(2, TimeUnit.MINUTES);
-        if (parseReference == null) 
+        if (parseReference == null)
             parseReference = Boolean.TRUE;
 
         processByQuery(doi, halid, pmid, pmc, pii, istexid, firstAuthor, atitle,
@@ -117,11 +113,11 @@ public class LookupController {
                 )
         );
         asyncResponse.setTimeout(2, TimeUnit.MINUTES);
-        if (parseReference == null) 
+        if (parseReference == null)
             parseReference = Boolean.TRUE;
 
         processByQuery(doi, halid, pmid, pmc, pii, istexid, firstAuthor, atitle,
-            jtitle, volume, firstPage, year, biblio, parseReference, asyncResponse);
+                jtitle, volume, firstPage, year, biblio, parseReference, asyncResponse);
     }
 
     @Deprecated
@@ -330,7 +326,7 @@ public class LookupController {
             String halid,
             String pmid,
             String pmc,
-            String pii, 
+            String pii,
             String istexid,
             String firstAuthor,
             String atitle,
@@ -358,7 +354,7 @@ public class LookupController {
 
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("DOI did not matched or did not pass post validation");
+                LOGGER.warn("DOI: " + doi + " did not matched or did not pass post validation");
                 //if (isBlank(halid) && isBlank(pmid))
                 throw new ServiceException(404, messagesSb.toString());
             }
@@ -375,7 +371,7 @@ public class LookupController {
                 }
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("HAL ID did not matched or did not pass post validation");
+                LOGGER.warn("HALID: " + halid + " did not matched or did not pass post validation");
                 throw new ServiceException(404, messagesSb.toString());
             }
         }
@@ -391,7 +387,7 @@ public class LookupController {
                 }
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("PMID did not matched or did not pass post validation");
+                LOGGER.warn("PMID: " + pmid + " did not matched or did not pass post validation");
                 throw new ServiceException(404, messagesSb.toString());
             }
         }
@@ -406,7 +402,7 @@ public class LookupController {
                 }
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("PMC ID did not matched or did not pass post validation");
+                LOGGER.warn("PMC ID: " + pmc + " did not matched or did not pass post validation");
                 throw new ServiceException(404, messagesSb.toString());
             }
         }
@@ -421,7 +417,7 @@ public class LookupController {
                 }
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("PII ID did not matched or did not pass post validation");
+                LOGGER.warn("PII ID: " + pii + "did not matched or did not pass post validation");
                 throw new ServiceException(404, messagesSb.toString());
             }
         }
@@ -438,7 +434,7 @@ public class LookupController {
 
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("ISTEX ID did not matched or did not pass post validation");
+                LOGGER.warn("ISTEX ID " + istexid + "did not matched or did not pass post validation");
                 throw new ServiceException(404, messagesSb.toString());
             }
         }
@@ -463,7 +459,7 @@ public class LookupController {
             areParametersEnoughToLookup = true;
 
             LOGGER.debug("Try to match with article title and first author name metadata");
-            lookupEngine.retrieveByArticleMetadataAsync(atitle, firstAuthor,  matchingDocument -> {
+            lookupEngine.retrieveByArticleMetadataAsync(atitle, firstAuthor, matchingDocument -> {
                 if (matchingDocument.isException()) {
                     // error with article info - trying to match with journal infos with first author
                     LOGGER.debug("Error with article title/first author, trying to match with available journal metadata");
