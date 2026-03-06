@@ -90,7 +90,22 @@ unpaywall:
   API_key: 
   # API Key for the Unpaywall subscription is necessary to get the data feed change files for daily update
 
-# CORS parameters 
+# ROR (Research Organization Registry) settings
+# Data is loaded via: ./gradlew ror -Pinput=/path/to/ror-data.zip
+# Enable automatic monthly updates by setting updateEnabled to true
+#ror:
+#  updateEnabled: false
+#  updateDayOfMonth: 1
+#  dumpPath: data/ror
+
+# Matching strategy for pairwise record comparison
+# Available strategies: simple_average, logistic_regression, xgboost, neural
+# modelPath: directory containing trained model files
+#matching:
+#  strategy: simple_average
+#  modelPath: data/models
+
+# CORS parameters
 corsAllowedOrigins: "*"
 corsAllowedMethods: "OPTIONS,GET,PUT,POST,DELETE,HEAD"
 corsAllowedHeaders: "X-Requested-With,Content-Type,Accept,Origin"

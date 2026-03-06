@@ -18,7 +18,11 @@ To set-up a functional biblio-glutton server, resources need to be loaded follow
 
 6) (Very optional) Loading the ISTEX ID mapping as embedded LMDB
 
-It is possible to only load HAL archive metadata, skipping entirely CrossRef, but the service will be much more limited - so we suggest to always start with CrossRef. It is also possible to skip HAL archive resources. Step 4) is fast and we suggest to also always include it.  
+7) (Optional) Loading the Crossref Open Funder Registry as embedded LMDB
+
+8) (Optional) Loading the ROR (Research Organization Registry) as embedded LMDB
+
+It is possible to only load HAL archive metadata, skipping entirely CrossRef, but the service will be much more limited - so we suggest to always start with CrossRef. It is also possible to skip HAL archive resources. Step 4) is fast and we suggest to also always include it.
 
 ### Resources
 
@@ -41,7 +45,11 @@ Without Metadata Plus subscription, it's possible to use the Academic Torrents C
 
 * optionally, but recommended, the Unpaywall dataset to get Open Access links aggregated with the bibliographical metadata, see [here](http://unpaywall.org/products/snapshot) to get the latest database snapshot. 
 
-* optionally, usually not required, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see below. 
+* optionally, usually not required, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see below.
+
+* optionally, the [Crossref Open Funder Registry](https://gitlab.com/crossref/open_funder_registry) `registry.rdf` file for funder metadata lookup by funder DOI.
+
+* optionally, the [ROR (Research Organization Registry)](https://ror.org/) data dump from [Zenodo](https://zenodo.org/communities/ror-data), providing organization metadata with linkage to Crossref funder DOIs via FundRef IDs. ROR can also be configured for automatic monthly updates.
 
 The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for blocking via text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
 
@@ -191,4 +199,45 @@ Example:
 ./gradlew istex -Pinput=istexIds.all.gz 
 ```
 
-**Note:** see the [FAQ](Frequently-asked-questions.md) on how to create this mapping file `istexIds.all.gz`. 
+**Note:** see the [FAQ](Frequently-asked-questions.md) on how to create this mapping file `istexIds.all.gz`.
+
+#### Crossref Open Funder Registry
+
+The [Crossref Open Funder Registry](https://gitlab.com/crossref/open_funder_registry) maps funder DOIs (`10.13039/...`) to funder metadata (name, alternate names, country, type, hierarchical relationships). The registry contains around 45,000 funders. Note that Crossref is deprecating the Funder Registry in favor of ROR (see below).
+
+Download the `registry.rdf` file from the GitLab repository:
+
+```sh
+wget https://gitlab.com/crossref/open_funder_registry/-/raw/main/registry.rdf
+```
+
+Then load:
+
+```sh
+./gradlew funder_registry -Pinput=/path/to/registry.rdf
+```
+
+#### ROR (Research Organization Registry)
+
+[ROR](https://ror.org/) is a community-led registry of research organizations (~122,000 entries), intended as the successor to the Crossref Open Funder Registry. ROR records include external identifiers mapping to FundRef (Crossref funder DOIs), GRID, ISNI, and Wikidata, providing a direct bridge to Crossref metadata.
+
+Download the latest ROR data dump from [Zenodo](https://zenodo.org/communities/ror-data) (available as a zip file containing JSON and CSV):
+
+```sh
+./gradlew ror -Pinput=/path/to/ror-data.zip
+```
+
+The command supports both `.zip` and `.json` input files.
+
+##### Automatic monthly updates
+
+ROR releases new dumps approximately monthly. To enable automatic updates, add the following to your `glutton.yml`:
+
+```yaml
+ror:
+  updateEnabled: true
+  updateDayOfMonth: 15
+  dumpPath: data/ror
+```
+
+When enabled, the service will automatically download the latest ROR dump from Zenodo and reload the database on the specified day of each month.

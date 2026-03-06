@@ -19,6 +19,8 @@ public class DataEngine {
     private MetadataMatching metadataMatching = null;
     private PMIdsLookup pmidLookup = null;
     private HALLookup halLookup = null;
+    private FunderLookup funderLookup = null;
+    private RorLookup rorLookup = null;
 
     public static Pattern DOIPattern = Pattern.compile("\"DOI\":\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
 
@@ -31,8 +33,10 @@ public class DataEngine {
         this.crossrefMetadataLookup = CrossrefMetadataLookup.getInstance(storageFactory);
         this.pmidLookup = PMIdsLookup.getInstance(storageFactory);
         this.halLookup = HALLookup.getInstance(storageFactory);
-        this.metadataMatching = 
+        this.metadataMatching =
             MetadataMatching.getInstance(storageFactory.getConfiguration(), crossrefMetadataLookup, halLookup);
+        this.funderLookup = new FunderLookup(storageFactory);
+        this.rorLookup = new RorLookup(storageFactory);
     }
 
 
@@ -45,6 +49,8 @@ public class DataEngine {
         returnMap.put("PMID size (LMDB)", String.valueOf(pmidLookup.getSize()));
         returnMap.put("ISTEX size (LMDB)", String.valueOf(istexLookup.getSize()));
         returnMap.put("DOI OA (Unpaywall) size (LMDB)", String.valueOf(oaDoiLookup.getSize()));
+        returnMap.put("Funder Registry size (LMDB)", String.valueOf(funderLookup.getSize()));
+        returnMap.put("ROR size (LMDB)", String.valueOf(rorLookup.getSize()));
 
         return returnMap;
     }

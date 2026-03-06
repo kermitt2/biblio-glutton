@@ -5,10 +5,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rockymadden.stringmetric.similarity.RatcliffObershelpMetric;
+import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.data.IstexData;
 import com.scienceminer.glutton.data.MatchingDocument;
 import com.scienceminer.glutton.data.PmidData;
 import com.scienceminer.glutton.exception.NotFoundException;
+import com.scienceminer.glutton.matching.*;
 import com.scienceminer.glutton.storage.lookup.*;
 import com.scienceminer.glutton.utils.grobid.GrobidClient;
 import com.scienceminer.glutton.utils.grobid.GrobidResponseStaxHandler.GrobidResponse;
@@ -17,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import scala.Option;
 
+import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,7 +54,10 @@ public class LookupEngine {
 
     private static double THRESHOLD_MATCHING = 0.7;
 
+    private MatchingStrategy matchingStrategy;
+
     public LookupEngine() {
+        this.matchingStrategy = new SimpleAverageStrategy();
     }
 
     public LookupEngine(StorageEnvFactory storageFactory) {
@@ -60,8 +66,9 @@ public class LookupEngine {
         this.crossrefMetadataLookup = CrossrefMetadataLookup.getInstance(storageFactory);
         this.halLookup = HALLookup.getInstance(storageFactory);
         this.pmidLookup = PMIdsLookup.getInstance(storageFactory);
-        this.metadataMatching = 
+        this.metadataMatching =
             MetadataMatching.getInstance(storageFactory.getConfiguration(), crossrefMetadataLookup, halLookup);
+        this.matchingStrategy = initializeStrategy(storageFactory.getConfiguration());
     }
 
     /**
@@ -732,125 +739,60 @@ public class LookupEngine {
 
     /**
      * Compute a distance score between a candidate matching document and a reference document with target
-     * metadata. score is in [0,1], with 1 perfect match
+     * metadata. score is in [0,1], with 1 perfect match.
+     * Delegates scoring to the configured MatchingStrategy.
      */
     private double recordDistance(MatchingDocument matchingDocument, MatchingDocument referenceDocument) {
+        MatchingFeatures features = MatchingFeatures.compute(matchingDocument, referenceDocument);
+        return matchingStrategy.score(features);
+    }
 
-        int nbCriteria = 0;
-        double accumulatedScore = 0.0;
+    /**
+     * Initialize the matching strategy based on configuration.
+     * Falls back to SimpleAverageStrategy if the configured strategy cannot be loaded.
+     */
+    private MatchingStrategy initializeStrategy(LookupConfiguration configuration) {
+        LookupConfiguration.Matching matchingConfig = configuration.getMatching();
+        String strategyName = "simple_average";
+        String modelPath = "data/models";
 
-        // atitle component (skipped if not provided)
-        if (isNotBlank(referenceDocument.getATitle())) {
-            nbCriteria++;
-            Double atitleScore = 0.0;
-            if (isNotBlank(matchingDocument.getATitle())) {
-                atitleScore = ratcliffObershelpDistance(referenceDocument.getATitle(), matchingDocument.getATitle(), false);
+        if (matchingConfig != null) {
+            strategyName = matchingConfig.getStrategy();
+            modelPath = matchingConfig.getModelPath();
+        }
+
+        MatchingStrategy strategy;
+        switch (strategyName) {
+            case "logistic_regression":
+                strategy = new LogisticRegressionStrategy();
+                break;
+            case "xgboost":
+                strategy = new XGBoostStrategy();
+                break;
+            case "neural":
+                strategy = new NeuralStrategy();
+                break;
+            case "simple_average":
+            default:
+                strategy = new SimpleAverageStrategy();
+                break;
+        }
+
+        try {
+            strategy.initialize(modelPath);
+            LOGGER.info("Matching strategy initialized: {}", strategyName);
+        } catch (IOException e) {
+            LOGGER.warn("Failed to initialize matching strategy '{}': {}. Falling back to simple_average.",
+                strategyName, e.getMessage());
+            strategy = new SimpleAverageStrategy();
+            try {
+                strategy.initialize(modelPath);
+            } catch (IOException ignored) {
+                // SimpleAverageStrategy.initialize is a no-op
             }
-            accumulatedScore += atitleScore;
-//System.out.println("atitleScore: " + atitleScore);
         }
 
-        // first author component
-        if (isNotBlank(referenceDocument.getFirstAuthor())) {
-            nbCriteria++;
-            Double firstAuthorScore = 0.0;
-            if (isNotBlank(matchingDocument.getFirstAuthor())) {
-                firstAuthorScore = ratcliffObershelpDistance(referenceDocument.getFirstAuthor(), matchingDocument.getFirstAuthor(), false);
-            } 
-            accumulatedScore += firstAuthorScore;
-//System.out.println("firstAuthorScore: " + firstAuthorScore);
-        }
-
-        double blockingScore = matchingDocument.getBlockingScore();
-//System.out.println("blocking score: " + blockingScore);
-        nbCriteria++;
-        accumulatedScore += blockingScore;
-
-        // journal name component
-        // note if we have a pure HAL metadata record, journal name is less reliable because of preprints
-        if (isNotBlank(referenceDocument.getJTitle()) && (matchingDocument.getDOI() != null || matchingDocument.getPmid() != null)) {
-            nbCriteria++;
-            Double jtitleScore = 0.0;
-            if (isNotBlank(matchingDocument.getJTitle()) || isNotBlank(matchingDocument.getAbbreviatedTitle())) {
-                if (isNotBlank(matchingDocument.getJTitle())) {
-                    jtitleScore = ratcliffObershelpDistance(referenceDocument.getJTitle(), matchingDocument.getJTitle(), false);
-                } 
-                if (isNotBlank(matchingDocument.getAbbreviatedTitle())) {
-                    Double abbrevTitleScore = ratcliffObershelpDistance(referenceDocument.getJTitle(), matchingDocument.getAbbreviatedTitle(), false);
-                    if (abbrevTitleScore > jtitleScore) {
-                        jtitleScore = abbrevTitleScore;
-                    }
-                }
-            } 
-//System.out.println("jtitleScore score: " + jtitleScore);
-            accumulatedScore += jtitleScore;
-        }
-
-        // year 
-        if (isNotBlank(referenceDocument.getYear())) {
-            nbCriteria++;
-            Double yearScore = 0.0;
-            if (isNotBlank(matchingDocument.getYear())) {
-                if (referenceDocument.getYear().equals(matchingDocument.getYear()))
-                    yearScore = 1.0;
-            }
-            accumulatedScore += yearScore;
-//System.out.println("yearScore score: " + yearScore);
-        }
-
-        // btitle: currently in the search index jtitle contains all container titles (journal names and book title names)
-        /*if (isNotBlank(referenceDocument.getBTitle())) {
-            nbCriteria++;
-            Double btitleScore = 0.0;
-            if (isNotBlank(matchingDocument.getBTitle())) {
-                btitleScore = ratcliffObershelpDistance(referenceDocument.getBTitle(), matchingDocument.getBTitle(), false);
-            }
-            accumulatedScore += btitleScore;
-        }*/
-
-        // volume
-        /*if (isNotBlank(referenceDocument.getVolume())) {
-            nbCriteria++;
-            Double volumeScore = 0.0;
-            if (isNotBlank(matchingDocument.getVolume())) {
-                if (referenceDocument.getVolume().equals(matchingDocument.getVolume()))
-                    volumeScore = 1.0;
-            } 
-            accumulatedScore += volumeScore;
-        }*/
-
-        // issue
-        /*if (isNotBlank(referenceDocument.getIssue())) {
-            nbCriteria++;
-            Double issueScore = 0.0;
-            if (isNotBlank(matchingDocument.getIssue())) {
-                if (referenceDocument.getIssue().equals(matchingDocument.getIssue()))
-                    issueScore = 1.0;
-            } 
-            accumulatedScore += issueScore;
-        }*/
-
-        // first page
-        /*if (isNotBlank(referenceDocument.getFirstPage())) {
-            nbCriteria++;
-            Double firstPageScore = 0.0;
-            if (isNotBlank(matchingDocument.getFirstPage())) {
-                if (referenceDocument.getFirstPage().equals(matchingDocument.getFirstPage()))
-                    firstPageScore = 1.0;
-            } 
-            accumulatedScore += firstPageScore;
-        }*/
-
-        // manage strong clash: if key fields are totally different, we lower the score down to 0
-        // this should replace the post-validation step and the corresponding parameter in the API
-        // TBD
-
-        // TBD: we can use a more robust mean, weights, but ideally we should use a classifier
-        double score = accumulatedScore / nbCriteria;
-
-        // ...
-
-        return score;
+        return strategy;
     }
 
     /**

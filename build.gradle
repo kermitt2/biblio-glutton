@@ -114,6 +114,14 @@ dependencies {
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.3"
 
     implementation group: 'com.opencsv', name: 'opencsv', version: '5.0'
+
+    // ML matching strategies
+    implementation ('ml.dmlc:xgboost4j_2.12:2.0.3') {
+        exclude group: 'org.scala-lang'
+        exclude group: 'org.scala-lang.modules'
+        exclude group: 'commons-logging'
+    }
+    implementation 'com.microsoft.onnxruntime:onnxruntime:1.17.0'
 }
 
 distributions {
@@ -239,6 +247,49 @@ task index(dependsOn: 'classes', type: JavaExec, group: 'search') {
     }
 }
 
+task funder_registry(dependsOn: 'classes', type: JavaExec, group: 'data') {
+    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    classpath = sourceSets.main.runtimeClasspath
+    args 'funder_registry', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')
+    if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
+        jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED", "--add-opens", "java.base/java.time=ALL-UNNAMED"
+    } else {
+        jvmArgs '-Xmx3072m'
+    }
+}
+
+task ror(dependsOn: 'classes', type: JavaExec, group: 'data') {
+    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    classpath = sourceSets.main.runtimeClasspath
+    args 'ror', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')
+    if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
+        jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED", "--add-opens", "java.base/java.time=ALL-UNNAMED"
+    } else {
+        jvmArgs '-Xmx3072m'
+    }
+}
+
+task generate_training_data(dependsOn: 'classes', type: JavaExec, group: 'ml') {
+    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    classpath = sourceSets.main.runtimeClasspath
+    args 'generate_training_data', getArg('config', 'config/glutton.yml')
+    if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
+        jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED", "--add-opens", "java.base/java.time=ALL-UNNAMED"
+    } else {
+        jvmArgs '-Xmx3072m'
+    }
+}
+
+task evaluate_matching(dependsOn: 'classes', type: JavaExec, group: 'ml') {
+    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    classpath = sourceSets.main.runtimeClasspath
+    args 'evaluate_matching', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')
+    if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
+        jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED", "--add-opens", "java.base/java.time=ALL-UNNAMED"
+    } else {
+        jvmArgs '-Xmx3072m'
+    }
+}
 // experimental
 task hal_audit(dependsOn: 'classes', type: JavaExec, group: 'search') {
     main = 'com.scienceminer.glutton.web.LookupServiceApplication'
