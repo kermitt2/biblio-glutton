@@ -103,6 +103,36 @@ public class OALookup {
         return record;
     }
 
+    /**
+     * Store a batch of DOI -> PDF URL pairs (e.g. from OpenAlex API).
+     * Uses the same LMDB database as Unpaywall data.
+     */
+    public void loadFromOpenAlex(List<Pair<String, String>> entries, Meter meter) {
+        final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
+        final AtomicInteger counter = new AtomicInteger(0);
+
+        for (Pair<String, String> entry : entries) {
+            if (counter.get() == batchSize) {
+                transactionWrapper.tx.commit();
+                transactionWrapper.tx.close();
+                transactionWrapper.tx = environment.txnWrite();
+                counter.set(0);
+            }
+
+            String doi = entry.getLeft();
+            String pdfUrl = entry.getRight();
+
+            if (isNotBlank(doi) && isNotBlank(pdfUrl)) {
+                store(doi, pdfUrl, dbDoiOAUrl, transactionWrapper.tx);
+                meter.mark();
+                counter.incrementAndGet();
+            }
+        }
+
+        transactionWrapper.tx.commit();
+        transactionWrapper.tx.close();
+    }
+
     public void loadFromFile(InputStream is, UnpayWallReader reader, Meter meter) {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counter = new AtomicInteger(0);

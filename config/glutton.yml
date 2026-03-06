@@ -84,10 +84,17 @@ dblp:
   # URL of the DBLP metadata dump
   dump: "https://dblp.uni-trier.de/xml/dblp.xml.gz"
 
+openAlex:
+  # email for polite pool access (recommended for better rate limits)
+  #mailto: "toto@titi.tutu"
+  mailto:
+  # API key (required since Feb 2026, free tier available at https://openalex.org)
+  apiKey:
+
 unpaywall:
-  dumpPath: 
+  dumpPath:
   # a directory where the unpaywall update data feed change files will be located
-  API_key: 
+  API_key:
   # API Key for the Unpaywall subscription is necessary to get the data feed change files for daily update
 
 # CORS parameters 
