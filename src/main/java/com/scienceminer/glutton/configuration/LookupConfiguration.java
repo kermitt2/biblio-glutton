@@ -2,6 +2,7 @@ package com.scienceminer.glutton.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.scienceminer.glutton.utils.CompressionType;
 import io.dropwizard.client.HttpClientConfiguration;
 import io.dropwizard.core.Configuration;
 
@@ -15,6 +16,8 @@ public class LookupConfiguration extends Configuration {
 
     private int storingBatchSize = 10000;
     private int indexingBatchSize = 500;
+
+    private String compression = "snappy";
 
     private int blockSize = 0;
 
@@ -130,6 +133,18 @@ public class LookupConfiguration extends Configuration {
 
     public void setBlockSize(int blockSize) {
         this.blockSize = blockSize;
+    }
+
+    public String getCompression() {
+        return compression;
+    }
+
+    public void setCompression(String compression) {
+        this.compression = compression;
+    }
+
+    public CompressionType getCompressionType() {
+        return CompressionType.fromString(compression);
     }
 
     public int getMaxAcceptedRequests() {

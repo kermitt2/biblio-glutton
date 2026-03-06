@@ -93,6 +93,8 @@ dependencies {
     implementation 'org.lmdbjava:lmdbjava:0.9.0'
     implementation 'de.ruedigermoeller:fst:2.56'
     implementation 'org.xerial.snappy:snappy-java:1.1.7.2'
+    implementation 'com.github.luben:zstd-jni:1.5.6-9'
+    implementation 'org.lz4:lz4-java:1.8.0'
 
     implementation 'org.elasticsearch.client:elasticsearch-rest-high-level-client:7.17.2'
     implementation 'co.elastic.clients:elasticsearch-java:8.12.1'
@@ -246,6 +248,17 @@ task hal_audit(dependsOn: 'classes', type: JavaExec, group: 'search') {
     args 'hal_audit', getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
         jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED", "--add-opens", "java.base/java.time=ALL-UNNAMED" 
+    } else {
+        jvmArgs '-Xmx3072m'
+    }
+}
+
+task compression_benchmark(dependsOn: 'classes', type: JavaExec, group: 'data') {
+    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    classpath = sourceSets.main.runtimeClasspath
+    args 'compression_benchmark', getArg('config', 'config/glutton.yml')
+    if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
+        jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED", "--add-opens", "java.base/java.time=ALL-UNNAMED"
     } else {
         jvmArgs '-Xmx3072m'
     }

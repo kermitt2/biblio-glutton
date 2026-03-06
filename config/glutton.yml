@@ -5,6 +5,9 @@ version: 0.3
 storage: data/db
 #storage: /media/lopez/data/glutton-data/data/db
 
+# compression algorithm for LMDB metadata storage: snappy, zstd, lz4, gzip, none
+compression: snappy
+
 # batch size for preparing the data
 storingBatchSize: 10000
 indexingBatchSize: 10000
