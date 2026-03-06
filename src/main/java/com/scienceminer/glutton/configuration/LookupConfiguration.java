@@ -32,6 +32,8 @@ public class LookupConfiguration extends Configuration {
 
     private Crossref crossref;
 
+    private OpenAlex openAlex;
+
     private String grobidHost;
 
     private ProxyParameters proxy;
@@ -106,6 +108,10 @@ public class LookupConfiguration extends Configuration {
 
     public Crossref getCrossref() {
         return crossref;
+    }
+
+    public OpenAlex getOpenAlex() {
+        return openAlex;
     }
 
     public int getStoringBatchSize() {
@@ -286,6 +292,27 @@ public class LookupConfiguration extends Configuration {
 
         public void setCleanProcessFiles(boolean clean) {
             this.cleanProcessFiles = clean;
+        }
+    }
+
+    public class OpenAlex {
+        private String mailto;
+        private String apiKey;
+
+        public String getMailto() {
+            return mailto;
+        }
+
+        public void setMailto(String mailto) {
+            this.mailto = mailto;
+        }
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
         }
     }
 

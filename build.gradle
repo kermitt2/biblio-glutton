@@ -9,7 +9,7 @@ buildscript {
 
     dependencies {
         classpath 'gradle.plugin.org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.12.0'
-        classpath "gradle.plugin.com.github.jengelman.gradle.plugins:shadow:7.0.0"
+        classpath "com.gradleup.shadow:shadow-gradle-plugin:8.3.6"
     }
 }
 
@@ -18,17 +18,18 @@ apply plugin: 'java'
 apply plugin: 'java-library'
 //apply plugin: 'maven'
 apply plugin: 'maven-publish'
-apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.gradleup.shadow'
 
 group 'com.scienceminer.glutton'
 version '0.3-SNAPSHOT'
 
-//sourceCompatibility = 1.8
-sourceCompatibility = 1.11
-targetCompatibility = 1.11
+sourceCompatibility = 21
+targetCompatibility = 21
 
 // The main class of the application
-mainClassName = 'com.scienceminer.glutton.web.LookupServiceApplication'
+application {
+    mainClass = 'com.scienceminer.glutton.web.LookupServiceApplication'
+}
 tasks.run.workingDir = rootProject.rootDir
 
 repositories {
@@ -127,11 +128,11 @@ distributions {
 }
 
 shadowJar {
-    classifier = 'onejar'
+    archiveClassifier = 'onejar'
     mergeServiceFiles()
     zip64 true
     manifest {
-        attributes 'Main-Class': mainClassName
+        attributes 'Main-Class': application.mainClass
     }
     exclude("logback.xml")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -151,7 +152,7 @@ ext.getArg = { propName, defaultVal ->
 }
 
 task server(dependsOn: 'classes', type: JavaExec, group: 'service') {
-    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    mainClass = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
     args 'server', getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
@@ -162,7 +163,7 @@ task server(dependsOn: 'classes', type: JavaExec, group: 'service') {
 }
 
 task crossref(dependsOn: 'classes', type: JavaExec, group: 'data') {
-    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    mainClass = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
     args 'crossref', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
@@ -173,7 +174,7 @@ task crossref(dependsOn: 'classes', type: JavaExec, group: 'data') {
 }
 
 task gap_crossref(dependsOn: 'classes', type: JavaExec, group: 'data') {
-    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    mainClass = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
     args 'gap_crossref', getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
@@ -184,7 +185,7 @@ task gap_crossref(dependsOn: 'classes', type: JavaExec, group: 'data') {
 }
 
 task hal(dependsOn: 'classes', type: JavaExec, group: 'data') {
-    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    mainClass = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
     args 'hal', getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
@@ -195,7 +196,7 @@ task hal(dependsOn: 'classes', type: JavaExec, group: 'data') {
 }
 
 task pmid(dependsOn: 'classes', type: JavaExec, group: 'service') {
-    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    mainClass = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
     args 'pmid', getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
@@ -206,7 +207,7 @@ task pmid(dependsOn: 'classes', type: JavaExec, group: 'service') {
 }
 
 task unpaywall(dependsOn: 'classes', type: JavaExec, group: 'data') {
-    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    mainClass = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
     args 'unpaywall', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
@@ -217,7 +218,7 @@ task unpaywall(dependsOn: 'classes', type: JavaExec, group: 'data') {
 }
 
 task istex(dependsOn: 'classes', type: JavaExec, group: 'data') {
-    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    mainClass = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
     args 'istex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
@@ -229,7 +230,7 @@ task istex(dependsOn: 'classes', type: JavaExec, group: 'data') {
 
 // only used it to re-create the search index from scratch, keeping the LMDB unchanged
 task index(dependsOn: 'classes', type: JavaExec, group: 'search') {
-    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    mainClass = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
     args 'index', getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
@@ -239,9 +240,20 @@ task index(dependsOn: 'classes', type: JavaExec, group: 'search') {
     }
 }
 
+task openalex(dependsOn: 'classes', type: JavaExec, group: 'data') {
+    mainClass = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    classpath = sourceSets.main.runtimeClasspath
+    args 'openalex', getArg('config', 'config/glutton.yml')
+    if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
+        jvmArgs '-Xmx3072m', "--add-opens", "java.base/java.nio=ALL-UNNAMED", "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.text=ALL-UNNAMED", "--add-opens", "java.base/java.net=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "--add-opens", "java.base/java.math=ALL-UNNAMED", "--add-opens", "java.base/java.util=ALL-UNNAMED", "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED", "--add-opens", "java.base/java.time=ALL-UNNAMED"
+    } else {
+        jvmArgs '-Xmx3072m'
+    }
+}
+
 // experimental
 task hal_audit(dependsOn: 'classes', type: JavaExec, group: 'search') {
-    main = 'com.scienceminer.glutton.web.LookupServiceApplication'
+    mainClass = 'com.scienceminer.glutton.web.LookupServiceApplication'
     classpath = sourceSets.main.runtimeClasspath
     args 'hal_audit', getArg('config', 'config/glutton.yml') 
     if(JavaVersion.current().compareTo(JavaVersion.VERSION_1_8) > 0) {
