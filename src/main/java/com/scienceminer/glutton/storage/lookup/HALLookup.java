@@ -14,6 +14,7 @@ import com.scienceminer.glutton.serialization.BiblioSerializer;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.indexing.*;
 import com.scienceminer.glutton.utils.BinarySerialiser;
+import com.scienceminer.glutton.utils.CompressionType;
 import com.scienceminer.glutton.storage.LookupEngine;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -71,6 +72,7 @@ public class HALLookup {
     private final int batchIndexingSize;
 
     private LookupConfiguration configuration;
+    private final CompressionType compressionType;
 
     // this date keeps track of the latest indexed date of the metadata database
     private LocalDateTime lastIndexed = null; 
@@ -99,6 +101,7 @@ public class HALLookup {
         configuration = storageEnvFactory.getConfiguration();
         batchStoringSize = configuration.getStoringBatchSize();
         batchIndexingSize = configuration.getIndexingBatchSize();
+        compressionType = configuration.getCompressionType();
 
         dbHALJson = this.environment.openDbi(NAME_HAL_JSON, DbiFlags.MDB_CREATE);
         dbDoiToHal = this.environment.openDbi(NAME_DOI2HAL, DbiFlags.MDB_CREATE);
@@ -142,7 +145,7 @@ public class HALLookup {
         try {
             final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
             keyBuffer.put(BinarySerialiser.serialize(key)).flip();
-            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(value);
+            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(value, compressionType);
             final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
             valBuffer.put(serializedValue).flip();
             db.put(tx, keyBuffer, valBuffer);
@@ -199,7 +202,7 @@ public class HALLookup {
             keyBuffer.put(BinarySerialiser.serialize(lowerCase(halID))).flip();
             cachedData = dbHALJson.get(tx, keyBuffer);
             if (cachedData != null) {
-                theRecord = (String) BinarySerialiser.deserializeAndDecompress(cachedData);
+                theRecord = (String) BinarySerialiser.deserializeAndDecompress(cachedData, compressionType);
             }
         } catch (Env.ReadersFullException e) {
             throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
@@ -259,7 +262,7 @@ public class HALLookup {
                     String key = null;
                     try {
                         key = (String) BinarySerialiser.deserialize(kv.key());
-                        values.add(new ImmutablePair<>(key, (String) BinarySerialiser.deserializeAndDecompress(kv.val())));
+                        values.add(new ImmutablePair<>(key, (String) BinarySerialiser.deserializeAndDecompress(kv.val(), compressionType)));
                     } catch (IOException e) {
                         LOGGER.error("Cannot decompress document with key: " + key, e);
                     }
@@ -288,7 +291,7 @@ public class HALLookup {
                 keyBuffer.put(BinarySerialiser.serialize("last-indexed-date")).flip();
                 cachedData = dbHALJson.get(tx, keyBuffer);
                 if (cachedData != null) {
-                    lastIndexed = (LocalDateTime) BinarySerialiser.deserializeAndDecompress(cachedData);
+                    lastIndexed = (LocalDateTime) BinarySerialiser.deserializeAndDecompress(cachedData, compressionType);
                 }
             } catch (Env.ReadersFullException e) {
                 throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
@@ -307,7 +310,7 @@ public class HALLookup {
         try {
             final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
             keyBuffer.put(BinarySerialiser.serialize("last-indexed-date")).flip();
-            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(this.lastIndexed);
+            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(this.lastIndexed, compressionType);
             final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
             valBuffer.put(serializedValue).flip();
             dbHALJson.put(transactionWrapper.tx, keyBuffer, valBuffer);
@@ -369,7 +372,7 @@ public class HALLookup {
                     String key = null;
                     try {
                         key = (String) BinarySerialiser.deserialize(kv.key());
-                        String recordJson = (String) BinarySerialiser.deserializeAndDecompress(kv.val());
+                        String recordJson = (String) BinarySerialiser.deserializeAndDecompress(kv.val(), compressionType);
 
                         try {
                             MetadataObj metadataObj = MetadataObjBuilder.createMetadataObj(recordJson);

@@ -23,6 +23,11 @@ public class BinarySerialiser {
         return Compressors.compressSnappy(data);
     }
 
+    public static byte[] serializeAndCompress(Object obj, CompressionType compressionType) throws IOException {
+        byte data[] = singletonConf.asByteArray(obj);
+        return Compressors.compress(data, compressionType);
+    }
+
     public static Object deserialize(byte[] data) {
         return singletonConf.asObject(data);
     }
@@ -37,10 +42,20 @@ public class BinarySerialiser {
         return deserialize(Compressors.decompressSnappy(data));
     }
 
+    public static Object deserializeAndDecompress(byte[] data, CompressionType compressionType) throws IOException {
+        return deserialize(Compressors.decompress(data, compressionType));
+    }
+
     public static Object deserializeAndDecompress(ByteBuffer data) throws IOException {
         byte[] b = new byte[data.remaining()];
         data.get(b);
         return deserializeAndDecompress(b);
+    }
+
+    public static Object deserializeAndDecompress(ByteBuffer data, CompressionType compressionType) throws IOException {
+        byte[] b = new byte[data.remaining()];
+        data.get(b);
+        return deserializeAndDecompress(b, compressionType);
     }
 
 }
