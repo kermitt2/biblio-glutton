@@ -11,7 +11,9 @@ import com.scienceminer.glutton.web.module.NotFoundExceptionMapper;
 import com.scienceminer.glutton.web.module.ServiceExceptionMapper;
 import com.scienceminer.glutton.web.module.ServiceOverloadedExceptionMapper;
 import com.scienceminer.glutton.utils.crossrefclient.IncrementalLoaderTask;
+import com.scienceminer.glutton.utils.RorUpdateTask;
 import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
+import com.scienceminer.glutton.storage.lookup.RorLookup;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 
 import io.dropwizard.forms.MultiPartBundle;
@@ -144,6 +146,43 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         environment.healthChecks().register("HealthCheck", healthCheck);
 
         scheduleDailyUpdate(configuration, storageEnvFactory);
+        scheduleRorUpdate(configuration, storageEnvFactory);
+    }
+
+    private void scheduleRorUpdate(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) {
+        LookupConfiguration.Ror rorConfig = configuration.getRor();
+        if (rorConfig == null || !rorConfig.isUpdateEnabled()) {
+            LOGGER.info("ROR scheduled update is disabled");
+            return;
+        }
+
+        RorLookup rorLookup = new RorLookup(storageEnvFactory);
+        String dumpPath = rorConfig.getDumpPath();
+        if (dumpPath == null) {
+            dumpPath = "data/ror";
+        }
+        File dumpDir = new File(dumpPath);
+        if (!dumpDir.exists()) {
+            dumpDir.mkdirs();
+        }
+
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of(configuration.getTimeZone()));
+        int targetDay = rorConfig.getUpdateDayOfMonth();
+        ZonedDateTime nextRun = now.withDayOfMonth(Math.min(targetDay, now.toLocalDate().lengthOfMonth()))
+                                   .withHour(4).withMinute(0).withSecond(0);
+        if (now.compareTo(nextRun) > 0) {
+            nextRun = nextRun.plusMonths(1);
+            nextRun = nextRun.withDayOfMonth(Math.min(targetDay, nextRun.toLocalDate().lengthOfMonth()));
+        }
+
+        Duration duration = Duration.between(now, nextRun);
+        long initialDelay = duration.getSeconds();
+        long period = TimeUnit.DAYS.toSeconds(30);
+
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        Runnable task = new RorUpdateTask(rorLookup, dumpDir.getAbsolutePath());
+        executor.scheduleAtFixedRate(task, initialDelay, period, TimeUnit.SECONDS);
+        LOGGER.info("ROR scheduled update enabled, next run in " + (initialDelay / 3600) + " hours");
     }
 
     /*private List<? extends Module> getGuiceModules() {
@@ -174,6 +213,8 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         bootstrap.addCommand(new LoadHALCommand());
         bootstrap.addCommand(new IndexCommand());
         bootstrap.addCommand(new HALAuditCommand());
+        bootstrap.addCommand(new LoadFunderRegistryCommand());
+        bootstrap.addCommand(new LoadRorCommand());
     }
 
     public static void main(String... args) throws Exception {

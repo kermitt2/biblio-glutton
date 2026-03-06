@@ -85,10 +85,18 @@ dblp:
   dump: "https://dblp.uni-trier.de/xml/dblp.xml.gz"
 
 unpaywall:
-  dumpPath: 
+  dumpPath:
   # a directory where the unpaywall update data feed change files will be located
-  API_key: 
+  API_key:
   # API Key for the Unpaywall subscription is necessary to get the data feed change files for daily update
+
+# ROR (Research Organization Registry) settings
+# Data is loaded via: ./gradlew ror -Pinput=/path/to/ror-data.zip
+# Enable automatic monthly updates by setting updateEnabled to true
+#ror:
+#  updateEnabled: false
+#  updateDayOfMonth: 1
+#  dumpPath: data/ror
 
 # CORS parameters 
 corsAllowedOrigins: "*"
