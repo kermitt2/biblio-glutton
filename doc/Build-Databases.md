@@ -26,7 +26,7 @@ For building the database and index used by service, you will need these resourc
 
 * CrossRef metadata dump, available at different places:  
   - strongly recommended: via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service for a current snapshot, or
-  - [public CrossRef dump](https://www.crossref.org/blog/2023-public-data-file-now-available-with-new-and-improved-retrieval-options/) available with Academic Torrents (2023-05-02 for the latest version), 
+  - [public CrossRef dump](https://www.crossref.org/blog/2024-public-data-file-now-available-featuring-new-experimental-formats/) available with Academic Torrents (2024-05-14 for the latest version), 
   - not recommended: Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909) (2019-09).   
   
 We recommend to use a Crossref Metadata Plus snapshot in order to have a version of the Crossref metadata without large coverage gap. With the `Crossref-Plus-API-Token`, the following command for instance will download the full snapshot for the indicated year/month: 
