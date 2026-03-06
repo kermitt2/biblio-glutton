@@ -151,6 +151,14 @@ openAlex:
   # --since relies on needs a paid plan. See https://openalex.org/pricing
   apiKey:
 
+# ROR (Research Organization Registry) settings
+# Data is loaded via: ./gradlew ror -Pinput=/path/to/ror-data.zip
+# Enable automatic monthly updates by setting updateEnabled to true
+#ror:
+#  updateEnabled: false
+#  updateDayOfMonth: 1
+#  dumpPath: data/ror
+
 # CORS parameters 
 corsAllowedOrigins: "*"
 corsAllowedMethods: "OPTIONS,GET,PUT,POST,DELETE,HEAD"

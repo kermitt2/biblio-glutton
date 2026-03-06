@@ -238,6 +238,10 @@ gluttonCommand('openalex', 'data', ['openalex', '--input', getArg('input', '')] 
         'Load the OpenAlex open access links from a works snapshot, local or in S3')
 gluttonCommand('openalex_update', 'data', ['openalex', '--since', getArg('since', ''), getArg('config', 'config/glutton.yml')],
         'Top up the OpenAlex open access links from the API since -Psince=YYYY-MM-DD (needs a paid OpenAlex plan)')
+gluttonCommand('funder_registry', 'data', ['funder_registry', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
+        'Load the Crossref Open Funder Registry (registry.rdf)')
+gluttonCommand('ror', 'data', ['ror', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
+        'Load the Research Organization Registry (ROR) data dump')
 // only used it to re-create the search index from scratch, keeping the LMDB unchanged
 gluttonCommand('index', 'search', ['index', getArg('config', 'config/glutton.yml')],
         'Rebuild the search index from the local storage')

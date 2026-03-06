@@ -54,6 +54,8 @@ public class LookupConfiguration extends Configuration {
 
     private S3 s3 = new S3();
 
+    private Ror ror;
+
     private String grobidHost;
 
     private ProxyParameters proxy;
@@ -140,6 +142,10 @@ public class LookupConfiguration extends Configuration {
 
     public void setS3(S3 s3) {
         this.s3 = s3;
+    }
+
+    public Ror getRor() {
+        return ror;
     }
 
     public int getStoringBatchSize() {
@@ -532,6 +538,36 @@ public class LookupConfiguration extends Configuration {
 
         public void setMaxRetries(int maxRetries) {
             this.maxRetries = maxRetries;
+        }
+    }
+
+    public static class Ror {
+        private boolean updateEnabled = false;
+        private int updateDayOfMonth = 1;
+        private String dumpPath = "data/ror";
+
+        public boolean isUpdateEnabled() {
+            return updateEnabled;
+        }
+
+        public void setUpdateEnabled(boolean updateEnabled) {
+            this.updateEnabled = updateEnabled;
+        }
+
+        public int getUpdateDayOfMonth() {
+            return updateDayOfMonth;
+        }
+
+        public void setUpdateDayOfMonth(int updateDayOfMonth) {
+            this.updateDayOfMonth = updateDayOfMonth;
+        }
+
+        public String getDumpPath() {
+            return dumpPath;
+        }
+
+        public void setDumpPath(String dumpPath) {
+            this.dumpPath = dumpPath;
         }
     }
 
