@@ -1,5 +1,13 @@
 ## pubmed-glutton
 
+> **Build status**: this subproject does **not** currently compile from a clean checkout. It depends on
+> `com.scienceminer.glutton.data.db.{KBEnvironment, KBStagingEnvironment}` which are not present in this
+> repository's source tree and were originally hosted in a local Maven repo on the original developer's
+> workstation. To build, you need those JARs available on a local Maven repository or under `lib/`.
+> A toolchain is configured for **JDK 17** (the wider repo targets JDK 21, but pubmed-glutton's
+> Jersey 1.8 / log4j 1.2.x dependency stack cannot run on JDK 21). Modernizing this subproject's
+> dependencies is a tracked follow-up.
+
 This package can be used to parse and store the PubMed data (all MEDLINE data, with abstract, MeSH classes etc.), and provides some mapping functionalities.
 
 Any command will first initialize the `staging area` databases, this is only done the first time a command is launched.
