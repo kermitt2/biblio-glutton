@@ -37,6 +37,6 @@ biblio-glutton is a Java software requiring JDK 1.11 or more.
 
 You will need an ElasticSearch cluster to make possible bibliographical reference matching and resolution. The current version has been tested with Elasticsearch `8.*`.
 
-Optionally a Grobid service can be added to perform combined raw bibliographical reference string and reference resolution. Use the latest Grobid version. 
+Optionally a Grobid service can be added to perform combined raw bibliographical reference string and reference resolution. Use the latest Grobid version (0.9.1 at the time of writing). 
 
 For storing the compiled metadata records, you will need a large amount of SSD space, at least 350 GB. SSD ensures fast and predictible runtime lookup based on memory paging. 

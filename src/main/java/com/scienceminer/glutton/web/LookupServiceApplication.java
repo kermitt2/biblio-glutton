@@ -23,8 +23,8 @@ import io.dropwizard.core.setup.Environment;
 import ru.vyarus.dropwizard.guice.GuiceBundle;
 import com.google.inject.AbstractModule;
 
-import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.eclipse.jetty.servlets.QoSFilter;
+import org.eclipse.jetty.server.handler.CrossOriginHandler;
+import org.eclipse.jetty.server.handler.QoSHandler;
 
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -33,11 +33,11 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.FilterRegistration;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.io.File;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -117,22 +117,24 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         String allowedMethods = configuration.getCorsAllowedMethods();
         String allowedHeaders = configuration.getCorsAllowedHeaders();
 
-        // Enable CORS headers
-        final FilterRegistration.Dynamic cors =
-            environment.servlets().addFilter("CORS", CrossOriginFilter.class);
+        // Enable CORS headers. Jetty 12 (the version Dropwizard 5 runs on) deprecated the
+        // servlet filters of the jetty-servlets module for removal in favour of these handlers,
+        // which sit in front of the servlet context instead of inside its filter chain.
+        // Note that allowed origins are regular expressions here, where CrossOriginFilter used
+        // comma-separated origins with '*' wildcards; "*" keeps meaning "any origin".
+        final CrossOriginHandler cors = new CrossOriginHandler();
+        cors.setAllowedOriginPatterns(splitConfigList(allowedOrigins));
+        cors.setAllowedMethods(splitConfigList(allowedMethods));
+        cors.setAllowedHeaders(splitConfigList(allowedHeaders));
+        // CrossOriginHandler defaults to 60s where CrossOriginFilter defaulted to 30min; keep the
+        // longer window so browsers do not re-issue a preflight every minute.
+        cors.setPreflightMaxAge(Duration.ofSeconds(1800));
+        environment.getApplicationContext().insertHandler(cors);
 
-        // Configure CORS parameters
-        cors.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, allowedOrigins);
-        cors.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, allowedMethods);
-        cors.setInitParameter(CrossOriginFilter.ALLOWED_HEADERS_PARAM, allowedHeaders);
-
-        // Add URL mapping
-        cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
-
-        // Enable QoS filter
-        /*final FilterRegistration.Dynamic qos = environment.servlets().addFilter("QOS", QoSFilter.class);
-        qos.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
-        qos.setInitParameter("maxRequests", String.valueOf(configuration.getMaxAcceptedRequests()));*/
+        // Enable QoS handler
+        /*final QoSHandler qos = new QoSHandler();
+        qos.setMaxRequestCount(configuration.getMaxAcceptedRequests());
+        environment.getApplicationContext().insertHandler(qos);*/
 
         environment.jersey().setUrlPattern(RESOURCES + "/*");
         environment.jersey().register(new ServiceExceptionMapper());
@@ -152,6 +154,17 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
 
     private AbstractModule getGuiceModules() {
         return new LookupServiceModule();
+    }
+
+    /**
+     * The CORS settings are comma-separated lists in the YAML configuration, while the Jetty
+     * handlers take sets of values.
+     */
+    private static Set<String> splitConfigList(String value) {
+        return Stream.of(value.split(","))
+            .map(String::trim)
+            .filter(item -> !item.isEmpty())
+            .collect(Collectors.toSet());
     }
 
     @Override

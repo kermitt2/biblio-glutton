@@ -28,7 +28,7 @@ import java.time.Duration;
  *     <li>{@code GET  /isalive}        — health check (see {@link #ping()})</li>
  *     <li>{@code POST /processCitation} — parse a raw citation string (see {@link #processCitation(String, String)})</li>
  * </ul>
- * Both endpoints have been stable across Grobid 0.7.x and 0.8.x.
+ * Both endpoints have been stable across Grobid 0.7.x, 0.8.x and 0.9.x.
  */
 public class GrobidClient {
 
@@ -36,6 +36,15 @@ public class GrobidClient {
 
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
+
+    /**
+     * Form parameter names of Grobid's {@code /processCitation}, as declared by
+     * {@code GrobidRestService} (verified against Grobid 0.7.x - 0.9.1). Note the plural in
+     * {@code consolidateCitations}: Grobid binds it with {@code @DefaultValue("0")}, so a
+     * misspelled name is silently ignored and no consolidation is performed.
+     */
+    private static final String CITATIONS_PARAM = "citations";
+    private static final String CONSOLIDATE_CITATIONS_PARAM = "consolidateCitations";
 
     private final String grobidPath;
     private final HttpClient httpClient;
@@ -68,17 +77,26 @@ public class GrobidClient {
     }
 
     public GrobidResponse processCitation(String rawCitation, String consolidation) throws ServiceException {
-        String formBody = "citations=" + URLEncoder.encode(rawCitation, StandardCharsets.UTF_8)
-                + "&consolidateCitation=" + URLEncoder.encode(consolidation, StandardCharsets.UTF_8);
+        String formBody = CITATIONS_PARAM + "=" + URLEncoder.encode(rawCitation, StandardCharsets.UTF_8)
+                + "&" + CONSOLIDATE_CITATIONS_PARAM + "=" + URLEncoder.encode(consolidation, StandardCharsets.UTF_8);
 
         HttpRequest request = HttpRequest.newBuilder(URI.create(grobidPath + "/processCitation"))
                 .timeout(REQUEST_TIMEOUT)
                 .header("Content-Type", "application/x-www-form-urlencoded")
+                // Grobid 0.9.x also serves BibTeX from this path; ask explicitly for the TEI XML
+                // that GrobidResponseStaxHandler parses instead of relying on the server default.
+                .header("Accept", "application/xml")
                 .POST(HttpRequest.BodyPublishers.ofString(formBody, StandardCharsets.UTF_8))
                 .build();
 
         try {
             HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            // 204: Grobid ran but could not structure anything out of the string. That is a normal
+            // outcome for noisy references, not a service error - hand back an empty response so
+            // the caller falls back to the metadata it already has.
+            if (response.statusCode() == HttpURLConnection.HTTP_NO_CONTENT) {
+                return new GrobidResponseStaxHandler().getResponse();
+            }
             if (response.statusCode() != HttpURLConnection.HTTP_OK) {
                 throw new ServiceException(502, "Error while connecting to GROBID service. Error code: " + response.statusCode());
             }

@@ -100,7 +100,7 @@ corsAllowedHeaders: "X-Requested-With,Content-Type,Accept,Origin"
 maxAcceptedRequests: 2048
 
 server:
-  type: custom
+  type: default
   applicationConnectors:
   - type: http
     port: 8080
@@ -109,7 +109,8 @@ server:
     port: 8081
   registerDefaultExceptionMappers: false
   maxThreads: 2048
-  maxQueuedRequests: 2048
+  # note: `maxQueuedRequests` was removed in Dropwizard 5 (Jetty 12); the application-level
+  # `maxAcceptedRequests` above is what caps concurrent work in biblio-glutton.
   # change the following for having all http requests logged
   requestLog:
     appenders: []
