@@ -24,7 +24,6 @@ import co.elastic.clients.elasticsearch.core.bulk.*;
 import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.exception.ServiceOverloadedException;
 import com.scienceminer.glutton.utils.BinarySerialiser;
-import com.scienceminer.glutton.utils.CompressionType;
 
 import org.apache.http.HttpHost;
 import org.apache.commons.io.FileUtils;
@@ -161,7 +160,7 @@ public class ElasticSearchIndexer {
                     String value = null;
                     try {
                         key = (String) BinarySerialiser.deserialize(kv.key());
-                        value = (String) BinarySerialiser.deserializeAndDecompress(kv.val(), configuration.getCompressionType());
+                        value = (String) BinarySerialiser.deserializeAndDecompress(kv.val());
 
                         MetadataObj objToIndex = MetadataObjBuilder.createMetadataObj(value);
                         if (objToIndex != null && !MetadataObjBuilder.isFilteredType(objToIndex)) {

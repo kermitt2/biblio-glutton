@@ -120,7 +120,6 @@ dependencies {
     }
     implementation "org.xerial.snappy:snappy-java:${snappyVersion}"
     implementation "com.github.luben:zstd-jni:${zstdJniVersion}"
-    implementation "org.lz4:lz4-java:${lz4JavaVersion}"
 
     // S3 access for the ingestion inputs (see utils/io/InputLocation). The AWS BOM keeps the
     // SDK's own modules in step with each other. Only the sync S3 client is needed: the async
@@ -282,9 +281,6 @@ tasks.register('checkConfigVersion') {
 tasks.named('check') {
     dependsOn 'checkConfigVersion'
 }
-
-gluttonCommand('compression_benchmark', 'data', ['compression_benchmark', getArg('config', 'config/glutton.yml')],
-        'Benchmark the compression algorithms on records of the existing Crossref LMDB')
 
 test {
     useJUnitPlatform()
