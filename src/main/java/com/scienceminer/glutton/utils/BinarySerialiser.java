@@ -18,14 +18,13 @@ public class BinarySerialiser {
         return data;
     }
 
-    public static byte[] serializeAndCompress(Object obj) throws IOException {
+    /**
+     * Serialises then compresses as configured. Whatever the setting, the result is read back
+     * with {@link #deserializeAndDecompress(byte[])}, see {@link Compressors}.
+     */
+    public static byte[] serializeAndCompress(Object obj, CompressionType type, int level) throws IOException {
         byte data[] = singletonConf.asByteArray(obj);
-        return Compressors.compressSnappy(data);
-    }
-
-    public static byte[] serializeAndCompress(Object obj, CompressionType compressionType) throws IOException {
-        byte data[] = singletonConf.asByteArray(obj);
-        return Compressors.compress(data, compressionType);
+        return Compressors.compress(data, type, level);
     }
 
     public static Object deserialize(byte[] data) {
@@ -39,23 +38,13 @@ public class BinarySerialiser {
     }
 
     public static Object deserializeAndDecompress(byte[] data) throws IOException {
-        return deserialize(Compressors.decompressSnappy(data));
-    }
-
-    public static Object deserializeAndDecompress(byte[] data, CompressionType compressionType) throws IOException {
-        return deserialize(Compressors.decompress(data, compressionType));
+        return deserialize(Compressors.decompress(data));
     }
 
     public static Object deserializeAndDecompress(ByteBuffer data) throws IOException {
         byte[] b = new byte[data.remaining()];
         data.get(b);
         return deserializeAndDecompress(b);
-    }
-
-    public static Object deserializeAndDecompress(ByteBuffer data, CompressionType compressionType) throws IOException {
-        byte[] b = new byte[data.remaining()];
-        data.get(b);
-        return deserializeAndDecompress(b, compressionType);
     }
 
 }

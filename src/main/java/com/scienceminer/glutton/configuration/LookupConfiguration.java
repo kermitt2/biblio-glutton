@@ -22,7 +22,14 @@ public class LookupConfiguration extends Configuration {
     private int storingBatchSize = 10000;
     private int indexingBatchSize = 500;
 
-    private String compression = "snappy";
+    // how the metadata records are compressed in LMDB; only affects what is written, see CompressionType
+    @NotNull
+    private CompressionType compression = CompressionType.ZSTD;
+
+    // zstd level, 1 (fastest) to 22; 3 is where compression and load speed balance for Crossref records
+    @Min(1)
+    @Max(22)
+    private int compressionLevel = 3;
 
     private int blockSize = 0;
 
@@ -159,16 +166,20 @@ public class LookupConfiguration extends Configuration {
         this.blockSize = blockSize;
     }
 
-    public String getCompression() {
+    public CompressionType getCompression() {
         return compression;
     }
 
-    public void setCompression(String compression) {
+    public void setCompression(CompressionType compression) {
         this.compression = compression;
     }
 
-    public CompressionType getCompressionType() {
-        return CompressionType.fromString(compression);
+    public int getCompressionLevel() {
+        return compressionLevel;
+    }
+
+    public void setCompressionLevel(int compressionLevel) {
+        this.compressionLevel = compressionLevel;
     }
 
     public int getMaxAcceptedRequests() {

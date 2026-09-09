@@ -258,7 +258,6 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         bootstrap.addCommand(new IndexCommand());
         bootstrap.addCommand(new HALAuditCommand());
         bootstrap.addCommand(new LoadOpenAlexCommand());
-        bootstrap.addCommand(new CompressionBenchmarkCommand());
     }
 
     public static void main(String... args) throws Exception {

@@ -1,21 +1,81 @@
 package com.scienceminer.glutton.utils;
 
-import com.github.luben.zstd.Zstd;
-import net.jpountz.lz4.LZ4Compressor;
-import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.lz4.LZ4FastDecompressor;
 import org.xerial.snappy.Snappy;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+/**
+ * Compression of the values stored in LMDB.
+ *
+ * Every value is self-describing, so a database can hold records written with different settings
+ * (typically a dump loaded by one version, then daily updates written by the next) and read them
+ * all back without keeping track of which is which:
+ * <ul>
+ * <li>values written up to 0.3 are a bare snappy block. Its first byte is the low byte of snappy's
+ * uncompressed-length varint, which is never 0 for a non-empty input, and an FST-serialised object
+ * is never empty;</li>
+ * <li>values written since 0.4.0 start with a 0 byte, then a format byte, then the payload. Format
+ * 1 is a zstd frame, which itself names the dictionary it was compressed with.</li>
+ * </ul>
+ */
 public class Compressors {
+    static final byte FORMAT_MARKER = 0;
+    static final byte FORMAT_ZSTD = 1;
+    private static final int HEADER_LENGTH = 2;
 
-    private static final LZ4Factory lz4Factory = LZ4Factory.fastestInstance();
+    /** Compresses as configured; see {@link #decompress(byte[])} for the way back. */
+    public static byte[] compress(byte[] input, CompressionType type, int level) throws IOException {
+        switch (type) {
+            case SNAPPY:
+                return compressSnappy(input);
+            case ZSTD:
+                return withHeader(FORMAT_ZSTD, ZstdCodec.compress(input, level));
+            default:
+                throw new IllegalArgumentException("Unsupported compression " + type);
+        }
+    }
+
+    /** Decompresses a value whatever version and setting wrote it. */
+    public static byte[] decompress(byte[] input) throws IOException {
+        switch (typeOf(input)) {
+            case SNAPPY:
+                return decompressSnappy(input);
+            case ZSTD:
+                return ZstdCodec.decompress(input, HEADER_LENGTH);
+            default:
+                throw new IllegalStateException();
+        }
+    }
+
+    /** Says which format a stored value is in, without decompressing it. */
+    public static CompressionType typeOf(byte[] input) throws IOException {
+        if (input == null || input.length == 0) {
+            throw new IOException("Empty value");
+        }
+        if (input[0] != FORMAT_MARKER) {
+            return CompressionType.SNAPPY;
+        }
+        if (input.length < HEADER_LENGTH) {
+            throw new IOException("Truncated value: a format marker with nothing after it");
+        }
+        if (input[1] == FORMAT_ZSTD) {
+            return CompressionType.ZSTD;
+        }
+        throw new IOException("Unknown storage format " + input[1]
+                + ", was this database written by a newer version of biblio-glutton?");
+    }
+
+    private static byte[] withHeader(byte format, byte[] payload) {
+        byte[] result = new byte[HEADER_LENGTH + payload.length];
+        result[0] = FORMAT_MARKER;
+        result[1] = format;
+        System.arraycopy(payload, 0, result, HEADER_LENGTH, payload.length);
+        return result;
+    }
 
     public static byte[] compressSnappy(byte[] input) throws IOException {
         return Snappy.compress(input);
@@ -45,95 +105,5 @@ public class Compressors {
         gzip.close();
 
         return output.toByteArray();
-    }
-
-    public static byte[] compressZstd(byte[] input) throws IOException {
-        return Zstd.compress(input);
-    }
-
-    public static byte[] decompressZstd(byte[] input) throws IOException {
-        int decompressedSize = (int) Zstd.decompressedSize(input);
-        if (decompressedSize <= 0) {
-            // fallback: use streaming decompression when size is unknown
-            byte[] output = new byte[input.length * 4];
-            long result = Zstd.decompress(output, input);
-            if (Zstd.isError(result)) {
-                throw new IOException("Zstd decompression error: " + Zstd.getErrorName(result));
-            }
-            byte[] trimmed = new byte[(int) result];
-            System.arraycopy(output, 0, trimmed, 0, (int) result);
-            return trimmed;
-        }
-        byte[] output = new byte[decompressedSize];
-        long result = Zstd.decompress(output, input);
-        if (Zstd.isError(result)) {
-            throw new IOException("Zstd decompression error: " + Zstd.getErrorName(result));
-        }
-        return output;
-    }
-
-    /**
-     * LZ4 compression. Prepends 4 bytes with the original uncompressed length
-     * so decompression knows how large a buffer to allocate.
-     */
-    public static byte[] compressLz4(byte[] input) throws IOException {
-        LZ4Compressor compressor = lz4Factory.fastCompressor();
-        int maxCompressedLength = compressor.maxCompressedLength(input.length);
-        byte[] compressed = new byte[maxCompressedLength + 4];
-        // store original length in first 4 bytes (big-endian)
-        compressed[0] = (byte) (input.length >>> 24);
-        compressed[1] = (byte) (input.length >>> 16);
-        compressed[2] = (byte) (input.length >>> 8);
-        compressed[3] = (byte) input.length;
-        int compressedLength = compressor.compress(input, 0, input.length, compressed, 4, maxCompressedLength);
-        byte[] result = new byte[compressedLength + 4];
-        System.arraycopy(compressed, 0, result, 0, compressedLength + 4);
-        return result;
-    }
-
-    public static byte[] decompressLz4(byte[] input) throws IOException {
-        // read original length from first 4 bytes (big-endian)
-        int originalLength = ((input[0] & 0xFF) << 24) |
-                             ((input[1] & 0xFF) << 16) |
-                             ((input[2] & 0xFF) << 8) |
-                             (input[3] & 0xFF);
-        LZ4FastDecompressor decompressor = lz4Factory.fastDecompressor();
-        byte[] output = new byte[originalLength];
-        decompressor.decompress(input, 4, output, 0, originalLength);
-        return output;
-    }
-
-    public static byte[] compress(byte[] input, CompressionType type) throws IOException {
-        switch (type) {
-            case SNAPPY:
-                return compressSnappy(input);
-            case ZSTD:
-                return compressZstd(input);
-            case LZ4:
-                return compressLz4(input);
-            case GZIP:
-                return compressGzip(input);
-            case NONE:
-                return input;
-            default:
-                return compressSnappy(input);
-        }
-    }
-
-    public static byte[] decompress(byte[] input, CompressionType type) throws IOException {
-        switch (type) {
-            case SNAPPY:
-                return decompressSnappy(input);
-            case ZSTD:
-                return decompressZstd(input);
-            case LZ4:
-                return decompressLz4(input);
-            case GZIP:
-                return decompressGzip(input);
-            case NONE:
-                return input;
-            default:
-                return decompressSnappy(input);
-        }
     }
 }
