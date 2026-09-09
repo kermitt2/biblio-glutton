@@ -10,6 +10,7 @@ import com.scienceminer.glutton.data.MatchingDocument;
 import com.scienceminer.glutton.data.PmidData;
 import com.scienceminer.glutton.exception.NotFoundException;
 import com.scienceminer.glutton.storage.lookup.*;
+import com.scienceminer.glutton.utils.Identifiers;
 import com.scienceminer.glutton.utils.grobid.GrobidClient;
 import com.scienceminer.glutton.utils.grobid.GrobidResponseStaxHandler.GrobidResponse;
 import org.apache.commons.collections4.CollectionUtils;
@@ -385,6 +386,7 @@ public class LookupEngine {
                                 String firstAuthor, 
                                 String atitle,
                                 String year) throws NotFoundException {
+        doi = Identifiers.doi(doi);
         MatchingDocument outputData = crossrefMetadataLookup.retrieveByDoi(doi);
         // TBD: also use year for post validation of strong identifier
         outputData = validateJsonBody(firstAuthor, atitle, outputData);
@@ -395,6 +397,7 @@ public class LookupEngine {
                                 String firstAuthor, 
                                 String atitle,
                                 String year) throws NotFoundException {
+        halid = Identifiers.halId(halid);
         MatchingDocument outputData = halLookup.retrieveByHalId(halid);
         // TBD: also use year for post validation of strong identifier
         outputData = validateJsonBody(firstAuthor, atitle, outputData);
@@ -449,6 +452,7 @@ public class LookupEngine {
     }
 
     public String retrieveByPmid(String pmid, String firstAuthor, String atitle, String year) {
+        pmid = Identifiers.pmid(pmid);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
@@ -459,10 +463,7 @@ public class LookupEngine {
     }
 
     public String retrieveByPmc(String pmc, String firstAuthor, String atitle, String year) {
-        if (!StringUtils.startsWithIgnoreCase(pmc, "pmc")) {
-            pmc = "PMC" + pmc;
-        }
-
+        pmc = Identifiers.pmc(pmc);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
@@ -473,6 +474,7 @@ public class LookupEngine {
     }
 
     public String retrieveByIstexid(String istexid, String firstAuthor, String atitle, String year) {
+        istexid = Identifiers.istexId(istexid);
         final IstexData istexData = istexLookup.retrieveByIstexId(istexid);
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi()) && isNotBlank(istexData.getDoi().get(0))) {
@@ -489,6 +491,7 @@ public class LookupEngine {
     }
 
     public String retrieveByPii(String pii, String firstAuthor, String atitle, String year) {
+        pii = Identifiers.pii(pii);
         final IstexData istexData = istexLookup.retrieveByPii(pii);
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi()) && isNotBlank(istexData.getDoi().get(0))) {
@@ -527,7 +530,7 @@ public class LookupEngine {
     }
 
     public String retrieveOAUrlByDoi(String doi) {
-
+        doi = Identifiers.doi(doi);
         final String output = oaDoiLookup.retrieveOaLinkByDoi(doi);
 
         if (isBlank(output)) {
@@ -538,7 +541,7 @@ public class LookupEngine {
     }
 
     public Pair<String,String> retrieveOaIstexUrlByDoi(String doi) {
-
+        doi = Identifiers.doi(doi);
         final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
         final IstexData istexRecord = istexLookup.retrieveByDoi(doi);
         String url = null;
@@ -556,6 +559,7 @@ public class LookupEngine {
     }
 
     public String retrieveOAUrlByPmid(String pmid) {
+        pmid = Identifiers.pmid(pmid);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
@@ -566,7 +570,7 @@ public class LookupEngine {
     }
 
     public Pair<String,String> retrieveOaIstexUrlByPmid(String pmid) {
-
+        pmid = Identifiers.pmid(pmid);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
 
         if (pmidData == null || isBlank(pmidData.getDoi())) {
@@ -590,6 +594,7 @@ public class LookupEngine {
     }
 
     public String retrieveOAUrlByPmc(String pmc) {
+        pmc = Identifiers.pmc(pmc);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
@@ -600,7 +605,7 @@ public class LookupEngine {
     }
 
     public Pair<String,String> retrieveOaIstexUrlByPmc(String pmc) {
-
+        pmc = Identifiers.pmc(pmc);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
 
         if (pmidData == null || isBlank(pmidData.getDoi())) {
@@ -624,6 +629,7 @@ public class LookupEngine {
     }
 
     public String retrieveOAUrlByPii(String pii) {
+        pii = Identifiers.pii(pii);
         final IstexData istexData = istexLookup.retrieveByPii(pii);
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi())) {
@@ -635,7 +641,7 @@ public class LookupEngine {
     }
 
     public Pair<String,String> retrieveOaIstexUrlByPii(String pii) {
-
+        pii = Identifiers.pii(pii);
         final IstexData istexData = istexLookup.retrieveByPii(pii);
 
         if (istexData == null || istexData.getDoi() == null || istexData.getDoi().size() == 0) {
