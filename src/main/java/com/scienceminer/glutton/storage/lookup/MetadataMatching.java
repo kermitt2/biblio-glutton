@@ -108,7 +108,8 @@ public class MetadataMatching {
         // https://github.com/elastic/elasticsearch/pull/38085
         //                .setMaxRetryTimeoutMillis(120000));
 
-        this.esClient = new ESClientWrapper(esClient, configuration.getMaxAcceptedRequests());
+        this.esClient = new ESClientWrapper(esClient, configuration.getMaxAcceptedRequests(),
+                configuration.getElastic().getHost(), configuration.getElastic().getIndex());
 
         this.crossrefMetadataLookup = crossrefMetadataLookup;
         this.halLookup = halLookup;
@@ -125,8 +126,11 @@ public class MetadataMatching {
             CountResponse countResponse = esClient.count(countRequest, RequestOptions.DEFAULT);
             count = countResponse.getCount();
         } catch (IOException | ElasticsearchException e) {
-            LOGGER.error("Error while contacting Elasticsearch to fetch the size of "
-                    + configuration.getElastic().getIndex() + " index.", e);
+            // one line: this is asked on every data or health request, and the watchdog already
+            // says with what Elasticsearch is away
+            LOGGER.warn("Cannot fetch the size of the " + configuration.getElastic().getIndex()
+                    + " index: " + ESClientWrapper.toServiceException(e, configuration.getElastic().getHost(),
+                    configuration.getElastic().getIndex()).getMessage());
         }
 
         return count;
@@ -134,6 +138,33 @@ public class MetadataMatching {
 
     public String getIndexName() {
         return this.configuration.getElastic().getIndex();
+    }
+
+    /**
+     * One round trip to find out whether matching queries can be answered at all: is the cluster
+     * there, is the index there, and how many documents it holds.
+     */
+    public ElasticsearchStatus checkIndex() {
+        String host = configuration.getElastic().getHost();
+        String index = configuration.getElastic().getIndex();
+        try {
+            if (!esClient.ping()) {
+                return ElasticsearchStatus.unreachable(host, index, "Elasticsearch at " + host + " does not answer");
+            }
+            if (!esClient.indexExists(index)) {
+                return ElasticsearchStatus.missingIndex(host, index);
+            }
+            CountRequest countRequest = new CountRequest(index);
+            countRequest.query(QueryBuilders.matchAllQuery());
+            return ElasticsearchStatus.ok(host, index, esClient.count(countRequest, RequestOptions.DEFAULT).getCount());
+        } catch (IOException | ElasticsearchException e) {
+            IOException notReachable = ESClientWrapper.findCause(e, IOException.class);
+            if (notReachable != null) {
+                return ElasticsearchStatus.unreachable(host, index, "Elasticsearch is not reachable at " + host
+                        + ": " + notReachable);
+            }
+            return ElasticsearchStatus.error(host, index, "Elasticsearch at " + host + " refused the check: " + e.getMessage());
+        }
     }
 
     /**
@@ -302,10 +333,11 @@ public class MetadataMatching {
 
                 throw (Exception) matchingDocuments.get(0).getException();
             }
-        } catch (IOException e) {
-            throw new ServiceException(500, "No response from Elasticsearch. ", e);
+        } catch (NotFoundException e) {
+            throw e;
         } catch (Exception e) {
-            throw new ServiceException(500, "Elasticsearch server error. ", e);
+            throw ESClientWrapper.toServiceException(e, configuration.getElastic().getHost(),
+                    configuration.getElastic().getIndex());
         }
 
         return matchingDocuments;
@@ -328,7 +360,8 @@ public class MetadataMatching {
             });
         } catch (Exception e) {
             List<MatchingDocument> matchingDocuments = new ArrayList<>();
-            matchingDocuments.add(new MatchingDocument(e));
+            matchingDocuments.add(new MatchingDocument(ESClientWrapper.toServiceException(e,
+                    configuration.getElastic().getHost(), configuration.getElastic().getIndex())));
             callback.accept(matchingDocuments);
         }
     }
