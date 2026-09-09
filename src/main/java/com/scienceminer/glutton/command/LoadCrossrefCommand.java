@@ -165,6 +165,11 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
 
     /** Keeps the most recent indexed date seen across all the files of a load. */
     private void rememberLastIndexed(CrossrefMetadataLookup metadataLookup, CrossrefJsonReader reader) {
+        // a file whose records carry no indexed date leaves the reader's own date null, and
+        // isBefore(null) throws rather than comparing
+        if (reader.getLastIndexed() == null) {
+            return;
+        }
         if (metadataLookup.getLastIndexed() == null
                 || metadataLookup.getLastIndexed().isBefore(reader.getLastIndexed())) {
             metadataLookup.setLastIndexed(reader.getLastIndexed());

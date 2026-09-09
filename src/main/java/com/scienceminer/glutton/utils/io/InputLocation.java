@@ -83,6 +83,11 @@ public class InputLocation implements Closeable {
                         .sorted(Comparator.comparing(Path::toString))
                         .map(candidate -> (DataSource) new FileDataSource(candidate))
                         .collect(Collectors.toList());
+                if (sources.isEmpty()) {
+                    // silently loading nothing looks exactly like a successful load
+                    throw new IllegalArgumentException("Nothing to read at '" + location
+                            + "': the directory holds no matching file");
+                }
                 LOGGER.info("Found " + sources.size() + " file(s) to read under " + location);
                 return new InputLocation(location, sources, null);
             }

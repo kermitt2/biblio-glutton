@@ -26,6 +26,15 @@ public class CompressionTest {
     }
 
     @Test
+    public void decompress_shouldUnwrapXzByExtension() throws IOException {
+        // Crossref ships .json.xz alongside .json.gz, so both paths matter
+        try (InputStream stream = Compression.decompress(
+                new ByteArrayInputStream(xz(CONTENT)), "dump.json.xz")) {
+            assertThat(read(stream), is(CONTENT));
+        }
+    }
+
+    @Test
     public void decompress_shouldLeaveAPlainFileAlone() throws IOException {
         try (InputStream stream = Compression.decompress(
                 new ByteArrayInputStream(CONTENT.getBytes(StandardCharsets.UTF_8)), "dump.jsonl")) {
@@ -51,6 +60,15 @@ public class CompressionTest {
         assertThat(Compression.isCompressed("a.gz"), is(true));
         assertThat(Compression.isCompressed("a.XZ"), is(true));
         assertThat(Compression.isCompressed("a.jsonl"), is(false));
+    }
+
+    private static byte[] xz(String content) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (org.tukaani.xz.XZOutputStream xz = new org.tukaani.xz.XZOutputStream(
+                out, new org.tukaani.xz.LZMA2Options())) {
+            xz.write(content.getBytes(StandardCharsets.UTF_8));
+        }
+        return out.toByteArray();
     }
 
     private static byte[] gzip(String content) throws IOException {

@@ -35,6 +35,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -64,6 +65,9 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
 
     /** Bounds how far the parsers may run ahead of the single writing thread. */
     private static final int QUEUE_CAPACITY = 100_000;
+
+    /** How long a thread waits on the queue before checking whether the other end is still alive. */
+    private static final long POLL_MS = 500;
 
     private static final Pair<String, String> END_OF_INPUT = new ImmutablePair<>(null, null);
 
@@ -191,15 +195,18 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
             BlockingQueue<Pair<String, String>> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
             AtomicLong filesDone = new AtomicLong();
             AtomicLong recordsFound = new AtomicLong();
+            // if the writer dies the queue stops draining, so every producer would block on a
+            // full queue and the load would hang instead of failing
+            AtomicReference<Throwable> writerFailure = new AtomicReference<>();
 
-            Thread writer = startWriter(oaLookup, meter, queue);
+            Thread writer = startWriter(oaLookup, meter, queue, writerFailure);
             ExecutorService parsers = Executors.newFixedThreadPool(Math.max(1, threads));
             List<Future<?>> tasks = new ArrayList<>();
 
             try {
                 for (DataSource dataSource : sources) {
                     tasks.add(parsers.submit(() -> {
-                        parse(dataSource, queue, recordsFound);
+                        parse(dataSource, queue, recordsFound, writerFailure);
                         long done = filesDone.incrementAndGet();
                         LOGGER.info("Read " + done + "/" + sources.size() + " file(s), "
                                 + recordsFound.get() + " open access link(s) so far ("
@@ -226,15 +233,18 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
                 return failures == 0;
             } finally {
                 parsers.shutdownNow();
-                // the writer only stops on the sentinel, so it has to be queued whatever happened
-                queue.put(END_OF_INPUT);
-                writer.join();
+                stopWriter(queue, writer);
+                if (writerFailure.get() != null) {
+                    LOGGER.error("The storing thread failed, so the load is incomplete",
+                            writerFailure.get());
+                }
             }
         }
     }
 
     private Thread startWriter(OALookup oaLookup, Meter meter,
-                               BlockingQueue<Pair<String, String>> queue) {
+                               BlockingQueue<Pair<String, String>> queue,
+                               AtomicReference<Throwable> writerFailure) {
         Thread writer = new Thread(() -> {
             try (OALookup.Writer session = oaLookup.openWriter(meter)) {
                 while (true) {
@@ -246,19 +256,46 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+            } catch (Throwable t) {
+                // recorded rather than swallowed: the parsers watch this to stop queueing
+                writerFailure.set(t);
+            } finally {
+                // whatever happened, let go of anything a producer is waiting to hand over
+                queue.clear();
             }
         }, "openalex-writer");
         writer.start();
         return writer;
     }
 
+    /** Asks the writer to finish, without blocking on a queue nothing is draining any more. */
+    private void stopWriter(BlockingQueue<Pair<String, String>> queue, Thread writer)
+            throws InterruptedException {
+        while (writer.isAlive()) {
+            if (queue.offer(END_OF_INPUT, POLL_MS, TimeUnit.MILLISECONDS)) {
+                break;
+            }
+            queue.clear();
+        }
+        writer.join();
+    }
+
     private void parse(DataSource dataSource, BlockingQueue<Pair<String, String>> queue,
-                       AtomicLong recordsFound) throws Exception {
+                       AtomicLong recordsFound, AtomicReference<Throwable> writerFailure)
+            throws Exception {
         OpenAlexReader reader = new OpenAlexReader();
         try (InputStream stream = dataSource.openDecompressed()) {
             reader.load(stream, record -> {
                 try {
-                    queue.put(record);
+                    // offer rather than put, so a writer that has died is noticed instead of
+                    // leaving this thread parked on a queue that will never drain
+                    while (!queue.offer(record, POLL_MS, TimeUnit.MILLISECONDS)) {
+                        if (writerFailure.get() != null) {
+                            throw new IllegalStateException("Stopped reading "
+                                    + dataSource.name() + ": the storing thread failed",
+                                    writerFailure.get());
+                        }
+                    }
                     recordsFound.incrementAndGet();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();

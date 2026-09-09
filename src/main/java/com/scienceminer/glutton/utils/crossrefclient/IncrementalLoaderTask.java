@@ -56,6 +56,9 @@ public class IncrementalLoaderTask implements Runnable {
     private Counter counterFailedIndexedRecords;
     private Meter openAccessMeter;
     private Counter counterDroppedOpenAccess;
+    // opened once and reused: run() is called again every day by the scheduler, and a fresh LMDB
+    // environment per run would pile up for as long as the service is up
+    private OALookup openAccessLookup;
 
     // if true, we will also index the incremental dump files in elasticsearch during the task via 
     // the external indexing module
@@ -134,9 +137,8 @@ public class IncrementalLoaderTask implements Runnable {
 
         // the open access links for these DOIs are filled in alongside, otherwise every record
         // added here would have none until the whole OpenAlex snapshot is loaded again
-        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
         OpenAccessUpdater openAccessUpdater = new OpenAccessUpdater(
-            new OALookup(storageEnvFactory),
+            openAccessLookup(),
             configuration,
             openAccessMeter,
             counterDroppedOpenAccess);
@@ -274,6 +276,13 @@ public class IncrementalLoaderTask implements Runnable {
                     crossrefFileDirectory.getPath());
             }
         }
+    }
+
+    private synchronized OALookup openAccessLookup() {
+        if (openAccessLookup == null) {
+            openAccessLookup = new OALookup(new StorageEnvFactory(configuration));
+        }
+        return openAccessLookup;
     }
 
     class LoadCrossrefFile implements Runnable { 

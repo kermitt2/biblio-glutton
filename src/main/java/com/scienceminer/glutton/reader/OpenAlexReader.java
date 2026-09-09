@@ -85,6 +85,9 @@ public class OpenAlexReader {
             parser.nextToken();
             if (DOI_FIELD.equals(field)) {
                 doi = parser.getValueAsString();
+                // a scalar has no children, but should doi ever arrive as a structure this keeps
+                // the parser on the record boundary instead of reading the rest as fields
+                parser.skipChildren();
             } else if (BEST_OA_LOCATION_FIELD.equals(field)) {
                 pdfUrl = readPdfUrl(parser);
             } else {
@@ -106,6 +109,8 @@ public class OpenAlexReader {
      */
     private static String readPdfUrl(JsonParser parser) throws IOException {
         if (parser.currentToken() != JsonToken.START_OBJECT) {
+            // null, or something unexpected: consume it whole so the caller stays aligned
+            parser.skipChildren();
             return null;
         }
         String pdfUrl = null;

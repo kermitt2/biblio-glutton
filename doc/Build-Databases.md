@@ -219,6 +219,10 @@ current between snapshots:
 ./gradlew openalex_update -Psince=2026-06-01
 ```
 
+Note that both `--since` and the gap top-up only add and overwrite links; neither removes one. If
+a work loses its open access location upstream, the link already stored stays until a full snapshot
+load replaces the database. Reload the snapshot periodically if that matters to you.
+
 Two things to know before relying on it. OpenAlex has metered its API since February 2026, and the
 `from_updated_date` filter this uses needs a paid plan -- without one the API refuses the request.
 Set `openAlex.apiKey` in the configuration. There is deliberately no way to load the whole corpus

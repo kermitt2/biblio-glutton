@@ -92,6 +92,14 @@ public class InputLocationLocalTest {
         }
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void open_shouldFailWhenADirectoryHoldsNothingMatching() throws IOException {
+        // loading nothing at all otherwise looks exactly like a successful load
+        write("README.txt", "notes");
+
+        InputLocation.open(folder.getRoot().getAbsolutePath(), s3, ".gz");
+    }
+
     @Test(expected = FileNotFoundException.class)
     public void open_shouldFailOnAMissingPath() throws IOException {
         InputLocation.open(new File(folder.getRoot(), "nope.jsonl").getAbsolutePath(), s3);

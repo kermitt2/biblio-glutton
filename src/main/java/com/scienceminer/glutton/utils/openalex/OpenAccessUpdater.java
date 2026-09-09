@@ -112,7 +112,15 @@ public class OpenAccessUpdater implements Closeable {
             return;
         }
         try {
-            queue.put(crossrefRecords);
+            while (worker.isAlive()) {
+                if (queue.offer(crossrefRecords, 500, TimeUnit.MILLISECONDS)) {
+                    return;
+                }
+            }
+            // the worker is gone; dropping is right, holding up the Crossref update is not
+            LOGGER.warn("The open access updater has stopped, skipping " + crossrefRecords.size()
+                    + " record(s). Their links will come from the next snapshot load.");
+            drop(crossrefRecords.size());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -245,10 +253,12 @@ public class OpenAccessUpdater implements Closeable {
         }
         closed = true;
         try {
-            if (worker.isAlive()) {
-                queue.put(END_OF_INPUT);
-                worker.join();
+            while (worker.isAlive()) {
+                if (queue.offer(END_OF_INPUT, 500, TimeUnit.MILLISECONDS)) {
+                    break;
+                }
             }
+            worker.join();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

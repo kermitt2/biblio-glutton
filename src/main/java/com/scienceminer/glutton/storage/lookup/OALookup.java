@@ -160,6 +160,7 @@ public class OALookup {
         private final TransactionWrapper transactionWrapper;
         private int inBatch;
         private long stored;
+        private long failed;
 
         private Writer(Meter meter) {
             this.meter = meter;
@@ -176,12 +177,21 @@ public class OALookup {
                 transactionWrapper.tx = environment.txnWrite();
                 inBatch = 0;
             }
-            store(lowerCase(doi), oaLink, dbDoiOAUrl, transactionWrapper.tx);
+            if (!store(lowerCase(doi), oaLink, dbDoiOAUrl, transactionWrapper.tx)) {
+                // a write that failed must not be reported as one that landed, or a load finishes
+                // announcing more links than the database actually holds
+                failed++;
+                return;
+            }
             if (meter != null) {
                 meter.mark();
             }
             inBatch++;
             stored++;
+        }
+
+        public long getFailed() {
+            return failed;
         }
 
         public long getStored() {
@@ -196,10 +206,13 @@ public class OALookup {
         @Override
         public void close() {
             commit();
+            if (failed > 0) {
+                LOGGER.error(failed + " open access link(s) could not be written to the storage");
+            }
         }
     }
 
-    private void store(String key, String value, Dbi<ByteBuffer> db, Txn<ByteBuffer> tx) {
+    private boolean store(String key, String value, Dbi<ByteBuffer> db, Txn<ByteBuffer> tx) {
         try {
             final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
             keyBuffer.put(BinarySerialiser.serialize(key)).flip();
@@ -207,8 +220,10 @@ public class OALookup {
             final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
             valBuffer.put(serializedValue).flip();
             db.put(tx, keyBuffer, valBuffer);
+            return true;
         } catch (Exception e) {
             LOGGER.error("Error when storing the entry " + key + ", " + value, e);
+            return false;
         }
     }
 

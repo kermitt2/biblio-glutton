@@ -8,8 +8,8 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -21,7 +21,8 @@ class StubS3Server implements AutoCloseable {
     static final String BUCKET = "test-bucket";
 
     private final HttpServer server;
-    private final Map<String, byte[]> objects = new LinkedHashMap<>();
+    // written by the test thread, read by the server threads
+    private final Map<String, byte[]> objects = new ConcurrentHashMap<>();
     private final AtomicInteger getCount = new AtomicInteger();
     private final AtomicInteger rangedGetCount = new AtomicInteger();
 

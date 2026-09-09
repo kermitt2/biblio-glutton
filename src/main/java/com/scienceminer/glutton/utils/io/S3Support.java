@@ -39,13 +39,21 @@ public class S3Support implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Support.class);
 
     private final LookupConfiguration.S3 settings;
-    private S3Client client;
-    private boolean anonymous;
+    private final Object switchLock = new Object();
+    // read from every parsing thread, replaced at most once by the anonymous fallback
+    private volatile S3Client client;
+    private volatile boolean anonymous;
+    // the client a fallback replaced. Other threads may still be streaming from it, so it is kept
+    // open until this S3Support closes rather than being shut under them.
+    private final List<S3Client> retired = new ArrayList<>();
 
     public S3Support(LookupConfiguration.S3 settings) {
         this.settings = (settings == null) ? new LookupConfiguration.S3() : settings;
-        this.anonymous = wantsAnonymous(this.settings);
-        this.client = build(this.settings, credentialsProvider(this.settings));
+        // resolved once: walking the AWS chain twice would also probe the instance metadata
+        // endpoint twice, which is a needless wait on a machine that has none
+        AwsCredentialsProvider credentials = credentialsProvider(this.settings);
+        this.anonymous = credentials instanceof AnonymousCredentialsProvider;
+        this.client = build(this.settings, credentials);
     }
 
     private static S3Client build(LookupConfiguration.S3 settings, AwsCredentialsProvider credentials) {
@@ -109,16 +117,14 @@ public class S3Support implements Closeable {
 
     /** Runs an S3 call, retrying it unsigned once if signed access was refused. */
     private <T> T call(Function<S3Client, T> operation) {
+        S3Client current = client;
         try {
-            return operation.apply(client);
+            return operation.apply(current);
         } catch (S3Exception e) {
             if (!canRetryAnonymously(e)) {
                 throw e;
             }
-            LOGGER.warn("S3 refused the resolved AWS credentials (HTTP " + e.statusCode()
-                    + "), retrying without signing. Set s3.anonymous: false to treat this as an error.");
-            switchToAnonymous();
-            return operation.apply(client);
+            return operation.apply(switchToAnonymous(e));
         }
     }
 
@@ -128,10 +134,23 @@ public class S3Support implements Closeable {
                 && (e.statusCode() == 401 || e.statusCode() == 403);
     }
 
-    private void switchToAnonymous() {
-        client.close();
-        anonymous = true;
-        client = build(settings, AnonymousCredentialsProvider.create());
+    /**
+     * Swaps in an unsigned client, once, however many threads arrive here at the same time. The
+     * signed client is not closed: a parallel load has other threads reading through it, and
+     * closing it under them would turn one credentials problem into several broken streams.
+     */
+    private S3Client switchToAnonymous(S3Exception cause) {
+        synchronized (switchLock) {
+            if (!anonymous) {
+                LOGGER.warn("S3 refused the resolved AWS credentials (HTTP " + cause.statusCode()
+                        + "), retrying without signing. Set s3.anonymous: false to treat this as "
+                        + "an error.");
+                retired.add(client);
+                client = build(settings, AnonymousCredentialsProvider.create());
+                anonymous = true;
+            }
+            return client;
+        }
     }
 
     /** Every object under the location read as a prefix, ordered by key, directory markers dropped. */
@@ -186,6 +205,12 @@ public class S3Support implements Closeable {
 
     @Override
     public void close() {
+        synchronized (switchLock) {
+            for (S3Client old : retired) {
+                old.close();
+            }
+            retired.clear();
+        }
         client.close();
     }
 }

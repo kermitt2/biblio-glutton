@@ -114,6 +114,21 @@ public class OpenAlexReaderTest {
         assertThat(found.get(1).getRight(), is("https://example.org/b.pdf"));
     }
 
+    @Test
+    public void load_shouldStayAlignedWhenAFieldIsNotTheShapeExpected() throws IOException {
+        // defensive: doi and best_oa_location are a string and an object in every snapshot seen,
+        // but reading either without consuming it whole would turn the rest of the record into
+        // phantom fields and lose every record after it
+        String odd = "{\"doi\": {\"unexpected\": \"object\"},"
+                + " \"best_oa_location\": [\"unexpected array\"], \"title\": \"x\"}";
+
+        List<Pair<String, String>> found = read(String.join("\n", odd,
+                work("https://doi.org/10.1/after", "https://example.org/after.pdf")));
+
+        assertThat(found, hasSize(1));
+        assertThat(found.get(0).getLeft(), is("10.1/after"));
+    }
+
     private List<Pair<String, String>> read(String content) throws IOException {
         List<Pair<String, String>> found = new ArrayList<>();
         target.load(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), found::add);
