@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 
 import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
 import com.scienceminer.glutton.storage.lookup.MetadataMatching;
+import com.scienceminer.glutton.storage.lookup.OALookup;
+import com.scienceminer.glutton.storage.StorageEnvFactory;
+import com.scienceminer.glutton.utils.openalex.OpenAccessUpdater;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.reader.CrossrefJsonlReader;
 
@@ -51,6 +54,11 @@ public class IncrementalLoaderTask implements Runnable {
     private Counter counterInvalidRecords;
     private Counter counterIndexedRecords;
     private Counter counterFailedIndexedRecords;
+    private Meter openAccessMeter;
+    private Counter counterDroppedOpenAccess;
+    // opened once and reused: run() is called again every day by the scheduler, and a fresh LMDB
+    // environment per run would pile up for as long as the service is up
+    private OALookup openAccessLookup;
 
     // if true, we will also index the incremental dump files in elasticsearch during the task via 
     // the external indexing module
@@ -67,6 +75,8 @@ public class IncrementalLoaderTask implements Runnable {
                                 Counter counterInvalidRecords,
                                 Counter counterIndexedRecords,
                                 Counter counterFailedIndexedRecords,
+                                Meter openAccessMeter,
+                                Counter counterDroppedOpenAccess,
                                 boolean indexing,
                                 boolean daily) {
         this.metadataLookup = metadataLookup;
@@ -80,6 +90,8 @@ public class IncrementalLoaderTask implements Runnable {
         this.counterInvalidRecords = counterInvalidRecords;
         this.counterIndexedRecords = counterIndexedRecords;
         this.counterFailedIndexedRecords = counterFailedIndexedRecords;
+        this.openAccessMeter = openAccessMeter;
+        this.counterDroppedOpenAccess = counterDroppedOpenAccess;
 
         this.indexing = indexing;
         this.daily = daily;
@@ -122,6 +134,16 @@ public class IncrementalLoaderTask implements Runnable {
             LOGGER.error("Error when creating the directory for storing crossref incremental file: " + 
                 crossrefFileDirectory.getPath());
         }
+
+        // the open access links for these DOIs are filled in alongside, otherwise every record
+        // added here would have none until the whole OpenAlex snapshot is loaded again
+        OpenAccessUpdater openAccessUpdater = new OpenAccessUpdater(
+            openAccessLookup(),
+            configuration,
+            openAccessMeter,
+            counterDroppedOpenAccess);
+
+        try {
 
         while(!responseEmpty) {
             Map<String, String> arguments = new HashMap<String,String>();
@@ -189,6 +211,9 @@ public class IncrementalLoaderTask implements Runnable {
                 jsonObjectsStr, this.configuration, meter, counterInvalidRecords, counterIndexedRecords, counterFailedIndexedRecords);
             executorLoading.submit(taskLoading);
 
+            // resolved on its own thread, so the Crossref fetching is not held up by OpenAlex
+            openAccessUpdater.submit(jsonObjectsStr);
+
             nbFiles++;
             
             /*if (indexing) {
@@ -200,6 +225,11 @@ public class IncrementalLoaderTask implements Runnable {
 
             if (jsonObjectsStr == null || jsonObjectsStr.size() == 0)
                 responseEmpty = true;
+        }
+
+        } finally {
+            // waits for the queued lookups, and never fails the Crossref update
+            openAccessUpdater.close();
         }
 
         // possibly update with the lastest indexed date obtained from this file
@@ -246,6 +276,13 @@ public class IncrementalLoaderTask implements Runnable {
                     crossrefFileDirectory.getPath());
             }
         }
+    }
+
+    private synchronized OALookup openAccessLookup() {
+        if (openAccessLookup == null) {
+            openAccessLookup = new OALookup(new StorageEnvFactory(configuration));
+        }
+        return openAccessLookup;
     }
 
     class LoadCrossrefFile implements Runnable { 

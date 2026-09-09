@@ -99,6 +99,8 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         final Counter counterInvalidRecords = metrics.counter("crossref_daily_update_rejected_records");
         final Counter counterIndexedRecords = metrics.counter("crossref_gap_update_indexed_records");
         final Counter counterFailedIndexedRecords = metrics.counter("crossref_gap_update_failed_indexed_records");
+        final Meter openAccessMeter = metrics.meter("openAccess_daily_update_storing");
+        final Counter counterDroppedOpenAccess = metrics.counter("openAccess_daily_update_dropped_dois");
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         Runnable task = new IncrementalLoaderTask(metadataLookup, 
@@ -108,6 +110,8 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
                                                   counterInvalidRecords,
                                                   counterIndexedRecords,
                                                   counterFailedIndexedRecords,
+                                                  openAccessMeter,
+                                                  counterDroppedOpenAccess,
                                                   true, // with indexing
                                                   true); // this is daily incremental update
 
@@ -224,7 +228,6 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
 
         bootstrap.addBundle(guiceBundle);
         bootstrap.addBundle(new MultiPartBundle());
-        bootstrap.addCommand(new LoadUnpayWallCommand());
         bootstrap.addCommand(new LoadIstexIdsCommand());
         bootstrap.addCommand(new LoadPMIDCommand());
         bootstrap.addCommand(new LoadCrossrefCommand());
@@ -232,6 +235,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         bootstrap.addCommand(new LoadHALCommand());
         bootstrap.addCommand(new IndexCommand());
         bootstrap.addCommand(new HALAuditCommand());
+        bootstrap.addCommand(new LoadOpenAlexCommand());
     }
 
     public static void main(String... args) throws Exception {

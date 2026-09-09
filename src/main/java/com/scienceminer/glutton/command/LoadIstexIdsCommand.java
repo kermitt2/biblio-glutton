@@ -6,6 +6,8 @@ import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.reader.IstexIdsReader;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.storage.lookup.IstexIdsLookup;
+import com.scienceminer.glutton.utils.io.DataSource;
+import com.scienceminer.glutton.utils.io.InputLocation;
 import io.dropwizard.core.cli.ConfiguredCommand;
 import io.dropwizard.core.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -42,7 +44,8 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
                 .dest(ISTEX_SOURCE)
                 .type(String.class)
                 .required(true)
-                .help("The path to the source file for mapping (istex.all).");
+                .help("Location of the ISTEX mapping (istex.all): a local file, a local "
+                        + "directory, or an s3:// location");
 
         /*subparser.addArgument("--additional")
                 .dest(ISTEX_SOURCE_ADDITIONAL)
@@ -71,12 +74,16 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
         LOGGER.info("Preparing the system. Loading data for Istex from " + istexFilePath);
 
         // Istex IDs
-        InputStream inputStreamIstexIds = Files.newInputStream(Paths.get(istexFilePath));
-        if (istexFilePath.endsWith(".gz")) {
-            inputStreamIstexIds = new GZIPInputStream(inputStreamIstexIds);
+        try (InputLocation input = InputLocation.open(istexFilePath, configuration.getS3(),
+                ".gz", ".all", ".json")) {
+            for (DataSource dataSource : input.getSources()) {
+                LOGGER.info("Reading " + dataSource.name());
+                try (InputStream inputStreamIstexIds = dataSource.openDecompressed()) {
+                    istexLookup.loadFromFile(inputStreamIstexIds, new IstexIdsReader(),
+                            metrics.meter("istexLookup"));
+                }
+            }
         }
-        istexLookup.loadFromFile(inputStreamIstexIds, new IstexIdsReader(),
-                metrics.meter("istexLookup"));
         LOGGER.info("Istex lookup loaded " + istexLookup.getSize() + " records. ");
 
         /*final String istexAdditionalFilePath = namespace.get(ISTEX_SOURCE_ADDITIONAL);
