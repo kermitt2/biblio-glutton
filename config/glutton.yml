@@ -5,6 +5,17 @@ version: 0.4.0
 storage: data/db
 #storage: /media/lopez/data/glutton-data/data/db
 
+# Compression of the metadata records (Crossref, HAL) stored in LMDB:
+#   zstd   - Zstandard with a dictionary trained on Crossref records: the records take a third of
+#            the space they take with snappy and read back just as fast (default)
+#   snappy - the format written by biblio-glutton up to 0.3
+# This only decides what gets written. Every stored record says which format it is in, so a database
+# built with one setting keeps working, and keeps receiving updates, after the setting changes.
+compression: zstd
+# zstd level, 1 (fastest) to 22. Measured on Crossref records, 3 is the sweet spot: higher levels
+# only shave off a few percent while slowing down the load.
+compressionLevel: 3
+
 # batch size for preparing the data
 storingBatchSize: 10000
 indexingBatchSize: 10000

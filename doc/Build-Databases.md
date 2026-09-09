@@ -45,7 +45,7 @@ Without Metadata Plus subscription, it's possible to use the Academic Torrents C
 
 The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for blocking via text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
 
-The databases and elasticsearch index must first be built from the resource files. The full service needs around 300 GB of space for building these index and it is necessary to use SSD for best performance.
+The databases and elasticsearch index must first be built from the resource files. The full service needs around 300 GB of space for building these index (less with the record compression introduced in 0.4.0, see [below](#compression-of-the-stored-records)) and it is necessary to use SSD for best performance.
 
 ### Build the embedded LMDB databases
 
@@ -63,6 +63,30 @@ Every `-Pinput=` below takes a local file, a local directory, or an `s3://` loca
 A location naming a single object reads that object; one naming a prefix reads every file underneath it, in key order. Credentials come from the standard AWS chain (environment variables, `~/.aws`, instance role), and unsigned access is used as a fallback when that chain finds nothing, or when what it finds is refused -- which is what public buckets such as the OpenAlex snapshot need. Set them explicitly, point at a MinIO endpoint, or turn the fallback off under `s3:` in `config/glutton.yml`.
 
 Long transfers are resumed rather than restarted: if a connection drops part way through an object, the read continues from the last byte received with a ranged request. A response that ends early is treated the same way, so a truncated download cannot quietly pass for a complete file.
+
+#### Compression of the stored records
+
+The metadata records (Crossref, HAL) are compressed before being written to LMDB, and since 0.4.0 the compression is Zstandard with a dictionary trained on Crossref records. Such records are short (about 2 KB once the reference list is dropped) and all alike, and a dictionary gives the compressor the vocabulary they share (field names, publisher and journal names, date layouts) that a single record is too short to learn on its own. Measured on 8,864 random Crossref records held out from the dictionary training, with the dictionary that ships in the jar (values in bytes per record, speeds on one core):
+
+| compression | bytes per record | vs snappy | compress MB/s | decompress MB/s | decompress per record |
+|---|---|---|---|---|---|
+| none | 2265 | - | - | - | - |
+| snappy (format up to 0.3) | 1266 | 100% | 349 | 673 | 3.2 us |
+| lz4 | 1234 | 97% | 341 | 1358 | 1.6 us |
+| lz4 hc level 9 | 1182 | 93% | 66 | 1472 | 1.5 us |
+| deflate level 6 | 876 | 69% | 33 | 141 | 15.3 us |
+| zstd level 3, no dictionary | 932 | 74% | 91 | 296 | 7.3 us |
+| zstd level 19, no dictionary | 903 | 71% | 2 | 310 | 7.0 us |
+| **zstd level 3, 110 KB dictionary (default)** | **411** | **32%** | **172** | **576** | **3.8 us** |
+| zstd level 6, 110 KB dictionary | 377 | 30% | 44 | 598 | 3.6 us |
+| zstd level 9, 110 KB dictionary | 360 | 28% | 26 | 623 | 3.5 us |
+| zstd level 19, 110 KB dictionary | 340 | 27% | 2 | 640 | 3.4 us |
+
+The dictionary size matters less than having one: 16 KB already gives 446 bytes per record, 256 KB gives 398; the shipped dictionary is the 110 KB zstd recommends.
+
+Compared with the snappy compression used up to 0.3, the records take a third of the space and read back just as fast; the LMDB file of a Crossref database written this way is about a third the size of the same database written with snappy (measured on 30,000 records: 21 MB against 64 MB). Zstandard without a dictionary is not worth it for records this size: it only saves a quarter and decompresses twice as slowly, and LZ4 saves nothing over snappy. Higher zstd levels shave off a few more percent while making the load several times slower, which is why the default level is 3; a full Crossref load is bound by parsing, not by compression, at that level.
+
+The setting is `compression` in `config/glutton.yml` (`zstd`, the default, or `snappy`), with `compressionLevel` for the zstd level. It only decides what gets written: every stored record says which format it is in, so a database built with one setting keeps working, and keeps receiving daily updates, after the setting changes. A database loaded by 0.3 therefore does not need to be reloaded, but it will not shrink until it is (see [Upgrading from 0.3](Install.md#upgrading-from-03)).
 
 #### Build the data loader 
 
