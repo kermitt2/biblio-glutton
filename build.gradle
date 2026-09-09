@@ -20,7 +20,7 @@ apply plugin: 'maven-publish'
 apply plugin: 'com.gradleup.shadow'
 
 group = 'com.scienceminer.glutton'
-version = '0.3-SNAPSHOT'
+version = '0.4.0'
 
 java {
     toolchain {
@@ -47,14 +47,6 @@ configurations {
     all*.exclude group: 'log4j2', module: "log4j2"
     // superseded by com.fasterxml.woodstox:woodstox-core, keeping both breaks StAX service loading
     all*.exclude group: 'org.codehaus.woodstox', module: 'woodstox-core-asl'
-}
-
-processResources {
-    filesMatching('config/glutton.yml') {
-        filter {
-            it.replace('project.version', project.property('version_placeholder'))
-        }
-    }
 }
 
 tasks.register('install') {
@@ -239,6 +231,36 @@ tasks.named('run').configure {
     workingDir = rootProject.rootDir
     args = ['server', getArg('config', 'config/glutton.yml')]
     jvmArgs = ['-Xmx3072m'] + addOpensArgs
+}
+
+// The service reads config/glutton.yml from the filesystem, not from the jar, so its `version`
+// entry cannot be filtered in at build time - it has to be edited by hand. Fail the build when it
+// drifts from the project version, which is how 0.3-SNAPSHOT, 0.3 and 0.4-SNAPSHOT ended up
+// disagreeing with each other across build.gradle, config/glutton.yml and the Readme.
+tasks.register('checkConfigVersion') {
+    group = 'verification'
+    description = 'Verify that config/glutton.yml declares the project version'
+
+    def configFile = layout.projectDirectory.file('config/glutton.yml')
+    def expected = project.version.toString()
+    inputs.file(configFile)
+    inputs.property('projectVersion', expected)
+    outputs.upToDateWhen { true }
+
+    doLast {
+        def declared = configFile.asFile.readLines()
+            .find { it.startsWith('version:') }
+            ?.substring('version:'.length())
+            ?.trim()
+        if (declared != expected) {
+            throw new GradleException("config/glutton.yml declares version '${declared}' but the " +
+                "project version is '${expected}'. Update the 'version' entry in config/glutton.yml.")
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn 'checkConfigVersion'
 }
 
 test {

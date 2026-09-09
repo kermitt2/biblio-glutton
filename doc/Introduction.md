@@ -25,7 +25,7 @@ In the Glutton family, the following complementary tools are available for takin
 
 * [biblio-glutton-harvester](https://github.com/kermitt2/biblio-glutton-harvester): A robust, fault tolerant, Python utility for harvesting efficiently (multi-threaded) a large Open Access collection of PDF (Unpaywall, PubMed Central), with the possibility to upload content on Amazon S3,
 
-Current stable version of biblio-glutton is `0.3`. Working version is `0.4-SNAPSHOT`.
+The current version of biblio-glutton is `0.4.0`.
 
 ## Evaluation of bibliographical reference matching
 

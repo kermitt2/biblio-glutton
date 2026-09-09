@@ -21,7 +21,7 @@ apply plugin: 'maven-publish'
 apply plugin: 'com.gradleup.shadow'
 
 group = 'com.scienceminer.glutton'
-version = '0.3-SNAPSHOT'
+version = '0.4.0'
 
 java {
     toolchain {
