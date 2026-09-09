@@ -6,6 +6,8 @@ import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.reader.UnpayWallReader;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.storage.lookup.OALookup;
+import com.scienceminer.glutton.utils.io.DataSource;
+import com.scienceminer.glutton.utils.io.InputLocation;
 import io.dropwizard.core.cli.ConfiguredCommand;
 import io.dropwizard.core.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -14,10 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Load the Unpaywall OA targets from the "official" dump.
@@ -40,7 +39,8 @@ public class LoadUnpayWallCommand extends ConfiguredCommand<LookupConfiguration>
                 .dest(UNPAYWALL_SOURCE)
                 .type(String.class)
                 .required(true)
-                .help("The path to the source file for unpaywall");
+                .help("Location of the Unpaywall dump: a local file, a local directory, "
+                        + "or an s3:// location");
     }
 
     @Override
@@ -62,11 +62,19 @@ public class LoadUnpayWallCommand extends ConfiguredCommand<LookupConfiguration>
 
         long start = System.nanoTime();
         OALookup openAccessLookup = new OALookup(storageEnvFactory);
-        InputStream inputStreamUnpayWall = Files.newInputStream(Paths.get(unpayWallFilePath));
-        if (unpayWallFilePath.endsWith(".gz")) {
-            inputStreamUnpayWall = new GZIPInputStream(inputStreamUnpayWall);
+
+        // a directory or an S3 prefix so that the incremental data feed, which arrives as a set of
+        // change files rather than one dump, can be loaded in one go
+        try (InputLocation input = InputLocation.open(unpayWallFilePath, configuration.getS3(),
+                ".gz", ".jsonl", ".json")) {
+            for (DataSource dataSource : input.getSources()) {
+                LOGGER.info("Reading " + dataSource.name());
+                try (InputStream inputStreamUnpayWall = dataSource.openDecompressed()) {
+                    openAccessLookup.loadFromFile(inputStreamUnpayWall, new UnpayWallReader(),
+                            metrics.meter("openAccessLookup"));
+                }
+            }
         }
-        openAccessLookup.loadFromFile(inputStreamUnpayWall, new UnpayWallReader(), metrics.meter("openAccessLookup"));
         LOGGER.info("Doi lookup (doi -> oa url) loaded " + openAccessLookup.getSize() + " records. ");
         
         LOGGER.info("Finished in " +

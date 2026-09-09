@@ -34,6 +34,8 @@ public class LookupConfiguration extends Configuration {
 
     private OpenAlex openAlex;
 
+    private S3 s3 = new S3();
+
     private String grobidHost;
 
     private ProxyParameters proxy;
@@ -112,6 +114,14 @@ public class LookupConfiguration extends Configuration {
 
     public OpenAlex getOpenAlex() {
         return openAlex;
+    }
+
+    public S3 getS3() {
+        return s3;
+    }
+
+    public void setS3(S3 s3) {
+        this.s3 = s3;
     }
 
     public int getStoringBatchSize() {
@@ -313,6 +323,81 @@ public class LookupConfiguration extends Configuration {
 
         public void setApiKey(String apiKey) {
             this.apiKey = apiKey;
+        }
+    }
+
+    /**
+     * Settings for reading any ingestion input given as an "s3://bucket/key" location.
+     * Everything here is optional: with an empty block the standard AWS resolution chain
+     * (environment, system properties, profile, container/instance metadata) is used, and
+     * we fall back to anonymous access when that chain finds nothing -- which is what
+     * public buckets such as the OpenAlex snapshot need.
+     */
+    public static class S3 {
+        private String region = "us-east-1";
+        private String endpoint;
+        private String accessKey;
+        private String secretKey;
+        // null means "decide from the credentials chain", see S3Support#credentialsProvider
+        private Boolean anonymous;
+        private boolean pathStyleAccess = false;
+        // a stream cut short by a network hiccup is resumed with a ranged re-request
+        private int maxRetries = 5;
+
+        public String getRegion() {
+            return region;
+        }
+
+        public void setRegion(String region) {
+            this.region = region;
+        }
+
+        public String getEndpoint() {
+            return endpoint;
+        }
+
+        public void setEndpoint(String endpoint) {
+            this.endpoint = endpoint;
+        }
+
+        public String getAccessKey() {
+            return accessKey;
+        }
+
+        public void setAccessKey(String accessKey) {
+            this.accessKey = accessKey;
+        }
+
+        public String getSecretKey() {
+            return secretKey;
+        }
+
+        public void setSecretKey(String secretKey) {
+            this.secretKey = secretKey;
+        }
+
+        public Boolean getAnonymous() {
+            return anonymous;
+        }
+
+        public void setAnonymous(Boolean anonymous) {
+            this.anonymous = anonymous;
+        }
+
+        public boolean isPathStyleAccess() {
+            return pathStyleAccess;
+        }
+
+        public void setPathStyleAccess(boolean pathStyleAccess) {
+            this.pathStyleAccess = pathStyleAccess;
+        }
+
+        public int getMaxRetries() {
+            return maxRetries;
+        }
+
+        public void setMaxRetries(int maxRetries) {
+            this.maxRetries = maxRetries;
         }
     }
 

@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 /**
  * HTTP GET request to the OpenAlex Works API.
  */
@@ -32,6 +34,9 @@ public class OpenAlexRequest {
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenAlexRequest.class);
 
     protected static final String BASE_URL = "https://api.openalex.org";
+
+    static final String API_KEY_PARAM = "api_key";
+    private static final String REDACTED = "<redacted>";
 
     public Map<String, String> params;
     protected LookupConfiguration configuration;
@@ -83,25 +88,13 @@ public class OpenAlexRequest {
             }
 
             LookupConfiguration.OpenAlex openAlexConfig = configuration.getOpenAlex();
-            if (openAlexConfig != null) {
-                if (openAlexConfig.getMailto() != null) {
-                    uriBuilder.setParameter("mailto", openAlexConfig.getMailto());
-                }
-                if (openAlexConfig.getApiKey() != null) {
-                    uriBuilder.setParameter("api_key", openAlexConfig.getApiKey());
-                }
+            String apiKey = (openAlexConfig == null) ? null : openAlexConfig.getApiKey();
+            if (isNotBlank(apiKey)) {
+                uriBuilder.setParameter(API_KEY_PARAM, apiKey);
             }
 
             HttpGet httpget = new HttpGet(uriBuilder.build());
-
-            String mailto = (openAlexConfig != null) ? openAlexConfig.getMailto() : null;
-            if (mailto != null) {
-                httpget.setHeader("User-Agent",
-                        "biblio-glutton/0.3 (https://github.com/kermitt2/biblio-glutton; mailto:" + mailto + ")");
-            } else {
-                httpget.setHeader("User-Agent",
-                        "biblio-glutton/0.3 (https://github.com/kermitt2/biblio-glutton)");
-            }
+            httpget.setHeader("User-Agent", userAgent(openAlexConfig));
 
             ResponseHandler<OpenAlexResponse> responseHandler = new ResponseHandler<OpenAlexResponse>() {
                 @Override
@@ -130,12 +123,14 @@ public class OpenAlexRequest {
                 openAlexResponse = new OpenAlexResponse();
             openAlexResponse.setException(e, this.toString());
         } finally {
-            try {
-                httpclient.close();
-            } catch (IOException e) {
-                if (openAlexResponse == null)
-                    openAlexResponse = new OpenAlexResponse();
-                openAlexResponse.setException(e, this.toString());
+            if (httpclient != null) {
+                try {
+                    httpclient.close();
+                } catch (IOException e) {
+                    if (openAlexResponse == null)
+                        openAlexResponse = new OpenAlexResponse();
+                    openAlexResponse.setException(e, this.toString());
+                }
             }
         }
 
@@ -151,6 +146,18 @@ public class OpenAlexRequest {
 
         try {
             JsonNode root = mapper.readTree(body);
+
+            // OpenAlex explains a refusal in the body ("Plan upgrade required", an invalid
+            // filter, ...); the status line alone says nothing useful
+            JsonNode messageNode = root.get("message");
+            JsonNode errorNode = root.get("error");
+            if (messageNode != null && messageNode.isTextual()) {
+                openAlexResponse.errorMessage = (errorNode != null && errorNode.isTextual())
+                        ? errorNode.textValue() + ": " + messageNode.textValue()
+                        : messageNode.textValue();
+            } else if (errorNode != null && errorNode.isTextual()) {
+                openAlexResponse.errorMessage = errorNode.textValue();
+            }
 
             // Extract cursor from meta
             JsonNode metaNode = root.get("meta");
@@ -179,14 +186,30 @@ public class OpenAlexRequest {
         return openAlexResponse;
     }
 
+    /**
+     * The contact address no longer buys a better rate limit -- OpenAlex retired the polite pool
+     * when it introduced API keys -- but naming the caller is still the courteous thing to do, so
+     * it goes in the User-Agent rather than as a request parameter that would do nothing.
+     */
+    private String userAgent(LookupConfiguration.OpenAlex openAlexConfig) {
+        String version = (configuration.getVersion() == null) ? "" : "/" + configuration.getVersion();
+        String mailto = (openAlexConfig == null) ? null : openAlexConfig.getMailto();
+        String contact = isNotBlank(mailto) ? "; mailto:" + mailto : "";
+        return "biblio-glutton" + version
+                + " (https://github.com/kermitt2/biblio-glutton" + contact + ")";
+    }
+
+    /** Never prints the API key: this string ends up in logs and in error messages. */
     @Override
     public String toString() {
-        String str = " (";
+        StringBuilder str = new StringBuilder(" (");
         if (params != null) {
-            for (Map.Entry<String, String> entry : params.entrySet())
-                str += "," + entry.getKey() + "=" + entry.getValue();
+            for (Map.Entry<String, String> entry : params.entrySet()) {
+                str.append(",").append(entry.getKey()).append("=")
+                        .append(API_KEY_PARAM.equals(entry.getKey()) ? REDACTED : entry.getValue());
+            }
         }
-        str += ")";
-        return str;
+        str.append(")");
+        return str.toString();
     }
 }

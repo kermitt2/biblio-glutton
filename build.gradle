@@ -120,6 +120,17 @@ dependencies {
     }
     implementation "org.xerial.snappy:snappy-java:${snappyVersion}"
 
+    // S3 access for the ingestion inputs (see utils/io/InputLocation). The AWS BOM keeps the
+    // SDK's own modules in step with each other. Only the sync S3 client is needed: the async
+    // ones drag in Netty, and every ingestion reads whole objects sequentially, so the plain
+    // URL-connection HTTP client is both enough and far smaller.
+    implementation platform("software.amazon.awssdk:bom:${awsSdkVersion}")
+    implementation("software.amazon.awssdk:s3") {
+        exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+        exclude group: 'software.amazon.awssdk', module: 'apache-client'
+    }
+    implementation 'software.amazon.awssdk:url-connection-client'
+
     // Pin Apache HttpClient 4.x explicitly (was previously floating as a transitive of
     // elasticsearch-rest-high-level-client and the Crossref code). Used by CrossrefRequest,
     // ElasticSearchIndexer and MetadataMatching. The Grobid client no longer needs it.
@@ -221,6 +232,10 @@ gluttonCommand('unpaywall', 'data', ['unpaywall', '--input', getArg('input', '')
         'Load an Unpaywall dump into the local storage')
 gluttonCommand('istex', 'data', ['istex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
         'Load the ISTEX identifier mapping')
+gluttonCommand('openalex', 'data', ['openalex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
+        'Load the OpenAlex open access links from a works snapshot, local or in S3')
+gluttonCommand('openalex_update', 'data', ['openalex', '--since', getArg('since', ''), getArg('config', 'config/glutton.yml')],
+        'Top up the OpenAlex open access links from the API since -Psince=YYYY-MM-DD (needs a paid OpenAlex plan)')
 // only used it to re-create the search index from scratch, keeping the LMDB unchanged
 gluttonCommand('index', 'search', ['index', getArg('config', 'config/glutton.yml')],
         'Rebuild the search index from the local storage')

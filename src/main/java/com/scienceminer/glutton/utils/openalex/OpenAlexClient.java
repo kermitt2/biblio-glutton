@@ -15,18 +15,15 @@ import java.util.Map;
 public class OpenAlexClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenAlexClient.class);
 
-    private static volatile OpenAlexClient instance;
+    // a holder rather than a checked-then-assigned field: the previous double-checked lock
+    // assigned unconditionally inside the synchronized block, so racing callers each built an
+    // instance and the last one won
+    private static final OpenAlexClient INSTANCE = new OpenAlexClient();
+
     protected LookupConfiguration configuration;
 
     public static OpenAlexClient getInstance() {
-        if (instance == null) {
-            getNewInstance();
-        }
-        return instance;
-    }
-
-    private static synchronized void getNewInstance() {
-        instance = new OpenAlexClient();
+        return INSTANCE;
     }
 
     protected OpenAlexClient() {

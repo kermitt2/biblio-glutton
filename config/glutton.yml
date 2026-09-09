@@ -84,11 +84,34 @@ dblp:
   # URL of the DBLP metadata dump
   dump: "https://dblp.uni-trier.de/xml/dblp.xml.gz"
 
+# Reading any ingestion input from S3. Every --input below also takes an s3://bucket/key or
+# s3://bucket/prefix/ location, so a snapshot can be read straight out of a bucket rather than
+# downloaded first. With this block left as is, the standard AWS resolution chain (environment,
+# ~/.aws, instance role) is used and unsigned access is the fallback when it finds nothing or
+# when what it finds is refused -- which is what public buckets such as the OpenAlex snapshot need.
+s3:
+  region: "us-east-1"
+  # accessKey: ""
+  # secretKey: ""
+  # set to true to always skip signing, false to make a credentials problem an error
+  # anonymous:
+  # endpoint and path style access are for MinIO and the other S3-compatible stores
+  # endpoint: "http://localhost:9000"
+  # pathStyleAccess: false
+  # a stream cut short by a network hiccup is resumed with a ranged re-request, this many times
+  maxRetries: 5
+
 openAlex:
-  # email for polite pool access (recommended for better rate limits)
+  # Neither of these is needed to load the snapshot, which is CC0 and needs no account:
+  #   ./gradlew openalex -Pinput=s3://openalex/data/jsonl/works/
+  # They apply only to `openalex --since`, which tops up an existing database from the API.
+  #
+  # A contact address. Since February 2026 this no longer buys a better rate limit -- OpenAlex
+  # retired the polite pool -- so it is sent in the User-Agent as a courtesy, nothing more.
   #mailto: "toto@titi.tutu"
   mailto:
-  # API key (required since Feb 2026, free tier available at https://openalex.org)
+  # API key. Calls have been metered since February 2026, and the from_updated_date filter that
+  # --since relies on needs a paid plan. See https://openalex.org/pricing
   apiKey:
 
 unpaywall:

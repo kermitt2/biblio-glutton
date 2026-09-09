@@ -14,7 +14,7 @@ To set-up a functional biblio-glutton server, resources need to be loaded follow
 
 4) (Optional) Loading the DOI to PMID and PMC ID mapping (as embedded LMDB)
 
-5) (Optional) Loading the Open Access information from an Unpaywall datset snapshot as embedded LMDB
+5) (Optional) Loading the Open Access information from an OpenAlex or Unpaywall snapshot as embedded LMDB
 
 6) (Very optional) Loading the ISTEX ID mapping as embedded LMDB
 
@@ -39,7 +39,7 @@ Without Metadata Plus subscription, it's possible to use the Academic Torrents C
 
 * DOI to PMID and PMC mapping: available at Europe PMC and regularly updated at ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz, and https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_file_list.txt for license associated to full text files, both files will be automatically downloaded by biblio-glutton by default.
 
-* optionally, but recommended, the Unpaywall dataset to get Open Access links aggregated with the bibliographical metadata, see [here](http://unpaywall.org/products/snapshot) to get the latest database snapshot. 
+* optionally, but recommended, Open Access links to aggregate with the bibliographical metadata. Use the [OpenAlex snapshot](https://help.openalex.org/access/snapshot), which is CC0 and needs no account; it does not have to be downloaded first, see [OA via OpenAlex](#oa-via-openalex) below. The [Unpaywall snapshot](http://unpaywall.org/products/snapshot) is still supported, but Unpaywall was folded into OpenAlex and the last public snapshot is from 2022. 
 
 * optionally, usually not required, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see below. 
 
@@ -50,6 +50,19 @@ The databases and elasticsearch index must first be built from the resource file
 ### Build the embedded LMDB databases
 
 Resource dumps will be compiled in high performance LMDB databases. The system can read compressed (`gzip` or `.xz`) or plain text files (`json`), so in practice you do not need to uncompress anything.
+
+#### Reading the input from S3
+
+Every `-Pinput=` below takes a local file, a local directory, or an `s3://` location, so a dump can be read straight out of a bucket instead of being downloaded first:
+
+```sh
+./gradlew openalex -Pinput=s3://openalex/data/jsonl/works/
+./gradlew crossref -Pinput=s3://my-bucket/crossref/2026-06/
+```
+
+A location naming a single object reads that object; one naming a prefix reads every file underneath it, in key order. Credentials come from the standard AWS chain (environment variables, `~/.aws`, instance role), and unsigned access is used as a fallback when that chain finds nothing, or when what it finds is refused -- which is what public buckets such as the OpenAlex snapshot need. Set them explicitly, point at a MinIO endpoint, or turn the fallback off under `s3:` in `config/glutton.yml`.
+
+Long transfers are resumed rather than restarted: if a connection drops part way through an object, the read continues from the last byte received with a ranged request. A response that ends early is treated the same way, so a truncated download cannot quietly pass for a complete file.
 
 #### Build the data loader 
 
@@ -159,23 +172,68 @@ Launch the following command and go grab a lunch:
 
 HAL archive contains around 3.5M records, with curated metadadata. Note that the batch loading is using high volume, so it can take a couple of minutes before the metrics start indicating counts and measurements above 0.  
 
+#### OA via OpenAlex
+
+This is the recommended source of Open Access links. The OpenAlex snapshot is CC0 and needs no
+account, and the loader reads it straight from the public bucket, so nothing has to be downloaded
+first:
+
+```sh
+./gradlew openalex -Pinput=s3://openalex/data/jsonl/works/ -Pconfig=path/to/config/file/glutton.yml
+```
+
+A local copy works just as well, whether it is one file or a directory of them:
+
+```sh
+./gradlew openalex -Pinput=/path/to/openalex-snapshot/data/jsonl/works/
+```
+
+Only the DOI and the best Open Access PDF link are kept; the rest of each record is skipped
+without being loaded into memory. Files are parsed in parallel and written by a single thread,
+which is what LMDB requires. Add `--threads` to change how many are parsed at once (the default
+is 4, or fewer on a smaller machine) -- throughput scales close to linearly with it, and parsing,
+not the network, is the limit.
+
+Expect this to take hours: the works entity of the snapshot is around 620 GB compressed, holding
+510 million records of which about 105 million are Open Access with a DOI.
+
+##### Topping up from the OpenAlex API
+
+`--since` fetches only the works updated on or after a date, for keeping an existing database
+current between snapshots:
+
+```sh
+./gradlew openalex_update -Psince=2026-06-01
+```
+
+Two things to know before relying on it. OpenAlex has metered its API since February 2026, and the
+`from_updated_date` filter this uses needs a paid plan -- without one the API refuses the request.
+Set `openAlex.apiKey` in the configuration. There is deliberately no way to load the whole corpus
+this way: at 200 records per request it would take upwards of 600,000 billed calls, which is what
+the snapshot exists to avoid.
+
 #### OA via Unpaywall
 
-Pre-requisite is to download an Unpaywall snapshot. Public snapshots were available and updated from time to time, and it might still be possile to download a fresh up-to-date snapshot when subscribing to OpenAlex Premium. Supporting OpenAlex would be of course a clear future requirement for biblio-glutton. 
-
-The following command will load the Open Access information to biblio-glutton to enrich the response metadata records:
+Still supported, but Unpaywall was merged into OpenAlex and the last public snapshot dates from
+2022, so prefer OpenAlex above unless you have a Unpaywall subscription and its data feed.
 
 ```sh
 ./gradlew unpaywall -Pinput=/path/to/unpaywall/json/file -Pconfig=path/to/config/file/glutton.yml
 ```
 
-Example: 
+Example:
 
 ```sh
-./gradlew unpaywall --input unpaywall_snapshot_2022-03-09T083001.jsonl.gz
+./gradlew unpaywall -Pinput=unpaywall_snapshot_2022-03-09T083001.jsonl.gz
 ```
 
+`-Pinput` also accepts a directory or an `s3://` prefix, which is how to load a set of data feed
+change files in one go rather than one command per file.
+
 As of March 2022, the Unpaywall snapshot should provide at least one Open Access information to 30,618,764 Crossref entries. 
+
+Both loaders write to the same database, so they can be combined: whichever runs last wins for a
+DOI present in both.
 
 #### ISTEX
 

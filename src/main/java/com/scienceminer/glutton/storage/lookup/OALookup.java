@@ -11,13 +11,13 @@ import org.lmdbjava.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.scienceminer.glutton.web.resource.DataController.DEFAULT_MAX_SIZE_LIST;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -25,7 +25,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 /**
- * Lookup doi -> best OA Location via Unpaywall
+ * Lookup doi -> best OA Location, loaded from an Unpaywall dump or an OpenAlex snapshot.
  */
 public class OALookup {
     private static final Logger LOGGER = LoggerFactory.getLogger(OALookup.class);
@@ -104,60 +104,85 @@ public class OALookup {
     }
 
     /**
-     * Store a batch of DOI -> PDF URL pairs (e.g. from OpenAlex API).
-     * Uses the same LMDB database as Unpaywall data.
+     * Store a batch of DOI -> PDF URL pairs, as the OpenAlex API path produces them.
+     * They land in the same database as the Unpaywall data.
      */
     public void loadFromOpenAlex(List<Pair<String, String>> entries, Meter meter) {
-        final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
-        final AtomicInteger counter = new AtomicInteger(0);
-
-        for (Pair<String, String> entry : entries) {
-            if (counter.get() == batchSize) {
-                transactionWrapper.tx.commit();
-                transactionWrapper.tx.close();
-                transactionWrapper.tx = environment.txnWrite();
-                counter.set(0);
-            }
-
-            String doi = entry.getLeft();
-            String pdfUrl = entry.getRight();
-
-            if (isNotBlank(doi) && isNotBlank(pdfUrl)) {
-                store(doi, pdfUrl, dbDoiOAUrl, transactionWrapper.tx);
-                meter.mark();
-                counter.incrementAndGet();
+        try (Writer writer = openWriter(meter)) {
+            for (Pair<String, String> entry : entries) {
+                writer.put(entry.getLeft(), entry.getRight());
             }
         }
-
-        transactionWrapper.tx.commit();
-        transactionWrapper.tx.close();
     }
 
     public void loadFromFile(InputStream is, UnpayWallReader reader, Meter meter) {
-        final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
-        final AtomicInteger counter = new AtomicInteger(0);
-
-        reader.load(is, unpayWallMetadata -> {
-            if (counter.get() == batchSize) {
-                transactionWrapper.tx.commit();
-                transactionWrapper.tx.close();
-                transactionWrapper.tx = environment.txnWrite();
-                counter.set(0);
-            }
-            String key = lowerCase(unpayWallMetadata.getDoi());
-            if (unpayWallMetadata.getBestOALocation() != null) {
-                String value = unpayWallMetadata.getBestOALocation().getPdfUrl();
-                if (isNotBlank(value)) {
-                    store(key, value, dbDoiOAUrl, transactionWrapper.tx);
-                    meter.mark();
-                    counter.incrementAndGet();
+        try (Writer writer = openWriter(meter)) {
+            reader.load(is, unpayWallMetadata -> {
+                if (unpayWallMetadata.getBestOALocation() != null) {
+                    writer.put(unpayWallMetadata.getDoi(),
+                            unpayWallMetadata.getBestOALocation().getPdfUrl());
                 }
-            }
-        });
-        transactionWrapper.tx.commit();
-        transactionWrapper.tx.close();
+            });
+        }
 
         LOGGER.info("Cross checking number of records processed: " + meter.getCount());
+    }
+
+    /**
+     * Opens a write session over the DOI -> OA link database, committing every
+     * {@code storingBatchSize} entries.
+     *
+     * LMDB allows one write transaction at a time and binds it to the thread that opened it, so a
+     * writer must be created and used on a single thread. Loaders that parse in parallel funnel
+     * their results to one writing thread rather than opening a writer per worker.
+     */
+    public Writer openWriter(Meter meter) {
+        return new Writer(meter);
+    }
+
+    public class Writer implements Closeable {
+
+        private final Meter meter;
+        private final TransactionWrapper transactionWrapper;
+        private int inBatch;
+        private long stored;
+
+        private Writer(Meter meter) {
+            this.meter = meter;
+            this.transactionWrapper = new TransactionWrapper(environment.txnWrite());
+        }
+
+        /** Stores one entry, ignoring it when either side is missing. */
+        public void put(String doi, String oaLink) {
+            if (!isNotBlank(doi) || !isNotBlank(oaLink)) {
+                return;
+            }
+            if (inBatch == batchSize) {
+                commit();
+                transactionWrapper.tx = environment.txnWrite();
+                inBatch = 0;
+            }
+            store(lowerCase(doi), oaLink, dbDoiOAUrl, transactionWrapper.tx);
+            if (meter != null) {
+                meter.mark();
+            }
+            inBatch++;
+            stored++;
+        }
+
+        public long getStored() {
+            return stored;
+        }
+
+        private void commit() {
+            transactionWrapper.tx.commit();
+            transactionWrapper.tx.close();
+        }
+
+        @Override
+        public void close() {
+            commit();
+        }
     }
 
     private void store(String key, String value, Dbi<ByteBuffer> db, Txn<ByteBuffer> tx) {
