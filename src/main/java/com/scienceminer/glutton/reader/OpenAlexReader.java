@@ -55,6 +55,12 @@ public class OpenAlexReader {
                     closure.accept(record);
                 }
             }
+            // the loop also ends on a root value that is not an object. Stopping quietly there
+            // would abandon the rest of the file while the load still reports it as read in full.
+            if (parser.currentToken() != null) {
+                throw new IOException("Expected a JSON object on every line, found "
+                        + parser.currentToken() + " at " + parser.currentLocation());
+            }
         }
     }
 

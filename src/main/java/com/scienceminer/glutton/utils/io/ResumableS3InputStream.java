@@ -78,6 +78,32 @@ class ResumableS3InputStream extends InputStream {
         }
     }
 
+    /**
+     * How many bytes are still to come, which is known from the object's size.
+     *
+     * The default answer of 0 is not merely unhelpful here, it is dangerous: GZIPInputStream on a
+     * JDK without the JDK-7036144 fix (the first Java 21 updates among them) reads a member
+     * trailer and then treats available() == 0 as the end of the whole stream. A gzip made of
+     * several concatenated members -- what pigz and Hadoop write -- would then be cut off at the
+     * first member boundary that happened to land on an empty buffer, quietly, with the load
+     * reporting success. Saying how much is left keeps every JDK reading to the real end.
+     */
+    @Override
+    public int available() throws IOException {
+        if (closed) {
+            throw new IOException("Stream over " + location + " is closed");
+        }
+        if (expectedSize >= 0) {
+            long remaining = expectedSize - position;
+            return (int) Math.max(0, Math.min(Integer.MAX_VALUE, remaining));
+        }
+        try {
+            return delegate.available();
+        } catch (IOException | SdkException e) {
+            return 0;
+        }
+    }
+
     private boolean isTruncated() {
         return expectedSize >= 0 && position < expectedSize;
     }

@@ -129,6 +129,33 @@ public class OpenAlexReaderTest {
         assertThat(found.get(0).getLeft(), is("10.1/after"));
     }
 
+    @Test
+    public void load_shouldFailOnARootValueThatIsNotAnObject() {
+        // a bare array or string at the root is valid JSON, so the parser does not object; the
+        // loop simply ended there, the rest of the file went unread, and the load counted it as
+        // complete
+        String stream = String.join("\n",
+                work("https://doi.org/10.1/a", "https://example.org/a.pdf"),
+                "[\"not\", \"a\", \"work\"]",
+                work("https://doi.org/10.1/c", "https://example.org/c.pdf"));
+
+        try {
+            read(stream);
+            org.junit.Assert.fail("expected the odd root value to be reported");
+        } catch (IOException expected) {
+            assertThat(expected.getMessage().contains("Expected a JSON object"), is(true));
+            assertThat(expected.getMessage().contains("START_ARRAY"), is(true));
+        }
+    }
+
+    @Test
+    public void load_shouldAcceptTrailingWhitespace() throws IOException {
+        List<Pair<String, String>> found = read(
+                work("https://doi.org/10.1/a", "https://example.org/a.pdf") + "\n\n   \n");
+
+        assertThat(found, hasSize(1));
+    }
+
     private List<Pair<String, String>> read(String content) throws IOException {
         List<Pair<String, String>> found = new ArrayList<>();
         target.load(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), found::add);
