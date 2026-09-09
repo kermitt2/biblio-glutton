@@ -94,20 +94,25 @@ public class GrobidClientAsync {
 
         return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
                 .thenAccept(response -> {
-                    // See GrobidClient#processCitation: 204 means "nothing could be structured",
-                    // which is a normal outcome rather than a service error.
-                    if (response.statusCode() == HttpURLConnection.HTTP_NO_CONTENT) {
-                        callback.accept(new GrobidResponseStaxHandler().getResponse());
-                        return;
-                    }
-                    if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-                        throw new ServiceException(502, "Error while connecting to GROBID service. Error code: " + response.statusCode());
-                    }
+                    GrobidResponse parsed;
+                    // As in GrobidClient#processCitation, every status path closes the body so the
+                    // connection goes back to the pool.
                     try (InputStream body = response.body()) {
-                        callback.accept(parseGrobidResponse(body));
+                        // 204 means "nothing could be structured", a normal outcome rather than a
+                        // service error.
+                        if (response.statusCode() == HttpURLConnection.HTTP_NO_CONTENT) {
+                            parsed = new GrobidResponseStaxHandler().getResponse();
+                        } else if (response.statusCode() != HttpURLConnection.HTTP_OK) {
+                            throw new ServiceException(502, "Error while connecting to GROBID service. Error code: " + response.statusCode());
+                        } else {
+                            parsed = parseGrobidResponse(body);
+                        }
                     } catch (IOException e) {
                         throw new ServiceException(502, "Cannot read the response from GROBID", e);
                     }
+                    // Outside the resource scope: the callback is caller code of unknown duration
+                    // and must not hold the connection open.
+                    callback.accept(parsed);
                 })
                 // whenComplete logs but leaves the failure on the returned future. Using
                 // exceptionally() here instead would swallow it: the stage it produces was never

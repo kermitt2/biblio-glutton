@@ -95,6 +95,9 @@ shadowJar {
     archiveClassifier = 'onejar'
     mergeServiceFiles()
     zip64 = true
+    // Shadow defaults to EXCLUDE, which drops duplicate entries before ServiceFileTransformer can
+    // merge them, truncating META-INF/services. Same reason as the root build.
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     manifest {
         attributes 'Main-Class': application.mainClass.get()
     }

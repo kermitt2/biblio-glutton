@@ -91,16 +91,19 @@ public class GrobidClient {
 
         try {
             HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
-            // 204: Grobid ran but could not structure anything out of the string. That is a normal
-            // outcome for noisy references, not a service error - hand back an empty response so
-            // the caller falls back to the metadata it already has.
-            if (response.statusCode() == HttpURLConnection.HTTP_NO_CONTENT) {
-                return new GrobidResponseStaxHandler().getResponse();
-            }
-            if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-                throw new ServiceException(502, "Error while connecting to GROBID service. Error code: " + response.statusCode());
-            }
+            // Every status path has to close the body: with ofInputStream() the connection is only
+            // released once the stream is closed, so returning or throwing before that leaks it out
+            // of the pool.
             try (InputStream body = response.body()) {
+                // 204: Grobid ran but could not structure anything out of the string. That is a
+                // normal outcome for noisy references, not a service error - hand back an empty
+                // response so the caller falls back to the metadata it already has.
+                if (response.statusCode() == HttpURLConnection.HTTP_NO_CONTENT) {
+                    return new GrobidResponseStaxHandler().getResponse();
+                }
+                if (response.statusCode() != HttpURLConnection.HTTP_OK) {
+                    throw new ServiceException(502, "Error while connecting to GROBID service. Error code: " + response.statusCode());
+                }
                 return parseGrobidResponse(body);
             }
         } catch (InterruptedException e) {

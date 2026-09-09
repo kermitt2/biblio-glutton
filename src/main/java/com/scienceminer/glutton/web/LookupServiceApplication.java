@@ -34,8 +34,10 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.io.File;
@@ -53,6 +55,7 @@ import org.slf4j.LoggerFactory;
 public final class LookupServiceApplication extends Application<LookupConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(LookupConfiguration.class);
     private static final String RESOURCES = "/service";
+    private static final String ANY_ORIGIN = "*";
     private static final String[] DEFAULT_CONF_LOCATIONS = {"config/glutton.yml"};
 
     // ========== Application ==========
@@ -123,7 +126,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         // Note that allowed origins are regular expressions here, where CrossOriginFilter used
         // comma-separated origins with '*' wildcards; "*" keeps meaning "any origin".
         final CrossOriginHandler cors = new CrossOriginHandler();
-        cors.setAllowedOriginPatterns(splitConfigList(allowedOrigins));
+        cors.setAllowedOriginPatterns(toAllowedOriginPatterns(allowedOrigins));
         cors.setAllowedMethods(splitConfigList(allowedMethods));
         cors.setAllowedHeaders(splitConfigList(allowedHeaders));
         // CrossOriginHandler defaults to 60s where CrossOriginFilter defaulted to 30min; keep the
@@ -165,6 +168,48 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
             .map(String::trim)
             .filter(item -> !item.isEmpty())
             .collect(Collectors.toSet());
+    }
+
+    /**
+     * Translates the configured {@code corsAllowedOrigins} into the patterns
+     * {@link CrossOriginHandler} expects.
+     * <p>
+     * The setting predates Jetty 12 and follows what {@code CrossOriginFilter} accepted: the
+     * literal {@code *}, a glob such as {@code https://*.example.com}, or an exact origin.
+     * {@code CrossOriginHandler} instead reads every entry other than {@code *} as a regular
+     * expression, so entries have to be translated or they change meaning:
+     * <ul>
+     *     <li>a glob would stop matching — {@code https://*.example.com} is not a regex that
+     *         matches {@code https://api.example.com};</li>
+     *     <li>an exact origin would start matching too much — in {@code https://api.example.com}
+     *         each {@code .} would match any character.</li>
+     * </ul>
+     * Package-private for testing.
+     */
+    static Set<String> toAllowedOriginPatterns(String configuredOrigins) {
+        return splitConfigList(configuredOrigins).stream()
+            .map(LookupServiceApplication::toOriginPattern)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static String toOriginPattern(String origin) {
+        if (ANY_ORIGIN.equals(origin)) {
+            // CrossOriginHandler gives "*" its own meaning: allow any origin.
+            return ANY_ORIGIN;
+        }
+        StringBuilder pattern = new StringBuilder();
+        // -1 keeps the trailing empty segments, so a trailing "*" still becomes ".*".
+        String[] literals = origin.split("\\*", -1);
+        for (int i = 0; i < literals.length; i++) {
+            if (i > 0) {
+                // Greedy, as CrossOriginFilter was, so one "*" spans several subdomains.
+                pattern.append(".*");
+            }
+            if (!literals[i].isEmpty()) {
+                pattern.append(Pattern.quote(literals[i]));
+            }
+        }
+        return pattern.toString();
     }
 
     @Override

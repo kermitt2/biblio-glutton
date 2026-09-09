@@ -54,12 +54,16 @@ tasks.register('install') {
 }
 
 dependencies {
-    // Platforms — single source of truth for the versions of each stack. Dropwizard's own BOM
-    // only manages io.dropwizard artifacts, so Jackson and Metrics need their own platforms;
-    // both are pinned to the versions Dropwizard 5 is built against (or a later patch).
+    // Platforms — single source of truth for the versions of each stack.
+    //   dropwizard-bom       manages the io.dropwizard artifacts,
+    //   dropwizard-dependencies manages the third-party stack Dropwizard is built against:
+    //                        Jetty, Jersey, Jackson, Metrics, Logback, ...
+    // Taking both means Jetty and Metrics follow Dropwizard by construction rather than by hand.
+    // Do not pin Jetty or Metrics separately: Dropwizard 5.0.2 is built against Metrics 4.2.39,
+    // which pulls Jetty 12.1.9, while Metrics 4.2.40 pulls Jetty 12.1.12 — bumping Metrics alone
+    // silently drags the whole server a patch ahead of the Jetty that Dropwizard was tested on.
     implementation platform("io.dropwizard:dropwizard-bom:${dropwizardVersion}")
-    implementation platform("com.fasterxml.jackson:jackson-bom:${jacksonVersion}")
-    implementation platform("io.dropwizard.metrics:metrics-bom:${metricsVersion}")
+    implementation platform("io.dropwizard:dropwizard-dependencies:${dropwizardVersion}")
     testImplementation platform("org.junit:junit-bom:${junitBomVersion}")
 
     // JUnit 4 brings hamcrest-core 1.3, which overlaps with the unified org.hamcrest:hamcrest
@@ -91,8 +95,9 @@ dependencies {
     implementation 'io.dropwizard.metrics:metrics-core'
 
     // CrossOriginHandler/QoSHandler come from jetty-server, which Dropwizard already pulls in;
-    // declared explicitly because LookupServiceApplication uses them directly.
-    implementation "org.eclipse.jetty:jetty-server:${jettyVersion}"
+    // declared explicitly because LookupServiceApplication uses them directly. No version —
+    // dropwizard-dependencies supplies the Jetty release that this Dropwizard is built against.
+    implementation 'org.eclipse.jetty:jetty-server'
 
     // SLF4J + Logback are inherited from Dropwizard (SLF4J 2.x + Logback 1.5.x).
     // Do NOT pin them here to older versions — that would silently downgrade the runtime classpath.
