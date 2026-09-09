@@ -65,6 +65,8 @@ public class GapUpdateCrossrefCommand extends ConfiguredCommand<LookupConfigurat
         final Counter counterInvalidRecords = metrics.counter("crossref_gap_update_loading_rejected_records");
         final Counter counterIndexedRecords = metrics.counter("crossref_gap_update_indexed_records");
         final Counter counterFailedIndexedRecords = metrics.counter("crossref_gap_update_failed_indexed_records");
+        final Meter openAccessMeter = metrics.meter("openAccess_gap_update_storing");
+        final Counter counterDroppedOpenAccess = metrics.counter("openAccess_gap_update_dropped_dois");
 
         System.out.println("Run gap update...");
 
@@ -76,6 +78,8 @@ public class GapUpdateCrossrefCommand extends ConfiguredCommand<LookupConfigurat
                                                   counterInvalidRecords,
                                                   counterIndexedRecords,
                                                   counterFailedIndexedRecords,
+                                                  openAccessMeter,
+                                                  counterDroppedOpenAccess,
                                                   true,   // with indexing
                                                   false); // not daily incremental update
         Future future = executor.submit(task);

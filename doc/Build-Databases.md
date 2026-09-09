@@ -197,6 +197,19 @@ not the network, is the limit.
 Expect this to take hours: the works entity of the snapshot is around 620 GB compressed, holding
 510 million records of which about 105 million are Open Access with a DOI.
 
+##### Keeping the links current
+
+The Crossref gap and daily updates fill in the open access links for the DOIs they bring in, so
+coverage does not drift behind the metadata between snapshots. Nothing to configure: the DOIs of
+each batch are resolved against OpenAlex, 100 per call, on their own thread so the Crossref
+fetching is not held up.
+
+That filter is not gated behind a paid plan, and the cost is small -- 100,000 new DOIs in a day is
+1,000 calls, about a tenth of the free daily allowance. If OpenAlex is unreachable a chunk is
+retried with a growing pause and then dropped, which never fails the Crossref update; whatever was
+dropped is picked up by the next snapshot load. Watch `openAccess_*_dropped_dois` in the metrics if
+you want to know whether that is happening.
+
 ##### Topping up from the OpenAlex API
 
 `--since` fetches only the works updated on or after a date, for keeping an existing database
