@@ -40,8 +40,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
- * Loads the DOI -> open access PDF mapping from OpenAlex, into the same storage the Unpaywall
- * loader writes to.
+ * Loads the DOI -> open access PDF mapping from an OpenAlex works snapshot.
  *
  * The snapshot is the way to load it: it is CC0, needs no account, and {@code --input} takes
  * either a local copy or the public bucket directly, so

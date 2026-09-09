@@ -184,16 +184,7 @@ public class LookupConfiguration extends Configuration {
 
     public class Source {
 
-        private String unpaywall;
         private String istex;
-
-        public String getUnpaywall() {
-            return unpaywall;
-        }
-
-        public void setUnpaywall(String unpaywall) {
-            this.unpaywall = unpaywall;
-        }
 
         public String getIstex() {
             return istex;

@@ -2,7 +2,6 @@ package com.scienceminer.glutton.storage.lookup;
 
 import com.codahale.metrics.Meter;
 import com.scienceminer.glutton.exception.ServiceOverloadedException;
-import com.scienceminer.glutton.reader.UnpayWallReader;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.utils.BinarySerialiser;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -12,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.io.InputStream;
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,7 +24,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 /**
- * Lookup doi -> best OA Location, loaded from an Unpaywall dump or an OpenAlex snapshot.
+ * Lookup doi -> best open access PDF link, loaded from an OpenAlex snapshot.
  */
 public class OALookup {
     private static final Logger LOGGER = LoggerFactory.getLogger(OALookup.class);
@@ -33,9 +32,12 @@ public class OALookup {
     private Env<ByteBuffer> environment;
     private Dbi<ByteBuffer> dbDoiOAUrl;
 
-    public static final String ENV_NAME = "unpayWall";
+    public static final String ENV_NAME = "openAccess";
 
     public static final String NAME_DOI_OA_URL = ENV_NAME + "_doiOAUrl";
+
+    /** What this environment was called while the links came from Unpaywall. */
+    static final String LEGACY_ENV_NAME = "unpayWall";
     private final int batchSize;
 
 
@@ -44,6 +46,32 @@ public class OALookup {
         batchSize = storageEnvFactory.getConfiguration().getStoringBatchSize();
 
         dbDoiOAUrl = this.environment.openDbi(NAME_DOI_OA_URL, DbiFlags.MDB_CREATE);
+        warnAboutLegacyStorage(storageEnvFactory);
+    }
+
+    /**
+     * Says so plainly when a database built before 0.4.0 is sitting next to an empty new one.
+     * Both the environment directory and the database inside it were named after Unpaywall, and
+     * neither is read any more, so without this the links would simply appear to have vanished.
+     */
+    private void warnAboutLegacyStorage(StorageEnvFactory storageEnvFactory) {
+        File legacy = new File(storageEnvFactory.getConfiguration().getStorage(), LEGACY_ENV_NAME);
+        if (hasOrphanedLegacyStorage(legacy, getSize().getOrDefault(NAME_DOI_OA_URL, 0L))) {
+            LOGGER.warn("Found an open access database from an earlier version at "
+                    + legacy.getAbsolutePath() + ", while '" + ENV_NAME + "' is empty. That data "
+                    + "is no longer read, and it cannot be carried over by renaming the directory: "
+                    + "the database inside it is named after Unpaywall too. Reload the links with "
+                    + "the openalex command, then delete the old directory.");
+        }
+    }
+
+    /**
+     * Only worth saying something when the old database is there and the new one has nothing in
+     * it. Once the links have been reloaded the leftover directory is the operator's to delete,
+     * and warning about it on every start would just be noise.
+     */
+    static boolean hasOrphanedLegacyStorage(File legacyDirectory, long currentSize) {
+        return legacyDirectory.isDirectory() && currentSize == 0;
     }
 
     public Map<String, Long> getSize() {
@@ -105,7 +133,6 @@ public class OALookup {
 
     /**
      * Store a batch of DOI -> PDF URL pairs, as the OpenAlex API path produces them.
-     * They land in the same database as the Unpaywall data.
      */
     public void loadFromOpenAlex(List<Pair<String, String>> entries, Meter meter) {
         try (Writer writer = openWriter(meter)) {
@@ -113,19 +140,6 @@ public class OALookup {
                 writer.put(entry.getLeft(), entry.getRight());
             }
         }
-    }
-
-    public void loadFromFile(InputStream is, UnpayWallReader reader, Meter meter) {
-        try (Writer writer = openWriter(meter)) {
-            reader.load(is, unpayWallMetadata -> {
-                if (unpayWallMetadata.getBestOALocation() != null) {
-                    writer.put(unpayWallMetadata.getDoi(),
-                            unpayWallMetadata.getBestOALocation().getPdfUrl());
-                }
-            });
-        }
-
-        LOGGER.info("Cross checking number of records processed: " + meter.getCount());
     }
 
     /**

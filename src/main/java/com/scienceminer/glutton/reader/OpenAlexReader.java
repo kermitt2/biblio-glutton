@@ -122,8 +122,8 @@ public class OpenAlexReader {
     }
 
     /**
-     * Strips the resolver prefix and lower-cases, so that keys match the ones the Unpaywall
-     * loader writes into the same database.
+     * Strips the resolver prefix and lower-cases, so that a stored key matches what the lookup
+     * service asks for when it is handed a bare DOI.
      */
     static String normaliseDoi(String rawDoi) {
         if (isBlank(rawDoi)) {

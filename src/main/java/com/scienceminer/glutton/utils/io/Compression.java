@@ -10,7 +10,7 @@ import static org.apache.commons.lang3.StringUtils.endsWithIgnoreCase;
 
 /**
  * Picks a decompressor from a file name. The dumps we ingest are named consistently enough
- * (Crossref ships .json.gz and .json.xz, Unpaywall and OpenAlex .jsonl.gz) that sniffing magic
+ * (Crossref ships .json.gz and .json.xz, OpenAlex .jsonl.gz) that sniffing magic
  * bytes would only get in the way of sources that cannot be rewound.
  */
 public final class Compression {

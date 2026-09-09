@@ -64,7 +64,7 @@ To check if it works, you can view a report of the data used by the service at `
   "Crossref metadata indexed size (elastic)": "{glutton=149812959}",
   "HAL Metadata stored size (LMDB)": "{hal_Jsondoc=3780904}",
   "PMID size (LMDB)": "{pmid_doi2ids=946688, pmid_pmc2ids=850087, pmid_pmid2ids=1287533}",
-  "DOI OA size (LMDB)": "{unpayWall_doiOAUrl=0}"
+  "DOI OA size (LMDB)": "{openAccess_doiOAUrl=0}"
 }
 ```
 
@@ -114,6 +114,20 @@ curl http://localhost:8080/service/lookup?parseReference=false&atitle=Latent+Dir
 
 NOTE that code 404 or 400 are normal and should not be considered as an error.
 
+## Upgrading from 0.3
 
+Unpaywall is no longer a source of Open Access links: it was folded into OpenAlex, whose last
+public Unpaywall snapshot dates from 2022. The `unpaywall` command is gone, replaced by
+`openalex` (see [Build the databases](Build-Databases.md#oa-via-openalex)).
 
+The storage that holds these links was renamed from `unpayWall` to `openAccess` at the same time.
+A database built by 0.3 is not read by 0.4.0, and renaming the directory does not carry it over,
+because the database inside it is named after Unpaywall as well. Reload the links:
 
+```sh
+./gradlew openalex -Pinput=s3://openalex/data/jsonl/works/
+```
+
+then delete the old `unpayWall` directory under your storage path. Nothing else in the storage is
+affected, so Crossref, PubMed, HAL and ISTEX do not need reloading. The service says so on start
+if it finds the old directory next to an empty new one.

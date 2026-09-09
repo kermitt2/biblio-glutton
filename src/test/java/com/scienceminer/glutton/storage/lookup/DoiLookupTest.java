@@ -30,7 +30,6 @@ public class DoiLookupTest {
 
 //    @Test
 //    public void testSimpleFile() throws Exception {
-//        target.loadFromFile(new FileInputStream("/Users/lfoppiano/development/scienceminer/consolidationData/unpaywall_sample.json"), new UnpaidWallReader());
 //    }
 
 }

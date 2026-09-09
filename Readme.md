@@ -8,7 +8,7 @@ A framework dedicated to scientific bibliographic information. It includes:
 - a bibliographical reference matching service: from an input such as a raw bibliographical reference and/or a combination of key metadata, the service will return the disambiguated bibliographical object with in particular its DOI and a set of metadata aggregated from Crossref and other sources, 
 - a fast metadata look-up service: from a "strong" identifier such as DOI, PMID, etc. the service will return a set of metadata aggregated from Crossref and other sources,
 - various mapping between DOI, PMID, PMC, ISTEX ID and ark, integrated in the bibliographical service,
-- Open Access resolver: Integration of Open Access links via the Unpaywall dataset from Impactstory,
+- Open Access resolver: Integration of Open Access links via the OpenAlex dataset,
 - Gap and daily update for Crossref resources (via the Crossref REST API), so that your glutton data service stays always in sync with Crossref,
 - MeSH classes mapping for PubMed articles.
 

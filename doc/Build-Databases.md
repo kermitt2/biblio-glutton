@@ -14,7 +14,7 @@ To set-up a functional biblio-glutton server, resources need to be loaded follow
 
 4) (Optional) Loading the DOI to PMID and PMC ID mapping (as embedded LMDB)
 
-5) (Optional) Loading the Open Access information from an OpenAlex or Unpaywall snapshot as embedded LMDB
+5) (Optional) Loading the Open Access information from an OpenAlex snapshot as embedded LMDB
 
 6) (Very optional) Loading the ISTEX ID mapping as embedded LMDB
 
@@ -39,7 +39,7 @@ Without Metadata Plus subscription, it's possible to use the Academic Torrents C
 
 * DOI to PMID and PMC mapping: available at Europe PMC and regularly updated at ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz, and https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_file_list.txt for license associated to full text files, both files will be automatically downloaded by biblio-glutton by default.
 
-* optionally, but recommended, Open Access links to aggregate with the bibliographical metadata. Use the [OpenAlex snapshot](https://help.openalex.org/access/snapshot), which is CC0 and needs no account; it does not have to be downloaded first, see [OA via OpenAlex](#oa-via-openalex) below. The [Unpaywall snapshot](http://unpaywall.org/products/snapshot) is still supported, but Unpaywall was folded into OpenAlex and the last public snapshot is from 2022. 
+* optionally, but recommended, Open Access links to aggregate with the bibliographical metadata, from the [OpenAlex snapshot](https://help.openalex.org/access/snapshot). It is CC0, needs no account, and does not have to be downloaded first, see [OA via OpenAlex](#oa-via-openalex) below. 
 
 * optionally, usually not required, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see below. 
 
@@ -211,29 +211,6 @@ Two things to know before relying on it. OpenAlex has metered its API since Febr
 Set `openAlex.apiKey` in the configuration. There is deliberately no way to load the whole corpus
 this way: at 200 records per request it would take upwards of 600,000 billed calls, which is what
 the snapshot exists to avoid.
-
-#### OA via Unpaywall
-
-Still supported, but Unpaywall was merged into OpenAlex and the last public snapshot dates from
-2022, so prefer OpenAlex above unless you have a Unpaywall subscription and its data feed.
-
-```sh
-./gradlew unpaywall -Pinput=/path/to/unpaywall/json/file -Pconfig=path/to/config/file/glutton.yml
-```
-
-Example:
-
-```sh
-./gradlew unpaywall -Pinput=unpaywall_snapshot_2022-03-09T083001.jsonl.gz
-```
-
-`-Pinput` also accepts a directory or an `s3://` prefix, which is how to load a set of data feed
-change files in one go rather than one command per file.
-
-As of March 2022, the Unpaywall snapshot should provide at least one Open Access information to 30,618,764 Crossref entries. 
-
-Both loaders write to the same database, so they can be combined: whichever runs last wins for a
-DOI present in both.
 
 #### ISTEX
 

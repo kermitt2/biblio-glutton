@@ -18,11 +18,11 @@ For example:
 from-index-date:2017,until-index-date:2017 filters works with metadata updated in 2017
 ```
 
-## Note on incremental Unpaywall updates
+## Note on incremental OpenAlex updates
 
-This is subscription-based service: see https://github.com/kermitt2/biblio-glutton/issues/56
-
-Results are in jsonl format, similar as the regular dump.
+The free OpenAlex snapshot is rebuilt quarterly. Keeping a database fresher than that means the
+`from_updated_date` filter, which needs a Premium, Institutional or Partner plan:
+see https://openalex.org/pricing and the `openalex_update` task.
 
 ## Commands / tricks
 

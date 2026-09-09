@@ -1,6 +1,6 @@
 version: 0.4.0
 
-# where the compiled metadata are stored, it takes more than 200GB for all Crossref, Unpaywall, PubMed and ISTEX mappings, 
+# where the compiled metadata are stored, it takes more than 200GB for all Crossref, OpenAlex, PubMed and ISTEX mappings, 
 # this is a single location for all compiled resources  
 storage: data/db
 #storage: /media/lopez/data/glutton-data/data/db
@@ -37,7 +37,7 @@ solr:
   core: glutton
 
 proxy:
-    # proxy to be used when doing external call to crossref or unpaywall
+    # proxy to be used when doing external call to crossref or openalex
     host: 
     port: 
 
@@ -113,12 +113,6 @@ openAlex:
   # API key. Calls have been metered since February 2026, and the from_updated_date filter that
   # --since relies on needs a paid plan. See https://openalex.org/pricing
   apiKey:
-
-unpaywall:
-  dumpPath:
-  # a directory where the unpaywall update data feed change files will be located
-  API_key:
-  # API Key for the Unpaywall subscription is necessary to get the data feed change files for daily update
 
 # CORS parameters 
 corsAllowedOrigins: "*"

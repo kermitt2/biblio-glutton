@@ -228,8 +228,6 @@ gluttonCommand('hal', 'data', ['hal', getArg('config', 'config/glutton.yml')],
         'Harvest and load HAL metadata')
 gluttonCommand('pmid', 'service', ['pmid', getArg('config', 'config/glutton.yml')],
         'Load the PMID/PMC/DOI mapping')
-gluttonCommand('unpaywall', 'data', ['unpaywall', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
-        'Load an Unpaywall dump into the local storage')
 gluttonCommand('istex', 'data', ['istex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
         'Load the ISTEX identifier mapping')
 gluttonCommand('openalex', 'data', ['openalex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],

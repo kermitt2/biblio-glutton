@@ -224,7 +224,6 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
 
         bootstrap.addBundle(guiceBundle);
         bootstrap.addBundle(new MultiPartBundle());
-        bootstrap.addCommand(new LoadUnpayWallCommand());
         bootstrap.addCommand(new LoadIstexIdsCommand());
         bootstrap.addCommand(new LoadPMIDCommand());
         bootstrap.addCommand(new LoadCrossrefCommand());
