@@ -167,6 +167,20 @@ Be sure to indicate in the configution file `glutton.yml` your polite usage emai
 
 This command should thus be launched only one time after the loading of a full Crossref snapshot, it will resync the current metadata and index to the current day, and the daily update will then ensure everything remain in sync with the reference Crossref metadata as long the service is up and running. 
 
+The command ends once every page was received from Crossref and every record stored and indexed.
+The Crossref REST API is not always there: a request that fails is sent again a few times with a
+growing pause, and if the API stays down the command gives up, says so and exits with a non-zero
+code. The last indexed date is only moved forward by a complete run, so running the command again
+picks up the whole period again and nothing is skipped. The records loaded before the API went
+down are kept, and so are the incremental files under `dumpPath`. The exit code is also non-zero
+when some records could not be indexed in Elasticsearch, see
+[Indexing while loading](#indexing-while-loading).
+
+The daily update follows the same rules. It normally asks for the records updated since the day
+before; when a night was skipped or cut short it picks up from the last complete run instead, up to
+a week back, so a service that was down for a night does not miss a day. A database further behind
+than that is what `gap_crossref` is for.
+
 __Warning:__ If an older snapshot is used, like the CrossRef dump Academic Torrent file, the coverage gap is not a few days, but usually several months or more than one year (since Crossref has not updated the Academic Torrent dump in 2022). Using the Crossweb API to cover such a long gap will unfortunately take an enormous amount of time (more than a week) due to API usage rate limitations and is likely not a acceptable solution. In addition, the Crossref web API is not always reliable, which might cause further delays. 
 
 #### PMID and PMC ID
