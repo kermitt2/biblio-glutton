@@ -112,13 +112,25 @@ public class GrobidClient {
     }
 
     private GrobidResponse parseGrobidResponse(InputStream body) throws ServiceException {
+        XMLStreamReader2 reader = null;
         try {
-            XMLStreamReader2 reader = (XMLStreamReader2) inputFactory.createXMLStreamReader(body);
+            reader = (XMLStreamReader2) inputFactory.createXMLStreamReader(body);
             GrobidResponseStaxHandler handler = new GrobidResponseStaxHandler();
             StaxUtils.traverse(reader, handler);
             return handler.getResponse();
         } catch (XMLStreamException e) {
             throw new ServiceException(502, "Cannot parse the response from GROBID", e);
+        } finally {
+            // StaxUtils.traverse() does not close the reader, and the Woodstox reader holds its
+            // own buffers. close() releases those without touching the underlying InputStream,
+            // which the caller closes separately.
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (XMLStreamException e) {
+                    LOGGER.warn("Could not close the GROBID response reader", e);
+                }
+            }
         }
     }
 }

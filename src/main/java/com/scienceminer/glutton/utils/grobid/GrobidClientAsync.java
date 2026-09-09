@@ -19,6 +19,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
 
 /**
@@ -68,7 +70,16 @@ public class GrobidClientAsync {
         }
     }
 
-    public void processCitation(String rawCitation, String consolidation, Consumer<GrobidResponse> callback) throws ServiceException {
+    /**
+     * Sends the citation to Grobid and hands the parsed result to {@code callback}.
+     * <p>
+     * Failures - transport errors, a non-OK status, an unparsable body - are reported on the
+     * returned future, wrapped in a {@link CompletionException}; callers that ignore the future
+     * will not see them. The callback is only invoked on success.
+     *
+     * @return a future completing once the callback has run, or completing exceptionally on failure
+     */
+    public CompletableFuture<Void> processCitation(String rawCitation, String consolidation, Consumer<GrobidResponse> callback) {
         String formBody = CITATIONS_PARAM + "=" + URLEncoder.encode(rawCitation, StandardCharsets.UTF_8)
                 + "&" + CONSOLIDATE_CITATIONS_PARAM + "=" + URLEncoder.encode(consolidation, StandardCharsets.UTF_8);
 
@@ -81,7 +92,7 @@ public class GrobidClientAsync {
                 .POST(HttpRequest.BodyPublishers.ofString(formBody, StandardCharsets.UTF_8))
                 .build();
 
-        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
+        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
                 .thenAccept(response -> {
                     // See GrobidClient#processCitation: 204 means "nothing could be structured",
                     // which is a normal outcome rather than a service error.
@@ -98,20 +109,36 @@ public class GrobidClientAsync {
                         throw new ServiceException(502, "Cannot read the response from GROBID", e);
                     }
                 })
-                .exceptionally(ex -> {
-                    LOGGER.warn("Async GROBID call failed", ex);
-                    throw new ServiceException(502, "Async GROBID call failed", ex);
+                // whenComplete logs but leaves the failure on the returned future. Using
+                // exceptionally() here instead would swallow it: the stage it produces was never
+                // returned, so anything thrown from it had nowhere to go.
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        LOGGER.warn("Async GROBID call failed", ex);
+                    }
                 });
     }
 
     private GrobidResponse parseGrobidResponse(InputStream body) throws ServiceException {
+        XMLStreamReader2 reader = null;
         try {
-            XMLStreamReader2 reader = (XMLStreamReader2) inputFactory.createXMLStreamReader(body);
+            reader = (XMLStreamReader2) inputFactory.createXMLStreamReader(body);
             GrobidResponseStaxHandler handler = new GrobidResponseStaxHandler();
             StaxUtils.traverse(reader, handler);
             return handler.getResponse();
         } catch (XMLStreamException e) {
             throw new ServiceException(502, "Cannot parse the response from GROBID", e);
+        } finally {
+            // StaxUtils.traverse() does not close the reader, and the Woodstox reader holds its
+            // own buffers. close() releases those without touching the underlying InputStream,
+            // which the caller closes separately.
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (XMLStreamException e) {
+                    LOGGER.warn("Could not close the GROBID response reader", e);
+                }
+            }
         }
     }
 }

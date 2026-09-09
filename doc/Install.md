@@ -76,7 +76,7 @@ biblio-glutton takes advantage of GROBID for parsing raw bibliographical referen
 
 * First download and install GROBID as indicated in the [documentation](https://grobid.readthedocs.io/en/latest/Install-Grobid/), normally as a docker image to take advantage of Deep Learning models for more accurate parsing of bibliographical references. **Recommended Grobid version: 0.9.1** (see [Grobid releases](https://github.com/kermitt2/grobid/releases)). biblio-glutton communicates with Grobid only via HTTP (the `/api/isalive` and `/api/processCitation` endpoints), whose contract is unchanged across Grobid 0.7.x, 0.8.x and 0.9.x, so any of those releases is API-compatible.
 
-* Start the service as documented [here](https://grobid.readthedocs.io/en/latest/Grobid-service/). You can change the `port` used by GROBID when strating the docker container, or by updating the service config file under `grobid/grobid-home/config/grobid.yaml`.
+* Start the service as documented [here](https://grobid.readthedocs.io/en/latest/Grobid-service/). You can change the `port` used by GROBID when starting the docker container, or by updating the service config file under `grobid/grobid-home/config/grobid.yaml`.
 
 * Update if necessary the host and port information of GROBID in the biblio-glutton config file under `biblio-glutton/config/glutton.yml` (parameter `grobidHost`).
 
