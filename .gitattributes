@@ -1,2 +1,4 @@
 * text=auto
 *.wapiti text eol=lf
+# cmd.exe can mis-parse labels in LF-only batch files, which breaks the wrapper's exit handling
+*.bat text eol=crlf

@@ -23,8 +23,8 @@ import io.dropwizard.core.setup.Environment;
 import ru.vyarus.dropwizard.guice.GuiceBundle;
 import com.google.inject.AbstractModule;
 
-import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.eclipse.jetty.servlets.QoSFilter;
+import org.eclipse.jetty.server.handler.CrossOriginHandler;
+import org.eclipse.jetty.server.handler.QoSHandler;
 
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -33,11 +33,13 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.FilterRegistration;
 import java.util.Arrays;
-import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.io.File;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -53,6 +55,7 @@ import org.slf4j.LoggerFactory;
 public final class LookupServiceApplication extends Application<LookupConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(LookupConfiguration.class);
     private static final String RESOURCES = "/service";
+    private static final String ANY_ORIGIN = "*";
     private static final String[] DEFAULT_CONF_LOCATIONS = {"config/glutton.yml"};
 
     // ========== Application ==========
@@ -96,6 +99,8 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         final Counter counterInvalidRecords = metrics.counter("crossref_daily_update_rejected_records");
         final Counter counterIndexedRecords = metrics.counter("crossref_gap_update_indexed_records");
         final Counter counterFailedIndexedRecords = metrics.counter("crossref_gap_update_failed_indexed_records");
+        final Meter openAccessMeter = metrics.meter("openAccess_daily_update_storing");
+        final Counter counterDroppedOpenAccess = metrics.counter("openAccess_daily_update_dropped_dois");
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         Runnable task = new IncrementalLoaderTask(metadataLookup, 
@@ -105,6 +110,8 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
                                                   counterInvalidRecords,
                                                   counterIndexedRecords,
                                                   counterFailedIndexedRecords,
+                                                  openAccessMeter,
+                                                  counterDroppedOpenAccess,
                                                   true, // with indexing
                                                   true); // this is daily incremental update
 
@@ -117,22 +124,24 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         String allowedMethods = configuration.getCorsAllowedMethods();
         String allowedHeaders = configuration.getCorsAllowedHeaders();
 
-        // Enable CORS headers
-        final FilterRegistration.Dynamic cors =
-            environment.servlets().addFilter("CORS", CrossOriginFilter.class);
+        // Enable CORS headers. Jetty 12 (the version Dropwizard 5 runs on) deprecated the
+        // servlet filters of the jetty-servlets module for removal in favour of these handlers,
+        // which sit in front of the servlet context instead of inside its filter chain.
+        // Note that allowed origins are regular expressions here, where CrossOriginFilter used
+        // comma-separated origins with '*' wildcards; "*" keeps meaning "any origin".
+        final CrossOriginHandler cors = new CrossOriginHandler();
+        cors.setAllowedOriginPatterns(toAllowedOriginPatterns(allowedOrigins));
+        cors.setAllowedMethods(splitConfigList(allowedMethods));
+        cors.setAllowedHeaders(splitConfigList(allowedHeaders));
+        // CrossOriginHandler defaults to 60s where CrossOriginFilter defaulted to 30min; keep the
+        // longer window so browsers do not re-issue a preflight every minute.
+        cors.setPreflightMaxAge(Duration.ofSeconds(1800));
+        environment.getApplicationContext().insertHandler(cors);
 
-        // Configure CORS parameters
-        cors.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, allowedOrigins);
-        cors.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, allowedMethods);
-        cors.setInitParameter(CrossOriginFilter.ALLOWED_HEADERS_PARAM, allowedHeaders);
-
-        // Add URL mapping
-        cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
-
-        // Enable QoS filter
-        /*final FilterRegistration.Dynamic qos = environment.servlets().addFilter("QOS", QoSFilter.class);
-        qos.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
-        qos.setInitParameter("maxRequests", String.valueOf(configuration.getMaxAcceptedRequests()));*/
+        // Enable QoS handler
+        /*final QoSHandler qos = new QoSHandler();
+        qos.setMaxRequestCount(configuration.getMaxAcceptedRequests());
+        environment.getApplicationContext().insertHandler(qos);*/
 
         environment.jersey().setUrlPattern(RESOURCES + "/*");
         environment.jersey().register(new ServiceExceptionMapper());
@@ -154,6 +163,59 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         return new LookupServiceModule();
     }
 
+    /**
+     * The CORS settings are comma-separated lists in the YAML configuration, while the Jetty
+     * handlers take sets of values.
+     */
+    private static Set<String> splitConfigList(String value) {
+        return Stream.of(value.split(","))
+            .map(String::trim)
+            .filter(item -> !item.isEmpty())
+            .collect(Collectors.toSet());
+    }
+
+    /**
+     * Translates the configured {@code corsAllowedOrigins} into the patterns
+     * {@link CrossOriginHandler} expects.
+     * <p>
+     * The setting predates Jetty 12 and follows what {@code CrossOriginFilter} accepted: the
+     * literal {@code *}, a glob such as {@code https://*.example.com}, or an exact origin.
+     * {@code CrossOriginHandler} instead reads every entry other than {@code *} as a regular
+     * expression, so entries have to be translated or they change meaning:
+     * <ul>
+     *     <li>a glob would stop matching — {@code https://*.example.com} is not a regex that
+     *         matches {@code https://api.example.com};</li>
+     *     <li>an exact origin would start matching too much — in {@code https://api.example.com}
+     *         each {@code .} would match any character.</li>
+     * </ul>
+     * Package-private for testing.
+     */
+    static Set<String> toAllowedOriginPatterns(String configuredOrigins) {
+        return splitConfigList(configuredOrigins).stream()
+            .map(LookupServiceApplication::toOriginPattern)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static String toOriginPattern(String origin) {
+        if (ANY_ORIGIN.equals(origin)) {
+            // CrossOriginHandler gives "*" its own meaning: allow any origin.
+            return ANY_ORIGIN;
+        }
+        StringBuilder pattern = new StringBuilder();
+        // -1 keeps the trailing empty segments, so a trailing "*" still becomes ".*".
+        String[] literals = origin.split("\\*", -1);
+        for (int i = 0; i < literals.length; i++) {
+            if (i > 0) {
+                // Greedy, as CrossOriginFilter was, so one "*" spans several subdomains.
+                pattern.append(".*");
+            }
+            if (!literals[i].isEmpty()) {
+                pattern.append(Pattern.quote(literals[i]));
+            }
+        }
+        return pattern.toString();
+    }
+
     @Override
     public void initialize(Bootstrap<LookupConfiguration> bootstrap) {
         /*GuiceBundle<LookupConfiguration> guiceBundle = GuiceBundle.defaultBuilder(LookupConfiguration.class)
@@ -166,7 +228,6 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
 
         bootstrap.addBundle(guiceBundle);
         bootstrap.addBundle(new MultiPartBundle());
-        bootstrap.addCommand(new LoadUnpayWallCommand());
         bootstrap.addCommand(new LoadIstexIdsCommand());
         bootstrap.addCommand(new LoadPMIDCommand());
         bootstrap.addCommand(new LoadCrossrefCommand());
@@ -174,6 +235,7 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         bootstrap.addCommand(new LoadHALCommand());
         bootstrap.addCommand(new IndexCommand());
         bootstrap.addCommand(new HALAuditCommand());
+        bootstrap.addCommand(new LoadOpenAlexCommand());
         bootstrap.addCommand(new CompressionBenchmarkCommand());
     }
 

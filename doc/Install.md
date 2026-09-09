@@ -33,9 +33,9 @@ After installing all or a selection of bibliographical databases, the bibliograp
 
 The following describes how to build and start the bibliographical service. 
 
-### Build the service  
+### Build the service
 
-You need Java JDK 1.11 or more installed for building and running the tool. 
+You need **Java JDK 21 (LTS)** installed for building and running the tool. The Gradle wrapper is configured with a Java 21 toolchain — if your default `java` is older, the [Foojay toolchain resolver](https://github.com/gradle/foojay-toolchains) will automatically download and provision a JDK 21 on first build. To install Java 21 manually, use [SDKMAN!](https://sdkman.io) or [Eclipse Temurin](https://adoptium.net/temurin/releases/?version=21).
 
 ```sh
 ./gradlew clean build
@@ -64,7 +64,7 @@ To check if it works, you can view a report of the data used by the service at `
   "Crossref metadata indexed size (elastic)": "{glutton=149812959}",
   "HAL Metadata stored size (LMDB)": "{hal_Jsondoc=3780904}",
   "PMID size (LMDB)": "{pmid_doi2ids=946688, pmid_pmc2ids=850087, pmid_pmid2ids=1287533}",
-  "DOI OA size (LMDB)": "{unpayWall_doiOAUrl=0}"
+  "DOI OA size (LMDB)": "{openAccess_doiOAUrl=0}"
 }
 ```
 
@@ -74,15 +74,22 @@ Each item represent a data storage. By default they are LMDB storage and their d
 
 biblio-glutton takes advantage of GROBID for parsing raw bibliographical references. This permits faster and more accurate bibliographical record matching. To use GROBID service:
 
-* First download and install GROBID as indicated in the [documentation](https://grobid.readthedocs.io/en/latest/Install-Grobid/), normally as a docker image to take advantage of Deep Learning models for more accurate parsing of bibliographical references. 
+* First download and install GROBID as indicated in the [documentation](https://grobid.readthedocs.io/en/latest/Install-Grobid/), normally as a docker image to take advantage of Deep Learning models for more accurate parsing of bibliographical references. **Recommended Grobid version: 0.9.1** (see [Grobid releases](https://github.com/kermitt2/grobid/releases)). biblio-glutton communicates with Grobid only via HTTP (the `/api/isalive` and `/api/processCitation` endpoints), whose contract is unchanged across Grobid 0.7.x, 0.8.x and 0.9.x, so any of those releases is API-compatible.
 
-* Start the service as documented [here](https://grobid.readthedocs.io/en/latest/Grobid-service/). You can change the `port` used by GROBID when strating the docker container, or by updating the service config file under `grobid/grobid-home/config/grobid.yaml`. 
+* Start the service as documented [here](https://grobid.readthedocs.io/en/latest/Grobid-service/). You can change the `port` used by GROBID when starting the docker container, or by updating the service config file under `grobid/grobid-home/config/grobid.yaml`.
 
-* Update if necessary the host and port information of GROBID in the biblio-glutton config file under `biblio-glutton/config/glutton.yml` (parameter `grobidPath`).
+* Update if necessary the host and port information of GROBID in the biblio-glutton config file under `biblio-glutton/config/glutton.yml` (parameter `grobidHost`).
 
 While GROBID is not required for running biblio-glutton, in particular if it is used only for bibliographical look-up, it is strongly recommended for performing bibliographical record matching. And vice-vera, configuration the biblio-glutton service for Grobid will provide high quality consolidation services to resolve the bibliographical references automatically extracted by Grobid. 
 
 ### Troubleshooting
+
+#### Startup fails with `Unrecognized field at: server.maxQueuedRequests`
+
+biblio-glutton runs on Dropwizard 5 (Jetty 12), which removed the `server.maxQueuedRequests`
+setting. If you carried an older `glutton.yml` over, delete that line - the service will not
+start while it is present. The application-level `maxAcceptedRequests` setting is unaffected
+and remains the knob that caps concurrent work.
 
 #### Issues with the elasticsearch index  
 
@@ -107,6 +114,20 @@ curl http://localhost:8080/service/lookup?parseReference=false&atitle=Latent+Dir
 
 NOTE that code 404 or 400 are normal and should not be considered as an error.
 
+## Upgrading from 0.3
 
+Unpaywall is no longer a source of Open Access links: it was folded into OpenAlex, whose last
+public Unpaywall snapshot dates from 2022. The `unpaywall` command is gone, replaced by
+`openalex` (see [Build the databases](Build-Databases.md#oa-via-openalex)).
 
+The storage that holds these links was renamed from `unpayWall` to `openAccess` at the same time.
+A database built by 0.3 is not read by 0.4.0, and renaming the directory does not carry it over,
+because the database inside it is named after Unpaywall as well. Reload the links:
 
+```sh
+./gradlew openalex -Pinput=s3://openalex/data/jsonl/works/
+```
+
+then delete the old `unpayWall` directory under your storage path. Nothing else in the storage is
+affected, so Crossref, PubMed, HAL and ISTEX do not need reloading. The service says so on start
+if it finds the old directory next to an empty new one.

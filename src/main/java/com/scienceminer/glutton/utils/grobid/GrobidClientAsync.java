@@ -2,105 +2,148 @@ package com.scienceminer.glutton.utils.grobid;
 
 import com.ctc.wstx.stax.WstxInputFactory;
 import com.scienceminer.glutton.exception.ServiceException;
-import com.scienceminer.glutton.utils.xml.StaxUtils;
 import com.scienceminer.glutton.utils.grobid.GrobidResponseStaxHandler.GrobidResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.Consts;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.concurrent.FutureCallback;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.apache.http.impl.nio.client.HttpAsyncClients;
-import org.apache.http.message.BasicNameValuePair;
+import com.scienceminer.glutton.utils.xml.StaxUtils;
 import org.codehaus.stax2.XMLStreamReader2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
 
 /**
- * Async Grobid client
+ * Asynchronous Grobid client built on the JDK 11+ {@link HttpClient}.
+ * <p>
+ * Same two endpoints as {@link GrobidClient}; {@code processCitation} delivers
+ * its result to a caller-supplied {@link Consumer} via {@link HttpClient#sendAsync}.
  */
 public class GrobidClientAsync {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GrobidClientAsync.class);
 
-    private CloseableHttpAsyncClient httpClient;
-    private String grobidPath;
-    private WstxInputFactory inputFactory = new WstxInputFactory();
-    //private GrobidResponseStaxHandler grobidResponseStaxHandler = new GrobidResponseStaxHandler();
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
+
+    /** See {@link GrobidClient} for why the parameter name is the plural {@code consolidateCitations}. */
+    private static final String CITATIONS_PARAM = "citations";
+    private static final String CONSOLIDATE_CITATIONS_PARAM = "consolidateCitations";
+
+    private final String grobidPath;
+    private final HttpClient httpClient;
+    private final WstxInputFactory inputFactory = new WstxInputFactory();
 
     public GrobidClientAsync(String grobidPath) {
         this.grobidPath = grobidPath;
-        this.httpClient = HttpAsyncClients.createDefault();
-        httpClient.start();
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(CONNECT_TIMEOUT)
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
     }
 
     public void ping() throws ServiceException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(grobidPath + "/isalive"))
+                .timeout(REQUEST_TIMEOUT)
+                .GET()
+                .build();
         try {
-            final HttpGet httpGet = new HttpGet(grobidPath + "/isalive");
-            final Future<HttpResponse> futureResponse = httpClient.execute(httpGet, null);
-            HttpResponse response = futureResponse.get();
-            if (response.getStatusLine().getStatusCode() != HttpURLConnection.HTTP_OK) {
-                throw new ServiceException(502, "Error while connecting to GROBID service. Error code: " + response.getStatusLine().getStatusCode());
+            HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+            if (response.statusCode() != HttpURLConnection.HTTP_OK) {
+                throw new ServiceException(502, "Error while connecting to GROBID service. Error code: " + response.statusCode());
             }
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ServiceException(502, "Interrupted while connecting to GROBID service", e);
+        } catch (IOException e) {
             throw new ServiceException(502, "Error while connecting to GROBID service", e);
         }
     }
 
-    public void processCitation(String rawCitation, String consolidation, Consumer<GrobidResponseStaxHandler.GrobidResponse> callback) throws ServiceException {
-        final HttpPost request = new HttpPost(grobidPath + "/processCitation");
+    /**
+     * Sends the citation to Grobid and hands the parsed result to {@code callback}.
+     * <p>
+     * Failures - transport errors, a non-OK status, an unparsable body - are reported on the
+     * returned future, wrapped in a {@link CompletionException}; callers that ignore the future
+     * will not see them. The callback is only invoked on success.
+     *
+     * @return a future completing once the callback has run, or completing exceptionally on failure
+     */
+    public CompletableFuture<Void> processCitation(String rawCitation, String consolidation, Consumer<GrobidResponse> callback) {
+        String formBody = CITATIONS_PARAM + "=" + URLEncoder.encode(rawCitation, StandardCharsets.UTF_8)
+                + "&" + CONSOLIDATE_CITATIONS_PARAM + "=" + URLEncoder.encode(consolidation, StandardCharsets.UTF_8);
 
-        List<NameValuePair> formparams = new ArrayList<>();
-        formparams.add(new BasicNameValuePair("citations", rawCitation));
-        formparams.add(new BasicNameValuePair("consolidateCitation", consolidation));
-        UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formparams, Consts.UTF_8);
-        request.setEntity(entity);
+        HttpRequest request = HttpRequest.newBuilder(URI.create(grobidPath + "/processCitation"))
+                .timeout(REQUEST_TIMEOUT)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                // Grobid 0.9.x also serves BibTeX from this path; ask explicitly for the TEI XML
+                // that GrobidResponseStaxHandler parses instead of relying on the server default.
+                .header("Accept", "application/xml")
+                .POST(HttpRequest.BodyPublishers.ofString(formBody, StandardCharsets.UTF_8))
+                .build();
 
-        final Future<HttpResponse> response = httpClient.execute(request, new FutureCallback<HttpResponse>() {
-            @Override
-            public void completed(HttpResponse response) {
-                if (response.getStatusLine().getStatusCode() != HttpURLConnection.HTTP_OK) {
-                    throw new ServiceException(502, "Error while connecting to GROBID service. Error code: " + response.getStatusLine().getStatusCode());
-                } else {
-                    try {
-                        XMLStreamReader2 reader = (XMLStreamReader2) inputFactory.createXMLStreamReader(response.getEntity().getContent());
-                        GrobidResponseStaxHandler grobidResponseStaxHandler = new GrobidResponseStaxHandler();
-
-                        StaxUtils.traverse(reader, grobidResponseStaxHandler);
-
-                        callback.accept(grobidResponseStaxHandler.getResponse());
-                    } catch (XMLStreamException | IOException e) {
-                        throw new ServiceException(502, "Cannot parse the response from GROBID", e);
+        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
+                .thenAccept(response -> {
+                    GrobidResponse parsed;
+                    // As in GrobidClient#processCitation, every status path closes the body so the
+                    // connection goes back to the pool.
+                    try (InputStream body = response.body()) {
+                        // 204 means "nothing could be structured", a normal outcome rather than a
+                        // service error.
+                        if (response.statusCode() == HttpURLConnection.HTTP_NO_CONTENT) {
+                            parsed = new GrobidResponseStaxHandler().getResponse();
+                        } else if (response.statusCode() != HttpURLConnection.HTTP_OK) {
+                            throw new ServiceException(502, "Error while connecting to GROBID service. Error code: " + response.statusCode());
+                        } else {
+                            parsed = parseGrobidResponse(body);
+                        }
+                    } catch (IOException e) {
+                        throw new ServiceException(502, "Cannot read the response from GROBID", e);
                     }
-                }
-            }
-
-            @Override
-            public void failed(Exception ex) {
-                throw new ServiceException(502, "Cannot parse the response from GROBID", ex);
-            }
-
-            @Override
-            public void cancelled() {
-                throw new ServiceException(502, "Cannot parse the response from GROBID");
-            }
-        });
-
+                    // Outside the resource scope: the callback is caller code of unknown duration
+                    // and must not hold the connection open.
+                    callback.accept(parsed);
+                })
+                // whenComplete logs but leaves the failure on the returned future. Using
+                // exceptionally() here instead would swallow it: the stage it produces was never
+                // returned, so anything thrown from it had nowhere to go.
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        LOGGER.warn("Async GROBID call failed", ex);
+                    }
+                });
     }
 
+    private GrobidResponse parseGrobidResponse(InputStream body) throws ServiceException {
+        XMLStreamReader2 reader = null;
+        try {
+            reader = (XMLStreamReader2) inputFactory.createXMLStreamReader(body);
+            GrobidResponseStaxHandler handler = new GrobidResponseStaxHandler();
+            StaxUtils.traverse(reader, handler);
+            return handler.getResponse();
+        } catch (XMLStreamException e) {
+            throw new ServiceException(502, "Cannot parse the response from GROBID", e);
+        } finally {
+            // StaxUtils.traverse() does not close the reader, and the Woodstox reader holds its
+            // own buffers. close() releases those without touching the underlying InputStream,
+            // which the caller closes separately.
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (XMLStreamException e) {
+                    LOGGER.warn("Could not close the GROBID response reader", e);
+                }
+            }
+        }
+    }
 }

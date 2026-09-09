@@ -44,7 +44,7 @@ public class DataEngine {
         returnMap.put("Total metadata indexed size (elastic)", String.valueOf(Collections.singletonMap(metadataMatching.getIndexName(), metadataMatching.getSize())));
         returnMap.put("PMID size (LMDB)", String.valueOf(pmidLookup.getSize()));
         returnMap.put("ISTEX size (LMDB)", String.valueOf(istexLookup.getSize()));
-        returnMap.put("DOI OA (Unpaywall) size (LMDB)", String.valueOf(oaDoiLookup.getSize()));
+        returnMap.put("DOI OA size (LMDB)", String.valueOf(oaDoiLookup.getSize()));
 
         return returnMap;
     }
