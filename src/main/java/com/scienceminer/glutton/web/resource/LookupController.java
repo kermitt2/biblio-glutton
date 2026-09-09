@@ -9,6 +9,7 @@ import com.scienceminer.glutton.exception.NotFoundException;
 import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.storage.LookupEngine;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
+import com.scienceminer.glutton.utils.Identifiers;
 import com.scienceminer.glutton.utils.grobid.GrobidClient;
 import io.dropwizard.core.setup.Environment;
 
@@ -344,6 +345,8 @@ public class LookupController {
         boolean areParametersEnoughToLookup = false;
         StringBuilder messagesSb = new StringBuilder();
 
+        checkTextLengths(firstAuthor, atitle, jtitle, volume, firstPage, year, biblio);
+
         if (isNotBlank(doi)) {
             areParametersEnoughToLookup = true;
             try {
@@ -511,6 +514,28 @@ public class LookupController {
         } else {
             throw new ServiceException(400, "The supplied parameters were not sufficient to select the query");
         }
+    }
+
+    /** A raw citation, several times over the longest ever seen. */
+    static final int MAX_BIBLIO_LENGTH = 10000;
+    /** A title or a journal name. */
+    static final int MAX_TITLE_LENGTH = 2000;
+    static final int MAX_NAME_LENGTH = 500;
+    static final int MAX_NUMBER_LENGTH = 50;
+
+    /**
+     * The free text parameters go into search queries, whose cost grows with them: something far
+     * longer than the field it is sent as is refused rather than searched for.
+     */
+    static void checkTextLengths(String firstAuthor, String atitle, String jtitle, String volume,
+                                 String firstPage, String year, String biblio) {
+        Identifiers.text("first author", firstAuthor, MAX_NAME_LENGTH);
+        Identifiers.text("article title", atitle, MAX_TITLE_LENGTH);
+        Identifiers.text("journal title", jtitle, MAX_TITLE_LENGTH);
+        Identifiers.text("volume", volume, MAX_NUMBER_LENGTH);
+        Identifiers.text("first page", firstPage, MAX_NUMBER_LENGTH);
+        Identifiers.text("year", year, MAX_NUMBER_LENGTH);
+        Identifiers.text("bibliographical reference", biblio, MAX_BIBLIO_LENGTH);
     }
 
     /**

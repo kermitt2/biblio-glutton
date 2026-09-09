@@ -22,6 +22,11 @@ The service can be queried based on a strong identifier, likeDOI, PMID, etc. as 
     - `GET host:port/service/lookup?pii=PII`
     - `GET host:port/service/lookup/pii/{PII}`   
 
+An identifier is accepted in the forms it is commonly pasted in: a DOI as a `doi.org` URL or with a
+`doi:` prefix, a PMC ID with or without `PMC`, a HAL ID as its URL. Something that is not an
+identifier of the kind it is sent as (a search engine URL in the `doi` field, a DOI in the `pmid`
+field) is answered with `400` and a message saying what was expected, rather than looked up.
+
 The service can be queried with various metadata like article title (`atitle`), first author last name (`firstAuthor`), journal title (`jtitle`), volume (`volume`), first page (`firstPage`) and publication year (`year`)
 
 - match record by article title and first author lastname
