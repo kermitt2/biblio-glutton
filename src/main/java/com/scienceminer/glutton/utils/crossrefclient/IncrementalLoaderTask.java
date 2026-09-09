@@ -15,6 +15,7 @@ import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.utils.openalex.OpenAccessUpdater;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.reader.CrossrefJsonlReader;
+import com.scienceminer.glutton.indexing.ElasticSearchAsyncIndexer;
 
 import java.util.*;
 import java.io.*;
@@ -253,6 +254,9 @@ public class IncrementalLoaderTask implements Runnable {
             while(isChanging) {
                 try {
                     TimeUnit.SECONDS.sleep(5);
+                    // the bulks queued so far, with their retries, must be through before the
+                    // index size means anything
+                    ElasticSearchAsyncIndexer.getInstance(configuration).awaitPending();
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                 }

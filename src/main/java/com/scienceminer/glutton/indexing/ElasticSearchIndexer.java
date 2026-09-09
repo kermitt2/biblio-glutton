@@ -2,6 +2,7 @@ package com.scienceminer.glutton.indexing;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 
@@ -70,9 +71,14 @@ public class ElasticSearchIndexer {
     private ElasticSearchIndexer(LookupConfiguration configuration) {
         this.configuration = configuration;
 
-        // Create the low-level client
+        // Create the low-level client, waiting for a bulk as long as configured rather than the
+        // 30s default, which a full bulk on a busy cluster easily exceeds
+        LookupConfiguration.Elastic elastic = configuration.getElastic();
         restClient = RestClient
-            .builder(HttpHost.create(configuration.getElastic().getHost()))
+            .builder(HttpHost.create(elastic.getHost()))
+            .setRequestConfigCallback(requestConfig -> requestConfig
+                .setConnectTimeout((int) TimeUnit.SECONDS.toMillis(elastic.getConnectTimeout()))
+                .setSocketTimeout((int) TimeUnit.SECONDS.toMillis(elastic.getSocketTimeout())))
             //.setDefaultHeaders(new Header[]{
             //    new BasicHeader("Authorization", "ApiKey " + apiKey)
             //})

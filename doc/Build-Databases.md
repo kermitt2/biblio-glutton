@@ -132,7 +132,24 @@ crossrefLookup
 
 On the above example, the 5,472,493 rejected records correspond to all the DOI entries of type "components" (part of document), which are filtered out. 
 
-As a February 2024, we have for example 146,808,255 accepted crossref records and 8,015,190 rejected component records (last indexed date in dump file is 2024-02-02). 
+As a February 2024, we have for example 146,808,255 accepted crossref records and 8,015,190 rejected component records (last indexed date in dump file is 2024-02-02).
+
+##### Indexing while loading
+
+The records are indexed in Elasticsearch in bulks while they are stored, on a few threads of their
+own so the storing side is not held up. `maxConcurrentBulks` in the `elastic` block of the
+configuration is how many bulks are sent at the same time (4 by default); beyond that the loading
+waits for Elasticsearch rather than piling up requests. A bulk that gets no answer or that
+Elasticsearch rejects because it is busy is sent again a few times, with a growing pause, and a
+document Elasticsearch refuses for good is logged with its reason. `socketTimeout`, in the same
+block, is how long to wait for the answer to a bulk (120 seconds by default; the 30 seconds the
+client would use on its own is too short for a full bulk on a busy cluster).
+
+The `*_indexed_records` and `*_failed_indexed_records` counters in the metrics say how many
+records got into the index and how many did not. Records that could not be indexed are still in
+the storage: once Elasticsearch is healthy again, `./gradlew index` rebuilds the index from it.
+The loading commands wait for the last bulks before they exit, so the two counters are final in
+the summary printed at the end. 
 
 #### CrossRef metadata gap coverage
 
