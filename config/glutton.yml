@@ -28,8 +28,15 @@ elastic:
   #host: localhost:9200
   host: 0.0.0.0:9200
   #host: 192.168.1.30:9200
+  # with TLS on the cluster, give the scheme: https://elastic.example.org:9200
   index: glutton
   maxConnections: 20
+  # credentials, for a cluster with security on (the default since Elasticsearch 8): either a
+  # user and password, or an API key (as given by the create API key call, base64 form). Do not
+  # put them in the host URL, the client does not read them there
+  #username: elastic
+  #password: changeme
+  #apiKey:
   # for the loading and update commands: seconds to wait for a connection and for the answer to a
   # bulk of records. Elasticsearch takes more than the default 30s for a full bulk when it is busy,
   # and a bulk that times out is retried, so keep this generous

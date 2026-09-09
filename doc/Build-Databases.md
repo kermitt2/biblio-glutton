@@ -47,6 +47,13 @@ The bibliographical matching service uses a combination of high performance embe
 
 The databases and elasticsearch index must first be built from the resource files. The full service needs around 300 GB of space for building these index and it is necessary to use SSD for best performance.
 
+The Elasticsearch node is given by `elastic.host` in `config/glutton.yml`, with the scheme when
+the cluster is behind TLS (`https://elastic.example.org:9200`). A cluster with security on, which
+is the default since Elasticsearch 8, needs credentials: give a user and password with
+`elastic.username` and `elastic.password`, or an API key with `elastic.apiKey`. They are sent with
+every request by the loading commands and by the service alike. Credentials in the host URL are not
+read.
+
 ### Build the embedded LMDB databases
 
 Resource dumps will be compiled in high performance LMDB databases. The system can read compressed (`gzip` or `.xz`) or plain text files (`json`), so in practice you do not need to uncompress anything.

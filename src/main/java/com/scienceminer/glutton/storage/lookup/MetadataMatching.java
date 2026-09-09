@@ -5,6 +5,7 @@ import com.scienceminer.glutton.data.MatchingDocument;
 import com.scienceminer.glutton.exception.NotFoundException;
 import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.storage.lookup.async.ESClientWrapper;
+import com.scienceminer.glutton.utils.ElasticsearchAuth;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.ElasticsearchException;
@@ -102,7 +103,8 @@ public class MetadataMatching {
                         .setHttpClientConfigCallback(
                                 httpAsyncClientBuilder -> httpAsyncClientBuilder
                                         .setMaxConnPerRoute(configuration.getElastic().getMaxConnections())
-                                        .setMaxConnTotal(configuration.getElastic().getMaxConnections())));
+                                        .setMaxConnTotal(configuration.getElastic().getMaxConnections()))
+                        .setDefaultHeaders(ElasticsearchAuth.defaultHeaders(configuration.getElastic())));
 
         // note: maxRetryTimeoutMillis is deprecated in ES 7 due to implementation issue 
         // https://github.com/elastic/elasticsearch/pull/38085

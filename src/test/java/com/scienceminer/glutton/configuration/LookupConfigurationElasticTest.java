@@ -68,6 +68,26 @@ public class LookupConfigurationElasticTest {
     }
 
     @Test
+    public void elasticBlock_shouldTakeCredentials() throws Exception {
+        LookupConfiguration configuration = load("elastic:\n  host: https://es.example.org:9200\n  index: glutton\n"
+                + "  username: elastic\n  password: changeme\n");
+
+        assertThat(configuration.getElastic().getUsername(), is("elastic"));
+        assertThat(configuration.getElastic().getPassword(), is("changeme"));
+        assertThat(configuration.getElastic().getApiKey(), is((String) null));
+    }
+
+    @Test
+    public void elasticBlock_shouldRefuseAUserWithoutPassword() throws Exception {
+        try {
+            load("elastic:\n  host: localhost:9200\n  index: glutton\n  username: elastic\n");
+            fail("a user without a password cannot authenticate");
+        } catch (ConfigurationValidationException expected) {
+            assertThat(expected.getMessage().contains("go together"), is(true));
+        }
+    }
+
+    @Test
     public void elasticBlock_shouldRefuseANoTimeout() throws Exception {
         try {
             load("elastic:\n  host: localhost:9200\n  index: glutton\n  socketTimeout: 0\n");
