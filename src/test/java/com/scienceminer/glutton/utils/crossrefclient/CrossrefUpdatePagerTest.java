@@ -135,14 +135,29 @@ public class CrossrefUpdatePagerTest {
     }
 
     @Test
-    public void fetchAll_shouldStopOnAPageWithoutCursor() throws Exception {
+    public void fetchAll_shouldStopOnAPageWithoutCursorAndNotCallItComplete() throws Exception {
         ScriptedSource source = new ScriptedSource(page(null, "a"), page("never", "b"));
         boolean[] completed = new boolean[1];
 
         List<List<String>> pages = walk(source, completed);
 
-        assertTrue(completed[0]);
+        // the API always gives a cursor with results; without one the rest cannot be asked for
+        assertFalse(completed[0]);
         assertThat(pages, hasSize(1));
+        assertThat(source.cursors, hasSize(1));
+    }
+
+    @Test
+    public void fetchAll_shouldStopOnACursorThatDoesNotMove() throws Exception {
+        ScriptedSource source = new ScriptedSource(page("c1", "a"), page("c1", "a"), page("c1", "a"));
+        boolean[] completed = new boolean[1];
+
+        List<List<String>> pages = walk(source, completed);
+
+        assertFalse(completed[0]);
+        // the first page is kept, the repeated one is asked for once and not stored again
+        assertThat(pages, hasSize(2));
+        assertThat(source.cursors, contains("*", "c1"));
     }
 
     @Test

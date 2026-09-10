@@ -20,6 +20,11 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
  * again after a growing pause, a bounded number of times. {@link #fetchAll} then reports whether
  * every page came through, so the caller knows whether the update it just made is complete.
  * Only an answer the API would give again, a 4xx other than 429, stops the walk at once.
+ *
+ * The API ends a walk with an empty page, and every page with results carries the cursor of the
+ * next one. A page with results and no cursor, or with the cursor it was asked with, is the API
+ * misbehaving: the walk stops and is reported incomplete, rather than guessed complete or
+ * looped on for ever.
  */
 final class CrossrefUpdatePager {
 
@@ -84,9 +89,14 @@ final class CrossrefUpdatePager {
             onPage.accept(response.results);
 
             if (isBlank(response.nextCursor)) {
-                LOGGER.warn("Crossref gave a page of results without a cursor for the next one, "
-                        + "taking it as the last page");
-                return true;
+                LOGGER.error("Crossref gave a page of results without a cursor for the next one; "
+                        + "there is no way to ask for the rest, giving up on this update");
+                return false;
+            }
+            if (response.nextCursor.equals(cursor)) {
+                LOGGER.error("Crossref gave a page of results with the same cursor it was asked with; "
+                        + "asking again would give the same page for ever, giving up on this update");
+                return false;
             }
             cursor = response.nextCursor;
         }
