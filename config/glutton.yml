@@ -33,10 +33,13 @@ elastic:
   maxConnections: 20
   # credentials, for a cluster with security on (the default since Elasticsearch 8): either a
   # user and password, or an API key (as given by the create API key call, base64 form). Do not
-  # put them in the host URL, the client does not read them there
+  # put them in the host URL, the client does not read them there. They go with every request,
+  # so the host must be https:// - unless the next setting says a plain http cluster is meant
+  # (a local one with TLS turned off, say)
   #username: elastic
   #password: changeme
   #apiKey:
+  #allowCredentialsOverHttp: false
   # for the loading and update commands: seconds to wait for a connection and for the answer to a
   # bulk of records. Elasticsearch takes more than the default 30s for a full bulk when it is busy,
   # and a bulk that times out is retried, so keep this generous

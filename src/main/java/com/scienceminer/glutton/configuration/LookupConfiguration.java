@@ -229,6 +229,9 @@ public class LookupConfiguration extends Configuration {
         private String username;
         private String password;
         private String apiKey;
+        // credentials go with every request, so a host that is not https sends them in the clear;
+        // refused unless this says that is understood (a local cluster with TLS off, say)
+        private boolean allowCredentialsOverHttp = false;
 
         public String getHost() {
             return host;
@@ -302,10 +305,34 @@ public class LookupConfiguration extends Configuration {
             this.apiKey = apiKey;
         }
 
+        public boolean isAllowCredentialsOverHttp() {
+            return allowCredentialsOverHttp;
+        }
+
+        public void setAllowCredentialsOverHttp(boolean allowCredentialsOverHttp) {
+            this.allowCredentialsOverHttp = allowCredentialsOverHttp;
+        }
+
+        @JsonIgnore
+        public boolean hasCredentials() {
+            return StringUtils.isNotBlank(apiKey) || StringUtils.isNotBlank(username);
+        }
+
         @JsonIgnore
         @ValidationMethod(message = "elastic.username and elastic.password go together: give both or neither")
         public boolean isCredentialsComplete() {
             return StringUtils.isBlank(username) == StringUtils.isBlank(password);
+        }
+
+        @JsonIgnore
+        @ValidationMethod(message = "elastic.host must be https:// when credentials are given, or they are sent "
+                + "in the clear with every request; set elastic.allowCredentialsOverHttp to true if that is meant")
+        public boolean isCredentialsOverTls() {
+            if (!hasCredentials() || allowCredentialsOverHttp || host == null) {
+                return true;
+            }
+            // a host without a scheme is plain http to the client
+            return host.trim().toLowerCase(java.util.Locale.ROOT).startsWith("https://");
         }
     }
 
