@@ -57,6 +57,17 @@ public class LookupConfigurationElasticTest {
     }
 
     @Test
+    public void elasticBlock_shouldRefuseATimeoutThatOverflowsMilliseconds() throws Exception {
+        try {
+            // 2,147,484 seconds is the first value whose milliseconds do not fit an int
+            load("elastic:\n  host: localhost:9200\n  index: glutton\n  socketTimeout: 2147484\n");
+            fail("the client takes the timeout in milliseconds as an int");
+        } catch (ConfigurationValidationException expected) {
+            assertThat(expected.getMessage().contains("socketTimeout"), is(true));
+        }
+    }
+
+    @Test
     public void elasticBlock_shouldRefuseANoTimeout() throws Exception {
         try {
             load("elastic:\n  host: localhost:9200\n  index: glutton\n  socketTimeout: 0\n");

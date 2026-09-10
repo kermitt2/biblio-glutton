@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Indexes batches of records in Elasticsearch off the thread that stores them, so the loading of
@@ -35,6 +36,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  * until one is done: the storing side slows down to what Elasticsearch takes rather than piling
  * up requests that then time out. Each bulk is retried on transient failures, see
  * {@link BulkRetry}.
+ *
+ * With {@code update} false, a document already in the index is left as it is rather than
+ * replaced; with it true, the record sent wins. Either way the identifier is the record's, so
+ * sending a document twice is harmless.
+ *
+ * What could not be indexed is counted in two ways: {@code counterFailedIndexedRecords} takes
+ * every document that did not get in, whatever the reason, and {@link #getRecordsNotSent()}
+ * counts only those Elasticsearch never took because it was away or too busy - the ones a later
+ * run can bring in, as opposed to documents Elasticsearch refused for good.
  *
  * The threads are daemons, so a running service is never kept alive by them; a command must call
  * {@link #awaitPending()} before it exits, or the last bulks are lost.
@@ -53,6 +63,7 @@ public class ElasticSearchAsyncIndexer implements Closeable {
     private final ExecutorService executor;
     private final Semaphore slots;
     private final AtomicInteger pending = new AtomicInteger();
+    private final AtomicLong recordsNotSent = new AtomicLong();
     private final Object drained = new Object();
 
     public static ElasticSearchAsyncIndexer getInstance(LookupConfiguration configuration) {
@@ -112,13 +123,24 @@ public class ElasticSearchAsyncIndexer implements Closeable {
         BulkRequest.Builder br = new BulkRequest.Builder();
         String indexName = configuration.getElastic().getIndex();
         for (IndexOperation operation : operations) {
-            br.operations(op -> op
-                .index(idx -> idx
-                    .index(indexName)
-                    .id(operation.id)
-                    .document(operation.document)
-                )
-            );
+            if (operation.createOnly) {
+                // refused with a 409 when the document is there already, which is the point
+                br.operations(op -> op
+                    .create(c -> c
+                        .index(indexName)
+                        .id(operation.id)
+                        .document(operation.document)
+                    )
+                );
+            } else {
+                br.operations(op -> op
+                    .index(idx -> idx
+                        .index(indexName)
+                        .id(operation.id)
+                        .document(operation.document)
+                    )
+                );
+            }
         }
         return elasticsearchClient.bulk(br.build());
     }
@@ -146,7 +168,7 @@ public class ElasticSearchAsyncIndexer implements Closeable {
                 // counter here for records that failed to index
                 counterFailedIndexedRecords.inc();
             } else if (!MetadataObjBuilder.isFilteredType(objToIndex)) {
-                operations.add(toOperation(objToIndex));
+                operations.add(toOperation(objToIndex, update));
             }
         }
         submit(operations, counterIndexedRecords, counterFailedIndexedRecords);
@@ -160,17 +182,17 @@ public class ElasticSearchAsyncIndexer implements Closeable {
                 // counter here for records that failed to index
                 counterFailedIndexedRecords.inc();
             } else if (!MetadataObjBuilder.isFilteredType(objToIndex)) {
-                operations.add(toOperation(objToIndex));
+                operations.add(toOperation(objToIndex, update));
             }
         }
         submit(operations, counterIndexedRecords, counterFailedIndexedRecords);
     }
 
-    private static IndexOperation toOperation(MetadataObj objToIndex) {
+    private static IndexOperation toOperation(MetadataObj objToIndex, boolean update) {
         objToIndex.type = null;
         String localIdentifier = objToIndex._id;
         objToIndex._id = null;
-        return new IndexOperation(localIdentifier, objToIndex);
+        return new IndexOperation(localIdentifier, objToIndex, !update);
     }
 
     /**
@@ -186,7 +208,7 @@ public class ElasticSearchAsyncIndexer implements Closeable {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.error("Interrupted while waiting to index " + operations.size() + " document(s), they will not be indexed");
-            counterFailedIndexedRecords.inc(operations.size());
+            notSent(operations.size(), counterFailedIndexedRecords);
             return;
         }
 
@@ -197,12 +219,16 @@ public class ElasticSearchAsyncIndexer implements Closeable {
                     Outcome outcome = bulkRetry.index(operations);
                     counterIndexedRecords.inc(outcome.indexed);
                     counterFailedIndexedRecords.inc(outcome.failed);
+                    notSent(outcome.unsent, counterFailedIndexedRecords);
+                    if (outcome.skipped > 0) {
+                        logger.debug(outcome.skipped + " document(s) already in the index were left as they were");
+                    }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    counterFailedIndexedRecords.inc(operations.size());
+                    notSent(operations.size(), counterFailedIndexedRecords);
                 } catch (RuntimeException e) {
                     logger.error("Batch indexing failed, " + operations.size() + " document(s) will not be indexed", e);
-                    counterFailedIndexedRecords.inc(operations.size());
+                    notSent(operations.size(), counterFailedIndexedRecords);
                 } finally {
                     slots.release();
                     bulkDone();
@@ -214,6 +240,23 @@ public class ElasticSearchAsyncIndexer implements Closeable {
             bulkDone();
             throw e;
         }
+    }
+
+    private void notSent(int count, Counter counterFailedIndexedRecords) {
+        if (count > 0) {
+            counterFailedIndexedRecords.inc(count);
+            recordsNotSent.addAndGet(count);
+        }
+    }
+
+    /**
+     * How many documents, since the start, Elasticsearch never took because it was away or too
+     * busy for as long as they were retried. Unlike the failed counter this leaves out the
+     * documents Elasticsearch refused for good, so a caller can tell an update cut short by an
+     * outage (worth doing again) from one with a few bad records in it (which is not).
+     */
+    public long getRecordsNotSent() {
+        return recordsNotSent.get();
     }
 
     private void bulkDone() {

@@ -6,6 +6,7 @@ import io.dropwizard.client.HttpClientConfiguration;
 import io.dropwizard.core.Configuration;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
@@ -199,16 +200,22 @@ public class LookupConfiguration extends Configuration {
     
     public class Elastic {
 
+        /** The largest number of seconds that still fits an int once in milliseconds. */
+        public static final int MAX_TIMEOUT_SECONDS = Integer.MAX_VALUE / 1000;
+
         private String host;
         private String index;
         private int maxConnections = 10;
 
         // the clients that index (dump load, gap and daily updates): how long to wait for the
         // connection, and for the answer to a bulk, in seconds. A bulk of thousands of records on
-        // a busy cluster takes longer than the 30s the client waits by default.
+        // a busy cluster takes longer than the 30s the client waits by default. The client takes
+        // milliseconds as an int, hence the upper bound.
         @Min(1)
+        @Max(MAX_TIMEOUT_SECONDS)
         private int connectTimeout = 30;
         @Min(1)
+        @Max(MAX_TIMEOUT_SECONDS)
         private int socketTimeout = 120;
         // how many bulks are sent to Elasticsearch at the same time while loading; beyond that,
         // the storing side waits rather than piling up requests

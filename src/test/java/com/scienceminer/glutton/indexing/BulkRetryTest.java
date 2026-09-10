@@ -36,6 +36,14 @@ public class BulkRetryTest {
         return operations;
     }
 
+    private static List<IndexOperation> createOnly(String... ids) {
+        List<IndexOperation> operations = new ArrayList<>();
+        for (String id : ids) {
+            operations.add(new IndexOperation(id, new MetadataObj(), true));
+        }
+        return operations;
+    }
+
     private static List<String> ids(List<IndexOperation> operations) {
         return operations.stream().map(op -> op.id).collect(Collectors.toList());
     }
@@ -126,8 +134,36 @@ public class BulkRetryTest {
         Outcome outcome = index(sender, operations("a", "b"));
 
         assertThat(outcome.indexed, is(0));
-        assertThat(outcome.failed, is(2));
+        // not refused, never taken: what a later run can still bring in
+        assertThat(outcome.unsent, is(2));
+        assertThat(outcome.failed, is(0));
         assertThat(sender.sent, hasSize(BulkRetry.MAX_ATTEMPTS));
+    }
+
+    @Test
+    public void alreadyThere_shouldBeSkippedWhenNotToBeReplaced() throws Exception {
+        ScriptedSender sender = new ScriptedSender(response(
+                acked("a"),
+                refused("b", 409, "version_conflict_engine_exception")));
+
+        Outcome outcome = index(sender, createOnly("a", "b"));
+
+        assertThat(outcome.indexed, is(1));
+        assertThat(outcome.skipped, is(1));
+        assertThat(outcome.failed, is(0));
+        assertThat(sender.sent, hasSize(1));
+    }
+
+    @Test
+    public void conflict_shouldStillBeAFailureWhenReplacing() throws Exception {
+        // an index operation does not conflict; a 409 there is something else and is not hidden
+        ScriptedSender sender = new ScriptedSender(response(
+                refused("a", 409, "version_conflict_engine_exception")));
+
+        Outcome outcome = index(sender, operations("a"));
+
+        assertThat(outcome.skipped, is(0));
+        assertThat(outcome.failed, is(1));
     }
 
     @Test
@@ -176,7 +212,9 @@ public class BulkRetryTest {
         Outcome outcome = index(sender, operations("a", "b"));
 
         assertThat(outcome.indexed, is(0));
+        // the cluster answered and said no: refused, not unsent
         assertThat(outcome.failed, is(2));
+        assertThat(outcome.unsent, is(0));
         assertThat(sender.sent, hasSize(1));
     }
 

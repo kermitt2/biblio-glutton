@@ -36,10 +36,17 @@ final class BulkRetry {
     static final class IndexOperation {
         final String id;
         final MetadataObj document;
+        /** Leave a document already in the index as it is, instead of replacing it. */
+        final boolean createOnly;
 
         IndexOperation(String id, MetadataObj document) {
+            this(id, document, false);
+        }
+
+        IndexOperation(String id, MetadataObj document, boolean createOnly) {
             this.id = id;
             this.document = document;
+            this.createOnly = createOnly;
         }
     }
 
@@ -50,8 +57,14 @@ final class BulkRetry {
 
     /** How a bulk ended, once nothing is left to retry. */
     static final class Outcome {
+        /** Taken by Elasticsearch. */
         int indexed;
+        /** Already in the index and left as they were, when asked not to replace. */
+        int skipped;
+        /** Refused for good: Elasticsearch answered and said no. Sending them again would not help. */
         int failed;
+        /** Never got through: Elasticsearch did not answer, or could not take them, as many times as asked. */
+        int unsent;
     }
 
     private final BulkSender sender;
@@ -103,14 +116,15 @@ final class BulkRetry {
             LOGGER.error("Giving up on " + remaining.size() + " document(s) after " + MAX_ATTEMPTS
                     + " attempts, they will not be indexed. Reindex the storage with the index command "
                     + "once Elasticsearch is healthy.");
-            outcome.failed += remaining.size();
+            outcome.unsent += remaining.size();
         }
         return outcome;
     }
 
     /**
      * Goes through the answer item by item: acknowledged documents are counted, refused ones are
-     * counted and logged, rejected ones are handed back to be sent again.
+     * counted and logged, rejected ones are handed back to be sent again. A document that was
+     * not to be replaced and is already there is neither a failure nor something to send again.
      */
     private static List<IndexOperation> sortItems(List<IndexOperation> sent, BulkResponse response, Outcome outcome) {
         List<BulkResponseItem> items = response.items();
@@ -128,6 +142,9 @@ final class BulkRetry {
             BulkResponseItem item = items.get(i);
             if (item.error() == null) {
                 outcome.indexed++;
+            } else if (sent.get(i).createOnly && item.status() == 409) {
+                // the document is there already and was to be left alone: that is what was asked
+                outcome.skipped++;
             } else if (isRetriable(item.status()) || isRejectedExecution(item)) {
                 rejected.add(sent.get(i));
             } else {
