@@ -51,8 +51,9 @@ The Elasticsearch node is given by `elastic.host` in `config/glutton.yml`, with 
 the cluster is behind TLS (`https://elastic.example.org:9200`). A cluster with security on, which
 is the default since Elasticsearch 8, needs credentials: give a user and password with
 `elastic.username` and `elastic.password`, or an API key with `elastic.apiKey`. They are sent with
-every request by the loading commands and by the service alike. Credentials in the host URL are not
-read.
+every request by the loading commands and by the service alike, so the host has to be `https://`
+or the service refuses to start: set `elastic.allowCredentialsOverHttp: true` for a cluster that
+has security on but TLS off, such as a local one. Credentials in the host URL are not read.
 
 ### Build the embedded LMDB databases
 
