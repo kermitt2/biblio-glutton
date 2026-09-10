@@ -33,9 +33,11 @@ import com.codahale.metrics.Meter;
  *
  * Runs once for the gap update command, and every day for the scheduled daily update, so each
  * run works out its own dates and cleans up its own threads. A run is complete when every page
- * was received from Crossref and every record was stored, and only then is the last indexed date
- * moved forward: a run cut short by an outage leaves it where it was, so the next one covers the
- * same period again rather than leaving a hole.
+ * was received from Crossref and every record was stored and handed to Elasticsearch, and only
+ * then is the last indexed date moved forward: a run cut short by an outage of either leaves it
+ * where it was, so the next one covers the same period again rather than leaving a hole. A few
+ * records Elasticsearch refuses for good do not hold a run back, since asking again would not
+ * help; they are counted and logged.
  */
 public class IncrementalLoaderTask implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(IncrementalLoaderTask.class);
@@ -170,8 +172,12 @@ public class IncrementalLoaderTask implements Runnable {
             thread.setDaemon(true);
             return thread;
         });
-        // a file that could not be stored makes the run incomplete like a missing page does
+        // a file that could not be stored makes the run incomplete like a missing page does, and
+        // so do records Elasticsearch never took; the indexer counts those since the start, so
+        // this run's share is the difference
         final List<String> filesNotLoaded = Collections.synchronizedList(new ArrayList<>());
+        ElasticSearchAsyncIndexer indexer = ElasticSearchAsyncIndexer.getInstance(configuration);
+        long notSentBefore = indexer.getRecordsNotSent();
         final String filePrefix = crossrefFileDirectory.getPath() + File.separator + (daily ? "D" : "G");
         final int[] nbFiles = {1000000};
 
@@ -199,7 +205,7 @@ public class IncrementalLoaderTask implements Runnable {
             loader.shutdown();
             awaitLoader(loader);
             try {
-                ElasticSearchAsyncIndexer.getInstance(configuration).awaitPending();
+                indexer.awaitPending();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -207,7 +213,8 @@ public class IncrementalLoaderTask implements Runnable {
             openAccessUpdater.close();
         }
 
-        if (allPagesReceived && filesNotLoaded.isEmpty() && !Thread.currentThread().isInterrupted()) {
+        long notSent = indexer.getRecordsNotSent() - notSentBefore;
+        if (allPagesReceived && filesNotLoaded.isEmpty() && notSent == 0 && !Thread.currentThread().isInterrupted()) {
             lastRunCompleted = true;
             // the updates that came in while the run was going are asked for next time
             metadataLookup.setLastIndexed(runStart);
@@ -216,9 +223,14 @@ public class IncrementalLoaderTask implements Runnable {
                     + counterFailedIndexedRecords.getCount() + " not indexed. Last indexed date is now "
                     + runStart + ".");
         } else {
-            String reason = allPagesReceived
-                    ? filesNotLoaded.size() + " incremental file(s) could not be stored"
-                    : "Crossref stopped answering";
+            String reason;
+            if (!allPagesReceived) {
+                reason = "Crossref stopped answering";
+            } else if (!filesNotLoaded.isEmpty()) {
+                reason = filesNotLoaded.size() + " incremental file(s) could not be stored";
+            } else {
+                reason = notSent + " record(s) could not be indexed because Elasticsearch did not take them";
+            }
             LOGGER.error("Crossref update incomplete, " + reason + ". The last indexed date stays at "
                     + since + " so the next update covers the same period again; the incremental files "
                     + "are kept under " + crossrefFileDirectory.getPath() + ".");

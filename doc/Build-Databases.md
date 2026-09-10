@@ -170,8 +170,11 @@ This command should thus be launched only one time after the loading of a full C
 The command ends once every page was received from Crossref and every record stored and indexed.
 The Crossref REST API is not always there: a request that fails is sent again a few times with a
 growing pause, and if the API stays down the command gives up, says so and exits with a non-zero
-code. The last indexed date is only moved forward by a complete run, so running the command again
-picks up the whole period again and nothing is skipped. The records loaded before the API went
+code. The same goes for Elasticsearch: records it did not take because it was away or too busy
+for as long as they were retried make the run incomplete (a few records it refuses for good, a
+mapping error say, do not; they are logged). The last indexed date is only moved forward by a
+complete run, so running the command again picks up the whole period again and nothing is
+skipped. The records loaded before the API went
 down are kept, and so are the incremental files under `dumpPath`. The exit code is also non-zero
 when some records could not be indexed in Elasticsearch, see
 [Indexing while loading](#indexing-while-loading).
