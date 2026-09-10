@@ -73,6 +73,39 @@ For convenience, in case you are only interested by the Open Access URL for a bi
     - `GET host:port/service/oa_istex?pmc=PMC` return the best Open Accss PDF url and ISTEX PDF url for a given PMC ID
     - `GET host:port/service/oa_istex?pii=PII` return the best Open Accss PDF url and ISTEX PDF url for a given PII ID
 
+## Health
+
+- `GET host:port/service/health` says whether the service can answer, as JSON: `200` when the
+  storage opens and Elasticsearch is there with the index, `503` otherwise, with the details either
+  way:
+
+```json
+{
+  "status": "degraded",
+  "storage": {
+    "status": "ok",
+    "Crossref metadata stored size (LMDB)": "{crossref_Jsondoc=149817829}",
+    ...
+  },
+  "elasticsearch": {
+    "status": "unreachable",
+    "host": "localhost:9200",
+    "index": "glutton",
+    "message": "Elasticsearch is not reachable at localhost:9200: java.net.ConnectException: Connection refused"
+  }
+}
+```
+
+`elasticsearch.status` is `ok`, `unreachable`, `missing_index` (the cluster answers but the
+configured index is not there, so every matching query would find nothing) or `error`. When it is
+`ok`, `documents` is the number of records in the index.
+
+While Elasticsearch is away, the lookups by identifier keep working from the storage and the
+matching queries (by metadata or by raw citation) are answered with `503` rather than `404`, so a
+record that is not found and a service that cannot search are told apart. The same report is
+served by Dropwizard on the admin port as `host:adminport/healthcheck`, and the log says when
+Elasticsearch goes away and when it is back.
+
 ## cURL examples
 
 To illustrate the usage of the API, we provide some cURL example queries:
