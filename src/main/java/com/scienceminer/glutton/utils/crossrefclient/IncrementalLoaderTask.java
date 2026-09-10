@@ -144,6 +144,11 @@ public class IncrementalLoaderTask implements Runnable {
             openAccessMeter,
             counterDroppedOpenAccess);
 
+        // one thread storing the files as they come, and every task kept so the run can wait for
+        // them: the files must not be cleaned up while a loader still needs one
+        ExecutorService executorLoading = Executors.newSingleThreadExecutor();
+        List<Future<?>> loadingTasks = new ArrayList<>();
+
         try {
 
         while(!responseEmpty) {
@@ -207,10 +212,9 @@ public class IncrementalLoaderTask implements Runnable {
             } 
 
             // load in another thread
-            ExecutorService executorLoading = Executors.newSingleThreadExecutor();
             Runnable taskLoading = new LoadCrossrefFile(crossrefFile, 
                 jsonObjectsStr, this.configuration, meter, counterInvalidRecords, counterIndexedRecords, counterFailedIndexedRecords);
-            executorLoading.submit(taskLoading);
+            loadingTasks.add(executorLoading.submit(taskLoading));
 
             // resolved on its own thread, so the Crossref fetching is not held up by OpenAlex
             openAccessUpdater.submit(jsonObjectsStr);
@@ -229,6 +233,18 @@ public class IncrementalLoaderTask implements Runnable {
         }
 
         } finally {
+            // every file fetched is stored before anything else happens to it
+            executorLoading.shutdown();
+            for (Future<?> loadingTask : loadingTasks) {
+                try {
+                    loadingTask.get();
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (ExecutionException e) {
+                    LOGGER.error("Loading an incremental file failed", e.getCause());
+                }
+            }
             // waits for the queued lookups, and never fails the Crossref update
             openAccessUpdater.close();
         }
@@ -236,10 +252,8 @@ public class IncrementalLoaderTask implements Runnable {
         // possibly update with the lastest indexed date obtained from this file
         metadataLookup.setLastIndexed(LocalDateTime.now());  
 
-        // waiting that no more loading and no more indexing take place to optionally clean the
-        // directory of incremental files
-        // note: rather than managing termination of threads, we look at storage/index size
-        // for convenience
+        // the loading is done above; waiting that no more indexing takes place to optionally
+        // clean the directory of incremental files
         MetadataMatching metadataMatching = 
             MetadataMatching.getInstance(this.configuration, this.metadataLookup, null);
 
