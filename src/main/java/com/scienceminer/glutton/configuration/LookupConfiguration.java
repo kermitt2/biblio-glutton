@@ -6,6 +6,8 @@ import io.dropwizard.client.HttpClientConfiguration;
 import io.dropwizard.core.Configuration;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.io.File;
@@ -26,6 +28,7 @@ public class LookupConfiguration extends Configuration {
 
     private String searchEngine;
 
+    @Valid
     private Elastic elastic;
 
     private Solr solr;
@@ -197,9 +200,27 @@ public class LookupConfiguration extends Configuration {
     
     public class Elastic {
 
+        /** The largest number of seconds that still fits an int once in milliseconds. */
+        public static final int MAX_TIMEOUT_SECONDS = Integer.MAX_VALUE / 1000;
+
         private String host;
         private String index;
         private int maxConnections = 10;
+
+        // the clients that index (dump load, gap and daily updates): how long to wait for the
+        // connection, and for the answer to a bulk, in seconds. A bulk of thousands of records on
+        // a busy cluster takes longer than the 30s the client waits by default. The client takes
+        // milliseconds as an int, hence the upper bound.
+        @Min(1)
+        @Max(MAX_TIMEOUT_SECONDS)
+        private int connectTimeout = 30;
+        @Min(1)
+        @Max(MAX_TIMEOUT_SECONDS)
+        private int socketTimeout = 120;
+        // how many bulks are sent to Elasticsearch at the same time while loading; beyond that,
+        // the storing side waits rather than piling up requests
+        @Min(1)
+        private int maxConcurrentBulks = 4;
 
         public String getHost() {
             return host;
@@ -223,6 +244,30 @@ public class LookupConfiguration extends Configuration {
 
         public void setMaxConnections(int maxConnections) {
             this.maxConnections = maxConnections;
+        }
+
+        public int getConnectTimeout() {
+            return connectTimeout;
+        }
+
+        public void setConnectTimeout(int connectTimeout) {
+            this.connectTimeout = connectTimeout;
+        }
+
+        public int getSocketTimeout() {
+            return socketTimeout;
+        }
+
+        public void setSocketTimeout(int socketTimeout) {
+            this.socketTimeout = socketTimeout;
+        }
+
+        public int getMaxConcurrentBulks() {
+            return maxConcurrentBulks;
+        }
+
+        public void setMaxConcurrentBulks(int maxConcurrentBulks) {
+            this.maxConcurrentBulks = maxConcurrentBulks;
         }
     }
 
