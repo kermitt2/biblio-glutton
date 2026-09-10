@@ -3,6 +3,8 @@ package com.scienceminer.glutton.utils;
 import com.scienceminer.glutton.exception.ServiceException;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -62,7 +64,38 @@ public class IdentifiersTest {
         for (int i = 0; i < 100; i++) {
             huge.append("abcdefghij");
         }
-        assertThat(refused(() -> Identifiers.doi(huge.toString())).getMessage(), containsString("characters long"));
+        assertThat(refused(() -> Identifiers.doi(huge.toString())).getMessage(), containsString("bytes) long"));
+    }
+
+    @Test
+    public void doi_shouldMeasureBytesNotCharacters() {
+        // 80 characters, but 240 bytes: would overflow the 511-byte LMDB key once serialised
+        StringBuilder wide = new StringBuilder("10.1234/");
+        for (int i = 0; i < 72; i++) {
+            wide.append('\u4e2d');
+        }
+        assertThat(wide.length(), lessThan(Identifiers.MAX_LENGTH));
+        refused(() -> Identifiers.doi(wide.toString()));
+
+        // a few accented characters are fine
+        assertThat(Identifiers.doi("10.1234/r\u00e9sum\u00e9"), is("10.1234/r\u00e9sum\u00e9"));
+    }
+
+    @Test
+    public void longestAcceptedDoi_shouldFitTheLmdbKey() {
+        StringBuilder ascii = new StringBuilder("10.1234/");
+        while (ascii.length() < Identifiers.MAX_LENGTH) {
+            ascii.append('x');
+        }
+        StringBuilder wide = new StringBuilder("10.1234/");
+        while (wide.toString().getBytes(StandardCharsets.UTF_8).length + 3 <= Identifiers.MAX_LENGTH) {
+            wide.append('\u4e2d');
+        }
+        for (String doi : new String[] { ascii.toString(), wide.toString() }) {
+            String accepted = Identifiers.doi(doi);
+            // 511 is LMDB's default maximum key size, what the lookups allocate their key buffer with
+            assertThat(BinarySerialiser.serialize(accepted).length, lessThan(511));
+        }
     }
 
     // ---------------------------------------------------------------- PMID, PMC
@@ -109,6 +142,9 @@ public class IdentifiersTest {
         assertThat(Identifiers.pii("S0266462305050762"), is("S0266462305050762"));
         assertThat(Identifiers.pii("S0266-4623(05)05076-2"), is("S0266-4623(05)05076-2"));
         refused(() -> Identifiers.pii("https://example.org/S0266462305050762"));
+        // punctuation alone is not an identifier
+        refused(() -> Identifiers.pii("-"));
+        refused(() -> Identifiers.pii("()."));
     }
 
     // ---------------------------------------------------------------- free text
