@@ -2,6 +2,7 @@ package com.scienceminer.glutton.utils;
 
 import com.scienceminer.glutton.exception.ServiceException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -19,7 +20,11 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
  */
 public final class Identifiers {
 
-    /** Well under the LMDB key limit once serialised, and far beyond any real identifier. */
+    /**
+     * Well under the LMDB key limit (511 bytes) once serialised, and far beyond any real
+     * identifier. Checked on the UTF-8 bytes, not the characters: two hundred characters of three
+     * bytes each would still not fit the key.
+     */
     static final int MAX_LENGTH = 200;
     /** How much of a refused value is echoed back, so a huge input is not sent back in full. */
     private static final int ECHO_LENGTH = 60;
@@ -39,7 +44,8 @@ public final class Identifiers {
     private static final Pattern PMC = Pattern.compile("(?i)PMC\\d{1,12}");
     private static final Pattern HAL = Pattern.compile("[a-z0-9]+-[a-z0-9-]+(v\\d+)?");
     private static final Pattern ISTEX = Pattern.compile("[0-9A-F]{40}");
-    private static final Pattern PII = Pattern.compile("[A-Za-z0-9()\\-.]+");
+    // at least one letter or digit: punctuation alone is not an identifier
+    private static final Pattern PII = Pattern.compile("(?=.*[A-Za-z0-9])[A-Za-z0-9()\\-.]+");
 
     private Identifiers() {
     }
@@ -119,9 +125,11 @@ public final class Identifiers {
             throw new ServiceException(400, "The supplied " + what + " is empty.");
         }
         String cleaned = value.trim();
-        if (cleaned.length() > MAX_LENGTH) {
+        int bytes = cleaned.getBytes(StandardCharsets.UTF_8).length;
+        if (bytes > MAX_LENGTH) {
             throw new ServiceException(400, "The supplied " + what + " is " + cleaned.length()
-                    + " characters long, which is not " + article(what) + " " + what + ": " + echo(cleaned));
+                    + " characters (" + bytes + " bytes) long, which is not " + article(what) + " " + what
+                    + ": " + echo(cleaned));
         }
         return cleaned;
     }
