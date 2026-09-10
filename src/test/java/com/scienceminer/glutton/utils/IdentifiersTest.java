@@ -121,18 +121,38 @@ public class IdentifiersTest {
     // ---------------------------------------------------------------- HAL, ISTEX, PII
 
     @Test
-    public void halId_shouldBeLowerCaseWithoutTheUrl() {
-        assertThat(Identifiers.halId("hal-01234567"), is("hal-01234567"));
+    public void halId_shouldTakeEveryCollectionPrefixAndSeparator() {
+        // the shapes found in doc/hal-doi-missing.tsv: dozens of prefixes, a hyphen or an underscore
+        for (String id : new String[] { "hal-01234567", "hal-282114", "tel-01234567", "cea-00273504", "in2p3-00012345",
+                "halshs-01234567", "inria-00123456", "dumas-01234567", "sic_00459181", "mem_00679891", "ijn_02161962" }) {
+            assertThat(Identifiers.halId(id), is(id));
+        }
         assertThat(Identifiers.halId("HAL-01234567v2"), is("hal-01234567v2"));
-        assertThat(Identifiers.halId("https://hal.science/hal-01234567"), is("hal-01234567"));
-        assertThat(Identifiers.halId("tel-01234567"), is("tel-01234567"));
         refused(() -> Identifiers.halId("01234567"));
         refused(() -> Identifiers.halId("hal 01234567"));
+        refused(() -> Identifiers.halId("hal-"));
+        refused(() -> Identifiers.halId("10.1234/abc"));
+    }
+
+    @Test
+    public void halId_shouldBeReadOutOfAnyHalPortalUrl() {
+        assertThat(Identifiers.halId("https://hal.science/hal-01234567"), is("hal-01234567"));
+        assertThat(Identifiers.halId("https://hal.science/hal-01234567v2/document"), is("hal-01234567v2"));
+        assertThat(Identifiers.halId("https://inria.hal.science/hal-01234567"), is("hal-01234567"));
+        assertThat(Identifiers.halId("https://theses.hal.science/tel-01234567"), is("tel-01234567"));
+        assertThat(Identifiers.halId("https://halshs.archives-ouvertes.fr/halshs-01234567/file/paper.pdf"), is("halshs-01234567"));
+        assertThat(Identifiers.halId("https://hal-cea.archives-ouvertes.fr/cea-00273504"), is("cea-00273504"));
+        assertThat(Identifiers.halId("http://hal.archives-ouvertes.fr/sic_00459181"), is("sic_00459181"));
+        assertThat(Identifiers.halId("https://shs.hal.science/hal-01234567?lang=en"), is("hal-01234567"));
+        // a URL with no identifier in it is not one
+        refused(() -> Identifiers.halId("https://hal.science/search/index?q=glutton"));
     }
 
     @Test
     public void istexId_shouldBeFortyHexadecimalCharactersUpperCase() {
         assertThat(Identifiers.istexId("cc91e0f1789978ce79d653533100ba315ca337b3"), is("CC91E0F1789978CE79D653533100BA315CA337B3"));
+        assertThat(Identifiers.istexId("https://api.istex.fr/document/CC91E0F1789978CE79D653533100BA315CA337B3/fulltext/pdf"),
+                is("CC91E0F1789978CE79D653533100BA315CA337B3"));
         refused(() -> Identifiers.istexId("CC91E0F1"));
         refused(() -> Identifiers.istexId("CC91E0F1789978CE79D653533100BA315CA337BZ"));
     }
