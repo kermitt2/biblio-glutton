@@ -75,7 +75,7 @@ public class LookupEngine {
         List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle, firstAuthor, matchingDocuments);
 
         if (!areMetadataMatching(rankedMatchingDocuments.get(0))) {
-            throw new NotFoundException("Best bibliographical record did not passed the post-validation");
+            throw new NotFoundException("Best bibliographical record did not pass the post-validation");
         }
 
         return injectIdsByDoi(rankedMatchingDocuments.get(0).getJsonObject(), rankedMatchingDocuments.get(0).getDOI());
