@@ -99,7 +99,7 @@ public class LookupEngine {
                 List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle, firstAuthor, matchingDocuments);
 
                 if (!areMetadataMatching(rankedMatchingDocuments.get(0))) {
-                    callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                    callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                     return;
                 }
                 
@@ -133,7 +133,7 @@ public class LookupEngine {
                     null, null, volume, null, firstPage, null, matchingDocuments);
 
                 if (!areMetadataMatching(rankedMatchingDocuments.get(0))) {
-                    callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                    callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                     return;
                 }
 
@@ -205,7 +205,7 @@ public class LookupEngine {
                         //no title and author, extract with grobid. if grobid unavailable... it will fail.
                         if (!isBlank(firstAuthor1)) {
                             if (!areMetadataMatching(localResultDocument)) {
-                                callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                                callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                                 return;
                             }
                              
@@ -229,7 +229,7 @@ public class LookupEngine {
                 if (!isBlank(firstAuthor)) {
 
                     if (!areMetadataMatching(localResultDocument)) {                         
-                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                         return;
                     }
 
@@ -317,7 +317,7 @@ public class LookupEngine {
                         //no title and author, extract with grobid. if grobid unavailable... it will fail.
                         if (!isBlank(firstAuthor1)) {
                             if (!areMetadataMatching(localResultDocument)) {
-                                callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                                callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                                 return;
                             }
                              
@@ -341,7 +341,7 @@ public class LookupEngine {
                 if (!isBlank(firstAuthor)) {
 
                     if (!areMetadataMatching(localResultDocument)) {                         
-                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                         return;
                     }
 
@@ -412,7 +412,7 @@ public class LookupEngine {
             outputData = extractTitleAndFirstAuthorFromJson(outputData);          
 
             if (!areMetadataMatchingTitleAuthor(atitle, firstAuthor, outputData, true)) {
-                throw new NotFoundException("Best bibliographical record did not passed the post-validation");
+                throw new NotFoundException("Best bibliographical record did not pass the post-validation");
             }
         }
         return outputData;
