@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rockymadden.stringmetric.similarity.RatcliffObershelpMetric;
+import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.data.IstexData;
 import com.scienceminer.glutton.data.MatchingDocument;
 import com.scienceminer.glutton.data.PmidData;
@@ -47,14 +48,15 @@ public class LookupEngine {
     
     private GrobidClient grobidClient = null;
 
-    private static String ISTEX_BASE = "https://api.istex.fr/document/";
+    private double matchingThreshold = 0.7;
 
-    private static double THRESHOLD_MATCHING = 0.7;
+    private static String ISTEX_BASE = "https://api.istex.fr/document/";
 
     public LookupEngine() {
     }
 
     public LookupEngine(StorageEnvFactory storageFactory) {
+        this.matchingThreshold = storageFactory.getConfiguration().getMatchingThreshold();
         this.oaDoiLookup = new OALookup(storageFactory);
         this.istexLookup = new IstexIdsLookup(storageFactory);
         this.crossrefMetadataLookup = CrossrefMetadataLookup.getInstance(storageFactory);
@@ -874,7 +876,7 @@ public class LookupEngine {
      * Introduce a minimum matching threshold based on the pairwise ranking
      */
     private boolean areMetadataMatching(MatchingDocument result) {
-        return (result.getMatchingScore() < THRESHOLD_MATCHING) ? false : true;
+        return (result.getMatchingScore() < matchingThreshold) ? false : true;
     }
 
     private double ratcliffObershelpDistance(String string1, String string2, boolean caseDependent) {

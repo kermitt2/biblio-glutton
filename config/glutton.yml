@@ -19,6 +19,12 @@ timeZone: UTC
 # the day hour for lauching the automatic daily incremental update, format is HH:MM
 dailyUpdateTime: 03:00
 
+# threshold value for the score the lookup engine uses to decide whether a query result is actually a valid match
+# a value of 1 means only perfect matches get through
+# a value of 0 means the top result will always pass the match validation
+# if not specified, the default is 0.7
+# matchingThreshold: 0
+
 # define the search infrastructure to be used, possible values are "elasticSearch" or "solr"
 searchEngine: elasticSearch
 #searchEngine: solr
