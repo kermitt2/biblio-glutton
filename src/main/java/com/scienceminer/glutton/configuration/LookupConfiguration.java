@@ -23,6 +23,8 @@ public class LookupConfiguration extends Configuration {
 
     private int blockSize = 0;
 
+    private double matchingThreshold = 0.7;
+
     private String storage;
 
     private String version;
@@ -186,6 +188,10 @@ public class LookupConfiguration extends Configuration {
 
     public void setDailyUpdateTime(String dailyUpdateTime) {
         this.dailyUpdateTime = dailyUpdateTime;
+    }
+
+    public double getMatchingThreshold() {
+        return this.matchingThreshold;
     }
 
     public class Source {

@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rockymadden.stringmetric.similarity.RatcliffObershelpMetric;
+import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.data.IstexData;
 import com.scienceminer.glutton.data.MatchingDocument;
 import com.scienceminer.glutton.data.PmidData;
@@ -48,14 +49,15 @@ public class LookupEngine {
     
     private GrobidClient grobidClient = null;
 
-    private static String ISTEX_BASE = "https://api.istex.fr/document/";
+    private double matchingThreshold = 0.7;
 
-    private static double THRESHOLD_MATCHING = 0.7;
+    private static String ISTEX_BASE = "https://api.istex.fr/document/";
 
     public LookupEngine() {
     }
 
     public LookupEngine(StorageEnvFactory storageFactory) {
+        this.matchingThreshold = storageFactory.getConfiguration().getMatchingThreshold();
         this.oaDoiLookup = new OALookup(storageFactory);
         this.istexLookup = new IstexIdsLookup(storageFactory);
         this.crossrefMetadataLookup = CrossrefMetadataLookup.getInstance(storageFactory);
@@ -74,7 +76,7 @@ public class LookupEngine {
         List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle, firstAuthor, matchingDocuments);
 
         if (!areMetadataMatching(rankedMatchingDocuments.get(0))) {
-            throw new NotFoundException("Best bibliographical record did not passed the post-validation");
+            throw new NotFoundException("Best bibliographical record did not pass the post-validation");
         }
 
         return injectIdsByDoi(rankedMatchingDocuments.get(0).getJsonObject(), rankedMatchingDocuments.get(0).getDOI());
@@ -98,7 +100,7 @@ public class LookupEngine {
                 List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle, firstAuthor, matchingDocuments);
 
                 if (!areMetadataMatching(rankedMatchingDocuments.get(0))) {
-                    callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                    callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                     return;
                 }
                 
@@ -132,7 +134,7 @@ public class LookupEngine {
                     null, null, volume, null, firstPage, null, matchingDocuments);
 
                 if (!areMetadataMatching(rankedMatchingDocuments.get(0))) {
-                    callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                    callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                     return;
                 }
 
@@ -187,7 +189,7 @@ public class LookupEngine {
                         //no title and author, extract with grobid. if grobid unavailable... it will fail.
                         if (!isBlank(firstAuthor1)) {
                             if (!areMetadataMatching(localResultDocument)) {
-                                callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                                callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                                 return;
                             }
                              
@@ -211,7 +213,7 @@ public class LookupEngine {
                 if (!isBlank(firstAuthor)) {
 
                     if (!areMetadataMatching(localResultDocument)) {                         
-                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                         return;
                     }
 
@@ -282,7 +284,7 @@ public class LookupEngine {
                         //no title and author, extract with grobid. if grobid unavailable... it will fail.
                         if (!isBlank(firstAuthor1)) {
                             if (!areMetadataMatching(localResultDocument)) {
-                                callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                                callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                                 return;
                             }
                              
@@ -306,7 +308,7 @@ public class LookupEngine {
                 if (!isBlank(firstAuthor)) {
 
                     if (!areMetadataMatching(localResultDocument)) {                         
-                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                         return;
                     }
 
@@ -379,7 +381,7 @@ public class LookupEngine {
             outputData = extractTitleAndFirstAuthorFromJson(outputData);          
 
             if (!areMetadataMatchingTitleAuthor(atitle, firstAuthor, outputData, true)) {
-                throw new NotFoundException("Best bibliographical record did not passed the post-validation");
+                throw new NotFoundException("Best bibliographical record did not pass the post-validation");
             }
         }
         return outputData;
@@ -846,7 +848,7 @@ public class LookupEngine {
      * Introduce a minimum matching threshold based on the pairwise ranking
      */
     private boolean areMetadataMatching(MatchingDocument result) {
-        return (result.getMatchingScore() < THRESHOLD_MATCHING) ? false : true;
+        return (result.getMatchingScore() < matchingThreshold) ? false : true;
     }
 
     private double ratcliffObershelpDistance(String string1, String string2, boolean caseDependent) {
