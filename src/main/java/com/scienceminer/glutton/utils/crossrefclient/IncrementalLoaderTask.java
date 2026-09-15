@@ -1,15 +1,12 @@
 package com.scienceminer.glutton.utils.crossrefclient;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.io.FileUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
-import com.scienceminer.glutton.storage.lookup.MetadataMatching;
 import com.scienceminer.glutton.storage.lookup.OALookup;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.utils.openalex.OpenAccessUpdater;
@@ -24,30 +21,32 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.*;  
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.concurrent.*;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
-import java.util.function.Consumer;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-
 /**
- * Load incrementally updates based on last indexed date information. 
- * When the incremental load operations are realized, be sure to call the close() method
- * to ensure that all Executors are terminated.
+ * Loads the Crossref records updated since the last indexed date, from the Crossref REST API.
  *
+ * Runs once for the gap update command, and every day for the scheduled daily update, so each
+ * run works out its own dates and cleans up its own threads. A run is complete when every page
+ * was received from Crossref and every record was stored and handed to Elasticsearch, and only
+ * then is the last indexed date moved forward: a run cut short by an outage of either leaves it
+ * where it was, so the next one covers the same period again rather than leaving a hole. A few
+ * records Elasticsearch refuses for good do not hold a run back, since asking again would not
+ * help; they are counted and logged.
  */
 public class IncrementalLoaderTask implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(IncrementalLoaderTask.class);
 
+    /** How far back a daily run picks up from where the last complete one stopped. */
+    static final int MAX_DAILY_CATCH_UP_DAYS = 7;
+
     private CrossrefMetadataLookup metadataLookup;
-    private LocalDateTime lastIndexed; 
+    private LocalDateTime lastIndexed;
     private LookupConfiguration configuration;
     private CrossrefClient client;
 
@@ -61,16 +60,14 @@ public class IncrementalLoaderTask implements Runnable {
     // environment per run would pile up for as long as the service is up
     private OALookup openAccessLookup;
 
-    // if true, we will also index the incremental dump files in elasticsearch during the task via 
-    // the external indexing module
+    // if true, we will also index the records in elasticsearch during the task
     private boolean indexing = false;
     private boolean daily = false;
 
-    private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("YYYY-MM-dd");
-    private LocalDate today;
+    private volatile boolean lastRunCompleted = false;
 
-    public IncrementalLoaderTask(CrossrefMetadataLookup metadataLookup, 
-                                LocalDateTime lastIndexed, 
+    public IncrementalLoaderTask(CrossrefMetadataLookup metadataLookup,
+                                LocalDateTime lastIndexed,
                                 LookupConfiguration configuration,
                                 Meter meter,
                                 Counter counterInvalidRecords,
@@ -96,43 +93,67 @@ public class IncrementalLoaderTask implements Runnable {
 
         this.indexing = indexing;
         this.daily = daily;
-        this.today = LocalDate.now();
-
-        if (this.daily) {
-            // the last indexed time need to be ajusted to the previous day
-            LocalDate yesterday = today.minusDays(1);
-            this.lastIndexed = yesterday.atStartOfDay();;
-        }
     }
 
-    public void run()  {
+    /**
+     * Whether the last run received every page from Crossref and stored every record. False
+     * before the first run, and after a run that Crossref cut short.
+     */
+    public boolean isLastRunCompleted() {
+        return lastRunCompleted;
+    }
+
+    /**
+     * From when a daily run asks for updates. Normally the day before, but when the last complete
+     * run is older than that - a night was skipped or cut short - it picks up from there, up to
+     * {@value #MAX_DAILY_CATCH_UP_DAYS} days back, so nothing is lost. Further back than that is
+     * a database that was never brought up to date, which is what the gap update command is for,
+     * and not something to quietly attempt every night.
+     */
+    static LocalDateTime dailySince(LocalDateTime lastIndexed, LocalDate today) {
+        LocalDateTime yesterday = today.minusDays(1).atStartOfDay();
+        if (lastIndexed == null || !lastIndexed.isBefore(yesterday)) {
+            return yesterday;
+        }
+        LocalDateTime oldest = today.minusDays(MAX_DAILY_CATCH_UP_DAYS).atStartOfDay();
+        return lastIndexed.isBefore(oldest) ? yesterday : lastIndexed;
+    }
+
+    public void run() {
         /**
          * Requests are sent one after the other and cursors are used to obtain the next set of updated records.
-         * After each request: 
-         * - a new request using the next-cursor field is submitted to the pool
-         * - the set of results is written in an external file to augment the incremental
-         * dump files and to be indexed by ES (as it is done by an external node.js script).  
-         * - the crossref records will be loaded when an incremental dump file is completed, in parallel
+         * After each request:
+         * - the set of results is written in an external file to augment the incremental dump files
+         * - the crossref records of the file are stored and indexed on a second thread, so the next
+         *   page is fetched meanwhile
          *
-         * Request pool to get data from api.crossref.org without exceeding provided time limits.
-         *
+         * "from-index-date" but we get > 1 million per day, or "from-update-date" (a few hundred thousands)
+         * &cursor=* for first query then use "next-cursor" field as value
+         * rows=20 by default, max is 1000
          **/
+        lastRunCompleted = false;
 
-        // "from-index-date" but we get > 1 million per day, or "from-update-date" (a few hundred thousands)
-        // &cursor=* for first query then use "next-cursor" field as value
-        // rows=20 by default, max is 1000
+        // worked out per run, not once when the task is built: the daily task is built once at
+        // startup and runs for as long as the service is up
+        LocalDate today = LocalDate.now();
+        LocalDateTime runStart = LocalDateTime.now();
+        LocalDateTime since;
+        if (daily) {
+            since = dailySince(metadataLookup.getLastIndexed(), today);
+        } else {
+            since = (lastIndexed != null) ? lastIndexed : metadataLookup.getLastIndexed();
+        }
+        if (since == null) {
+            LOGGER.error("No last indexed date is known for the Crossref metadata, so there is no date to "
+                    + "ask Crossref for updates from. Load a Crossref dump first.");
+            return;
+        }
+        LOGGER.info("Loading the Crossref records updated since " + since.toLocalDate());
 
-        boolean responseEmpty = false;
-        String cursorValue = "*";
-        int nbFiles = 1000000;
-        System.out.println(this.lastIndexed.format(formatter));
-
-        String todayStr = this.today.format(DateTimeFormatter.ISO_DATE);
-
-        File crossrefFileDirectory = new File(configuration.getCrossref().getDumpPath() + 
-            File.separator + todayStr);
-        if (!crossrefFileDirectory.mkdirs()) {
-            LOGGER.error("Error when creating the directory for storing crossref incremental file: " + 
+        String todayStr = today.format(DateTimeFormatter.ISO_DATE);
+        File crossrefFileDirectory = new File(configuration.getCrossref().getDumpPath() + File.separator + todayStr);
+        if (!crossrefFileDirectory.isDirectory() && !crossrefFileDirectory.mkdirs()) {
+            LOGGER.error("Error when creating the directory for storing crossref incremental file: " +
                 crossrefFileDirectory.getPath());
         }
 
@@ -144,155 +165,115 @@ public class IncrementalLoaderTask implements Runnable {
             openAccessMeter,
             counterDroppedOpenAccess);
 
-        // one thread storing the files as they come, and every task kept so the run can wait for
-        // them: the files must not be cleaned up while a loader still needs one
-        ExecutorService executorLoading = Executors.newSingleThreadExecutor();
-        List<Future<?>> loadingTasks = new ArrayList<>();
+        // one thread storing the files as they come, ended with the run: a thread per file that
+        // is never ended, as before, piles up for as long as the service is up
+        ExecutorService loader = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "crossref-update-loader");
+            thread.setDaemon(true);
+            return thread;
+        });
+        // a file that could not be stored makes the run incomplete like a missing page does, and
+        // so do records Elasticsearch never took; the indexer counts those since the start, so
+        // this run's share is the difference
+        final List<String> filesNotLoaded = Collections.synchronizedList(new ArrayList<>());
+        ElasticSearchAsyncIndexer indexer = ElasticSearchAsyncIndexer.getInstance(configuration);
+        long notSentBefore = indexer.getRecordsNotSent();
+        final String filePrefix = crossrefFileDirectory.getPath() + File.separator + (daily ? "D" : "G");
+        final int[] nbFiles = {1000000};
 
+        boolean allPagesReceived = false;
         try {
-
-        while(!responseEmpty) {
-            Map<String, String> arguments = new HashMap<String,String>();
-        
-            arguments.put("cursor", cursorValue);
-            arguments.put("rows", "1000");
-
-            //arguments.put("filter", "from-index-date:"+this.lastIndexed.format(formatter));
-            arguments.put("filter", "from-update-date:"+this.lastIndexed.format(formatter));       
-
-            List<String> jsonObjectsStr = null;
-
-            try {
-                CrossrefResponse response = client.request("works", arguments);
-
-                if (response.errorMessage != null) {
-                    // wait 2 seconds and resend
-                    TimeUnit.SECONDS.sleep(2);
-
-                    response = client.request("works", arguments);
-                    if (response.errorMessage != null) {
-                        throw new Exception("The request to Crossref REST API failed: " + response.errorMessage);
-                    }
+            CrossrefUpdatePager pager = new CrossrefUpdatePager(arguments -> client.request("works", arguments));
+            allPagesReceived = pager.fetchAll(CrossrefUpdatePager.updateDateFilter(since), records -> {
+                File crossrefFile = new File(filePrefix + (nbFiles[0]++) + ".json.gz");
+                if (!writeIncrementalFile(crossrefFile, records)) {
+                    filesNotLoaded.add(crossrefFile.getPath());
+                    return;
                 }
 
-                jsonObjectsStr = response.results;
-                cursorValue = response.nextCursor;
-            } catch (Exception e) {
-                LOGGER.error("Crossref update call failed", e);
-            }
+                loader.submit(new LoadCrossrefFile(crossrefFile, filesNotLoaded));
 
-            if (jsonObjectsStr == null || jsonObjectsStr.size() == 0)
-                break;
-
-            String crossrefFileName = configuration.getCrossref().getDumpPath() + 
-                File.separator + todayStr + File.separator;
-            if (daily) {
-                crossrefFileName += "D";
-            } else {
-                crossrefFileName += "G";
-            }
-            crossrefFileName += nbFiles + ".json.gz";
-            File crossrefFile = new File(crossrefFileName);
-
-            // write the file synchronously
-            try {
-                Writer writer = new OutputStreamWriter(new GZIPOutputStream(
-                    new FileOutputStream(crossrefFile)), StandardCharsets.UTF_8);
-                boolean first = true;
-                for(String result : jsonObjectsStr) {
-                    if (first)
-                        first = false;
-                    else 
-                        writer.write("\n");
-                    writer.write(result);
-                }
-                writer.close();
-            } catch (Exception e) {
-                LOGGER.error("Writing incremental dump file failed: " + crossrefFile.getPath(), e);
-            } 
-
-            // load in another thread
-            Runnable taskLoading = new LoadCrossrefFile(crossrefFile, 
-                jsonObjectsStr, this.configuration, meter, counterInvalidRecords, counterIndexedRecords, counterFailedIndexedRecords);
-            loadingTasks.add(executorLoading.submit(taskLoading));
-
-            // resolved on its own thread, so the Crossref fetching is not held up by OpenAlex
-            openAccessUpdater.submit(jsonObjectsStr);
-
-            nbFiles++;
-            
-            /*if (indexing) {
-                // index in another thread 
-                ExecutorService executorIndexing = Executors.newSingleThreadExecutor();
-                Runnable taskIndexing = new IndexCrossrefFile(crossrefFile, configuration);
-                executorIndexing.submit(taskIndexing);
-            }*/
-
-            if (jsonObjectsStr == null || jsonObjectsStr.size() == 0)
-                responseEmpty = true;
-        }
-
+                // resolved on its own thread, so the Crossref fetching is not held up by OpenAlex
+                openAccessUpdater.submit(records);
+            });
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.error("The Crossref update was interrupted");
         } finally {
-            // every file fetched is stored before anything else happens to it
-            executorLoading.shutdown();
-            for (Future<?> loadingTask : loadingTasks) {
-                try {
-                    loadingTask.get();
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    break;
-                } catch (ExecutionException e) {
-                    LOGGER.error("Loading an incremental file failed", e.getCause());
-                }
+            // whatever happened on the Crossref side, what was fetched is stored and indexed
+            LOGGER.info("Waiting for the fetched records to be stored and indexed...");
+            loader.shutdown();
+            awaitLoader(loader);
+            try {
+                indexer.awaitPending();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
             // waits for the queued lookups, and never fails the Crossref update
             openAccessUpdater.close();
         }
 
-        // possibly update with the lastest indexed date obtained from this file
-        metadataLookup.setLastIndexed(LocalDateTime.now());  
-
-        // the loading is done above; waiting that no more indexing takes place to optionally
-        // clean the directory of incremental files
-        MetadataMatching metadataMatching = 
-            MetadataMatching.getInstance(this.configuration, this.metadataLookup, null);
+        long notSent = indexer.getRecordsNotSent() - notSentBefore;
+        if (allPagesReceived && filesNotLoaded.isEmpty() && notSent == 0 && !Thread.currentThread().isInterrupted()) {
+            lastRunCompleted = true;
+            // the updates that came in while the run was going are asked for next time
+            metadataLookup.setLastIndexed(runStart);
+            LOGGER.info("Crossref update complete: " + meter.getCount() + " record(s) processed, "
+                    + counterIndexedRecords.getCount() + " indexed, "
+                    + counterFailedIndexedRecords.getCount() + " not indexed. Last indexed date is now "
+                    + runStart + ".");
+        } else {
+            String reason;
+            if (!allPagesReceived) {
+                reason = "Crossref stopped answering";
+            } else if (!filesNotLoaded.isEmpty()) {
+                reason = filesNotLoaded.size() + " incremental file(s) could not be stored";
+            } else {
+                reason = notSent + " record(s) could not be indexed because Elasticsearch did not take them";
+            }
+            LOGGER.error("Crossref update incomplete, " + reason + ". The last indexed date stays at "
+                    + since + " so the next update covers the same period again; the incremental files "
+                    + "are kept under " + crossrefFileDirectory.getPath() + ".");
+            return;
+        }
 
         if (configuration.getCrossref().getCleanProcessFiles()) {
-
-            long currentSize = metadataLookup.getFullSize();
-            long esIndexSize = metadataMatching.getSize();
-
-            boolean isChanging = true;
-
-            System.out.println("Waiting that loading and indexing tasks are completed...");
-            while(isChanging) {
-                try {
-                    TimeUnit.SECONDS.sleep(5);
-                    // the bulks queued so far, with their retries, must be through before the
-                    // index size means anything
-                    ElasticSearchAsyncIndexer.getInstance(configuration).awaitPending();
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                }
-
-                long newCurrentSize = metadataLookup.getFullSize();
-                long newEsIndexSize = metadataMatching.getSize();
-
-                if (newCurrentSize == currentSize && newEsIndexSize == esIndexSize) {
-                    isChanging = false;
-                }
-
-                currentSize = newCurrentSize;
-                esIndexSize = newEsIndexSize;
-            }
-
-            System.out.println("Cleaning incremental files...");        
+            LOGGER.info("Cleaning incremental files...");
             try {
                 FileUtils.deleteDirectory(crossrefFileDirectory);
             } catch(IOException e) {
-                LOGGER.error("Fail to delete directory of incremental crossref files: " + 
+                LOGGER.error("Fail to delete directory of incremental crossref files: " +
                     crossrefFileDirectory.getPath());
             }
+        }
+    }
+
+    private static boolean writeIncrementalFile(File crossrefFile, List<String> records) {
+        try (Writer writer = new OutputStreamWriter(new GZIPOutputStream(
+                new FileOutputStream(crossrefFile)), StandardCharsets.UTF_8)) {
+            boolean first = true;
+            for (String record : records) {
+                if (first)
+                    first = false;
+                else
+                    writer.write("\n");
+                writer.write(record);
+            }
+            return true;
+        } catch (Exception e) {
+            LOGGER.error("Writing incremental dump file failed: " + crossrefFile.getPath(), e);
+            return false;
+        }
+    }
+
+    /** Waits for the loading thread to get through its queue, saying so while it takes long. */
+    private static void awaitLoader(ExecutorService loader) {
+        try {
+            while (!loader.awaitTermination(1, TimeUnit.MINUTES)) {
+                LOGGER.info("Still storing the fetched records...");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -303,96 +284,27 @@ public class IncrementalLoaderTask implements Runnable {
         return openAccessLookup;
     }
 
-    class LoadCrossrefFile implements Runnable { 
-        private File crossrefFile;
-        private List<String> results;
-        private LookupConfiguration configuration;
-        private Meter meter;
-        private Counter counterInvalidRecords;
-        private Counter counterIndexedRecords;
-        private Counter counterFailedIndexedRecords;
+    class LoadCrossrefFile implements Runnable {
+        private final File crossrefFile;
+        private final List<String> filesNotLoaded;
 
-        public LoadCrossrefFile(File crossrefFile, 
-                                List<String> results, 
-                                LookupConfiguration configuration, 
-                                Meter meter,
-                                Counter counterInvalidRecords,
-                                Counter counterIndexedRecords,
-                                Counter counterFailedIndexedRecords) { 
+        public LoadCrossrefFile(File crossrefFile, List<String> filesNotLoaded) {
             this.crossrefFile = crossrefFile;
-            this.results = results;
-            this.configuration = configuration;
-            this.meter = meter;
-            this.counterInvalidRecords = counterInvalidRecords;
-            this.counterIndexedRecords = counterIndexedRecords;
-            this.counterFailedIndexedRecords = counterFailedIndexedRecords;
-        } 
-
-        @Override
-        public void run() { 
-            CrossrefJsonlReader reader = new CrossrefJsonlReader(configuration);
-            if (StringUtils.endsWithIgnoreCase(crossrefFile.getName().toString(), ".json.gz")) {
-                try (InputStream inputStreamCrossref = new GZIPInputStream(new FileInputStream(crossrefFile))) {
-                    metadataLookup.loadFromFile(inputStreamCrossref, 
-                        reader, meter, counterInvalidRecords, counterIndexedRecords, counterFailedIndexedRecords);
-                } catch (Exception e) {
-                    LOGGER.error("Error while processing " + crossrefFile.getPath(), e);
-                }  
-            }
-        }
-    }
-
-    @Deprecated
-    class IndexCrossrefFile implements Runnable { 
-        /** 
-         * Index a crossref incremental file via a background external process
-         **/ 
-        private File crossrefFile;
-        private LookupConfiguration configuration;
-
-        public IndexCrossrefFile(File crossrefFile, LookupConfiguration configuration) { 
-            this.crossrefFile = crossrefFile;
-            this.configuration = configuration;
-        } 
-
-        @Override
-        public void run() { 
-            System.out.println("indexing: " + crossrefFile.getPath());
-
-            ProcessBuilder builder = new ProcessBuilder();
-            // command is: node main -dump ~/tmp/crossref_public_data_file_2021_01 index
-            builder.command("node", "main", "-dump", crossrefFile.getAbsolutePath(), "extend");            
-            builder.directory(new File("../indexing"));
-
-            try {
-                Process process = builder.start();
-                StreamGobbler streamGobbler = new StreamGobbler(process.getInputStream(), System.out::println);
-                Executors.newSingleThreadExecutor().submit(streamGobbler);
-                
-                int exitCode = process.waitFor();
-                if (exitCode != 0)
-                    LOGGER.warn("Indexing script leave with exit code: " + exitCode);
-            } catch(java.io.IOException ioe) {
-                LOGGER.error("IO error when executing external command: " + builder.command().toString(), ioe);
-            } catch(java.lang.InterruptedException ie) {
-                LOGGER.error("External process unexpected interruption", ie);
-            }
-        }
-    }
-
-    private static class StreamGobbler implements Runnable {
-        private InputStream inputStream;
-        private Consumer<String> consumer;
-
-        public StreamGobbler(InputStream inputStream, Consumer<String> consumer) {
-            this.inputStream = inputStream;
-            this.consumer = consumer;
+            this.filesNotLoaded = filesNotLoaded;
         }
 
         @Override
         public void run() {
-            new BufferedReader(new InputStreamReader(inputStream)).lines()
-              .forEach(consumer);
+            CrossrefJsonlReader reader = new CrossrefJsonlReader(configuration);
+            if (StringUtils.endsWithIgnoreCase(crossrefFile.getName(), ".json.gz")) {
+                try (InputStream inputStreamCrossref = new GZIPInputStream(new FileInputStream(crossrefFile))) {
+                    metadataLookup.loadFromFile(inputStreamCrossref,
+                        reader, meter, counterInvalidRecords, counterIndexedRecords, counterFailedIndexedRecords);
+                } catch (Exception e) {
+                    LOGGER.error("Error while processing " + crossrefFile.getPath(), e);
+                    filesNotLoaded.add(crossrefFile.getPath());
+                }
+            }
         }
     }
-}   
+}

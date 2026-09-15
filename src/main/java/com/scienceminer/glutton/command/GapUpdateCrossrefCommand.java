@@ -26,7 +26,6 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
-import java.util.concurrent.*;  
 
 /**
  * Command for a large incremental update to cover an old dump with new and updated Crossref records
@@ -70,8 +69,7 @@ public class GapUpdateCrossrefCommand extends ConfiguredCommand<LookupConfigurat
 
         System.out.println("Run gap update...");
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Runnable task = new IncrementalLoaderTask(metadataLookup, 
+        IncrementalLoaderTask task = new IncrementalLoaderTask(metadataLookup, 
                                                   metadataLookup.getLastIndexed(), 
                                                   configuration, 
                                                   meter, 
@@ -82,17 +80,33 @@ public class GapUpdateCrossrefCommand extends ConfiguredCommand<LookupConfigurat
                                                   counterDroppedOpenAccess,
                                                   true,   // with indexing
                                                   false); // not daily incremental update
-        Future future = executor.submit(task);
-        // wait until done (in ms)
-        while (!future.isDone()) {
-            Thread.sleep(1);
+        int exitCode = 0;
+        try {
+            task.run();
+        } catch (RuntimeException e) {
+            // said plainly rather than swallowed, and the process does not pretend it succeeded
+            LOGGER.error("The Crossref gap update failed", e);
+            exitCode = 1;
         }
 
         LOGGER.info("Number of additional Crossref records processed: " + meter.getCount());
         LOGGER.info("New Crossref lookup size (with gap update) " + metadataLookup.getSize() + " records.");
-        LOGGER.info("Crossref metadata are up to date.");        
+        if (!task.isLastRunCompleted()) {
+            LOGGER.error("The Crossref gap update did not complete, see the errors above. Run it again once "
+                    + "the cause is fixed: the records loaded so far are kept and the last indexed date was "
+                    + "not moved, so nothing is skipped.");
+            exitCode = 1;
+        } else if (counterFailedIndexedRecords.getCount() > 0) {
+            LOGGER.error("The Crossref metadata are up to date but " + counterFailedIndexedRecords.getCount()
+                    + " record(s) could not be indexed in Elasticsearch. Run the index command once it is "
+                    + "healthy to rebuild the index from the storage.");
+            exitCode = 1;
+        } else {
+            LOGGER.info("Crossref metadata are up to date.");
+        }
 
-        System.exit(0);    
+        reporter.report();
+        System.exit(exitCode);
     }
 
 }

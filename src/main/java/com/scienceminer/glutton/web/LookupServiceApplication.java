@@ -102,8 +102,12 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         final Meter openAccessMeter = metrics.meter("openAccess_daily_update_storing");
         final Counter counterDroppedOpenAccess = metrics.counter("openAccess_daily_update_dropped_dois");
 
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        Runnable task = new IncrementalLoaderTask(metadataLookup, 
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1, runnable -> {
+            Thread thread = new Thread(runnable, "crossref-daily-update");
+            thread.setDaemon(true);
+            return thread;
+        });
+        IncrementalLoaderTask task = new IncrementalLoaderTask(metadataLookup, 
                                                   metadataLookup.getLastIndexed(), 
                                                   configuration, 
                                                   meter, 
@@ -115,7 +119,20 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
                                                   true, // with indexing
                                                   true); // this is daily incremental update
 
-        ScheduledFuture<?> scheduledFuture = executor.scheduleAtFixedRate(task, initalDelay, TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
+        // an exception escaping the task would silently cancel every run after it
+        Runnable guarded = () -> {
+            try {
+                task.run();
+                if (!task.isLastRunCompleted()) {
+                    LOGGER.error("The daily Crossref update did not complete, it will be attempted again tomorrow");
+                }
+            } catch (RuntimeException e) {
+                LOGGER.error("The daily Crossref update failed, it will be attempted again tomorrow", e);
+            }
+        };
+        LOGGER.info("Daily Crossref update scheduled at " + dailyTime + " " + configuration.getTimeZone()
+                + ", first run in " + Duration.ofSeconds(initalDelay).toMinutes() + " minute(s)");
+        ScheduledFuture<?> scheduledFuture = executor.scheduleAtFixedRate(guarded, initalDelay, TimeUnit.DAYS.toSeconds(1), TimeUnit.SECONDS);
     }
 
     @Override
