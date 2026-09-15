@@ -47,6 +47,14 @@ The bibliographical matching service uses a combination of high performance embe
 
 The databases and elasticsearch index must first be built from the resource files. The full service needs around 300 GB of space for building these index (less with the record compression introduced in 0.4.0, see [below](#compression-of-the-stored-records)) and it is necessary to use SSD for best performance.
 
+The Elasticsearch node is given by `elastic.host` in `config/glutton.yml`, with the scheme when
+the cluster is behind TLS (`https://elastic.example.org:9200`). A cluster with security on, which
+is the default since Elasticsearch 8, needs credentials: give a user and password with
+`elastic.username` and `elastic.password`, or an API key with `elastic.apiKey`. They are sent with
+every request by the loading commands and by the service alike, so the host has to be `https://`
+or the service refuses to start: set `elastic.allowCredentialsOverHttp: true` for a cluster that
+has security on but TLS off, such as a local one. Credentials in the host URL are not read.
+
 ### Build the embedded LMDB databases
 
 Resource dumps will be compiled in high performance LMDB databases. The system can read compressed (`gzip` or `.xz`) or plain text files (`json`), so in practice you do not need to uncompress anything.
@@ -156,7 +164,24 @@ crossrefLookup
 
 On the above example, the 5,472,493 rejected records correspond to all the DOI entries of type "components" (part of document), which are filtered out. 
 
-As a February 2024, we have for example 146,808,255 accepted crossref records and 8,015,190 rejected component records (last indexed date in dump file is 2024-02-02). 
+As a February 2024, we have for example 146,808,255 accepted crossref records and 8,015,190 rejected component records (last indexed date in dump file is 2024-02-02).
+
+##### Indexing while loading
+
+The records are indexed in Elasticsearch in bulks while they are stored, on a few threads of their
+own so the storing side is not held up. `maxConcurrentBulks` in the `elastic` block of the
+configuration is how many bulks are sent at the same time (4 by default); beyond that the loading
+waits for Elasticsearch rather than piling up requests. A bulk that gets no answer or that
+Elasticsearch rejects because it is busy is sent again a few times, with a growing pause, and a
+document Elasticsearch refuses for good is logged with its reason. `socketTimeout`, in the same
+block, is how long to wait for the answer to a bulk (120 seconds by default; the 30 seconds the
+client would use on its own is too short for a full bulk on a busy cluster).
+
+The `*_indexed_records` and `*_failed_indexed_records` counters in the metrics say how many
+records got into the index and how many did not. Records that could not be indexed are still in
+the storage: once Elasticsearch is healthy again, `./gradlew index` rebuilds the index from it.
+The loading commands wait for the last bulks before they exit, so the two counters are final in
+the summary printed at the end. 
 
 #### CrossRef metadata gap coverage
 
@@ -173,6 +198,23 @@ Using the Crossref web API to cover the remaining gap (from the latest update da
 Be sure to indicate in the configution file `glutton.yml` your polite usage email and/or crossref metadata plus token for using the Crossref web API. 
 
 This command should thus be launched only one time after the loading of a full Crossref snapshot, it will resync the current metadata and index to the current day, and the daily update will then ensure everything remain in sync with the reference Crossref metadata as long the service is up and running. 
+
+The command ends once every page was received from Crossref and every record stored and indexed.
+The Crossref REST API is not always there: a request that fails is sent again a few times with a
+growing pause, and if the API stays down the command gives up, says so and exits with a non-zero
+code. The same goes for Elasticsearch: records it did not take because it was away or too busy
+for as long as they were retried make the run incomplete (a few records it refuses for good, a
+mapping error say, do not; they are logged). The last indexed date is only moved forward by a
+complete run, so running the command again picks up the whole period again and nothing is
+skipped. The records loaded before the API went
+down are kept, and so are the incremental files under `dumpPath`. The exit code is also non-zero
+when some records could not be indexed in Elasticsearch, see
+[Indexing while loading](#indexing-while-loading).
+
+The daily update follows the same rules. It normally asks for the records updated since the day
+before; when a night was skipped or cut short it picks up from the last complete run instead, up to
+a week back, so a service that was down for a night does not miss a day. A database further behind
+than that is what `gap_crossref` is for.
 
 __Warning:__ If an older snapshot is used, like the CrossRef dump Academic Torrent file, the coverage gap is not a few days, but usually several months or more than one year (since Crossref has not updated the Academic Torrent dump in 2022). Using the Crossweb API to cover such a long gap will unfortunately take an enormous amount of time (more than a week) due to API usage rate limitations and is likely not a acceptable solution. In addition, the Crossref web API is not always reliable, which might cause further delays. 
 

@@ -49,6 +49,11 @@ public class DataEngine {
         return returnMap;
     }
 
+    /** Whether the search index can answer matching queries, see {@link MetadataMatching#checkIndex()}. */
+    public ElasticsearchStatus checkSearchIndex() {
+        return metadataMatching.checkIndex();
+    }
+
     public List<Pair<String, String>> retrieveOaUrl(Integer total) {
         return oaDoiLookup.retrieveOaUrlSampleList(total);
     }

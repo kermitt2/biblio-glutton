@@ -5,11 +5,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.rockymadden.stringmetric.similarity.RatcliffObershelpMetric;
+import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.data.IstexData;
 import com.scienceminer.glutton.data.MatchingDocument;
 import com.scienceminer.glutton.data.PmidData;
 import com.scienceminer.glutton.exception.NotFoundException;
 import com.scienceminer.glutton.storage.lookup.*;
+import com.scienceminer.glutton.utils.Identifiers;
 import com.scienceminer.glutton.utils.grobid.GrobidClient;
 import com.scienceminer.glutton.utils.grobid.GrobidResponseStaxHandler.GrobidResponse;
 import org.apache.commons.collections4.CollectionUtils;
@@ -47,14 +49,15 @@ public class LookupEngine {
     
     private GrobidClient grobidClient = null;
 
-    private static String ISTEX_BASE = "https://api.istex.fr/document/";
+    private double matchingThreshold = 0.7;
 
-    private static double THRESHOLD_MATCHING = 0.7;
+    private static String ISTEX_BASE = "https://api.istex.fr/document/";
 
     public LookupEngine() {
     }
 
     public LookupEngine(StorageEnvFactory storageFactory) {
+        this.matchingThreshold = storageFactory.getConfiguration().getMatchingThreshold();
         this.oaDoiLookup = new OALookup(storageFactory);
         this.istexLookup = new IstexIdsLookup(storageFactory);
         this.crossrefMetadataLookup = CrossrefMetadataLookup.getInstance(storageFactory);
@@ -73,7 +76,7 @@ public class LookupEngine {
         List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle, firstAuthor, matchingDocuments);
 
         if (!areMetadataMatching(rankedMatchingDocuments.get(0))) {
-            throw new NotFoundException("Best bibliographical record did not passed the post-validation");
+            throw new NotFoundException("Best bibliographical record did not pass the post-validation");
         }
 
         return injectIdsByDoi(rankedMatchingDocuments.get(0).getJsonObject(), rankedMatchingDocuments.get(0).getDOI());
@@ -97,7 +100,7 @@ public class LookupEngine {
                 List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle, firstAuthor, matchingDocuments);
 
                 if (!areMetadataMatching(rankedMatchingDocuments.get(0))) {
-                    callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                    callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                     return;
                 }
                 
@@ -131,7 +134,7 @@ public class LookupEngine {
                     null, null, volume, null, firstPage, null, matchingDocuments);
 
                 if (!areMetadataMatching(rankedMatchingDocuments.get(0))) {
-                    callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                    callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                     return;
                 }
 
@@ -170,29 +173,12 @@ public class LookupEngine {
                         GrobidResponse response = grobidClient.processCitation(biblio, "0");
 
                         // TBD: extract more metadata from Grobid result to improve the pairwise ranking
-                        String firstAuthor1 = null;
-                        if (!isBlank(firstAuthor))
-                            firstAuthor1 = firstAuthor;
-                        else
-                            firstAuthor1 = isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph();
-
-                        String atitle1 = null;
-                        if (!isBlank(atitle))
-                            atitle1 = atitle;
-                        else
-                            atitle1 = response.getAtitle();
-                        
-                        String year1 = null;
-                        if (!isBlank(year))
-                            year1 = year;
-                        else
-                            year1 = response.getYear();
-
-                        String jtitle1 = null;
-                        if (!isBlank(year))
-                            jtitle1 = jtitle;
-                        else
-                            jtitle1 = response.getJtitle();
+                        // what the request gave wins over what Grobid parsed, field by field
+                        String firstAuthor1 = defaultIfBlank(firstAuthor,
+                            isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph());
+                        String atitle1 = defaultIfBlank(atitle, response.getAtitle());
+                        String year1 = defaultIfBlank(year, response.getYear());
+                        String jtitle1 = defaultIfBlank(jtitle, response.getJtitle());
 
 //System.out.println(biblio + " -> " + firstAuthor1 + " | " + atitle1 + " | " + year1 + " | " + jtitle1);
                         List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle1, firstAuthor1, jtitle1, 
@@ -203,7 +189,7 @@ public class LookupEngine {
                         //no title and author, extract with grobid. if grobid unavailable... it will fail.
                         if (!isBlank(firstAuthor1)) {
                             if (!areMetadataMatching(localResultDocument)) {
-                                callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                                callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                                 return;
                             }
                              
@@ -227,7 +213,7 @@ public class LookupEngine {
                 if (!isBlank(firstAuthor)) {
 
                     if (!areMetadataMatching(localResultDocument)) {                         
-                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                         return;
                     }
 
@@ -282,29 +268,12 @@ public class LookupEngine {
                         GrobidResponse response = grobidClient.processCitation(biblio, "0");
 
                         // TBD: extract more metadata from Grobid result to improve the pairwise ranking
-                        String firstAuthor1 = null;
-                        if (!isBlank(firstAuthor))
-                            firstAuthor1 = firstAuthor;
-                        else
-                            firstAuthor1 = isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph();
-
-                        String atitle1 = null;
-                        if (!isBlank(atitle))
-                            atitle1 = atitle;
-                        else
-                            atitle1 = response.getAtitle();
-                        
-                        String year1 = null;
-                        if (!isBlank(year))
-                            year1 = year;
-                        else
-                            year1 = response.getYear();
-
-                        String jtitle1 = null;
-                        if (!isBlank(year))
-                            jtitle1 = jtitle;
-                        else
-                            jtitle1 = response.getJtitle();
+                        // what the request gave wins over what Grobid parsed, field by field
+                        String firstAuthor1 = defaultIfBlank(firstAuthor,
+                            isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph());
+                        String atitle1 = defaultIfBlank(atitle, response.getAtitle());
+                        String year1 = defaultIfBlank(year, response.getYear());
+                        String jtitle1 = defaultIfBlank(jtitle, response.getJtitle());
 
 //System.out.println(biblio + " -> " + firstAuthor1 + " | " + atitle1 + " | " + year1 + " | " + jtitle1);
                         List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle1, firstAuthor1, jtitle1, 
@@ -315,7 +284,7 @@ public class LookupEngine {
                         //no title and author, extract with grobid. if grobid unavailable... it will fail.
                         if (!isBlank(firstAuthor1)) {
                             if (!areMetadataMatching(localResultDocument)) {
-                                callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                                callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                                 return;
                             }
                              
@@ -339,7 +308,7 @@ public class LookupEngine {
                 if (!isBlank(firstAuthor)) {
 
                     if (!areMetadataMatching(localResultDocument)) {                         
-                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not passed the post-validation")));
+                        callback.accept(new MatchingDocument(new NotFoundException("Best bibliographical record did not pass the post-validation")));
                         return;
                     }
 
@@ -385,6 +354,7 @@ public class LookupEngine {
                                 String firstAuthor, 
                                 String atitle,
                                 String year) throws NotFoundException {
+        doi = Identifiers.doi(doi);
         MatchingDocument outputData = crossrefMetadataLookup.retrieveByDoi(doi);
         // TBD: also use year for post validation of strong identifier
         outputData = validateJsonBody(firstAuthor, atitle, outputData);
@@ -395,6 +365,7 @@ public class LookupEngine {
                                 String firstAuthor, 
                                 String atitle,
                                 String year) throws NotFoundException {
+        halid = Identifiers.halId(halid);
         MatchingDocument outputData = halLookup.retrieveByHalId(halid);
         // TBD: also use year for post validation of strong identifier
         outputData = validateJsonBody(firstAuthor, atitle, outputData);
@@ -410,7 +381,7 @@ public class LookupEngine {
             outputData = extractTitleAndFirstAuthorFromJson(outputData);          
 
             if (!areMetadataMatchingTitleAuthor(atitle, firstAuthor, outputData, true)) {
-                throw new NotFoundException("Best bibliographical record did not passed the post-validation");
+                throw new NotFoundException("Best bibliographical record did not pass the post-validation");
             }
         }
         return outputData;
@@ -449,6 +420,7 @@ public class LookupEngine {
     }
 
     public String retrieveByPmid(String pmid, String firstAuthor, String atitle, String year) {
+        pmid = Identifiers.pmid(pmid);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
@@ -459,10 +431,7 @@ public class LookupEngine {
     }
 
     public String retrieveByPmc(String pmc, String firstAuthor, String atitle, String year) {
-        if (!StringUtils.startsWithIgnoreCase(pmc, "pmc")) {
-            pmc = "PMC" + pmc;
-        }
-
+        pmc = Identifiers.pmc(pmc);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
@@ -473,6 +442,7 @@ public class LookupEngine {
     }
 
     public String retrieveByIstexid(String istexid, String firstAuthor, String atitle, String year) {
+        istexid = Identifiers.istexId(istexid);
         final IstexData istexData = istexLookup.retrieveByIstexId(istexid);
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi()) && isNotBlank(istexData.getDoi().get(0))) {
@@ -489,6 +459,7 @@ public class LookupEngine {
     }
 
     public String retrieveByPii(String pii, String firstAuthor, String atitle, String year) {
+        pii = Identifiers.pii(pii);
         final IstexData istexData = istexLookup.retrieveByPii(pii);
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi()) && isNotBlank(istexData.getDoi().get(0))) {
@@ -527,7 +498,7 @@ public class LookupEngine {
     }
 
     public String retrieveOAUrlByDoi(String doi) {
-
+        doi = Identifiers.doi(doi);
         final String output = oaDoiLookup.retrieveOaLinkByDoi(doi);
 
         if (isBlank(output)) {
@@ -538,7 +509,7 @@ public class LookupEngine {
     }
 
     public Pair<String,String> retrieveOaIstexUrlByDoi(String doi) {
-
+        doi = Identifiers.doi(doi);
         final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
         final IstexData istexRecord = istexLookup.retrieveByDoi(doi);
         String url = null;
@@ -556,6 +527,7 @@ public class LookupEngine {
     }
 
     public String retrieveOAUrlByPmid(String pmid) {
+        pmid = Identifiers.pmid(pmid);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
@@ -566,7 +538,7 @@ public class LookupEngine {
     }
 
     public Pair<String,String> retrieveOaIstexUrlByPmid(String pmid) {
-
+        pmid = Identifiers.pmid(pmid);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
 
         if (pmidData == null || isBlank(pmidData.getDoi())) {
@@ -590,6 +562,7 @@ public class LookupEngine {
     }
 
     public String retrieveOAUrlByPmc(String pmc) {
+        pmc = Identifiers.pmc(pmc);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
@@ -600,7 +573,7 @@ public class LookupEngine {
     }
 
     public Pair<String,String> retrieveOaIstexUrlByPmc(String pmc) {
-
+        pmc = Identifiers.pmc(pmc);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
 
         if (pmidData == null || isBlank(pmidData.getDoi())) {
@@ -624,6 +597,7 @@ public class LookupEngine {
     }
 
     public String retrieveOAUrlByPii(String pii) {
+        pii = Identifiers.pii(pii);
         final IstexData istexData = istexLookup.retrieveByPii(pii);
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi())) {
@@ -635,7 +609,7 @@ public class LookupEngine {
     }
 
     public Pair<String,String> retrieveOaIstexUrlByPii(String pii) {
-
+        pii = Identifiers.pii(pii);
         final IstexData istexData = istexLookup.retrieveByPii(pii);
 
         if (istexData == null || istexData.getDoi() == null || istexData.getDoi().size() == 0) {
@@ -874,7 +848,7 @@ public class LookupEngine {
      * Introduce a minimum matching threshold based on the pairwise ranking
      */
     private boolean areMetadataMatching(MatchingDocument result) {
-        return (result.getMatchingScore() < THRESHOLD_MATCHING) ? false : true;
+        return (result.getMatchingScore() < matchingThreshold) ? false : true;
     }
 
     private double ratcliffObershelpDistance(String string1, String string2, boolean caseDependent) {

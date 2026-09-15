@@ -13,6 +13,7 @@ import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
 import com.scienceminer.glutton.utils.io.DataSource;
 import com.scienceminer.glutton.utils.io.InputLocation;
+import com.scienceminer.glutton.indexing.ElasticSearchAsyncIndexer;
 import com.scienceminer.glutton.indexing.ElasticSearchIndexer;
 import io.dropwizard.core.cli.ConfiguredCommand;
 import io.dropwizard.core.setup.Bootstrap;
@@ -107,8 +108,15 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
             }
         }
 
+        // the bulks still in flight would be lost by the exit below
+        LOGGER.info("Waiting for the last records to be indexed...");
+        ElasticSearchAsyncIndexer.getInstance(configuration).awaitPending();
+        ElasticSearchIndexer.getInstance(configuration).refreshIndex(configuration.getElastic().getIndex());
+
         LOGGER.info("Number of Crossref records processed: " + meter.getCount());
         LOGGER.info("Crossref lookup size " + metadataLookup.getSize() + " records.");
+        LOGGER.info("Crossref records indexed: " + counterIndexedRecords.getCount()
+                + ", not indexed: " + counterFailedIndexedRecords.getCount() + ".");
         if (metadataLookup.getLastIndexed() != null) {
             LOGGER.info("Crossref latest indexed date " + metadataLookup.getLastIndexed().toString() + ".");
         }

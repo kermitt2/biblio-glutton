@@ -30,6 +30,12 @@ timeZone: UTC
 # the day hour for lauching the automatic daily incremental update, format is HH:MM
 dailyUpdateTime: 03:00
 
+# threshold value for the score the lookup engine uses to decide whether a query result is actually a valid match
+# a value of 1 means only perfect matches get through
+# a value of 0 means the top result will always pass the match validation
+# if not specified, the default is 0.7
+# matchingThreshold: 0
+
 # define the search infrastructure to be used, possible values are "elasticSearch" or "solr"
 searchEngine: elasticSearch
 #searchEngine: solr
@@ -39,8 +45,26 @@ elastic:
   #host: localhost:9200
   host: 0.0.0.0:9200
   #host: 192.168.1.30:9200
+  # with TLS on the cluster, give the scheme: https://elastic.example.org:9200
   index: glutton
   maxConnections: 20
+  # credentials, for a cluster with security on (the default since Elasticsearch 8): either a
+  # user and password, or an API key (as given by the create API key call, base64 form). Do not
+  # put them in the host URL, the client does not read them there. They go with every request,
+  # so the host must be https:// - unless the next setting says a plain http cluster is meant
+  # (a local one with TLS turned off, say)
+  #username: elastic
+  #password: changeme
+  #apiKey:
+  #allowCredentialsOverHttp: false
+  # for the loading and update commands: seconds to wait for a connection and for the answer to a
+  # bulk of records. Elasticsearch takes more than the default 30s for a full bulk when it is busy,
+  # and a bulk that times out is retried, so keep this generous
+  connectTimeout: 30
+  socketTimeout: 120
+  # how many bulks of records are sent at the same time while loading. Beyond that the loading
+  # waits for Elasticsearch instead of piling up requests that would only time out
+  maxConcurrentBulks: 4
 
 # solr settings
 solr:

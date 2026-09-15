@@ -1,0 +1,121 @@
+package com.scienceminer.glutton.configuration;
+
+import io.dropwizard.configuration.ConfigurationSourceProvider;
+import io.dropwizard.configuration.ConfigurationValidationException;
+import io.dropwizard.configuration.YamlConfigurationFactory;
+import io.dropwizard.jackson.Jackson;
+import io.dropwizard.jersey.validation.Validators;
+import org.junit.Test;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.fail;
+
+/**
+ * The Elasticsearch block of the configuration, read the way the service reads it.
+ */
+public class LookupConfigurationElasticTest {
+
+    private static LookupConfiguration load(String yaml) throws Exception {
+        YamlConfigurationFactory<LookupConfiguration> factory = new YamlConfigurationFactory<>(
+                LookupConfiguration.class, Validators.newValidator(), Jackson.newObjectMapper(), "dw");
+        ConfigurationSourceProvider source =
+                path -> new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8));
+        return factory.build(source, "glutton.yml");
+    }
+
+    @Test
+    public void elasticBlock_shouldHaveTimeoutsAndBulkConcurrencyByDefault() throws Exception {
+        LookupConfiguration configuration = load("elastic:\n  host: localhost:9200\n  index: glutton\n");
+
+        assertThat(configuration.getElastic().getConnectTimeout(), is(30));
+        assertThat(configuration.getElastic().getSocketTimeout(), is(120));
+        assertThat(configuration.getElastic().getMaxConcurrentBulks(), is(4));
+    }
+
+    @Test
+    public void elasticBlock_shouldTakeTheConfiguredValues() throws Exception {
+        LookupConfiguration configuration = load("elastic:\n  host: localhost:9200\n  index: glutton\n"
+                + "  connectTimeout: 10\n  socketTimeout: 600\n  maxConcurrentBulks: 2\n");
+
+        assertThat(configuration.getElastic().getConnectTimeout(), is(10));
+        assertThat(configuration.getElastic().getSocketTimeout(), is(600));
+        assertThat(configuration.getElastic().getMaxConcurrentBulks(), is(2));
+    }
+
+    @Test
+    public void elasticBlock_shouldRefuseNoBulkAtAll() throws Exception {
+        try {
+            load("elastic:\n  host: localhost:9200\n  index: glutton\n  maxConcurrentBulks: 0\n");
+            fail("a pool of no thread would never index anything");
+        } catch (ConfigurationValidationException expected) {
+            assertThat(expected.getMessage().contains("maxConcurrentBulks"), is(true));
+        }
+    }
+
+    @Test
+    public void elasticBlock_shouldRefuseATimeoutThatOverflowsMilliseconds() throws Exception {
+        try {
+            // 2,147,484 seconds is the first value whose milliseconds do not fit an int
+            load("elastic:\n  host: localhost:9200\n  index: glutton\n  socketTimeout: 2147484\n");
+            fail("the client takes the timeout in milliseconds as an int");
+        } catch (ConfigurationValidationException expected) {
+            assertThat(expected.getMessage().contains("socketTimeout"), is(true));
+        }
+    }
+
+    @Test
+    public void elasticBlock_shouldTakeCredentials() throws Exception {
+        LookupConfiguration configuration = load("elastic:\n  host: https://es.example.org:9200\n  index: glutton\n"
+                + "  username: elastic\n  password: changeme\n");
+
+        assertThat(configuration.getElastic().getUsername(), is("elastic"));
+        assertThat(configuration.getElastic().getPassword(), is("changeme"));
+        assertThat(configuration.getElastic().getApiKey(), is((String) null));
+    }
+
+    @Test
+    public void elasticBlock_shouldRefuseCredentialsOverPlainHttp() throws Exception {
+        for (String host : new String[] { "http://es.example.org:9200", "es.example.org:9200", "0.0.0.0:9200" }) {
+            try {
+                load("elastic:\n  host: " + host + "\n  index: glutton\n  apiKey: secret\n");
+                fail("the key would go in the clear to " + host);
+            } catch (ConfigurationValidationException expected) {
+                assertThat(expected.getMessage().contains("https://"), is(true));
+            }
+        }
+    }
+
+    @Test
+    public void elasticBlock_shouldAllowPlainHttpWithoutCredentialsOrWhenSaidSo() throws Exception {
+        // no credentials: nothing to protect, as before
+        assertThat(load("elastic:\n  host: 0.0.0.0:9200\n  index: glutton\n").getElastic().hasCredentials(), is(false));
+        // a local cluster with TLS off, on purpose
+        LookupConfiguration configuration = load("elastic:\n  host: http://localhost:9200\n  index: glutton\n"
+                + "  username: elastic\n  password: changeme\n  allowCredentialsOverHttp: true\n");
+        assertThat(configuration.getElastic().hasCredentials(), is(true));
+    }
+
+    @Test
+    public void elasticBlock_shouldRefuseAUserWithoutPassword() throws Exception {
+        try {
+            load("elastic:\n  host: https://localhost:9200\n  index: glutton\n  username: elastic\n");
+            fail("a user without a password cannot authenticate");
+        } catch (ConfigurationValidationException expected) {
+            assertThat(expected.getMessage().contains("go together"), is(true));
+        }
+    }
+
+    @Test
+    public void elasticBlock_shouldRefuseANoTimeout() throws Exception {
+        try {
+            load("elastic:\n  host: localhost:9200\n  index: glutton\n  socketTimeout: 0\n");
+            fail("waiting no time for an answer would fail every bulk");
+        } catch (ConfigurationValidationException expected) {
+            assertThat(expected.getMessage().contains("socketTimeout"), is(true));
+        }
+    }
+}

@@ -1,10 +1,13 @@
 package com.scienceminer.glutton.configuration;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.scienceminer.glutton.utils.CompressionType;
 import io.dropwizard.client.HttpClientConfiguration;
 import io.dropwizard.core.Configuration;
+import io.dropwizard.validation.ValidationMethod;
+import org.apache.commons.lang3.StringUtils;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -30,6 +33,8 @@ public class LookupConfiguration extends Configuration {
 
     private int blockSize = 0;
 
+    private double matchingThreshold = 0.7;
+
     private String storage;
 
     private String version;
@@ -38,6 +43,7 @@ public class LookupConfiguration extends Configuration {
 
     private String searchEngine;
 
+    @Valid
     private Elastic elastic;
 
     private Solr solr;
@@ -210,6 +216,10 @@ public class LookupConfiguration extends Configuration {
         this.dailyUpdateTime = dailyUpdateTime;
     }
 
+    public double getMatchingThreshold() {
+        return this.matchingThreshold;
+    }
+
     public class Source {
 
         private String istex;
@@ -225,9 +235,35 @@ public class LookupConfiguration extends Configuration {
     
     public class Elastic {
 
+        /** The largest number of seconds that still fits an int once in milliseconds. */
+        public static final int MAX_TIMEOUT_SECONDS = Integer.MAX_VALUE / 1000;
+
         private String host;
         private String index;
         private int maxConnections = 10;
+
+        // the clients that index (dump load, gap and daily updates): how long to wait for the
+        // connection, and for the answer to a bulk, in seconds. A bulk of thousands of records on
+        // a busy cluster takes longer than the 30s the client waits by default. The client takes
+        // milliseconds as an int, hence the upper bound.
+        @Min(1)
+        @Max(MAX_TIMEOUT_SECONDS)
+        private int connectTimeout = 30;
+        @Min(1)
+        @Max(MAX_TIMEOUT_SECONDS)
+        private int socketTimeout = 120;
+        // how many bulks are sent to Elasticsearch at the same time while loading; beyond that,
+        // the storing side waits rather than piling up requests
+        @Min(1)
+        private int maxConcurrentBulks = 4;
+
+        // credentials, for a cluster with security on: a user and password, or an API key
+        private String username;
+        private String password;
+        private String apiKey;
+        // credentials go with every request, so a host that is not https sends them in the clear;
+        // refused unless this says that is understood (a local cluster with TLS off, say)
+        private boolean allowCredentialsOverHttp = false;
 
         public String getHost() {
             return host;
@@ -251,6 +287,84 @@ public class LookupConfiguration extends Configuration {
 
         public void setMaxConnections(int maxConnections) {
             this.maxConnections = maxConnections;
+        }
+
+        public int getConnectTimeout() {
+            return connectTimeout;
+        }
+
+        public void setConnectTimeout(int connectTimeout) {
+            this.connectTimeout = connectTimeout;
+        }
+
+        public int getSocketTimeout() {
+            return socketTimeout;
+        }
+
+        public void setSocketTimeout(int socketTimeout) {
+            this.socketTimeout = socketTimeout;
+        }
+
+        public int getMaxConcurrentBulks() {
+            return maxConcurrentBulks;
+        }
+
+        public void setMaxConcurrentBulks(int maxConcurrentBulks) {
+            this.maxConcurrentBulks = maxConcurrentBulks;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
+        }
+
+        public boolean isAllowCredentialsOverHttp() {
+            return allowCredentialsOverHttp;
+        }
+
+        public void setAllowCredentialsOverHttp(boolean allowCredentialsOverHttp) {
+            this.allowCredentialsOverHttp = allowCredentialsOverHttp;
+        }
+
+        @JsonIgnore
+        public boolean hasCredentials() {
+            return StringUtils.isNotBlank(apiKey) || StringUtils.isNotBlank(username);
+        }
+
+        @JsonIgnore
+        @ValidationMethod(message = "elastic.username and elastic.password go together: give both or neither")
+        public boolean isCredentialsComplete() {
+            return StringUtils.isBlank(username) == StringUtils.isBlank(password);
+        }
+
+        @JsonIgnore
+        @ValidationMethod(message = "elastic.host must be https:// when credentials are given, or they are sent "
+                + "in the clear with every request; set elastic.allowCredentialsOverHttp to true if that is meant")
+        public boolean isCredentialsOverTls() {
+            if (!hasCredentials() || allowCredentialsOverHttp || host == null) {
+                return true;
+            }
+            // a host without a scheme is plain http to the client
+            return host.trim().toLowerCase(java.util.Locale.ROOT).startsWith("https://");
         }
     }
 
