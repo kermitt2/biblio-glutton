@@ -171,29 +171,12 @@ public class LookupEngine {
                         GrobidResponse response = grobidClient.processCitation(biblio, "0");
 
                         // TBD: extract more metadata from Grobid result to improve the pairwise ranking
-                        String firstAuthor1 = null;
-                        if (!isBlank(firstAuthor))
-                            firstAuthor1 = firstAuthor;
-                        else
-                            firstAuthor1 = isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph();
-
-                        String atitle1 = null;
-                        if (!isBlank(atitle))
-                            atitle1 = atitle;
-                        else
-                            atitle1 = response.getAtitle();
-                        
-                        String year1 = null;
-                        if (!isBlank(year))
-                            year1 = year;
-                        else
-                            year1 = response.getYear();
-
-                        String jtitle1 = null;
-                        if (!isBlank(year))
-                            jtitle1 = jtitle;
-                        else
-                            jtitle1 = response.getJtitle();
+                        // what the request gave wins over what Grobid parsed, field by field
+                        String firstAuthor1 = defaultIfBlank(firstAuthor,
+                            isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph());
+                        String atitle1 = defaultIfBlank(atitle, response.getAtitle());
+                        String year1 = defaultIfBlank(year, response.getYear());
+                        String jtitle1 = defaultIfBlank(jtitle, response.getJtitle());
 
 //System.out.println(biblio + " -> " + firstAuthor1 + " | " + atitle1 + " | " + year1 + " | " + jtitle1);
                         List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle1, firstAuthor1, jtitle1, 
@@ -283,29 +266,12 @@ public class LookupEngine {
                         GrobidResponse response = grobidClient.processCitation(biblio, "0");
 
                         // TBD: extract more metadata from Grobid result to improve the pairwise ranking
-                        String firstAuthor1 = null;
-                        if (!isBlank(firstAuthor))
-                            firstAuthor1 = firstAuthor;
-                        else
-                            firstAuthor1 = isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph();
-
-                        String atitle1 = null;
-                        if (!isBlank(atitle))
-                            atitle1 = atitle;
-                        else
-                            atitle1 = response.getAtitle();
-                        
-                        String year1 = null;
-                        if (!isBlank(year))
-                            year1 = year;
-                        else
-                            year1 = response.getYear();
-
-                        String jtitle1 = null;
-                        if (!isBlank(year))
-                            jtitle1 = jtitle;
-                        else
-                            jtitle1 = response.getJtitle();
+                        // what the request gave wins over what Grobid parsed, field by field
+                        String firstAuthor1 = defaultIfBlank(firstAuthor,
+                            isNotBlank(response.getFirstAuthor()) ? response.getFirstAuthor() : response.getFirstAuthorMonograph());
+                        String atitle1 = defaultIfBlank(atitle, response.getAtitle());
+                        String year1 = defaultIfBlank(year, response.getYear());
+                        String jtitle1 = defaultIfBlank(jtitle, response.getJtitle());
 
 //System.out.println(biblio + " -> " + firstAuthor1 + " | " + atitle1 + " | " + year1 + " | " + jtitle1);
                         List<MatchingDocument> rankedMatchingDocuments = pairwiseRanking(atitle1, firstAuthor1, jtitle1, 

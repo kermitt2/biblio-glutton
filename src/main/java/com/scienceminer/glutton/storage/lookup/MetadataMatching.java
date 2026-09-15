@@ -118,7 +118,9 @@ public class MetadataMatching {
     public long getSize() {
         long count = 0L;
         try {
-            CountRequest countRequest = new CountRequest();
+            // the configured index only: without a name the count covers every index of the
+            // cluster, and the size reported was wrong wherever the cluster is shared
+            CountRequest countRequest = new CountRequest(configuration.getElastic().getIndex());
             SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
             searchSourceBuilder.query(QueryBuilders.matchAllQuery());
             countRequest.source(searchSourceBuilder);
