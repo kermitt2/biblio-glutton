@@ -30,6 +30,14 @@ elastic:
   #host: 192.168.1.30:9200
   index: glutton
   maxConnections: 20
+  # for the loading and update commands: seconds to wait for a connection and for the answer to a
+  # bulk of records. Elasticsearch takes more than the default 30s for a full bulk when it is busy,
+  # and a bulk that times out is retried, so keep this generous
+  connectTimeout: 30
+  socketTimeout: 120
+  # how many bulks of records are sent at the same time while loading. Beyond that the loading
+  # waits for Elasticsearch instead of piling up requests that would only time out
+  maxConcurrentBulks: 4
 
 # solr settings
 solr:
