@@ -5,6 +5,7 @@ import com.google.inject.Module;
 
 import com.scienceminer.glutton.command.*;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
+import com.scienceminer.glutton.web.healthcheck.ElasticsearchWatchdog;
 import com.scienceminer.glutton.web.healthcheck.LookupHealthCheck;
 import com.scienceminer.glutton.web.module.LookupServiceModule;
 import com.scienceminer.glutton.web.module.NotFoundExceptionMapper;
@@ -168,6 +169,10 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
         final LookupHealthCheck healthCheck = new LookupHealthCheck(configuration, storageEnvFactory);
         environment.healthChecks().register("HealthCheck", healthCheck);
+        // the same report on the application port, as /service/health
+        environment.jersey().register(healthCheck);
+        // and in the log, when Elasticsearch goes away and when it is back
+        new ElasticsearchWatchdog(healthCheck::elasticsearchStatus).start();
 
         scheduleDailyUpdate(configuration, storageEnvFactory);
     }
