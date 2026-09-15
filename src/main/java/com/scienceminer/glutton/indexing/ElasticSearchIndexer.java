@@ -25,6 +25,7 @@ import co.elastic.clients.elasticsearch.core.bulk.*;
 import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.exception.ServiceOverloadedException;
 import com.scienceminer.glutton.utils.BinarySerialiser;
+import com.scienceminer.glutton.utils.ElasticsearchAuth;
 
 import org.apache.http.HttpHost;
 import org.apache.commons.io.FileUtils;
@@ -79,9 +80,7 @@ public class ElasticSearchIndexer {
             .setRequestConfigCallback(requestConfig -> requestConfig
                 .setConnectTimeout((int) TimeUnit.SECONDS.toMillis(elastic.getConnectTimeout()))
                 .setSocketTimeout((int) TimeUnit.SECONDS.toMillis(elastic.getSocketTimeout())))
-            //.setDefaultHeaders(new Header[]{
-            //    new BasicHeader("Authorization", "ApiKey " + apiKey)
-            //})
+            .setDefaultHeaders(ElasticsearchAuth.defaultHeaders(elastic))
             .build();
 
         // Create the transport with a Jackson mapper

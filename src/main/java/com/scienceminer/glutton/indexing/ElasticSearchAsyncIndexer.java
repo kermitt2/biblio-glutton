@@ -10,6 +10,7 @@ import com.codahale.metrics.Counter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.indexing.BulkRetry.IndexOperation;
+import com.scienceminer.glutton.utils.ElasticsearchAuth;
 import com.scienceminer.glutton.indexing.BulkRetry.Outcome;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
@@ -100,6 +101,7 @@ public class ElasticSearchAsyncIndexer implements Closeable {
             .setHttpClientConfigCallback(httpClient -> httpClient
                 .setMaxConnPerRoute(concurrentBulks)
                 .setMaxConnTotal(concurrentBulks))
+            .setDefaultHeaders(ElasticsearchAuth.defaultHeaders(elastic))
             .build();
 
         // Create the transport with a Jackson mapper

@@ -68,6 +68,48 @@ public class LookupConfigurationElasticTest {
     }
 
     @Test
+    public void elasticBlock_shouldTakeCredentials() throws Exception {
+        LookupConfiguration configuration = load("elastic:\n  host: https://es.example.org:9200\n  index: glutton\n"
+                + "  username: elastic\n  password: changeme\n");
+
+        assertThat(configuration.getElastic().getUsername(), is("elastic"));
+        assertThat(configuration.getElastic().getPassword(), is("changeme"));
+        assertThat(configuration.getElastic().getApiKey(), is((String) null));
+    }
+
+    @Test
+    public void elasticBlock_shouldRefuseCredentialsOverPlainHttp() throws Exception {
+        for (String host : new String[] { "http://es.example.org:9200", "es.example.org:9200", "0.0.0.0:9200" }) {
+            try {
+                load("elastic:\n  host: " + host + "\n  index: glutton\n  apiKey: secret\n");
+                fail("the key would go in the clear to " + host);
+            } catch (ConfigurationValidationException expected) {
+                assertThat(expected.getMessage().contains("https://"), is(true));
+            }
+        }
+    }
+
+    @Test
+    public void elasticBlock_shouldAllowPlainHttpWithoutCredentialsOrWhenSaidSo() throws Exception {
+        // no credentials: nothing to protect, as before
+        assertThat(load("elastic:\n  host: 0.0.0.0:9200\n  index: glutton\n").getElastic().hasCredentials(), is(false));
+        // a local cluster with TLS off, on purpose
+        LookupConfiguration configuration = load("elastic:\n  host: http://localhost:9200\n  index: glutton\n"
+                + "  username: elastic\n  password: changeme\n  allowCredentialsOverHttp: true\n");
+        assertThat(configuration.getElastic().hasCredentials(), is(true));
+    }
+
+    @Test
+    public void elasticBlock_shouldRefuseAUserWithoutPassword() throws Exception {
+        try {
+            load("elastic:\n  host: https://localhost:9200\n  index: glutton\n  username: elastic\n");
+            fail("a user without a password cannot authenticate");
+        } catch (ConfigurationValidationException expected) {
+            assertThat(expected.getMessage().contains("go together"), is(true));
+        }
+    }
+
+    @Test
     public void elasticBlock_shouldRefuseANoTimeout() throws Exception {
         try {
             load("elastic:\n  host: localhost:9200\n  index: glutton\n  socketTimeout: 0\n");
