@@ -7,6 +7,7 @@ import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
@@ -75,6 +76,11 @@ public class ESClientWrapper {
             return (ServiceException) failure;
         }
         String where = (host == null) ? "" : " at " + host;
+        int refused = refusedCredentialsStatus(failure);
+        if (refused > 0) {
+            return new ServiceException(503, "Elasticsearch" + where + " refuses the credentials (HTTP " + refused
+                    + "): check elastic.username and elastic.password, or elastic.apiKey", failure);
+        }
         if (failure instanceof ElasticsearchStatusException) {
             ElasticsearchStatusException statusException = (ElasticsearchStatusException) failure;
             int status = statusException.status().getStatus();
@@ -97,6 +103,30 @@ public class ESClientWrapper {
             return new ServiceException(500, "Elasticsearch server error: " + failure.getMessage(), failure);
         }
         return new ServiceException(500, "Error while querying Elasticsearch: " + failure, failure);
+    }
+
+    /**
+     * The HTTP status when Elasticsearch turned the request away for want of credentials, 0
+     * otherwise. A 401 comes as a status exception from a parsed error body, or as a plain
+     * response exception (an IOException) from a ping, so both are looked at: taken for a network
+     * failure, a wrong password would read as the cluster being down.
+     */
+    public static int refusedCredentialsStatus(Throwable failure) {
+        ElasticsearchStatusException statusException = findCause(failure, ElasticsearchStatusException.class);
+        if (statusException != null) {
+            int status = statusException.status().getStatus();
+            if (status == 401 || status == 403) {
+                return status;
+            }
+        }
+        ResponseException responseException = findCause(failure, ResponseException.class);
+        if (responseException != null) {
+            int status = responseException.getResponse().getStatusLine().getStatusCode();
+            if (status == 401 || status == 403) {
+                return status;
+            }
+        }
+        return 0;
     }
 
     /**

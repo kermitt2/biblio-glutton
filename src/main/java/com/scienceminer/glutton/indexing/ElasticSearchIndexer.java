@@ -100,6 +100,13 @@ public class ElasticSearchIndexer {
                 "\t"+ info.status() + "\tid: " + info.uuid() +"\tprimary: " + info.pri() + "\treplica: " + info.rep()));
         } catch (IOException ioException) {
             logger.error("Health check status failed", ioException);
+        } catch (co.elastic.clients.elasticsearch._types.ElasticsearchException e) {
+            if (e.status() == 401 || e.status() == 403) {
+                // said plainly before the stack trace that follows: this is a configuration problem
+                logger.error("Elasticsearch at " + configuration.getElastic().getHost() + " refuses the credentials (HTTP "
+                        + e.status() + "): check elastic.username and elastic.password, or elastic.apiKey");
+            }
+            throw e;
         }
     }
 

@@ -65,6 +65,20 @@ public class ESClientWrapperTest {
     }
 
     @Test
+    public void refusedCredentials_shouldSayWhichSettingsToCheck() {
+        for (RestStatus status : new RestStatus[] { RestStatus.UNAUTHORIZED, RestStatus.FORBIDDEN }) {
+            ServiceException mapped = map(new ElasticsearchStatusException(
+                    "Elasticsearch exception [type=security_exception, reason=missing authentication credentials]", status));
+
+            assertThat(mapped.getStatusCode(), is(503));
+            assertThat(mapped.getMessage(), containsString("refuses the credentials"));
+            assertThat(mapped.getMessage(), containsString("elastic.apiKey"));
+        }
+        assertThat(ESClientWrapper.refusedCredentialsStatus(new ElasticsearchStatusException("no", RestStatus.NOT_FOUND)), is(0));
+        assertThat(ESClientWrapper.refusedCredentialsStatus(new ConnectException("refused")), is(0));
+    }
+
+    @Test
     public void busyCluster_shouldBeServiceUnavailable() {
         assertThat(map(new ElasticsearchStatusException("rejected", RestStatus.TOO_MANY_REQUESTS)).getStatusCode(), is(503));
         assertThat(map(new ElasticsearchStatusException("no shard", RestStatus.SERVICE_UNAVAILABLE)).getStatusCode(), is(503));

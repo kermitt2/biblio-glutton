@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -58,6 +59,16 @@ public class LookupHealthCheckTest {
 
         assertThat(report.get("status"), is("degraded"));
         assertThat(section(report, "elasticsearch").get("status"), is("missing_index"));
+    }
+
+    @Test
+    public void credentialsRefused_shouldBeDegradedAndSayWhichSettingsToCheck() {
+        Map<String, Object> report = LookupHealthCheck.report(storageOk(),
+                ElasticsearchStatus.unauthorized("localhost:9200", "glutton", 401));
+
+        assertThat(report.get("status"), is("degraded"));
+        assertThat(section(report, "elasticsearch").get("status"), is("unauthorized"));
+        assertThat(String.valueOf(section(report, "elasticsearch").get("message")), containsString("elastic.apiKey"));
     }
 
     @Test

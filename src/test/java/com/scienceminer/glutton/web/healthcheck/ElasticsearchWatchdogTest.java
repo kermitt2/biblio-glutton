@@ -16,6 +16,7 @@ public class ElasticsearchWatchdogTest {
     private static final ElasticsearchStatus DOWN =
             ElasticsearchStatus.unreachable("localhost:9200", "glutton", "Connection refused");
     private static final ElasticsearchStatus NO_INDEX = ElasticsearchStatus.missingIndex("localhost:9200", "glutton");
+    private static final ElasticsearchStatus NO_AUTH = ElasticsearchStatus.unauthorized("localhost:9200", "glutton", 401);
 
     private static ElasticsearchWatchdog watchdog() {
         return new ElasticsearchWatchdog(() -> OK, 1000);
@@ -68,5 +69,7 @@ public class ElasticsearchWatchdogTest {
 
         // the cluster is back but without the index: not the same problem, worth a new line at once
         assertThat(watchdog.observe(NO_INDEX, 100), containsString("does not exist"));
+        // and a wrong password is not "not reachable"
+        assertThat(watchdog.observe(NO_AUTH, 200), containsString("refuses the credentials"));
     }
 }
