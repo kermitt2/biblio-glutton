@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  * Class for creating object to be indexed from a bibliographical record in crossref JSON format. 
@@ -38,6 +39,29 @@ public class MetadataObjBuilder {
         }
 
         return null;
+    }
+
+    private static String attemptGetYearFromDate(JsonNode dateNode)
+    {
+        if(dateNode == null || dateNode.isMissingNode())
+            return null;
+
+        JsonNode datePartsNode = dateNode.get("date-parts");
+        if (datePartsNode == null
+                || datePartsNode.isMissingNode()
+                || !datePartsNode.isArray()
+                || datePartsNode.size() <= 0)
+            return null;
+
+        JsonNode firstDateParts = datePartsNode.get(0);
+        if (!firstDateParts.isArray() || firstDateParts.size() <= 0) 
+            return null;
+
+        String year = firstDateParts.get(0).asText();
+        if (isBlank(year))
+            return null;
+
+        return year;
     }
 
     public static MetadataObj createMetadataObjFromJsonNode(JsonNode rootNode) {
@@ -212,101 +236,22 @@ public class MetadataObjBuilder {
         }
 
         // year is a date part (first one) in issued or created or published-online or published-print (we follow this order)
-        JsonNode yearNode = rootNode.get("issued");
-        if (yearNode != null && (!yearNode.isMissingNode())) {
-            JsonNode datePartsNode = yearNode.get("date-parts");
-            if (datePartsNode != null && (!datePartsNode.isMissingNode())) {
-                if (datePartsNode.isArray() && ((ArrayNode)datePartsNode).size() > 0) {
-                    Iterator<JsonNode> datePartsNodeIter = ((ArrayNode)datePartsNode).elements();
-                    while (datePartsNodeIter.hasNext()) {
-                        JsonNode yearPartsNodeIterNode = datePartsNodeIter.next();
-                        String year = yearPartsNodeIterNode.asText();
-                        if (isNotBlank(year)) 
-                            metadataObj.year = year;
-                        break;
-                    }
-                }
+        String[] dateFields = {
+            "issued",
+            "published",
+            "published-online",
+            "published-print",
+
+            // this is deposit date, normally we will never use it, but it will ensure 
+            // that we always have a date as conservative fallback
+            "created"
+        };
+
+        for (String field : dateFields) {
+            if (metadataObj.year == null) {
+                metadataObj.year = attemptGetYearFromDate(rootNode.get(field));
             }
         }
-
-        if (metadataObj.year == null) {
-            yearNode = rootNode.get("published");
-            if (yearNode != null && (!yearNode.isMissingNode())) {
-                JsonNode datePartsNode = yearNode.get("date-parts");
-                if (datePartsNode != null && (!datePartsNode.isMissingNode())) {
-                    if (datePartsNode.isArray() && ((ArrayNode)datePartsNode).size() > 0) {
-                        Iterator<JsonNode> datePartsNodeIter = ((ArrayNode)datePartsNode).elements();
-                        while (datePartsNodeIter.hasNext()) {
-                            JsonNode yearPartsNodeIterNode = datePartsNodeIter.next();
-                            String year = yearPartsNodeIterNode.asText();
-                            if (isNotBlank(year)) 
-                                metadataObj.year = year;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (metadataObj.year == null) {
-            yearNode = rootNode.get("published-online");
-            if (yearNode != null && (!yearNode.isMissingNode())) {
-                JsonNode datePartsNode = yearNode.get("date-parts");
-                if (datePartsNode != null && (!datePartsNode.isMissingNode())) {
-                    if (datePartsNode.isArray() && ((ArrayNode)datePartsNode).size() > 0) {
-                        Iterator<JsonNode> datePartsNodeIter = ((ArrayNode)datePartsNode).elements();
-                        while (datePartsNodeIter.hasNext()) {
-                            JsonNode yearPartsNodeIterNode = datePartsNodeIter.next();
-                            String year = yearPartsNodeIterNode.asText();
-                            if (isNotBlank(year)) 
-                                metadataObj.year = year;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (metadataObj.year == null) {
-            yearNode = rootNode.get("published-print");
-            if (yearNode != null && (!yearNode.isMissingNode())) {
-                JsonNode datePartsNode = yearNode.get("date-parts");
-                if (datePartsNode != null && (!datePartsNode.isMissingNode())) {
-                    if (datePartsNode.isArray() && ((ArrayNode)datePartsNode).size() > 0) {
-                        Iterator<JsonNode> datePartsNodeIter = ((ArrayNode)datePartsNode).elements();
-                        while (datePartsNodeIter.hasNext()) {
-                            JsonNode yearPartsNodeIterNode = datePartsNodeIter.next();
-                            String year = yearPartsNodeIterNode.asText();
-                            if (isNotBlank(year)) 
-                                metadataObj.year = year;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // this is deposit date, normally we will never use it, but it will ensure 
-        // that we always have a date as conservative fallback
-        if (metadataObj.year == null) {
-            yearNode = rootNode.get("created");
-            if (yearNode != null && (!yearNode.isMissingNode())) {
-                JsonNode datePartsNode = yearNode.get("date-parts");
-                if (datePartsNode != null && (!datePartsNode.isMissingNode())) {
-                    if (datePartsNode.isArray() && ((ArrayNode)datePartsNode).size() > 0) {
-                        Iterator<JsonNode> datePartsNodeIter = ((ArrayNode)datePartsNode).elements();
-                        while (datePartsNodeIter.hasNext()) {
-                            JsonNode yearPartsNodeIterNode = datePartsNodeIter.next();
-                            String year = yearPartsNodeIterNode.asText();
-                            if (isNotBlank(year)) 
-                                metadataObj.year = year;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
         
         /*if (data.issued) {
             if (data.issued["date-parts"]) {
