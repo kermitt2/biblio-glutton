@@ -52,7 +52,9 @@ public class PmcOpenAccessLoaderLiveTest {
             start = System.nanoTime();
             PmcOpenAccessLoader.Result licenses = loader.loadLicenses();
             System.out.println("licenses pass: " + licenses + " in " + (System.nanoTime() - start) / 1_000_000_000L + " s");
-            assertThat(licenses.updated, is(3L));
+            // the older version of PMC12000122 is not fetched, only its latest
+            assertThat(licenses.updated, is(2L));
+            assertThat(licenses.skipped, is(1L));
             assertThat(licenses.failed, is(0L));
             PmidData bcr = lookup.retrieveIdsByPmc("PMC13901");
             PmidData two = lookup.retrieveIdsByPmc("PMC12000122");
