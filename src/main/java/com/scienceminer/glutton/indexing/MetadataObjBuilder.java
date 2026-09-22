@@ -57,7 +57,11 @@ public class MetadataObjBuilder {
         if (!firstDateParts.isArray() || firstDateParts.size() <= 0) 
             return null;
 
-        String year = firstDateParts.get(0).asText();
+        JsonNode yearNode = firstDateParts.get(0);
+        if (yearNode == null || yearNode.isNull())
+            return null;
+        String year = yearNode.asText();
+
         if (isBlank(year))
             return null;
 
