@@ -66,7 +66,10 @@ The more metadata are available in the query, the better. The original raw bibli
 
 For convenience, in case you are only interested by the Open Access URL for a bibliographical object, the open Access resolver API returns the OA PDF link (URL) only via an identifier: 
 
-- return the best Open Access URL if available
+- return the best Open Access URL if available. This is the PDF link from the OpenAlex snapshot,
+  unless there is none or it points at the PMC site or Europe PMC, which answer scripts with a
+  captcha page: then it is the PDF of the article in the PMC Cloud Service bucket, when the article
+  is there (the `oaLink` of the lookup responses is chosen the same way)
     - `GET host:port/service/oa?doi=DOI` return the best Open Accss PDF url for a given DOI 
     - `GET host:port/service/oa?pmid=PMID` return the best Open Accss PDF url for a given PMID 
     - `GET host:port/service/oa?pmc=PMC` return the best Open Accss PDF url for a given PMC ID

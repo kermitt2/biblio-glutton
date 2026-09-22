@@ -8,8 +8,9 @@ import static org.apache.commons.lang3.StringUtils.startsWith;
  * Resources needed for creating these objects:
  * - mapping identifiers: 
  *   https://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz
- * - mapping path and licences for PMC ID: 
- *   https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_file_list.txt 
+ * - license and full text location for PMC ID: the PMC Cloud Service,
+ *   https://pmc.ncbi.nlm.nih.gov/tools/pmcaws/ (NCBI's FTP list of open access articles,
+ *   which gave both up to August 2026, is gone)
  **/
 
 public class PmidData implements Serializable {
@@ -21,6 +22,7 @@ public class PmidData implements Serializable {
     private String doi;
     private String pmcid;
     private String license;
+    /** Where the full text is: the PDF key in the PMC bucket, or the version prefix alone when there is no PDF. */
     private String subpath;
 
     public PmidData(String pmid, String pmcid, String doi) {

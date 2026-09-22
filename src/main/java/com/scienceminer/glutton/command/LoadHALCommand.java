@@ -51,7 +51,7 @@ public class LoadHALCommand extends ConfiguredCommand<LookupConfiguration> {
 
         LOGGER.info("Preparing the system. Loading metadadata for HAL via HAL web API...");
 
-        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
+        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration, true);
 
         long start = System.nanoTime();
         

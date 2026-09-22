@@ -9,6 +9,7 @@ import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.data.IstexData;
 import com.scienceminer.glutton.data.MatchingDocument;
 import com.scienceminer.glutton.data.PmidData;
+import com.scienceminer.glutton.utils.pmc.PmcCloudService;
 import com.scienceminer.glutton.exception.NotFoundException;
 import com.scienceminer.glutton.storage.lookup.*;
 import com.scienceminer.glutton.utils.Identifiers;
@@ -499,7 +500,7 @@ public class LookupEngine {
 
     public String retrieveOAUrlByDoi(String doi) {
         doi = Identifiers.doi(doi);
-        final String output = oaDoiLookup.retrieveOaLinkByDoi(doi);
+        final String output = readableOaLink(oaDoiLookup.retrieveOaLinkByDoi(doi), pmidLookup.retrieveIdsByDoi(doi));
 
         if (isBlank(output)) {
             throw new NotFoundException("Open Access URL was not found for DOI " + doi);
@@ -510,7 +511,7 @@ public class LookupEngine {
 
     public Pair<String,String> retrieveOaIstexUrlByDoi(String doi) {
         doi = Identifiers.doi(doi);
-        final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
+        final String oaLink = readableOaLink(oaDoiLookup.retrieveOaLinkByDoi(doi), pmidLookup.retrieveIdsByDoi(doi));
         final IstexData istexRecord = istexLookup.retrieveByDoi(doi);
         String url = null;
 
@@ -528,13 +529,21 @@ public class LookupEngine {
 
     public String retrieveOAUrlByPmid(String pmid) {
         pmid = Identifiers.pmid(pmid);
-        final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
-
-        if (pmidData != null && isNotBlank(pmidData.getDoi())) {
-            return oaDoiLookup.retrieveOaLinkByDoi(pmidData.getDoi());
+        final String oaLink = oaLinkOf(pmidLookup.retrieveIdsByPmid(pmid));
+        if (isNotBlank(oaLink)) {
+            return oaLink;
         }
 
         throw new NotFoundException("Open Access URL was not found for PM ID " + pmid);
+    }
+
+    /** The readable PDF link of a PubMed record: by its DOI when it has one, from the PMC bucket otherwise. */
+    private String oaLinkOf(PmidData pmidData) {
+        if (pmidData == null) {
+            return null;
+        }
+        String oaLink = isNotBlank(pmidData.getDoi()) ? oaDoiLookup.retrieveOaLinkByDoi(pmidData.getDoi()) : null;
+        return readableOaLink(oaLink, pmidData);
     }
 
     public Pair<String,String> retrieveOaIstexUrlByPmid(String pmid) {
@@ -545,7 +554,7 @@ public class LookupEngine {
             throw new NotFoundException("Open Access and Istex URL were not found for PMID " + pmid);
         }        
 
-        final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(pmidData.getDoi());
+        final String oaLink = oaLinkOf(pmidData);
         final IstexData istexRecord = istexLookup.retrieveByDoi(pmidData.getDoi());
         String url = null;
 
@@ -563,10 +572,9 @@ public class LookupEngine {
 
     public String retrieveOAUrlByPmc(String pmc) {
         pmc = Identifiers.pmc(pmc);
-        final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
-
-        if (pmidData != null && isNotBlank(pmidData.getDoi())) {
-            return oaDoiLookup.retrieveOaLinkByDoi(pmidData.getDoi());
+        final String oaLink = oaLinkOf(pmidLookup.retrieveIdsByPmc(pmc));
+        if (isNotBlank(oaLink)) {
+            return oaLink;
         }
 
         throw new NotFoundException("Open Access URL was not found for PMC ID " + pmc);
@@ -580,7 +588,7 @@ public class LookupEngine {
             throw new NotFoundException("Open Access and Istex URL were not found for PMC " + pmc);
         }        
 
-        final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(pmidData.getDoi());
+        final String oaLink = oaLinkOf(pmidData);
         final IstexData istexRecord = istexLookup.retrieveByDoi(pmidData.getDoi());
         String url = null;
 
@@ -602,7 +610,8 @@ public class LookupEngine {
 
         if (istexData != null && CollectionUtils.isNotEmpty(istexData.getDoi())) {
             // TBD: we might want to iterate to several DOI
-            return oaDoiLookup.retrieveOaLinkByDoi(istexData.getDoi().get(0));
+            String doi = istexData.getDoi().get(0);
+            return readableOaLink(oaDoiLookup.retrieveOaLinkByDoi(doi), pmidLookup.retrieveIdsByDoi(doi));
         }
 
         throw new NotFoundException("Open Access URL was not found for pii " + pii);
@@ -617,7 +626,8 @@ public class LookupEngine {
         }        
 
         // TBD: we might want to iterate to several DOI
-        final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(istexData.getDoi().get(0));
+        String doi = istexData.getDoi().get(0);
+        final String oaLink = readableOaLink(oaDoiLookup.retrieveOaLinkByDoi(doi), pmidLookup.retrieveIdsByDoi(doi));
         String istexId = istexData.getIstexId();
         String url = ISTEX_BASE + istexId + "/fulltext/pdf";
 
@@ -873,6 +883,33 @@ public class LookupEngine {
         return similarity;
     }
 
+    /**
+     * Whether a PDF link points at the PMC site or Europe PMC, which answer a script with a
+     * captcha page or a 403: a person with a browser gets the PDF, a consolidation client does not.
+     */
+    static boolean isBehindCaptcha(String url) {
+        if (isBlank(url)) {
+            return false;
+        }
+        String lower = url.toLowerCase();
+        return lower.contains("pmc.ncbi.nlm.nih.gov/") || lower.contains("ncbi.nlm.nih.gov/pmc/")
+                || lower.contains("europepmc.org/");
+    }
+
+    /**
+     * The open access PDF link to hand out: the one from the OpenAlex store, unless there is none
+     * or it is one a script cannot read, in which case the PDF in the PMC Cloud Service bucket
+     * when the article is there. OpenAlex has no PDF link at all for millions of works whose open
+     * access copy is on PubMed Central, and the ones it has point at the captcha.
+     */
+    static String readableOaLink(String oaLink, PmidData pmidData) {
+        String pmcLink = (pmidData == null) ? null : PmcCloudService.pdfUrl(pmidData.getSubpath());
+        if (pmcLink != null && (isBlank(oaLink) || isBehindCaptcha(oaLink))) {
+            return pmcLink;
+        }
+        return oaLink;
+    }
+
     protected String injectIdsByDoi(String jsonobj, String doi) {
         if (doi == null)
             return jsonobj;
@@ -896,6 +933,9 @@ public class LookupEngine {
         boolean first = false;
         boolean foundOaLink = false;
         boolean foundHalId = false;
+
+        final PmidData pmidData = pmidLookup.retrieveIdsByDoi(doi);
+        oaLink = readableOaLink(oaLink, pmidData);
 
         StringBuilder sb = new StringBuilder();
         if (isBlank(jsonobj)) {
@@ -963,7 +1003,6 @@ public class LookupEngine {
         }
 
         if (!pmid || !pmc) {
-            final PmidData pmidData = pmidLookup.retrieveIdsByDoi(doi);
             if (pmidData != null) {
                 if (isNotBlank(pmidData.getPmid()) && !pmid) {
                     if (!first) {

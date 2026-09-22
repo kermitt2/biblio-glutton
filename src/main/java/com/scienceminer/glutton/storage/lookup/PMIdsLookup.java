@@ -108,72 +108,6 @@ public class PMIdsLookup {
         LOGGER.info("Cross checking number of records processed:: " + metric.getCount());
     }
 
-    public void loadFromFileExtra(InputStream is, Meter metric) {
-        final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
-        final AtomicInteger counter = new AtomicInteger(0);
-        int nbMissingPMC = 0;
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        try {
-            while(reader.ready()) {
-                if (counter.get() == batchSize) {
-                    transactionWrapper.tx.commit();
-                    transactionWrapper.tx.close();
-                    transactionWrapper.tx = environment.txnWrite();
-                    counter.set(0);
-                }
-
-                String line = reader.readLine();
-                final String[] split = StringUtils.splitPreserveAllTokens(line, "\t");
-
-                // retrieve pmidData by PMC ID (position 2)
-                try {
-                    PmidData pmidData = retrieveIdsByPmc(split[2]);
-
-                    if (pmidData == null) {
-                        nbMissingPMC++;
-                        continue;
-                    }
-
-                    if (split[0].length()>0)
-                        pmidData.setLicense(split[0]);
-                    if (split[4].length()>0)
-                        pmidData.setSubpath(split[4]);
-
-                    // update pmidData
-                    if (isNotBlank(pmidData.getDoi())) {
-                        store(dbDoiToIds, lowerCase(pmidData.getDoi()), pmidData, transactionWrapper.tx);
-                    }
-
-                    if (isNotBlank(pmidData.getPmid())) {
-                        store(dbPmidToIds, pmidData.getPmid(), pmidData, transactionWrapper.tx);
-                    }
-
-                    if (isNotBlank(pmidData.getPmcid())) {
-                        store(dbPmcToIds, pmidData.getPmcid(), pmidData, transactionWrapper.tx);
-                    }
-
-                    metric.mark();
-                    counter.incrementAndGet();
-                } catch (Exception e) {
-                    LOGGER.error("Fail to segment the PMC oa list file: |" + line + "| nb tokens: "+split.length, e);
-                }
-            }
-
-            transactionWrapper.tx.commit();
-            transactionWrapper.tx.close();
-
-            if (nbMissingPMC>0)
-                System.out.println("warning: total PMC references from OA file not found in DOI/PMC mapping file:" + nbMissingPMC);
-
-        } catch (IOException e) {
-            LOGGER.error("Some serious error when processing the PMC oa list file.", e);
-        }
-
-        LOGGER.info("Cross checking number of records processed:: " + metric.getCount());
-    }
-
-
     public PmidData retrieveIdsByDoi(String doi) {
         final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
         ByteBuffer cachedData = null;
@@ -240,6 +174,61 @@ public class PMIdsLookup {
         }
 
         return size;
+    }
+
+    /**
+     * A batch of updates to the mapping, on one write transaction committed every
+     * {@code storingBatchSize} writes and on close. Reads go through the same transaction, so a
+     * record written earlier in the batch is seen. One writer at a time, on one thread: that is
+     * what LMDB allows.
+     */
+    public Writer openWriter() {
+        return new Writer();
+    }
+
+    public class Writer implements AutoCloseable {
+        private Txn<ByteBuffer> tx = environment.txnWrite();
+        private int written = 0;
+
+        /** The record of a PMC ID, as this batch sees it. */
+        public PmidData getByPmc(String pmc) {
+            if (pmc == null) {
+                return null;
+            }
+            final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
+            keyBuffer.put(BinarySerialiser.serialize(pmc)).flip();
+            ByteBuffer cachedData = dbPmcToIds.get(tx, keyBuffer);
+            return cachedData == null ? null : (PmidData) BinarySerialiser.deserialize(cachedData);
+        }
+
+        /** Stores a record under each of its identifiers. */
+        public void put(PmidData data) {
+            if (isNotBlank(data.getDoi())) {
+                store(dbDoiToIds, lowerCase(data.getDoi()), data, tx);
+            }
+            if (isNotBlank(data.getPmid())) {
+                store(dbPmidToIds, data.getPmid(), data, tx);
+            }
+            if (isNotBlank(data.getPmcid())) {
+                store(dbPmcToIds, data.getPmcid(), data, tx);
+            }
+            wrote();
+        }
+
+        private void wrote() {
+            if (++written >= batchSize) {
+                tx.commit();
+                tx.close();
+                tx = environment.txnWrite();
+                written = 0;
+            }
+        }
+
+        @Override
+        public void close() {
+            tx.commit();
+            tx.close();
+        }
     }
 
     private void store(Dbi<ByteBuffer> db, String key, PmidData value, Txn<ByteBuffer> tx) {

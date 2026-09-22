@@ -69,6 +69,74 @@ public class LookupEngineTest {
         assertThat(jobject.get("oaLink").getAsString(), is(fakeOAurl));
     }
 
+    // ---------------------------------------------------------------- the PMC bucket as PDF link
+
+    private static final String BUCKET_PDF = "https://pmc-oa-opendata.s3.amazonaws.com/PMC13901.1/PMC13901.1.pdf";
+
+    private static PmidData pmcRecord(String doi) {
+        PmidData data = new PmidData("11250747", "PMC13901", doi);
+        data.setSubpath("PMC13901.1/PMC13901.1.pdf");
+        return data;
+    }
+
+    @Test
+    public void readableOaLink_shouldTakeTheBucketWhenOpenAlexHasNothing() {
+        assertThat(LookupEngine.readableOaLink(null, pmcRecord("10.1186/bcr272")), is(BUCKET_PDF));
+        assertThat(LookupEngine.readableOaLink("", pmcRecord("10.1186/bcr272")), is(BUCKET_PDF));
+    }
+
+    @Test
+    public void readableOaLink_shouldReplaceALinkScriptsCannotRead() {
+        for (String captcha : new String[] {
+                "https://pmc.ncbi.nlm.nih.gov/articles/PMC13901/pdf/bcr272.pdf",
+                "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC13901/pdf/",
+                "https://europepmc.org/articles/pmc13901?pdf=render" }) {
+            assertThat(captcha, LookupEngine.isBehindCaptcha(captcha), is(true));
+            assertThat(LookupEngine.readableOaLink(captcha, pmcRecord("10.1186/bcr272")), is(BUCKET_PDF));
+        }
+    }
+
+    @Test
+    public void readableOaLink_shouldKeepAPublisherLinkAndWhatItHasWithoutTheBucket() {
+        String publisher = "https://breast-cancer-research.biomedcentral.com/counter/pdf/10.1186/bcr272";
+        assertThat(LookupEngine.isBehindCaptcha(publisher), is(false));
+        assertThat(LookupEngine.readableOaLink(publisher, pmcRecord("10.1186/bcr272")), is(publisher));
+
+        // not in the bucket: the captcha link is still better than nothing, as before
+        String captcha = "https://pmc.ncbi.nlm.nih.gov/articles/PMC13901/pdf/";
+        PmidData notInBucket = new PmidData("11250747", "PMC13901", "10.1186/bcr272");
+        assertThat(LookupEngine.readableOaLink(captcha, notInBucket), is(captcha));
+        assertThat(LookupEngine.readableOaLink(captcha, null), is(captcha));
+        assertThat(LookupEngine.readableOaLink(null, null), nullValue());
+    }
+
+    @Test
+    public void injectIds_shouldHandOutTheBucketPdfWhenOpenAlexHasNone() {
+        String doi = "10.1186/bcr272";
+        expect(mockIstexLookup.retrieveByDoi(doi)).andReturn(null);
+        expect(mockPmidLookup.retrieveIdsByDoi(doi)).andReturn(pmcRecord(doi));
+        expect(mockOALookup.retrieveOaLinkByDoi(doi)).andReturn(null);
+        expect(mockHALLookup.retrieveHalIdByDoi(doi)).andReturn(null);
+        replay(mockIstexLookup, mockPmidLookup, mockOALookup, mockHALLookup);
+
+        String output = target.injectIdsByDoi("{\"DOI\":\"10.1186/bcr272\"}", doi);
+
+        JsonObject jobject = new JsonParser().parse(output).getAsJsonObject();
+        assertThat(jobject.get("oaLink").getAsString(), is(BUCKET_PDF));
+        assertThat(jobject.get("pmcid").getAsString(), is("PMC13901"));
+    }
+
+    @Test
+    public void oaByPmc_shouldAnswerFromTheBucketEvenWithoutADoi() {
+        // a PMC article with no DOI: nothing for OpenAlex to know, the bucket has the PDF
+        PmidData noDoi = new PmidData("11250747", "PMC13901", null);
+        noDoi.setSubpath("PMC13901.1/PMC13901.1.pdf");
+        expect(mockPmidLookup.retrieveIdsByPmc("PMC13901")).andReturn(noDoi);
+        replay(mockPmidLookup, mockOALookup);
+
+        assertThat(target.retrieveOAUrlByPmc("PMC13901"), is(BUCKET_PDF));
+    }
+
     @Test
     public void injectIds_getDataOnlyFromIstex_ShouldWork() {
         String input = "{\"reference-count\":176,\"publisher\":\"IOP Publishing\",\"issue\":\"4\",\"content-domain\":{\"domain\":[],\"crossmark-restriction\":false},\"short-container-title\":[\"Russ. Chem. Rev.\"],\"published-print\":{\"date-parts\":[[1998,4,30]]},\"DOI\":\"10.1070/rc1998v067n04abeh000372\",\"type\":\"journal-article\",\"created\":{\"date-parts\":[[2002,8,24]],\"date-time\":\"2002-08-24T21:29:52Z\",\"timestamp\":{\"$numberLong\":\"1030224592000\"}},\"page\":\"279-293\",\"source\":\"Crossref\",\"is-referenced-by-count\":24,\"title\":[\"Haloalkenes activated by geminal groups in reactions with N-nucleophiles\"],\"prefix\":\"10.1070\",\"volume\":\"67\",\"author\":[{\"given\":\"Alexander Yu\",\"family\":\"Rulev\",\"sequence\":\"first\",\"affiliation\":[]}],\"member\":\"266\",\"published-online\":{\"date-parts\":[[2007,10,17]]},\"container-title\":[\"Russian Chemical Reviews\"],\"deposited\":{\"date-parts\":[[2017,11,23]],\"date-time\":\"2017-11-23T03:38:45Z\",\"timestamp\":{\"$numberLong\":\"1511408325000\"}},\"score\":1,\"issued\":{\"date-parts\":[[1998,4,30]]},\"references-count\":176,\"journal-issue\":{\"published-print\":{\"date-parts\":[[1998,4,30]]},\"issue\":\"4\"},\"URL\":\"http://dx.doi.org/10.1070/rc1998v067n04abeh000372\",\"ISSN\":[\"0036-021X\",\"1468-4837\"],\"issn-type\":[{\"value\":\"0036-021X\",\"type\":\"print\"},{\"value\":\"1468-4837\",\"type\":\"electronic\"}]}";
