@@ -162,6 +162,10 @@ public class MetadataMatching {
             countRequest.query(QueryBuilders.matchAllQuery());
             return ElasticsearchStatus.ok(host, index, esClient.count(countRequest, RequestOptions.DEFAULT).getCount());
         } catch (IOException | ElasticsearchException e) {
+            int refused = ESClientWrapper.refusedCredentialsStatus(e);
+            if (refused > 0) {
+                return ElasticsearchStatus.unauthorized(host, index, refused);
+            }
             IOException notReachable = ESClientWrapper.findCause(e, IOException.class);
             if (notReachable != null) {
                 return ElasticsearchStatus.unreachable(host, index, "Elasticsearch is not reachable at " + host

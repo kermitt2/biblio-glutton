@@ -102,7 +102,9 @@ For convenience, in case you are only interested by the Open Access URL for a bi
 ```
 
 `elasticsearch.status` is `ok`, `unreachable`, `missing_index` (the cluster answers but the
-configured index is not there, so every matching query would find nothing) or `error`. When it is
+configured index is not there, so every matching query would find nothing), `unauthorized` (the
+cluster refuses the credentials given, or wants some: check `elastic.username` and
+`elastic.password`, or `elastic.apiKey`) or `error`. When it is
 `ok`, `documents` is the number of records in the index.
 
 While Elasticsearch is away, the lookups by identifier keep working from the storage and the

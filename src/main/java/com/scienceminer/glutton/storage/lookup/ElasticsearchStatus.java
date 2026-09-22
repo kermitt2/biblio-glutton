@@ -12,6 +12,8 @@ public final class ElasticsearchStatus {
         UNREACHABLE,
         /** Reachable, but the configured index does not exist: every matching query would find nothing. */
         MISSING_INDEX,
+        /** Reachable, but it refuses the credentials given, or wants some. */
+        UNAUTHORIZED,
         /** Reachable, but the check itself was refused. */
         ERROR
     }
@@ -38,6 +40,12 @@ public final class ElasticsearchStatus {
 
     public static ElasticsearchStatus unreachable(String host, String index, String message) {
         return new ElasticsearchStatus(State.UNREACHABLE, host, index, -1, message);
+    }
+
+    public static ElasticsearchStatus unauthorized(String host, String index, int httpStatus) {
+        return new ElasticsearchStatus(State.UNAUTHORIZED, host, index, -1,
+                "Elasticsearch at " + host + " refuses the credentials (HTTP " + httpStatus
+                + "): check elastic.username and elastic.password, or elastic.apiKey");
     }
 
     public static ElasticsearchStatus missingIndex(String host, String index) {
