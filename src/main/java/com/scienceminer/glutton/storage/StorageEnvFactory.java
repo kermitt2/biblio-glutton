@@ -47,7 +47,13 @@ public class StorageEnvFactory {
         this.bulkLoad = bulkLoad;
         if (bulkLoad) {
             LOGGER.info("Opening the storage for bulk loading: commits do not wait for the disk");
-            Runtime.getRuntime().addShutdownHook(new Thread(this::syncAll, "lmdb-sync"));
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    syncAll();
+                } catch (RuntimeException e) {
+                    LOGGER.warn("Could not flush an LMDB environment to disk", e);
+                }
+            }, "lmdb-sync"));
         }
     }
 
@@ -75,20 +81,35 @@ public class StorageEnvFactory {
         return environment;
     }
 
-    /** Flushes every environment opened here to disk. A no-op for one that was already closed. */
+    /**
+     * Flushes every environment opened here to disk. A no-op for one that was already closed,
+     * and cheap for one with nothing left to write. A loading command calls it once it is done,
+     * so that a flush that fails makes the command fail rather than leave a database that looks
+     * complete but is not on disk; the JVM exit flushes again, as a fallback for a load that ends
+     * some other way.
+     *
+     * @throws RuntimeException the failure of the first environment that could not be flushed,
+     *         after the others were tried
+     */
     public void syncAll() {
         List<Env<ByteBuffer>> envs;
         synchronized (opened) {
             envs = new ArrayList<>(opened);
         }
+        RuntimeException failure = null;
         for (Env<ByteBuffer> env : envs) {
             try {
                 if (!env.isClosed()) {
                     env.sync(true);
                 }
-            } catch (Exception e) {
-                LOGGER.warn("Could not flush an LMDB environment to disk", e);
+            } catch (RuntimeException e) {
+                if (failure == null) {
+                    failure = e;
+                }
             }
+        }
+        if (failure != null) {
+            throw failure;
         }
     }
 

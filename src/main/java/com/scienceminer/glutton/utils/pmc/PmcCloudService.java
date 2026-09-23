@@ -305,17 +305,29 @@ public class PmcCloudService implements Closeable {
                 if (status == 200) {
                     return response;
                 }
-                if (status == 404 || status == 403) {
-                    // asking again would not help
-                    throw new IOException("HTTP " + status + " for " + url);
-                }
+                discard(response);
                 last = new IOException("HTTP " + status + " for " + url);
+                if (status == 404 || status == 403) {
+                    // asking again would not help; thrown outside the try so that it is not retried
+                    break;
+                }
             } catch (IOException e) {
                 last = e;
             }
             LOGGER.debug("Attempt " + attempt + "/" + MAX_ATTEMPTS + " failed for " + url + ": " + last);
         }
         throw last;
+    }
+
+    /** Lets go of the connection behind a response whose body is a stream not going to be read. */
+    private static void discard(HttpResponse<?> response) {
+        if (response.body() instanceof InputStream) {
+            try {
+                ((InputStream) response.body()).close();
+            } catch (IOException e) {
+                LOGGER.debug("Could not close the body of a response to " + response.uri(), e);
+            }
+        }
     }
 
     @Override

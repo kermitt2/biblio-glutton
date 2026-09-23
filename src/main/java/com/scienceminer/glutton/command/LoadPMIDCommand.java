@@ -120,6 +120,7 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
                 LOGGER.warn("Downloaded resource file not deleted: " + file1Path);
         }
 
+        storageEnvFactory.syncAll();
 
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");

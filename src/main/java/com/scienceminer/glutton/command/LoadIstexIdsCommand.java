@@ -101,6 +101,7 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
 
         }
 */
+        storageEnvFactory.syncAll();
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
     }

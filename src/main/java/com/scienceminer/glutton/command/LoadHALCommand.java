@@ -75,6 +75,7 @@ public class LoadHALCommand extends ConfiguredCommand<LookupConfiguration> {
         LOGGER.info("HAL records indexed: " + counterIndexedRecords.getCount()
                 + ", not indexed: " + counterFailedIndexedRecords.getCount() + ".");
 
+        storageEnvFactory.syncAll();
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
 

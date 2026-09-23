@@ -217,13 +217,15 @@ The mapping is 360 MB; to reuse a copy already downloaded rather than fetch it a
 
 The command also records, for every PMC ID of the mapping, where its open access full text is:
 NCBI's [PMC Cloud Service](https://pmc.ncbi.nlm.nih.gov/tools/pmcaws/), a public S3 bucket with
-one prefix per article version. Its daily inventory, read in a few minutes, gives the latest
-version of each article, and with it the PDF, which records with a PMC ID then carry as a `link`
-of type `application/pdf` next to the PDF on the PMC site (the latter answers scripts with a
-captcha, the former does not). The same bucket PDF is what the `oa` endpoint and the `oaLink` of
+one prefix per article version. Its inventory, a daily snapshot read in a few minutes, gives the
+latest version of each article, and with it the PDF, which records with a PMC ID then carry as a
+`link` of type `application/pdf` next to the PDF on the PMC site (the latter answers scripts with
+a captcha, the former does not). The same bucket PDF is what the `oa` endpoint and the `oaLink` of
 the lookup responses give for an article whose OpenAlex link is missing or is one of those captcha
 pages, which is the case for millions of works hosted on PubMed Central. Should the inventory be
-unreachable the mapping is loaded all the same, without the links.
+unreachable the mapping is loaded all the same, without the links. The inventory does not say
+whether a version has a PDF, and about two in a hundred have none (a manuscript with only its
+XML, say): until `pmc_licenses` below has read their metadata, those few links answer 404.
 
 The license of each article is not in the inventory but in one small metadata object per article
 version, about eight million of them. Fetching them is its own command:
@@ -236,8 +238,9 @@ The first run takes hours (several hundred objects a second from an ordinary con
 faster from inside AWS; `--concurrency` sets how many are asked for at once, 64 by default). The
 records are updated one by one as the objects come back, so a run cut short picks up where it
 left, and a later run fetches only the articles the mapping gained and the new versions of
-articles, minutes. The license of a version already read is not looked at again; reloading the
-mapping with `pmid` starts every record afresh.
+articles, minutes. The license of a version already read is not looked at again, although PMC
+does at times rewrite the metadata of a version in place (its license, or a PDF added later)
+without making a new version of it; reloading the mapping with `pmid` starts every record afresh.
 Records with a PMC ID then carry a `license` with the same codes as before (`CC BY`, `CC0`,
 `NO-CC CODE`, ...), and the PDF link says whether the PDF is really distributed.
 

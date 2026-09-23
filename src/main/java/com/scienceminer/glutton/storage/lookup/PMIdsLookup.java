@@ -65,6 +65,19 @@ public class PMIdsLookup {
         instance = new PMIdsLookup(storageEnvFactory);
     }
 
+    /**
+     * Replaces the instance with one on the storage of {@code storageEnvFactory}, closing the
+     * one there was. For tests, each of which wants its own storage: the service and the
+     * commands open one storage per JVM and use {@link #getInstance}.
+     */
+    public static synchronized PMIdsLookup newInstance(StorageEnvFactory storageEnvFactory) {
+        if (instance != null) {
+            instance.close();
+        }
+        getNewInstance(storageEnvFactory);
+        return instance;
+    }
+
     private PMIdsLookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
         batchSize = storageEnvFactory.getConfiguration().getStoringBatchSize();

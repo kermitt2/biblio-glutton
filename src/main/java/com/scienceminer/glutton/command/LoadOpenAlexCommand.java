@@ -140,6 +140,7 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
         }
 
         LOGGER.info("OA lookup size: " + oaLookup.getSize());
+        storageEnvFactory.syncAll();
         LOGGER.info("Finished in "
                 + TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
         reporter.report();

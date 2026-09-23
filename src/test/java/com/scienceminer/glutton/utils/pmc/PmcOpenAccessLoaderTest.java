@@ -90,7 +90,7 @@ public class PmcOpenAccessLoaderTest {
         LookupConfiguration configuration = new LookupConfiguration();
         configuration.setStorage(Files.createTempDirectory("pmc-loader-test").toString());
         configuration.setMaxAcceptedRequests(8);
-        lookup = PMIdsLookup.getInstance(new StorageEnvFactory(configuration));
+        lookup = PMIdsLookup.newInstance(new StorageEnvFactory(configuration));
         try (PMIdsLookup.Writer writer = lookup.openWriter()) {
             writer.put(new PmidData("11250747", "PMC13901", "10.1186/bcr272"));
             writer.put(new PmidData("40232315", "PMC12000122", "10.1007/s00432-025-06197-8"));

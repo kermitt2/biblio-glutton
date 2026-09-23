@@ -123,6 +123,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         else
             LOGGER.info("Crossref latest indexed date is not set.");
 
+        storageEnvFactory.syncAll();
         System.exit(0);
     }
 

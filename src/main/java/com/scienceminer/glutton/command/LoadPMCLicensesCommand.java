@@ -81,6 +81,12 @@ public class LoadPMCLicensesCommand extends ConfiguredCommand<LookupConfiguratio
             exitCode = 1;
         }
 
+        try {
+            storageEnvFactory.syncAll();
+        } catch (RuntimeException e) {
+            LOGGER.error("The storage could not be flushed to disk; run the command again", e);
+            exitCode = 1;
+        }
         LOGGER.info("Finished in " + TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
         reporter.report();
         System.exit(exitCode);
