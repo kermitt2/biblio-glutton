@@ -6,8 +6,6 @@ import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.reader.PmidReader;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.storage.lookup.PMIdsLookup;
-import com.scienceminer.glutton.utils.pmc.PmcCloudService;
-import com.scienceminer.glutton.utils.pmc.PmcOpenAccessLoader;
 import io.dropwizard.core.cli.ConfiguredCommand;
 import io.dropwizard.core.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -90,25 +88,6 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
         }
         pmidLookup.loadFromFile(inputStreampmidMapping, new PmidReader(), metrics.meter("pmidLookup"));
         LOGGER.info("PubMed lookup loaded " + pmidLookup.getSize() + " records. ");
-
-        // Where the open access full text of each PMC ID is. Up to August 2026 this and the license
-        // came from NCBI's FTP list of open access articles; NCBI removed it, with the tarballs it
-        // pointed to, when the PMC Article Datasets moved to the PMC Cloud Service on AWS. The
-        // bucket's daily inventory gives the versions, hence the PDFs, in a few minutes; the
-        // license is in one metadata object per article version, which is what the separate
-        // pmc_licenses command fetches, since that takes hours the first time.
-        LOGGER.info("Linking the PMC IDs to their full text in the PMC Cloud Service...");
-        try (PmcCloudService pmc = new PmcCloudService()) {
-            PmcOpenAccessLoader loader = new PmcOpenAccessLoader(pmc, pmidLookup, metrics.meter("pmcLinks"),
-                    PmcCloudService.DEFAULT_CONCURRENCY);
-            LOGGER.info("PMC Cloud Service links: " + loader.loadLinks());
-            LOGGER.info("The license of each open access article is not in the inventory. Run "
-                    + "./gradlew pmc_licenses to fetch it (hours the first time, minutes afterwards).");
-        } catch (Exception e) {
-            LOGGER.warn("The PMC Cloud Service inventory could not be read (" + e + "). The PMID, PMC ID and DOI "
-                    + "mapping is loaded all the same; the records carry no link to the PMC full text. Run "
-                    + "./gradlew pmc_licenses later, it records the links as well.");
-        }
 
         LOGGER.info("Cleaning downloaded resource files");
 

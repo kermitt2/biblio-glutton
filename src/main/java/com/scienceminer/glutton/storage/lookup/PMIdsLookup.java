@@ -65,19 +65,6 @@ public class PMIdsLookup {
         instance = new PMIdsLookup(storageEnvFactory);
     }
 
-    /**
-     * Replaces the instance with one on the storage of {@code storageEnvFactory}, closing the
-     * one there was. For tests, each of which wants its own storage: the service and the
-     * commands open one storage per JVM and use {@link #getInstance}.
-     */
-    public static synchronized PMIdsLookup newInstance(StorageEnvFactory storageEnvFactory) {
-        if (instance != null) {
-            instance.close();
-        }
-        getNewInstance(storageEnvFactory);
-        return instance;
-    }
-
     private PMIdsLookup(StorageEnvFactory storageEnvFactory) {
         this.environment = storageEnvFactory.getEnv(ENV_NAME);
         batchSize = storageEnvFactory.getConfiguration().getStoringBatchSize();
@@ -187,61 +174,6 @@ public class PMIdsLookup {
         }
 
         return size;
-    }
-
-    /**
-     * A batch of updates to the mapping, on one write transaction committed every
-     * {@code storingBatchSize} writes and on close. Reads go through the same transaction, so a
-     * record written earlier in the batch is seen. One writer at a time, on one thread: that is
-     * what LMDB allows.
-     */
-    public Writer openWriter() {
-        return new Writer();
-    }
-
-    public class Writer implements AutoCloseable {
-        private Txn<ByteBuffer> tx = environment.txnWrite();
-        private int written = 0;
-
-        /** The record of a PMC ID, as this batch sees it. */
-        public PmidData getByPmc(String pmc) {
-            if (pmc == null) {
-                return null;
-            }
-            final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
-            keyBuffer.put(BinarySerialiser.serialize(pmc)).flip();
-            ByteBuffer cachedData = dbPmcToIds.get(tx, keyBuffer);
-            return cachedData == null ? null : (PmidData) BinarySerialiser.deserialize(cachedData);
-        }
-
-        /** Stores a record under each of its identifiers. */
-        public void put(PmidData data) {
-            if (isNotBlank(data.getDoi())) {
-                store(dbDoiToIds, lowerCase(data.getDoi()), data, tx);
-            }
-            if (isNotBlank(data.getPmid())) {
-                store(dbPmidToIds, data.getPmid(), data, tx);
-            }
-            if (isNotBlank(data.getPmcid())) {
-                store(dbPmcToIds, data.getPmcid(), data, tx);
-            }
-            wrote();
-        }
-
-        private void wrote() {
-            if (++written >= batchSize) {
-                tx.commit();
-                tx.close();
-                tx = environment.txnWrite();
-                written = 0;
-            }
-        }
-
-        @Override
-        public void close() {
-            tx.commit();
-            tx.close();
-        }
     }
 
     private void store(Dbi<ByteBuffer> db, String key, PmidData value, Txn<ByteBuffer> tx) {

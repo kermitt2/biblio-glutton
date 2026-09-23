@@ -6,7 +6,6 @@ import java.util.*;
 import com.opencsv.*; 
 import org.apache.commons.lang3.StringUtils;
 
-import com.scienceminer.glutton.utils.pmc.PmcCloudService;
 import com.scienceminer.glutton.data.*;
 //import com.scienceminer.glutton.data.db.KBStagingEnvironment;
 import com.scienceminer.glutton.utils.Utilities;
@@ -397,29 +396,6 @@ public class BiblioSerializer {
             }
             builder.append("]");
         }
-
-        // license and full text links for PMC, from the PubMed mapping
-        if (pmidLookup != null && biblio.getPmc() != null) {
-            final PmidData pmidData = pmidLookup.retrieveIdsByPmc(biblio.getPmc());
-            if (pmidData != null && isNotBlank(pmidData.getLicense())) {
-                builder.append(", \"license\": [");
-                builder.append("{\"code\": " + mapper.writeValueAsString(pmidData.getLicense()));
-                builder.append("}]");
-            }
-
-            List<String> links = new ArrayList<>();
-            // the PDF in the PMC Cloud Service bucket, readable by anything; a subpath from the old
-            // NCBI list points at a tarball that no longer exists and gives no link
-            String pdfUrl = (pmidData == null) ? null : PmcCloudService.pdfUrl(pmidData.getSubpath());
-            if (pdfUrl != null) {
-                links.add("{\"URL\": " + mapper.writeValueAsString(pdfUrl) + ", \"content-type\": \"application/pdf\"}");
-            }
-            // the PDF on the PMC site, for a person with a browser: scripts get a captcha there
-            String pmcPdf = "https://pmc.ncbi.nlm.nih.gov/articles/" + biblio.getPmc() + "/pdf/";
-            links.add("{\"URL\": " + mapper.writeValueAsString(pmcPdf) + ", \"content-type\": \"application/pdf\"}");
-            builder.append(", \"link\": [" + String.join(", ", links) + "]");
-        }
-
 
         if (biblio.getReferenceCount() != null) {
             builder.append(", \"reference-count\": " + biblio.getReferenceCount());

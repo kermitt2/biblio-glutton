@@ -5,12 +5,8 @@ import java.io.Serializable;
 import static org.apache.commons.lang3.StringUtils.startsWith;
 
 /**
- * Resources needed for creating these objects:
- * - mapping identifiers: 
- *   https://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz
- * - license and full text location for PMC ID: the PMC Cloud Service,
- *   https://pmc.ncbi.nlm.nih.gov/tools/pmcaws/ (NCBI's FTP list of open access articles,
- *   which gave both up to August 2026, is gone)
+ * The PMID, PMC ID and DOI of one article, from the mapping at
+ * https://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz
  **/
 
 public class PmidData implements Serializable {
@@ -21,9 +17,6 @@ public class PmidData implements Serializable {
     private String pmid;
     private String doi;
     private String pmcid;
-    private String license;
-    /** Where the full text is: the PDF key in the PMC bucket, or the version prefix alone when there is no PDF. */
-    private String subpath;
 
     public PmidData(String pmid, String pmcid, String doi) {
         setPmid(pmid);
@@ -59,21 +52,5 @@ public class PmidData implements Serializable {
 
     public void setPmcid(String pmcid) {
         this.pmcid = pmcid;
-    }
-
-    public String getLicense() {
-        return this.license;
-    }
-
-    public void setLicense(String license) {
-        this.license = license;
-    }
-
-    public String getSubpath() {
-        return this.subpath;
-    }
-
-    public void setSubpath(String subpath) {
-        this.subpath = subpath;
     }
 }

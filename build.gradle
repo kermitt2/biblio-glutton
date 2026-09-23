@@ -228,8 +228,6 @@ gluttonCommand('hal', 'data', ['hal', getArg('config', 'config/glutton.yml')],
         'Harvest and load HAL metadata')
 gluttonCommand('pmid', 'service', ['pmid'] + (project.hasProperty('input') ? ['--input', getArg('input', '')] : []) + [getArg('config', 'config/glutton.yml')],
         'Load the PMID/PMC/DOI mapping')
-gluttonCommand('pmc_licenses', 'data', ['pmc_licenses', getArg('config', 'config/glutton.yml')],
-        'Fetch the license of every PMC open access article from the PMC Cloud Service (hours the first time, resumable)')
 gluttonCommand('istex', 'data', ['istex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
         'Load the ISTEX identifier mapping')
 gluttonCommand('openalex', 'data', ['openalex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
