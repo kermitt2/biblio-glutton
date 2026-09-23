@@ -550,12 +550,13 @@ public class LookupEngine {
         pmid = Identifiers.pmid(pmid);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
 
-        if (pmidData == null || isBlank(pmidData.getDoi())) {
+        if (pmidData == null) {
             throw new NotFoundException("Open Access and Istex URL were not found for PMID " + pmid);
         }        
 
+        // a PMC article without a DOI still has its PDF in the bucket; only ISTEX needs the DOI
         final String oaLink = oaLinkOf(pmidData);
-        final IstexData istexRecord = istexLookup.retrieveByDoi(pmidData.getDoi());
+        final IstexData istexRecord = isBlank(pmidData.getDoi()) ? null : istexLookup.retrieveByDoi(pmidData.getDoi());
         String url = null;
 
         if (isBlank(oaLink) && istexRecord == null) {
@@ -584,12 +585,13 @@ public class LookupEngine {
         pmc = Identifiers.pmc(pmc);
         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
 
-        if (pmidData == null || isBlank(pmidData.getDoi())) {
+        if (pmidData == null) {
             throw new NotFoundException("Open Access and Istex URL were not found for PMC " + pmc);
         }        
 
+        // a PMC article without a DOI still has its PDF in the bucket; only ISTEX needs the DOI
         final String oaLink = oaLinkOf(pmidData);
-        final IstexData istexRecord = istexLookup.retrieveByDoi(pmidData.getDoi());
+        final IstexData istexRecord = isBlank(pmidData.getDoi()) ? null : istexLookup.retrieveByDoi(pmidData.getDoi());
         String url = null;
 
         if (isBlank(oaLink) && istexRecord == null) {

@@ -5,8 +5,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.scienceminer.glutton.data.IstexData;
 import com.scienceminer.glutton.data.PmidData;
+import com.scienceminer.glutton.exception.NotFoundException;
 import com.scienceminer.glutton.storage.lookup.OALookup;
 import com.scienceminer.glutton.storage.lookup.HALLookup;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -124,6 +126,31 @@ public class LookupEngineTest {
         JsonObject jobject = new JsonParser().parse(output).getAsJsonObject();
         assertThat(jobject.get("oaLink").getAsString(), is(BUCKET_PDF));
         assertThat(jobject.get("pmcid").getAsString(), is("PMC13901"));
+    }
+
+    @Test
+    public void oaIstexByPmc_shouldAnswerFromTheBucketEvenWithoutADoi() {
+        // the same article the oa endpoint answers for: the oa_istex one must not refuse it
+        PmidData noDoi = new PmidData("11250747", "PMC13901", null);
+        noDoi.setSubpath("PMC13901.1/PMC13901.1.pdf");
+        expect(mockPmidLookup.retrieveIdsByPmc("PMC13901")).andReturn(noDoi);
+        expect(mockPmidLookup.retrieveIdsByPmid("11250747")).andReturn(noDoi);
+        // no DOI, so ISTEX is not even asked
+        replay(mockPmidLookup, mockOALookup, mockIstexLookup);
+
+        Pair<String, String> byPmc = target.retrieveOaIstexUrlByPmc("PMC13901");
+        assertThat(byPmc.getLeft(), is(BUCKET_PDF));
+        assertThat(byPmc.getRight(), nullValue());
+        assertThat(target.retrieveOaIstexUrlByPmid("11250747").getLeft(), is(BUCKET_PDF));
+        verify(mockIstexLookup);
+    }
+
+    @Test(expected = NotFoundException.class)
+    public void oaIstexByPmc_shouldStillBeNotFoundWithoutARecord() {
+        expect(mockPmidLookup.retrieveIdsByPmc("PMC13901")).andReturn(null);
+        replay(mockPmidLookup);
+
+        target.retrieveOaIstexUrlByPmc("PMC13901");
     }
 
     @Test
