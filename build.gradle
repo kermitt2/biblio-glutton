@@ -119,6 +119,7 @@ dependencies {
         exclude group: 'org.apache.felix', module: 'maven-bundle-plugin'
     }
     implementation "org.xerial.snappy:snappy-java:${snappyVersion}"
+    implementation "com.github.luben:zstd-jni:${zstdJniVersion}"
 
     // S3 access for the ingestion inputs (see utils/io/InputLocation). The AWS BOM keeps the
     // SDK's own modules in step with each other. Only the sync S3 client is needed: the async

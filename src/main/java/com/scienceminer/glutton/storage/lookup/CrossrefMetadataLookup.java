@@ -11,6 +11,7 @@ import com.scienceminer.glutton.indexing.ElasticSearchIndexer;
 import com.scienceminer.glutton.indexing.ElasticSearchAsyncIndexer;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.utils.BinarySerialiser;
+import com.scienceminer.glutton.utils.CompressionType;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.lmdbjava.*;
@@ -57,6 +58,8 @@ public class CrossrefMetadataLookup {
     private final int batchIndexingSize;
 
     private LookupConfiguration configuration;
+    private final CompressionType compression;
+    private final int compressionLevel;
 
     // this date keeps track of the latest indexed date of the metadata database
     private LocalDateTime lastIndexed = null; 
@@ -85,6 +88,8 @@ public class CrossrefMetadataLookup {
         configuration = storageEnvFactory.getConfiguration();
         batchStoringSize = configuration.getStoringBatchSize();
         batchIndexingSize = configuration.getIndexingBatchSize();
+        compression = configuration.getCompression();
+        compressionLevel = configuration.getCompressionLevel();
         dbCrossrefJson = this.environment.openDbi(NAME_CROSSREF_JSON, DbiFlags.MDB_CREATE);
     }
 
@@ -135,7 +140,7 @@ public class CrossrefMetadataLookup {
         try {
             final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
             keyBuffer.put(BinarySerialiser.serialize(key)).flip();
-            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(value);
+            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(value, compression, compressionLevel);
             final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
             valBuffer.put(serializedValue).flip();
             db.put(tx, keyBuffer, valBuffer);
@@ -262,7 +267,7 @@ public class CrossrefMetadataLookup {
         try {
             final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
             keyBuffer.put(BinarySerialiser.serialize("last-indexed-date")).flip();
-            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(this.lastIndexed);
+            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(this.lastIndexed, compression, compressionLevel);
             final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
             valBuffer.put(serializedValue).flip();
             dbCrossrefJson.put(transactionWrapper.tx, keyBuffer, valBuffer);
