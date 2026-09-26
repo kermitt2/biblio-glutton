@@ -59,6 +59,16 @@ has security on but TLS off, such as a local one. Credentials in the host URL ar
 
 Resource dumps will be compiled in high performance LMDB databases. The system can read compressed (`gzip` or `.xz`) or plain text files (`json`), so in practice you do not need to uncompress anything.
 
+The loading commands open the databases in a bulk-load mode: a commit does not wait for the disk.
+LMDB otherwise flushes every page a transaction touched before the commit returns, and a load whose
+keys arrive in no order (DOIs) touches pages all over the tree once the tree is bigger than memory,
+so each commit becomes a burst of random synchronous writes and the rate keeps falling as the
+database grows (the symptom of issue #36). Without the flush the operating system writes the pages
+back in its own time and order. The price is durability against a crash of the whole machine during
+the load, which a database rebuilt from a download does not need; a crash of the loading process
+alone loses nothing. Everything is flushed when the command exits, and the service opens the result
+as any other database.
+
 #### Reading the input from S3
 
 Every `-Pinput=` below takes a local file, a local directory, or an `s3://` location, so a dump can be read straight out of a bucket instead of being downloaded first:
@@ -196,13 +206,19 @@ __Warning:__ If an older snapshot is used, like the CrossRef dump Academic Torre
 
 #### PMID and PMC ID
 
-Launch the following command and go grab a coffee - the PMID/PMCID/DOI mapping file will be automatically donwloaded when using this command, as well as the Open Access file for setting the correct license to Open Access full text files:
+Launch the following command and go grab a coffee - the PMID/PMCID/DOI mapping file will be automatically downloaded when using this command:
 
 ```sh
 ./gradlew pmid 
 ```
 
-As of March 2022, the latest mapping covers 34,310,000 PMID, with 25,661,624 having a DOI (which means 8,648,376 PMID are not represented in Crossref and do not have a DOI).
+The mapping is 360 MB; to reuse a copy already downloaded rather than fetch it again, give it with
+`-Pinput=/path/to/PMID_PMCID_DOI.csv.gz`.
+
+The records hold the three identifiers and nothing else. Up to August 2026 the command also read
+NCBI's FTP list of open access articles, `oa_file_list.txt`, for a license and a full text
+location per PMC ID; NCBI removed that list, with the tarballs it pointed to, and neither field was
+served by any endpoint, so they are gone. Open access links come from OpenAlex alone.
 
 #### HAL archive
 

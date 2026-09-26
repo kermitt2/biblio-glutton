@@ -66,7 +66,7 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
 
         reporter.start(15, TimeUnit.SECONDS);
 
-        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
+        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration, true);
         IstexIdsLookup istexLookup = new IstexIdsLookup(storageEnvFactory);
         long start = System.nanoTime();
         final String istexFilePath = namespace.get(ISTEX_SOURCE);
@@ -101,6 +101,7 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
 
         }
 */
+        storageEnvFactory.syncAll();
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
     }

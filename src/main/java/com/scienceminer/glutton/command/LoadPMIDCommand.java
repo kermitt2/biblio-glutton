@@ -38,30 +38,30 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
     @Override
     public void configure(Subparser subparser) {
         super.configure(subparser);
-        
-        /*subparser.addArgument("--input")
+        subparser.addArgument("--input")
                 .dest(PMID_SOURCE)
                 .type(String.class)
-                .required(true)
-                .help("The path to the source file for pmid mapping");*/
+                .required(false)
+                .help("A local copy of PMID_PMCID_DOI.csv.gz, to be used instead of downloading it");
     }
 
     @Override
     protected void run(Bootstrap bootstrap, Namespace namespace, LookupConfiguration configuration) throws Exception {
 
-        // Download needed resources 
+        // Download needed resources, unless a local copy of the mapping is given
         String url1 = "https://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz";
         String file1Path = "data" + File.separator + "pmc" + File.separator + "PMID_PMCID_DOI.csv.gz";
-        String url2 = "https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_file_list.txt";
-        String file2Path = "data" + File.separator + "pmc" + File.separator + "oa_file_list.txt";
-        try {
-            System.out.println("Downloading "+ url1 + " ...");
-            FileUtils.copyURLToFile(new URL(url1), new File(file1Path));
-
-            System.out.println("Downloading "+ url2 + " ...");
-            FileUtils.copyURLToFile(new URL(url2), new File(file2Path));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        String localMapping = namespace.getString(PMID_SOURCE);
+        boolean downloaded = localMapping == null;
+        if (downloaded) {
+            try {
+                System.out.println("Downloading "+ url1 + " ...");
+                FileUtils.copyURLToFile(new URL(url1), new File(file1Path));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            file1Path = localMapping;
         }
 
         final MetricRegistry metrics = new MetricRegistry();
@@ -77,7 +77,7 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
         final String pmidMappingPath = file1Path;
         LOGGER.info("Preparing the system. Loading data for PMID from " + pmidMappingPath);
 
-        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
+        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration, true);
 
         long start = System.nanoTime();
         
@@ -89,26 +89,17 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
         pmidLookup.loadFromFile(inputStreampmidMapping, new PmidReader(), metrics.meter("pmidLookup"));
         LOGGER.info("PubMed lookup loaded " + pmidLookup.getSize() + " records. ");
 
-        // adding license and subpath information
-        inputStreampmidMapping = Files.newInputStream(Paths.get(file2Path));
-        if (file2Path.endsWith(".gz")) {
-            inputStreampmidMapping = new GZIPInputStream(inputStreampmidMapping);
-        }
-        pmidLookup.loadFromFileExtra(inputStreampmidMapping, metrics.meter("pmidLookupExtra"));
-        LOGGER.info("PubMed lookup extra infos loaded in " + pmidLookup.getSize() + " records. ");
-
         LOGGER.info("Cleaning downloaded resource files");
 
-        // cleaning resource files
-        File fileToDelete = FileUtils.getFile(file1Path);
-        boolean success = FileUtils.deleteQuietly(fileToDelete);
-        if (!success) 
-            LOGGER.warn("Downloaded resource file not deleted: " + file1Path);
+        // cleaning resource files; a copy the user gave is theirs to keep
+        if (downloaded) {
+            File fileToDelete = FileUtils.getFile(file1Path);
+            boolean success = FileUtils.deleteQuietly(fileToDelete);
+            if (!success) 
+                LOGGER.warn("Downloaded resource file not deleted: " + file1Path);
+        }
 
-        fileToDelete = FileUtils.getFile(file2Path);
-        success = FileUtils.deleteQuietly(fileToDelete);
-        if (!success) 
-            LOGGER.warn("Downloaded resource file not deleted: " + file2Path);
+        storageEnvFactory.syncAll();
 
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");

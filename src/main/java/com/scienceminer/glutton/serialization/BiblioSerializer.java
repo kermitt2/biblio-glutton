@@ -397,47 +397,6 @@ public class BiblioSerializer {
             builder.append("]");
         }
 
-        // license information injected for PMC
-        if (pmidLookup != null) {
-            String license = null;
-            String subpath = null;
-            final PmidData pmidData = pmidLookup.retrieveIdsByPmc(biblio.getPmc());
-            if (pmidData != null && isNotBlank(pmidData.getLicense())) {
-                license = pmidData.getLicense();
-            }
-            if (pmidData != null && isNotBlank(pmidData.getSubpath())) {
-                subpath = pmidData.getSubpath();
-            }
-
-            String urlValue = null;
-            if (license != null) {
-                builder.append(", \"license\": [");
-                builder.append("{\"code\": " + mapper.writeValueAsString(license));
-                builder.append("}]");
-            }
-        
-            if (subpath != null || biblio.getPmc() != null) {
-                builder.append(", \"link\": [");
-
-                if (subpath != null) {
-                    builder.append("{\"URL\": " + mapper.writeValueAsString(subpath));
-                    builder.append(", \"content-type\": \"application/tar+gzip\"}"); 
-                }
-                        
-                if (biblio.getPmc() != null) {
-                    if (urlValue != null)
-                        builder.append(", ");
-
-                    String pmcPdf = "https://www.ncbi.nlm.nih.gov/pmc/articles/" + biblio.getPmc() + "/pdf/";
-                    builder.append("{\"URL\": " + mapper.writeValueAsString(pmcPdf));
-                    builder.append(", \"content-type\": \"application/pdf\"}"); 
-                }
-
-                builder.append("]");
-            }
-        }
-
-
         if (biblio.getReferenceCount() != null) {
             builder.append(", \"reference-count\": " + biblio.getReferenceCount());
         }

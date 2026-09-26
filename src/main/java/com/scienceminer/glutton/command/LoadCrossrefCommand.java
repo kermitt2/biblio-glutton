@@ -74,7 +74,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
 
         reporter.start(15, TimeUnit.SECONDS);
 
-        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
+        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration, true);
         CrossrefMetadataLookup metadataLookup = CrossrefMetadataLookup.getInstance(storageEnvFactory);
 
         final String crossrefFilePathString = namespace.get(CROSSREF_SOURCE);
@@ -123,6 +123,7 @@ public class LoadCrossrefCommand extends ConfiguredCommand<LookupConfiguration> 
         else
             LOGGER.info("Crossref latest indexed date is not set.");
 
+        storageEnvFactory.syncAll();
         System.exit(0);
     }
 

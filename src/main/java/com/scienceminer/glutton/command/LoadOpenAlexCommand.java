@@ -126,7 +126,7 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
                 .build();
         reporter.start(15, TimeUnit.SECONDS);
 
-        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
+        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration, true);
         OALookup oaLookup = new OALookup(storageEnvFactory);
 
         long start = System.nanoTime();
@@ -140,6 +140,7 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
         }
 
         LOGGER.info("OA lookup size: " + oaLookup.getSize());
+        storageEnvFactory.syncAll();
         LOGGER.info("Finished in "
                 + TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
         reporter.report();
