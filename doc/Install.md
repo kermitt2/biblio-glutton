@@ -33,6 +33,160 @@ After installing all or a selection of bibliographical databases, the bibliograp
 
 The following describes how to build and start the bibliographical service. 
 
+### Install Elasticsearch
+
+The matching needs an Elasticsearch node; the lookups by identifier work without one. The current
+version is tested with Elasticsearch 8 (8.19). A node that holds the whole of Crossref needs
+around 60 GB of disk for the index and 8 GB of memory or more.
+
+**OpenSearch is not supported.** The Elasticsearch clients biblio-glutton is built with check that
+the server is Elasticsearch and speak the version 8 media type, and OpenSearch refuses both: tried
+against OpenSearch 2.19, the index creation and every bulk are answered with
+`406 Not Acceptable`, and the client reports `Missing [X-Elastic-Product] header`.
+
+#### With Docker
+
+A single node for a local installation, without security, reachable from this machine only:
+
+```sh
+docker run -d --name glutton-elasticsearch \
+  -p 127.0.0.1:9200:9200 \
+  -e discovery.type=single-node \
+  -e xpack.security.enabled=false \
+  -e ES_JAVA_OPTS="-Xms4g -Xmx4g" \
+  -v glutton-esdata:/usr/share/elasticsearch/data \
+  docker.elastic.co/elasticsearch/elasticsearch:8.19.4
+```
+
+- `-p 127.0.0.1:9200:9200` keeps the node off the network. Without security, anything that can
+  reach the port can read and delete the index, so do not publish it on `0.0.0.0`.
+- `-v glutton-esdata:...` keeps the index in a named volume, so that it outlives the container.
+  Without it the index is lost with the container, and has to be rebuilt with `./gradlew index`.
+- `ES_JAVA_OPTS` sets the heap. Give it half the memory meant for Elasticsearch, the other half
+  is for the file cache; 4 GB is enough for a full Crossref index on one node.
+
+Check that it answers, which takes half a minute after the start:
+
+```sh
+curl http://localhost:9200
+```
+
+Then point biblio-glutton at it in `config/glutton.yml`:
+
+```yaml
+elastic:
+  host: localhost:9200
+  index: glutton
+```
+
+The index itself is not to be created by hand: the loading commands create it, with its
+mapping, the first time they run (see [Build the databases](Build-Databases.md)).
+
+On Linux, Elasticsearch may stop at start with `max virtual memory areas vm.max_map_count [65530]
+is too low`. Raise it on the host, and in `/etc/sysctl.conf` for it to survive a restart:
+
+```sh
+sudo sysctl -w vm.max_map_count=262144
+```
+
+On macOS and Windows, give Docker Desktop at least 6 GB of memory (Settings, Resources), or the
+container is killed while loading.
+
+#### With Docker Compose
+
+The same node as a `docker-compose.yml`:
+
+```yaml
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.4
+    container_name: glutton-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms4g -Xmx4g
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+volumes:
+  esdata:
+```
+
+```sh
+docker compose up -d        # start
+docker compose ps           # "healthy" once the node answers
+docker compose logs -f elasticsearch
+docker compose down         # stop, the index stays in the volume
+docker compose down -v      # stop and delete the index
+```
+
+#### With security on
+
+For a node that is reachable by others, turn the security on and give a password. With Docker:
+
+```sh
+docker run -d --name glutton-elasticsearch \
+  -p 9200:9200 \
+  -e discovery.type=single-node \
+  -e xpack.security.enabled=true \
+  -e xpack.security.http.ssl.enabled=false \
+  -e ELASTIC_PASSWORD=choose-a-password \
+  -e ES_JAVA_OPTS="-Xms4g -Xmx4g" \
+  -v glutton-esdata:/usr/share/elasticsearch/data \
+  docker.elastic.co/elasticsearch/elasticsearch:8.19.4
+```
+
+With Docker Compose, replace the `environment` block above with:
+
+```yaml
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - ES_JAVA_OPTS=-Xms4g -Xmx4g
+```
+
+and the health check test with
+`curl -fs -u elastic:$$ELASTIC_PASSWORD http://localhost:9200/_cluster/health || exit 1`. The
+password is read from a `.env` file next to `docker-compose.yml` (`ELASTIC_PASSWORD=...`), which
+is not to be committed.
+
+```sh
+curl -u elastic:choose-a-password http://localhost:9200
+```
+
+and in `config/glutton.yml`:
+
+```yaml
+elastic:
+  host: localhost:9200
+  index: glutton
+  username: elastic
+  password: choose-a-password
+  # the password travels in clear on plain http: only for a node on the same machine or on a
+  # network you trust. Behind TLS, give the host as https://... and leave this out
+  allowCredentialsOverHttp: true
+```
+
+An API key can be used in place of the user and password (`elastic.apiKey`). If the credentials
+are refused, `/service/health` says `unauthorized` for Elasticsearch, see [Health](API.md#health).
+
 ### Build the service
 
 You need **Java JDK 21 (LTS)** installed for building and running the tool. The Gradle wrapper is configured with a Java 21 toolchain — if your default `java` is older, the [Foojay toolchain resolver](https://github.com/gradle/foojay-toolchains) will automatically download and provision a JDK 21 on first build. To install Java 21 manually, use [SDKMAN!](https://sdkman.io) or [Eclipse Temurin](https://adoptium.net/temurin/releases/?version=21).

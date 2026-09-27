@@ -231,7 +231,7 @@ gluttonCommand('pmid', 'service', ['pmid'] + (project.hasProperty('input') ? ['-
         'Load the PMID/PMC/DOI mapping')
 gluttonCommand('istex', 'data', ['istex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
         'Load the ISTEX identifier mapping')
-gluttonCommand('openalex', 'data', ['openalex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
+gluttonCommand('openalex', 'data', ['openalex', '--input', getArg('input', '')] + (project.hasProperty('threads') ? ['--threads', getArg('threads', '')] : []) + [getArg('config', 'config/glutton.yml')],
         'Load the OpenAlex open access links from a works snapshot, local or in S3')
 gluttonCommand('openalex_update', 'data', ['openalex', '--since', getArg('since', ''), getArg('config', 'config/glutton.yml')],
         'Top up the OpenAlex open access links from the API since -Psince=YYYY-MM-DD (needs a paid OpenAlex plan)')

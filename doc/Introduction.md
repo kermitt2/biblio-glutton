@@ -33,9 +33,9 @@ See [here](Benchmarking.md) on benchmarking the bibliographical reference matchi
 
 ## Requirements
 
-biblio-glutton is a Java software requiring JDK 1.11 or more. 
+biblio-glutton is a Java software requiring JDK 21.
 
-You will need an ElasticSearch cluster to make possible bibliographical reference matching and resolution. The current version has been tested with Elasticsearch `8.*`.
+You will need an ElasticSearch cluster to make possible bibliographical reference matching and resolution. The current version has been tested with Elasticsearch `8.*`, see [Install Elasticsearch](Install.md#install-elasticsearch) for running one with Docker. OpenSearch is not supported.
 
 Optionally a Grobid service can be added to perform combined raw bibliographical reference string and reference resolution. Use the latest Grobid version (0.9.1 at the time of writing). 
 

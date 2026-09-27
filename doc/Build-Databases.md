@@ -55,6 +55,9 @@ every request by the loading commands and by the service alike, so the host has 
 or the service refuses to start: set `elastic.allowCredentialsOverHttp: true` for a cluster that
 has security on but TLS off, such as a local one. Credentials in the host URL are not read.
 
+To install an Elasticsearch node with Docker or Docker Compose, see
+[Install Elasticsearch](Install.md#install-elasticsearch).
+
 ### Build the embedded LMDB databases
 
 Resource dumps will be compiled in high performance LMDB databases. The system can read compressed (`gzip` or `.xz`) or plain text files (`json`), so in practice you do not need to uncompress anything.
@@ -272,9 +275,15 @@ A local copy works just as well, whether it is one file or a directory of them:
 
 Only the DOI and the best Open Access PDF link are kept; the rest of each record is skipped
 without being loaded into memory. Files are parsed in parallel and written by a single thread,
-which is what LMDB requires. Add `--threads` to change how many are parsed at once (the default
-is 4, or fewer on a smaller machine) -- throughput scales close to linearly with it, and parsing,
-not the network, is the limit.
+which is what LMDB requires. With a bucket as input, each of these threads downloads its own file,
+so the reading from S3 is parallel too. Add `-Pthreads=8` to change how many files are read at
+once (the default is 4, or fewer on a smaller machine) -- throughput scales close to linearly with
+it, and parsing, not the network, is the limit. The first files of the snapshot are tiny, so the
+log shows them one after the other; the parallel reading shows once the large ones are reached.
+
+Next to the works files, the snapshot folder holds `manifest.json` and `deleted_ids.csv.gz`. Both
+are left out: the second lists the works OpenAlex removed by their OpenAlex identifier, which is
+not stored here, and a work that was removed is simply absent from a fresh snapshot.
 
 Expect this to take hours: the works entity of the snapshot is around 620 GB compressed, holding
 510 million records of which about 105 million are Open Access with a DOI.
