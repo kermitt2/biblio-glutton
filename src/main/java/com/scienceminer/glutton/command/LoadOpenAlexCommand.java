@@ -21,12 +21,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -188,8 +190,8 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
         try (InputLocation input = InputLocation.open(location, configuration.getS3(),
                 ".gz", ".jsonl", ".json")) {
 
-            List<DataSource> sources = input.getSources();
-            long totalSize = input.getTotalSize();
+            List<DataSource> sources = worksFilesOf(input.getSources());
+            long totalSize = totalSizeOf(sources);
             LOGGER.info("About to read " + sources.size() + " file(s)"
                     + ((totalSize < 0) ? "" : ", " + (totalSize / (1024 * 1024)) + " MB compressed"));
 
@@ -207,7 +209,13 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
             try {
                 for (DataSource dataSource : sources) {
                     tasks.add(parsers.submit(() -> {
-                        parse(dataSource, queue, recordsFound, writerFailure);
+                        try {
+                            parse(dataSource, queue, recordsFound, writerFailure);
+                        } catch (Exception e) {
+                            // the file name is what tells a broken part from a file that is
+                            // not a works file at all
+                            throw new IOException("Could not read " + dataSource.name(), e);
+                        }
                         long done = filesDone.incrementAndGet();
                         LOGGER.info("Read " + done + "/" + sources.size() + " file(s), "
                                 + recordsFound.get() + " open access link(s) so far ("
@@ -241,6 +249,50 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
                 }
             }
         }
+    }
+
+    /**
+     * The files of a snapshot folder that hold works. OpenAlex keeps two other files next to the
+     * parts, {@code manifest.json} (the list of the parts) and {@code deleted_ids.csv.gz} (the
+     * works it removed, by OpenAlex identifier), and both end like a part does. A file named on
+     * its own is read whatever it is called.
+     */
+    static List<DataSource> worksFilesOf(List<DataSource> sources) {
+        if (sources.size() <= 1) {
+            return sources;
+        }
+        List<DataSource> works = new ArrayList<>();
+        for (DataSource source : sources) {
+            if (isWorksFile(source.name())) {
+                works.add(source);
+            } else {
+                LOGGER.info("Skipping " + source.name() + ", which is not a works file");
+            }
+        }
+        if (works.isEmpty()) {
+            throw new IllegalArgumentException("None of the " + sources.size()
+                    + " file(s) found is a works file");
+        }
+        return works;
+    }
+
+    static boolean isWorksFile(String name) {
+        String fileName = name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1)
+                .toLowerCase(Locale.ROOT);
+        return !fileName.equals("manifest.json") && !fileName.equals("manifest")
+                && !fileName.endsWith(".csv.gz") && !fileName.endsWith(".csv");
+    }
+
+    /** Total size of the files, or -1 when any of them does not report one. */
+    private static long totalSizeOf(List<DataSource> sources) {
+        long total = 0;
+        for (DataSource source : sources) {
+            if (source.size() < 0) {
+                return -1;
+            }
+            total += source.size();
+        }
+        return total;
     }
 
     private Thread startWriter(OALookup oaLookup, Meter meter,
