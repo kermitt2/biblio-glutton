@@ -84,6 +84,17 @@ public class MedlineSaxHandler extends DefaultHandler {
     private boolean validElocationTypeDOI = false;
     private boolean isArticleIdList = false;
     private boolean inReferenceList = false;
+    private boolean inDeleteCitation = false;
+    private boolean inOtherAbstract = false;
+    private String abstractLabel = null;
+    private StringBuilder abstractBuilder = null;
+    private String medlineDate = null;
+    private boolean journalArticleType = false;
+
+    // the PMID of the records an update file asks to remove
+    private List<Integer> deletedPmids = new ArrayList<>();
+
+    private static final Pattern MEDLINE_DATE_YEAR = Pattern.compile("\\b(1[5-9]\\d{2}|20\\d{2})\\b");
 
     private boolean doiType = false;
     private boolean pubmedType = false;
@@ -107,7 +118,15 @@ public class MedlineSaxHandler extends DefaultHandler {
 
     private static volatile Pattern page = Pattern.compile("(\\d+)");
 
+    // when set, each record is handed over as soon as it is complete and none is kept: a file
+    // holds 30,000 of them
+    private java.util.function.Consumer<Biblio> recordConsumer = null;
+
     public MedlineSaxHandler() {
+    }
+
+    public MedlineSaxHandler(java.util.function.Consumer<Biblio> recordConsumer) {
+        this.recordConsumer = recordConsumer;
     }
 
     public MedlineSaxHandler(List<Biblio> b) {
@@ -118,6 +137,20 @@ public class MedlineSaxHandler extends DefaultHandler {
 		return biblios;
 	} 
 
+    /** The records a file of updates says were withdrawn from PubMed, to be removed from a store. */
+    public List<Integer> getDeletedPmids() {
+        return deletedPmids;
+    }
+
+    /**
+     * Mark-up inside a text field: a title as "KRAS<sup>G12D</sup>-driven" is one text, and the
+     * end of the inner element must not start it afresh.
+     */
+    private static boolean isInline(String qName) {
+        return qName.equals("i") || qName.equals("b") || qName.equals("u") || qName.equals("sup")
+            || qName.equals("sub") || qName.equals("DispFormula") || qName.startsWith("mml:");
+    }
+
     public void characters(char[] ch, int start, int length) {
         accumulator.append(ch, start, length);
     }
@@ -127,6 +160,9 @@ public class MedlineSaxHandler extends DefaultHandler {
     }
 
     public void endElement(java.lang.String uri, java.lang.String localName, java.lang.String qName) throws SAXException {
+        if (isInline(qName)) {
+            return;
+        }
     	if (qName.equals("PMID")) {
     		Integer pmid = null;
     		String rawPmid = getText();
@@ -134,16 +170,44 @@ public class MedlineSaxHandler extends DefaultHandler {
     			pmid = Integer.parseInt(rawPmid);
     		} catch(Exception e) {
     			System.out.println("Error parsing this PMID: " + rawPmid);
-    			e.printStackTrace();
     		}
-    		biblio.setPmid(pmid);
-    	} else if (qName.equals("PubmedArticle")) {
+            if (inDeleteCitation) {
+                if (pmid != null)
+                    deletedPmids.add(pmid);
+            } else if (biblio != null && biblio.getPmid() == null) {
+                // the PMID of the record is the first one: those that follow are the records it
+                // comments, corrects or is corrected by
+                biblio.setPmid(pmid);
+            }
+    	} else if (qName.equals("DeleteCitation")) {
+            inDeleteCitation = false;
+        } else if (qName.equals("PubmedArticle")) {
             // new article
     		if (biblios == null) {
     			biblios = new ArrayList<Biblio>();
     		}
-    		biblios.add(biblio);
-    	} else if (qName.equals("ISSN")) {
+            if (abstractBuilder != null && abstractBuilder.length() > 0)
+                biblio.setAbstract(abstractBuilder.toString());
+            abstractBuilder = null;
+            if (recordConsumer != null)
+                recordConsumer.accept(biblio);
+            else
+                biblios.add(biblio);
+            biblio = null;
+    	} else if (biblio == null) {
+            // outside of an article (a book entry, the list of deleted records): nothing to fill
+        } else if (qName.equals("MedlineDate")) {
+            // a date PubMed could not split, as "1998 Dec-1999 Jan" or "2026 Jan-Feb": the year
+            // at least can be had
+            Matcher matcher = MEDLINE_DATE_YEAR.matcher(getText());
+            if (matcher.find()) {
+                year = matcher.group(1);
+                month = null;
+                day = null;
+            }
+        } else if (qName.equals("OtherAbstract")) {
+            inOtherAbstract = false;
+        } else if (qName.equals("ISSN")) {
     		if (electronic)
     			issne = getText();
     		else if (print)
@@ -170,9 +234,9 @@ public class MedlineSaxHandler extends DefaultHandler {
     			biblio.setNumber(issue);
     		issue = null;
     	} else if (qName.equals("Title")) {
-    		// full journal title
+    		// full journal title; a list of references has a title too ("References", "Literatur")
     		title = getText();
-    		if ( (title != null) && (title.length() > 0) ) 
+    		if ( (title != null) && (title.length() > 0) && !inReferenceList) 
     			biblio.setTitle(title);
     		title = null;
     	} else if (qName.equals("ISOAbbreviation")) {
@@ -487,18 +551,35 @@ public class MedlineSaxHandler extends DefaultHandler {
         } else if (qName.equals("Affiliation")) { 
         	affiliationString = getText();
         } else if (qName.equals("AbstractText")) {
+            // a structured abstract comes as one AbstractText per section; the abstracts in
+            // other languages (OtherAbstract) are left out
             abstractString = getText();
-            biblio.setAbstract(abstractString);
+            if (!inOtherAbstract && abstractString.length() > 0) {
+                if (abstractBuilder == null)
+                    abstractBuilder = new StringBuilder();
+                if (abstractBuilder.length() > 0)
+                    abstractBuilder.append("\n");
+                if (abstractLabel != null && abstractLabel.length() > 0)
+                    abstractBuilder.append(abstractLabel).append(": ");
+                abstractBuilder.append(abstractString);
+            }
             abstractString = null;
+            abstractLabel = null;
         } else if (qName.equals("ELocationID") && validElocationTypeDOI) {
             biblio.setDoi(getText());
             validElocationTypeDOI = false;
         } else if (qName.equals("PublicationType")) {
-            biblio.setRawPublicationType(getText());
-            if (publicationTypeUI != null) {
-                biblio.setPublicationTypeUI(publicationTypeUI);
-                publicationTypeUI = null;
+            // a record has several, in alphabetical order, and some say who paid rather than
+            // what it is ("Research Support, ..."): "Journal Article" wins, else the first one
+            String publicationType = getText();
+            boolean isJournalArticle = "Journal Article".equals(publicationType);
+            if (biblio.getRawPublicationType() == null || (isJournalArticle && !journalArticleType)) {
+                biblio.setRawPublicationType(publicationType);
+                if (publicationTypeUI != null)
+                    biblio.setPublicationTypeUI(publicationTypeUI);
+                journalArticleType = isJournalArticle;
             }
+            publicationTypeUI = null;
         } else if (qName.equals("GrantList")) {
             biblio.setGrants(this.grants);
         } else if (qName.equals("Grant")) {
@@ -578,9 +659,25 @@ public class MedlineSaxHandler extends DefaultHandler {
                              String qName,
                              Attributes atts)
             throws SAXException {
+        if (isInline(qName)) {
+            return;
+        }
         if (qName.equals("PubmedArticle")) {
         	biblio = new Biblio();
             this.grants = null;
+            abstractBuilder = null;
+            journalArticleType = false;
+            year = null;
+            month = null;
+            day = null;
+        } else if (qName.equals("DeleteCitation")) {
+            inDeleteCitation = true;
+        } else if (qName.equals("OtherAbstract")) {
+            inOtherAbstract = true;
+        } else if (qName.equals("AbstractText")) {
+            abstractLabel = atts.getValue("Label");
+        } else if (qName.equals("PublicationType")) {
+            publicationTypeUI = atts.getValue("UI");
         } else if (qName.equals("NameOfSubstance")) {
         	int length = atts.getLength();
 
