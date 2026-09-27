@@ -42,7 +42,7 @@ You can then move the json dump (e.g. `istexIds.all`) to the Istex data path ind
 ### ISTEX to PubMed mapping
 
 The mapping adds PudMed information (in particular MeSH classes) to ISTEX entries. 
-See the instructions [here](pubmed-glutton/Readme.md)
+It is written by `./gradlew istex_pmid`, see [ISTEX to PubMed mapping](Build-Databases.md#istex-to-pubmed-mapping).
 
 
 

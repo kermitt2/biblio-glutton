@@ -1,5 +1,13 @@
 ## pubmed-glutton
 
+> **Now part of biblio-glutton.** What this tool does is available as commands of the main
+> project, which builds and runs on the current JDK: `./gradlew pubmed` (load the records),
+> `./gradlew pubmed_dump` (dump in the Crossref JSON format), `./gradlew pubmed_export` (export
+> by MeSH class) and `./gradlew istex_pmid` (ISTEX to PubMed mapping). See
+> [Build the databases](../doc/Build-Databases.md#medlinepubmed-records). The code below is kept
+> as it was.
+
+
 > **Build status**: this subproject does **not** currently compile from a clean checkout. It depends on
 > `com.scienceminer.glutton.data.db.{KBEnvironment, KBStagingEnvironment}` which are not present in this
 > repository's source tree and were originally hosted in a local Maven repo on the original developer's

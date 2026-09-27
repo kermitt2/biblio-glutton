@@ -14,6 +14,11 @@ The service can be queried based on a strong identifier, likeDOI, PMID, etc. as 
     - `GET host:port/service/lookup?pmc=PMC`
     - `GET host:port/service/lookup/pmc/{PMC}`
 
+  For a PMID or a PMC ID, the record is the Crossref one of the DOI of the article. When the
+  article has no DOI, or one the Crossref data does not hold, the answer is the PubMed record
+  (`"source": "pubmed"`), if the MEDLINE/PubMed records were loaded, see
+  [MEDLINE/PubMed records](Build-Databases.md#medlinepubmed-records).
+
 - match record by ISTEX ID
     - `GET host:port/service/lookup?istexid=ISTEXID`
     - `GET host:port/service/lookup/istexid/{ISTEXID}`

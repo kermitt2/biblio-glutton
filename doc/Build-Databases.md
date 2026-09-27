@@ -18,6 +18,8 @@ To set-up a functional biblio-glutton server, resources need to be loaded follow
 
 6) (Very optional) Loading the ISTEX ID mapping as embedded LMDB
 
+7) (Optional) Loading the MEDLINE/PubMed records as embedded LMDB, for the articles Crossref does not have and for the MeSH classes
+
 It is possible to only load HAL archive metadata, skipping entirely CrossRef, but the service will be much more limited - so we suggest to always start with CrossRef. It is also possible to skip HAL archive resources. Step 4) is fast and we suggest to also always include it.  
 
 ### Resources
@@ -230,6 +232,74 @@ Launch the following command and go grab a lunch:
 
 HAL archive contains around 3.5M records, with curated metadadata. Note that the batch loading is using high volume, so it can take a couple of minutes before the metrics start indicating counts and measurements above 0.  
 
+#### MEDLINE/PubMed records
+
+The mapping above gives the identifiers only. The records themselves, with their abstract, MeSH
+classes, grants and references, are loaded from the files NCBI distributes: the
+[yearly baseline](https://ftp.ncbi.nlm.nih.gov/pubmed/baseline/) and the
+[daily updates](https://ftp.ncbi.nlm.nih.gov/pubmed/updatefiles/) that follow it (see the
+[download page](https://www.nlm.nih.gov/databases/download/pubmed_medline.html) for the terms).
+Download them in one directory, then:
+
+```sh
+./gradlew pubmed -Pinput=/path/to/medline -Pconfig=path/to/config/file/glutton.yml
+```
+
+The input can also be one file, or an `s3://` location. Load the PMID mapping first
+(`./gradlew pmid`): it is used to complete the DOI and PMC ID of the records that come without.
+
+The files are parsed in parallel (`-Pthreads=8` to change how many at once, 4 by default) and
+stored in the order of their names, which is the order NCBI numbers them in. The order matters:
+a file of updates brings the newer version of records an earlier file holds, and names the records
+that were withdrawn, which are removed. To bring a database up to date later, run the command
+again on the update files that came out since.
+
+Each record is converted to the Crossref JSON format, which is how every record is stored and
+served whatever its source, with `"source": "pubmed"` and a few fields Crossref does not have:
+`pmid`, `pmcid`, `mesh`, `keyword`.
+
+What the service does with them: a lookup by PMID or by PMC ID answers with the PubMed record when
+the article has no DOI, or a DOI that the Crossref data does not hold. Before, such a lookup was a
+404. A record that Crossref has is still served from Crossref. The PubMed records are not added to
+the search index, so matching by title, author or citation does not return them.
+
+Expect a few hours and a lot of space: the 2026 baseline is 1,334 files of 30,000 records, around
+40 million records. Three files of it (77,792 records) took 28 seconds with 3 threads and
+338 MB on disk, which makes roughly 4 hours and 170 GB for the whole.
+
+##### A dump in the Crossref JSON format
+
+To use the converted records somewhere else, without storing anything:
+
+```sh
+./gradlew pubmed_dump -Pinput=/path/to/medline -Poutput=/path/to/dump
+```
+
+writes one JSON lines file per input file (`pubmed26n0001.json.gz` for `pubmed26n0001.xml.gz`).
+
+##### Export by MeSH class
+
+The records of a selection of MeSH classes can be exported as CSV, from the records loaded by
+`./gradlew pubmed`:
+
+```sh
+./gradlew pubmed_export -Pclasses=/path/to/classes.csv -Poutput=/path/to/export
+```
+
+The classes are given one MeSH descriptor per line, as `level1,level2,level3,descriptor`:
+
+```
+mobility,wheelchairs,wheelchairs,D014910
+hearing,hearing_aids,cochlear_implants,D003054
+```
+
+A record goes to `level1.csv` and to `level2.csv` when the descriptor is one of its major topics,
+either marked so itself or by one of its qualifiers, which is how the PubMed search engine takes
+it. Add `-PpmcOnly` to keep only the records that have a PubMed Central identifier, those whose
+full text can be had. The columns are `pmid`, `doi`, `pmc`, `title`, `abstract`, `MeSH Terms`,
+`publication year`, `authors`, `keywords`, `publisher`, `host`; the last five of the header
+(affiliation, countries, funding) are there for compatibility and left empty.
+
 #### OA via OpenAlex
 
 This is the recommended source of Open Access links. The OpenAlex snapshot is CC0 and needs no
@@ -301,4 +371,18 @@ Example:
 ./gradlew istex -Pinput=istexIds.all.gz 
 ```
 
-**Note:** see the [FAQ](Frequently-asked-questions.md) on how to create this mapping file `istexIds.all.gz`. 
+**Note:** see the [FAQ](Frequently-asked-questions.md) on how to create this mapping file `istexIds.all.gz`.
+
+##### ISTEX to PubMed mapping
+
+Once the ISTEX mapping and the PMID mapping are loaded, the ISTEX records that are in PubMed can
+be written with their PMID and PMC ID, found by their DOI:
+
+```sh
+./gradlew istex_pmid -Poutput=/path/to/istex2pmid.json
+```
+
+With `-PaddMesh`, the MeSH classes of each article are added, taken from the records loaded by
+`./gradlew pubmed`. The result is one JSON record per line, with the fields of the ISTEX mapping.
+When ISTEX already gives a PMID that differs from the one of the DOI, the one ISTEX gives is
+kept and the conflict is logged. 
