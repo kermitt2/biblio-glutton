@@ -228,6 +228,14 @@ gluttonCommand('hal', 'data', ['hal', getArg('config', 'config/glutton.yml')],
         'Harvest and load HAL metadata')
 gluttonCommand('pmid', 'service', ['pmid'] + (project.hasProperty('input') ? ['--input', getArg('input', '')] : []) + [getArg('config', 'config/glutton.yml')],
         'Load the PMID/PMC/DOI mapping')
+gluttonCommand('pubmed', 'data', ['pubmed', '--input', getArg('input', '')] + (project.hasProperty('threads') ? ['--threads', getArg('threads', '')] : []) + [getArg('config', 'config/glutton.yml')],
+        'Load the MEDLINE/PubMed records, from a local directory or S3')
+gluttonCommand('pubmed_dump', 'data', ['pubmed_dump', '--input', getArg('input', ''), '--output', getArg('output', '')] + (project.hasProperty('threads') ? ['--threads', getArg('threads', '')] : []) + [getArg('config', 'config/glutton.yml')],
+        'Convert the MEDLINE/PubMed files into a dump in the Crossref JSON format')
+gluttonCommand('pubmed_export', 'data', ['pubmed_export', '--classes', getArg('classes', ''), '--output', getArg('output', '')] + (project.hasProperty('pmcOnly') ? ['--pmc-only'] : []) + [getArg('config', 'config/glutton.yml')],
+        'Export the PubMed records of a selection of MeSH classes as CSV')
+gluttonCommand('istex_pmid', 'data', ['istex_pmid', '--output', getArg('output', '')] + (project.hasProperty('addMesh') ? ['--add-mesh'] : []) + [getArg('config', 'config/glutton.yml')],
+        'Write the mapping from the ISTEX records to PubMed')
 gluttonCommand('istex', 'data', ['istex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
         'Load the ISTEX identifier mapping')
 gluttonCommand('openalex', 'data', ['openalex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
