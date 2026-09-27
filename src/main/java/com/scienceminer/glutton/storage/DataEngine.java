@@ -19,6 +19,7 @@ public class DataEngine {
     private MetadataMatching metadataMatching = null;
     private PMIdsLookup pmidLookup = null;
     private HALLookup halLookup = null;
+    private PubMedLookup pubMedLookup = null;
 
     public static Pattern DOIPattern = Pattern.compile("\"DOI\":\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
 
@@ -31,6 +32,7 @@ public class DataEngine {
         this.crossrefMetadataLookup = CrossrefMetadataLookup.getInstance(storageFactory);
         this.pmidLookup = PMIdsLookup.getInstance(storageFactory);
         this.halLookup = HALLookup.getInstance(storageFactory);
+        this.pubMedLookup = PubMedLookup.getInstance(storageFactory);
         this.metadataMatching = 
             MetadataMatching.getInstance(storageFactory.getConfiguration(), crossrefMetadataLookup, halLookup);
     }
@@ -41,6 +43,7 @@ public class DataEngine {
 
         returnMap.put("Crossref metadata stored size (LMDB)", String.valueOf(crossrefMetadataLookup.getSize()));
         returnMap.put("HAL Metadata stored size (LMDB)", String.valueOf(halLookup.getSize()));
+        returnMap.put("PubMed metadata stored size (LMDB)", String.valueOf(pubMedLookup.getSize()));
         returnMap.put("Total metadata indexed size (elastic)", String.valueOf(Collections.singletonMap(metadataMatching.getIndexName(), metadataMatching.getSize())));
         returnMap.put("PMID size (LMDB)", String.valueOf(pmidLookup.getSize()));
         returnMap.put("ISTEX size (LMDB)", String.valueOf(istexLookup.getSize()));

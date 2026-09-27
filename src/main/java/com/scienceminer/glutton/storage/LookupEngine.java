@@ -10,6 +10,7 @@ import com.scienceminer.glutton.data.IstexData;
 import com.scienceminer.glutton.data.MatchingDocument;
 import com.scienceminer.glutton.data.PmidData;
 import com.scienceminer.glutton.exception.NotFoundException;
+import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.storage.lookup.*;
 import com.scienceminer.glutton.utils.Identifiers;
 import com.scienceminer.glutton.utils.grobid.GrobidClient;
@@ -43,6 +44,7 @@ public class LookupEngine {
     private MetadataMatching metadataMatching = null;
     private PMIdsLookup pmidLookup = null;
     private HALLookup halLookup = null;
+    private PubMedLookup pubMedLookup = null;
 
     // DOI matching regex from GROBID
     public static Pattern DOIPattern = Pattern.compile("\"DOI\"\\s?:\\s?\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
@@ -62,6 +64,7 @@ public class LookupEngine {
         this.istexLookup = new IstexIdsLookup(storageFactory);
         this.crossrefMetadataLookup = CrossrefMetadataLookup.getInstance(storageFactory);
         this.halLookup = HALLookup.getInstance(storageFactory);
+        this.pubMedLookup = PubMedLookup.getInstance(storageFactory);
         this.pmidLookup = PMIdsLookup.getInstance(storageFactory);
         this.metadataMatching = 
             MetadataMatching.getInstance(storageFactory.getConfiguration(), crossrefMetadataLookup, halLookup);
@@ -424,10 +427,68 @@ public class LookupEngine {
         final PmidData pmidData = pmidLookup.retrieveIdsByPmid(pmid);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
-            return retrieveByDoi(pmidData.getDoi(), firstAuthor, atitle, year);
+            try {
+                return retrieveByDoi(pmidData.getDoi(), firstAuthor, atitle, year);
+            } catch (NotFoundException e) {
+                // Crossref has no record of this DOI: the PubMed record is what there is
+            } catch (ServiceException e) {
+                // the same when the mapping gives something that is not a DOI
+                if (e.getStatusCode() != 400) {
+                    throw e;
+                }
+            }
         }
 
-        throw new NotFoundException("Cannot find bibliographical record with PMID " + pmid);
+        return retrievePubMedRecord(pmid, firstAuthor, atitle,
+                "Cannot find bibliographical record with PMID " + pmid);
+    }
+
+    /**
+     * The record PubMed has of an article, for one that has no DOI or none that Crossref knows.
+     * It is completed as a Crossref record is, but for the PubMed identifiers it comes with.
+     */
+    private String retrievePubMedRecord(String pmid, String firstAuthor, String atitle, String notFound) {
+        if (pubMedLookup == null) {
+            throw new NotFoundException(notFound);
+        }
+        MatchingDocument outputData = pubMedLookup.retrieveByPmid(pmid);
+        if (isBlank(outputData.getJsonObject())) {
+            throw new NotFoundException(notFound);
+        }
+        outputData = validateJsonBody(firstAuthor, atitle, outputData);
+
+        final String json = outputData.getJsonObject();
+        final JsonObject record = new JsonParser().parse(json).getAsJsonObject();
+        if (!record.has("DOI") || record.get("DOI").isJsonNull()) {
+            return json;
+        }
+        final String doi = record.get("DOI").getAsString();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(json, 0, json.lastIndexOf('}'));
+        final IstexData istexData = istexLookup.retrieveByDoi(doi);
+        if (istexData != null) {
+            if (isNotBlank(istexData.getIstexId())) {
+                sb.append(", \"istexId\":").append(quote(istexData.getIstexId()));
+            }
+            if (CollectionUtils.isNotEmpty(istexData.getArk())) {
+                sb.append(", \"ark\":").append(quote(istexData.getArk().get(0)));
+            }
+        }
+        String halId = halLookup.retrieveHalIdByDoi(doi);
+        if (isNotBlank(halId)) {
+            sb.append(", \"halId\":").append(quote(halId.replace("hal:", "")));
+        }
+        final String oaLink = oaDoiLookup.retrieveOaLinkByDoi(doi);
+        if (isNotBlank(oaLink)) {
+            sb.append(", \"oaLink\":").append(quote(oaLink));
+        }
+        sb.append("}");
+        return sb.toString();
+    }
+
+    private static String quote(String value) {
+        return new com.google.gson.JsonPrimitive(value).toString();
     }
 
     public String retrieveByPmc(String pmc, String firstAuthor, String atitle, String year) {
@@ -435,10 +496,23 @@ public class LookupEngine {
         final PmidData pmidData = pmidLookup.retrieveIdsByPmc(pmc);
 
         if (pmidData != null && isNotBlank(pmidData.getDoi())) {
-            return retrieveByDoi(pmidData.getDoi(), firstAuthor, atitle, year);
+            try {
+                return retrieveByDoi(pmidData.getDoi(), firstAuthor, atitle, year);
+            } catch (NotFoundException e) {
+                // Crossref has no record of this DOI: the PubMed record is what there is
+            } catch (ServiceException e) {
+                // the same when the mapping gives something that is not a DOI
+                if (e.getStatusCode() != 400) {
+                    throw e;
+                }
+            }
         }
 
-        throw new NotFoundException("Cannot find bibliographical record with PMC ID " + pmc);
+        final String notFound = "Cannot find bibliographical record with PMC ID " + pmc;
+        if (pmidData == null || isBlank(pmidData.getPmid())) {
+            throw new NotFoundException(notFound);
+        }
+        return retrievePubMedRecord(pmidData.getPmid(), firstAuthor, atitle, notFound);
     }
 
     public String retrieveByIstexid(String istexid, String firstAuthor, String atitle, String year) {
@@ -1025,6 +1099,10 @@ public class LookupEngine {
 
     public void setIstexLookup(IstexIdsLookup istexLookup) {
         this.istexLookup = istexLookup;
+    }
+
+    public void setPubMedLookup(PubMedLookup pubMedLookup) {
+        this.pubMedLookup = pubMedLookup;
     }
 
     public void setHALLookup(HALLookup halLookup) {

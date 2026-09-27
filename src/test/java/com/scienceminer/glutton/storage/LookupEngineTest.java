@@ -7,6 +7,10 @@ import com.scienceminer.glutton.data.IstexData;
 import com.scienceminer.glutton.data.PmidData;
 import com.scienceminer.glutton.storage.lookup.OALookup;
 import com.scienceminer.glutton.storage.lookup.HALLookup;
+import com.scienceminer.glutton.storage.lookup.PubMedLookup;
+import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
+import com.scienceminer.glutton.data.MatchingDocument;
+import com.scienceminer.glutton.exception.NotFoundException;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -27,6 +31,11 @@ public class LookupEngineTest {
     private IstexIdsLookup mockIstexLookup;
     private OALookup mockOALookup;
     private HALLookup mockHALLookup;
+    private PubMedLookup mockPubMedLookup;
+    private CrossrefMetadataLookup mockCrossrefLookup;
+
+    private static final String PUBMED_RECORD = "{\"source\": \"pubmed\", \"DOI\": \"10.1234/x\", "
+            + "\"title\": [\"A title\"], \"pmid\": 8, \"pmcid\": \"PMC7\"}";
 
     @Before
     public void setUp() throws Exception {
@@ -36,11 +45,83 @@ public class LookupEngineTest {
         mockIstexLookup = createMock(IstexIdsLookup.class);
         mockOALookup = createMock(OALookup.class);
         mockHALLookup = createMock(HALLookup.class);
+        mockPubMedLookup = createMock(PubMedLookup.class);
+        mockCrossrefLookup = createMock(CrossrefMetadataLookup.class);
 
         target.setIstexLookup(mockIstexLookup);
         target.setPmidLookup(mockPmidLookup);
         target.setOaDoiLookup(mockOALookup);
         target.setHALLookup(mockHALLookup);
+        target.setPubMedLookup(mockPubMedLookup);
+        target.setCrossrefMetadataLookup(mockCrossrefLookup);
+    }
+
+    @Test
+    public void retrieveByPmid_withoutDoi_shouldGiveThePubMedRecord() {
+        expect(mockPmidLookup.retrieveIdsByPmid("8")).andReturn(null);
+        expect(mockPubMedLookup.retrieveByPmid("8")).andReturn(new MatchingDocument("pubmed:8",
+                "{\"source\": \"pubmed\", \"title\": [\"A title\"], \"pmid\": 8}"));
+        replay(mockPmidLookup, mockPubMedLookup, mockIstexLookup, mockOALookup, mockHALLookup);
+
+        JsonObject record = new JsonParser().parse(target.retrieveByPmid("PMID: 8", null, null, null)).getAsJsonObject();
+
+        assertThat(record.get("source").getAsString(), is("pubmed"));
+        assertThat(record.get("pmid").getAsInt(), is(8));
+        // nothing to look up without a DOI
+        verify(mockIstexLookup, mockOALookup, mockHALLookup);
+    }
+
+    @Test
+    public void retrieveByPmid_withADoiCrossrefDoesNotHave_shouldGiveThePubMedRecordCompleted() {
+        expect(mockPmidLookup.retrieveIdsByPmid("8")).andReturn(new PmidData("8", "PMC7", "10.1234/x"));
+        expect(mockCrossrefLookup.retrieveByDoi("10.1234/x")).andReturn(new MatchingDocument("crossref:10.1234/x", null));
+        expect(mockPubMedLookup.retrieveByPmid("8")).andReturn(new MatchingDocument("pubmed:8", PUBMED_RECORD));
+        final IstexData istexData = new IstexData();
+        istexData.setIstexId("istexid");
+        istexData.setPmid(Collections.singletonList("8"));
+        expect(mockIstexLookup.retrieveByDoi("10.1234/x")).andReturn(istexData);
+        expect(mockHALLookup.retrieveHalIdByDoi("10.1234/x")).andReturn(null);
+        expect(mockOALookup.retrieveOaLinkByDoi("10.1234/x")).andReturn("http://oa/\"paper\".pdf");
+        replay(mockPmidLookup, mockCrossrefLookup, mockPubMedLookup, mockIstexLookup, mockOALookup, mockHALLookup);
+
+        String output = target.retrieveByPmid("8", null, null, null);
+        JsonObject record = new JsonParser().parse(output).getAsJsonObject();
+
+        assertThat(record.get("istexId").getAsString(), is("istexid"));
+        assertThat(record.get("oaLink").getAsString(), is("http://oa/\"paper\".pdf"));
+        assertThat(record.get("pmcid").getAsString(), is("PMC7"));
+        // the identifiers the record came with are not written a second time
+        assertThat(output.split("\"pmid\"").length, is(2));
+    }
+
+    @Test
+    public void retrieveByPmc_shouldFindThePubMedRecordByItsPmid() {
+        expect(mockPmidLookup.retrieveIdsByPmc("PMC7")).andReturn(new PmidData("8", "PMC7", ""));
+        expect(mockPubMedLookup.retrieveByPmid("8")).andReturn(new MatchingDocument("pubmed:8",
+                "{\"source\": \"pubmed\", \"title\": [\"A title\"], \"pmid\": 8}"));
+        replay(mockPmidLookup, mockPubMedLookup);
+
+        JsonObject record = new JsonParser().parse(target.retrieveByPmc("7", null, null, null)).getAsJsonObject();
+        assertThat(record.get("pmid").getAsInt(), is(8));
+    }
+
+    @Test(expected = NotFoundException.class)
+    public void retrieveByPmid_withNoRecordAnywhere_shouldBeNotFound() {
+        expect(mockPmidLookup.retrieveIdsByPmid("8")).andReturn(null);
+        expect(mockPubMedLookup.retrieveByPmid("8")).andReturn(new MatchingDocument("pubmed:8", null));
+        replay(mockPmidLookup, mockPubMedLookup);
+
+        target.retrieveByPmid("8", null, null, null);
+    }
+
+    @Test(expected = NotFoundException.class)
+    public void retrieveByPmid_shouldPostValidateThePubMedRecordToo() {
+        expect(mockPmidLookup.retrieveIdsByPmid("8")).andReturn(null);
+        expect(mockPubMedLookup.retrieveByPmid("8")).andReturn(new MatchingDocument("pubmed:8",
+                "{\"source\": \"pubmed\", \"title\": [\"A title\"], \"pmid\": 8}"));
+        replay(mockPmidLookup, mockPubMedLookup);
+
+        target.retrieveByPmid("8", null, "Something else entirely, on another subject", null);
     }
 
     @Test
