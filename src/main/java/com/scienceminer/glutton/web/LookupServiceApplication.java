@@ -258,6 +258,10 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         bootstrap.addCommand(new IndexCommand());
         bootstrap.addCommand(new HALAuditCommand());
         bootstrap.addCommand(new LoadOpenAlexCommand());
+        bootstrap.addCommand(new LoadPubMedCommand());
+        bootstrap.addCommand(new PubMedDumpCommand());
+        bootstrap.addCommand(new PubMedExportCommand());
+        bootstrap.addCommand(new IstexPubMedMappingCommand());
     }
 
     public static void main(String... args) throws Exception {

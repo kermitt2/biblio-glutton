@@ -260,6 +260,18 @@ public class IstexIdsLookup {
         return values;
     }
 
+    /** Goes through all the ISTEX records, by ISTEX identifier. */
+    public void forEach(java.util.function.Consumer<IstexData> visitor) {
+        try (Txn<ByteBuffer> txn = environment.txnRead();
+             CursorIterable<ByteBuffer> it = dbIstexToIds.iterate(txn, KeyRange.all())) {
+            for (final CursorIterable.KeyVal<ByteBuffer> kv : it) {
+                visitor.accept((IstexData) BinarySerialiser.deserialize(kv.val()));
+            }
+        } catch (Env.ReadersFullException e) {
+            throw new ServiceOverloadedException("Not enough readers for LMDB access, increase them or reduce the parallel request rate. ", e);
+        }
+    }
+
     public void close() {
         this.environment.close();
     }

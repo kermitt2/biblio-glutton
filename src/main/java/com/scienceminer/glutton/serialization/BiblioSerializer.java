@@ -397,6 +397,22 @@ public class BiblioSerializer {
             builder.append("]");
         }
 
+        // the keywords given by the authors or by the indexers, which PubMed records come with
+        if (pmidLookup != null && biblio.getKeywordItems() != null && biblio.getKeywordItems().size() > 0) {
+            builder.append(", \"keyword\": [");
+            boolean first = true;
+            for(Keyword keyword : biblio.getKeywordItems()) {
+                if (StringUtils.isBlank(keyword.getValue()))
+                    continue;
+                if (first)
+                    first = false;
+                else
+                    builder.append(", ");
+                builder.append(mapper.writeValueAsString(keyword.getValue().trim()));
+            }
+            builder.append("]");
+        }
+
         if (biblio.getReferenceCount() != null) {
             builder.append(", \"reference-count\": " + biblio.getReferenceCount());
         }
@@ -470,7 +486,7 @@ public class BiblioSerializer {
 
                     if (pmidLookup != null && reference.getPmc() == null && reference.getDoi() != null) {
                         String pmc = null;
-                        final PmidData pmidData = pmidLookup.retrieveIdsByPmid(reference.getDoi());
+                        final PmidData pmidData = pmidLookup.retrieveIdsByDoi(reference.getDoi());
                         if (pmidData != null && isNotBlank(pmidData.getPmcid())) {
                             pmc = pmidData.getPmcid();
                         }

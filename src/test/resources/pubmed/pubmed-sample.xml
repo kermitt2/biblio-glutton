@@ -1,0 +1,1045 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE PubmedArticleSet PUBLIC "-//NLM//DTD PubMedArticle, 1st January 2025//EN" "https://dtd.nlm.nih.gov/ncbi/pubmed/out/pubmed_250101.dtd">
+<PubmedArticleSet>
+<PubmedArticle>
+    <MedlineCitation Status="MEDLINE" IndexingMethod="Manual" Owner="NLM">
+      <PMID Version="1">8</PMID>
+      <DateCompleted>
+        <Year>1976</Year>
+        <Month>01</Month>
+        <Day>26</Day>
+      </DateCompleted>
+      <DateRevised>
+        <Year>2025</Year>
+        <Month>05</Month>
+        <Day>29</Day>
+      </DateRevised>
+      <Article PubModel="Print">
+        <Journal>
+          <ISSN IssnType="Electronic">1873-2968</ISSN>
+          <JournalIssue CitedMedium="Internet">
+            <Volume>24</Volume>
+            <Issue>16</Issue>
+            <PubDate>
+              <Year>1975</Year>
+              <Month>Aug</Month>
+              <Day>15</Day>
+            </PubDate>
+          </JournalIssue>
+          <Title>Biochemical pharmacology</Title>
+          <ISOAbbreviation>Biochem Pharmacol</ISOAbbreviation>
+        </Journal>
+        <ArticleTitle>Comparison between procaine and isocarboxazid metabolism in vitro by a liver microsomal amidase-esterase.</ArticleTitle>
+        <Pagination>
+          <MedlinePgn>1517-21</MedlinePgn>
+        </Pagination>
+        <AuthorList CompleteYN="Y">
+          <Author ValidYN="Y">
+            <LastName>Moroi</LastName>
+            <ForeName>K</ForeName>
+            <Initials>K</Initials>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Sato</LastName>
+            <ForeName>T</ForeName>
+            <Initials>T</Initials>
+          </Author>
+        </AuthorList>
+        <Language>eng</Language>
+        <GrantList CompleteYN="Y">
+          <Grant>
+            <GrantID>SF19107</GrantID>
+            <Acronym>BB_</Acronym>
+            <Agency>Biotechnology and Biological Sciences Research Council</Agency>
+            <Country>United Kingdom</Country>
+          </Grant>
+        </GrantList>
+        <PublicationTypeList>
+          <PublicationType UI="D003160">Comparative Study</PublicationType>
+          <PublicationType UI="D016425">Published Erratum</PublicationType>
+        </PublicationTypeList>
+      </Article>
+      <MedlineJournalInfo>
+        <Country>England</Country>
+        <MedlineTA>Biochem Pharmacol</MedlineTA>
+        <NlmUniqueID>0101032</NlmUniqueID>
+        <ISSNLinking>0006-2952</ISSNLinking>
+      </MedlineJournalInfo>
+      <ChemicalList>
+        <Chemical>
+          <RegistryNumber>0</RegistryNumber>
+          <NameOfSubstance UI="D008670">Metals</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>0</RegistryNumber>
+          <NameOfSubstance UI="D010743">Phospholipids</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>0</RegistryNumber>
+          <NameOfSubstance UI="D011506">Proteins</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>34237V843T</RegistryNumber>
+          <NameOfSubstance UI="D007520">Isocarboxazid</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>4Z8Y51M438</RegistryNumber>
+          <NameOfSubstance UI="D011343">Procaine</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>EC 3.1.-</RegistryNumber>
+          <NameOfSubstance UI="D004950">Esterases</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>EC 3.5.-</RegistryNumber>
+          <NameOfSubstance UI="D000581">Amidohydrolases</NameOfSubstance>
+        </Chemical>
+      </ChemicalList>
+      <CitationSubset>IM</CitationSubset>
+      <CommentsCorrectionsList>
+        <CommentsCorrections RefType="ErratumFor">
+          <RefSource>Biochem Biophys Res Commun. 1975 Oct 27;66(4):1173-9. doi: 10.1016/0006-291x(75)90482-9.</RefSource>
+          <PMID Version="1">2</PMID>
+        </CommentsCorrections>
+      </CommentsCorrectionsList>
+      <MeshHeadingList>
+        <MeshHeading>
+          <DescriptorName UI="D000581" MajorTopicYN="N">Amidohydrolases</DescriptorName>
+          <QualifierName UI="Q000378" MajorTopicYN="Y">metabolism</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D000818" MajorTopicYN="N">Animals</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D004950" MajorTopicYN="N">Esterases</DescriptorName>
+          <QualifierName UI="Q000378" MajorTopicYN="Y">metabolism</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D006863" MajorTopicYN="N">Hydrogen-Ion Concentration</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D066298" MajorTopicYN="N">In Vitro Techniques</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D007520" MajorTopicYN="N">Isocarboxazid</DescriptorName>
+          <QualifierName UI="Q000378" MajorTopicYN="Y">metabolism</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D007700" MajorTopicYN="N">Kinetics</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D008297" MajorTopicYN="N">Male</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D008670" MajorTopicYN="N">Metals</DescriptorName>
+          <QualifierName UI="Q000494" MajorTopicYN="N">pharmacology</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D008862" MajorTopicYN="N">Microsomes, Liver</DescriptorName>
+          <QualifierName UI="Q000201" MajorTopicYN="Y">enzymology</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D010743" MajorTopicYN="N">Phospholipids</DescriptorName>
+          <QualifierName UI="Q000378" MajorTopicYN="N">metabolism</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D011343" MajorTopicYN="N">Procaine</DescriptorName>
+          <QualifierName UI="Q000378" MajorTopicYN="Y">metabolism</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D011506" MajorTopicYN="N">Proteins</DescriptorName>
+          <QualifierName UI="Q000378" MajorTopicYN="N">metabolism</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D051381" MajorTopicYN="N">Rats</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D013347" MajorTopicYN="N">Subcellular Fractions</DescriptorName>
+          <QualifierName UI="Q000201" MajorTopicYN="N">enzymology</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D013696" MajorTopicYN="N">Temperature</DescriptorName>
+        </MeshHeading>
+      </MeshHeadingList>
+    </MedlineCitation>
+    <PubmedData>
+      <History>
+        <PubMedPubDate PubStatus="pubmed">
+          <Year>1975</Year>
+          <Month>8</Month>
+          <Day>15</Day>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="medline">
+          <Year>1975</Year>
+          <Month>8</Month>
+          <Day>15</Day>
+          <Hour>0</Hour>
+          <Minute>1</Minute>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="entrez">
+          <Year>1975</Year>
+          <Month>8</Month>
+          <Day>15</Day>
+          <Hour>0</Hour>
+          <Minute>0</Minute>
+        </PubMedPubDate>
+      </History>
+      <PublicationStatus>ppublish</PublicationStatus>
+      <ArticleIdList>
+        <ArticleId IdType="pubmed">8</ArticleId>
+        <ArticleId IdType="pii">0006-2952(75)90029-5</ArticleId>
+        <ArticleId IdType="doi">10.1016/0006-2952(75)90029-5</ArticleId>
+      </ArticleIdList>
+    </PubmedData>
+  </PubmedArticle>
+<PubmedArticle>
+    <MedlineCitation Status="MEDLINE" IndexingMethod="Automated" Owner="NLM">
+      <PMID Version="1">40571777</PMID>
+      <DateCompleted>
+        <Year>2025</Year>
+        <Month>08</Month>
+        <Day>25</Day>
+      </DateCompleted>
+      <DateRevised>
+        <Year>2025</Year>
+        <Month>08</Month>
+        <Day>25</Day>
+      </DateRevised>
+      <Article PubModel="Print-Electronic">
+        <Journal>
+          <ISSN IssnType="Electronic">1476-5594</ISSN>
+          <JournalIssue CitedMedium="Internet">
+            <Volume>44</Volume>
+            <Issue>34</Issue>
+            <PubDate>
+              <Year>2025</Year>
+              <Month>Sep</Month>
+            </PubDate>
+          </JournalIssue>
+          <Title>Oncogene</Title>
+          <ISOAbbreviation>Oncogene</ISOAbbreviation>
+        </Journal>
+        <ArticleTitle>PR55α subunit of protein phosphatase 2A supports KRAS<sup>G12D</sup>-driven tumorigenesis that requires YAP activation.</ArticleTitle>
+        <Pagination>
+          <MedlinePgn>3070-3082</MedlinePgn>
+        </Pagination>
+        <ELocationID EIdType="doi" ValidYN="Y">10.1038/s41388-025-03477-y</ELocationID>
+        <Abstract>
+          <AbstractText>PP2A holoenzymes account nearly 50% of Ser/Thr phosphatase activities in human cells, yet their roles in oncogenesis remain largely unexplored.</AbstractText>
+          <CopyrightInformation>© 2025. The Author(s), under exclusive licence to Springer Nature Limited.</CopyrightInformation>
+        </Abstract>
+        <AuthorList CompleteYN="Y">
+          <Author ValidYN="Y">
+            <LastName>Jenkins</LastName>
+            <ForeName>Christopher B</ForeName>
+            <Initials>CB</Initials>
+            <Identifier Source="ORCID">http://orcid.org/0009-0002-7992-9885</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Department of Radiation Oncology, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y" EqualContrib="Y">
+            <LastName>Camero</LastName>
+            <ForeName>Alison L</ForeName>
+            <Initials>AL</Initials>
+            <Identifier Source="ORCID">http://orcid.org/0009-0007-3377-2401</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Department of Radiation Oncology, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+            <AffiliationInfo>
+              <Affiliation>Department of Genetics, Cell Biology, and Anatomy, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y" EqualContrib="Y">
+            <LastName>Graff</LastName>
+            <ForeName>Brendan T</ForeName>
+            <Initials>BT</Initials>
+            <Identifier Source="ORCID">http://orcid.org/0009-0003-2673-6681</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Department of Radiation Oncology, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Madduri</LastName>
+            <ForeName>Lepakshe S V</ForeName>
+            <Initials>LSV</Initials>
+            <AffiliationInfo>
+              <Affiliation>Department of Radiation Oncology, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>O'Connell</LastName>
+            <ForeName>Kelly A</ForeName>
+            <Initials>KA</Initials>
+            <AffiliationInfo>
+              <Affiliation>Eppley Institute for Research in Cancer, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Hein</LastName>
+            <ForeName>Ashley L</ForeName>
+            <Initials>AL</Initials>
+            <AffiliationInfo>
+              <Affiliation>Department of Pathology and Microbiology, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Smith</LastName>
+            <ForeName>Lynette M</ForeName>
+            <Initials>LM</Initials>
+            <AffiliationInfo>
+              <Affiliation>Department of Biostatistics, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Enke</LastName>
+            <ForeName>Charles A</ForeName>
+            <Initials>CA</Initials>
+            <AffiliationInfo>
+              <Affiliation>Department of Radiation Oncology, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Dong</LastName>
+            <ForeName>Jixin</ForeName>
+            <Initials>J</Initials>
+            <Identifier Source="ORCID">http://orcid.org/0000-0002-2757-4464</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Eppley Institute for Research in Cancer, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Hollingsworth</LastName>
+            <ForeName>Michael A</ForeName>
+            <Initials>MA</Initials>
+            <Identifier Source="ORCID">http://orcid.org/0000-0002-5255-8888</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Eppley Institute for Research in Cancer, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Johnson</LastName>
+            <ForeName>Keith R</ForeName>
+            <Initials>KR</Initials>
+            <AffiliationInfo>
+              <Affiliation>Department of Genetics, Cell Biology, and Anatomy, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+            <AffiliationInfo>
+              <Affiliation>Eppley Institute for Research in Cancer, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+            <AffiliationInfo>
+              <Affiliation>Department of Biochemistry and Molecular Biology, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+            <AffiliationInfo>
+              <Affiliation>College of Dentistry-Oral Biology, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Ouellette</LastName>
+            <ForeName>Michel M</ForeName>
+            <Initials>MM</Initials>
+            <AffiliationInfo>
+              <Affiliation>Department of Biochemistry and Molecular Biology, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+            <AffiliationInfo>
+              <Affiliation>Department of Internal Medicine, University of Nebraska Medical Center, Omaha, NE, USA.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Yan</LastName>
+            <ForeName>Ying</ForeName>
+            <Initials>Y</Initials>
+            <Identifier Source="ORCID">http://orcid.org/0000-0002-3546-3991</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Department of Radiation Oncology, University of Nebraska Medical Center, Omaha, NE, USA. yyan@unmc.edu.</Affiliation>
+            </AffiliationInfo>
+            <AffiliationInfo>
+              <Affiliation>Eppley Institute for Research in Cancer, University of Nebraska Medical Center, Omaha, NE, USA. yyan@unmc.edu.</Affiliation>
+            </AffiliationInfo>
+            <AffiliationInfo>
+              <Affiliation>Department of Biochemistry and Molecular Biology, University of Nebraska Medical Center, Omaha, NE, USA. yyan@unmc.edu.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+        </AuthorList>
+        <Language>eng</Language>
+        <GrantList CompleteYN="Y">
+          <Grant>
+            <GrantID>R01GM143329</GrantID>
+            <Agency>U.S. Department of Health &amp; Human Services | NIH | National Institute of General Medical Sciences (NIGMS)</Agency>
+            <Country/>
+          </Grant>
+          <Grant>
+            <GrantID>5U54GM115458</GrantID>
+            <Agency>U.S. Department of Health &amp; Human Services | NIH | National Institute of General Medical Sciences (NIGMS)</Agency>
+            <Country/>
+          </Grant>
+          <Grant>
+            <GrantID>R01 GM143329</GrantID>
+            <Acronym>GM</Acronym>
+            <Agency>NIGMS NIH HHS</Agency>
+            <Country>United States</Country>
+          </Grant>
+          <Grant>
+            <GrantID>2022-59</GrantID>
+            <Agency>Nebraska Department of Health and Human Services (Nebraska DHHS)</Agency>
+            <Country/>
+          </Grant>
+          <Grant>
+            <GrantID>U54 GM115458</GrantID>
+            <Acronym>GM</Acronym>
+            <Agency>NIGMS NIH HHS</Agency>
+            <Country>United States</Country>
+          </Grant>
+          <Grant>
+            <GrantID>W81XWH-21-1-0700</GrantID>
+            <Agency>United States Department of Defense | United States Army | Army Medical Command | Congressionally Directed Medical Research Programs (CDMRP)</Agency>
+            <Country/>
+          </Grant>
+          <Grant>
+            <GrantID>R01CA206444</GrantID>
+            <Agency>U.S. Department of Health &amp; Human Services | NIH | National Cancer Institute (NCI)</Agency>
+            <Country/>
+          </Grant>
+        </GrantList>
+        <PublicationTypeList>
+          <PublicationType UI="D016428">Journal Article</PublicationType>
+        </PublicationTypeList>
+        <ArticleDate DateType="Electronic">
+          <Year>2025</Year>
+          <Month>06</Month>
+          <Day>26</Day>
+        </ArticleDate>
+      </Article>
+      <MedlineJournalInfo>
+        <Country>England</Country>
+        <MedlineTA>Oncogene</MedlineTA>
+        <NlmUniqueID>8711562</NlmUniqueID>
+        <ISSNLinking>0950-9232</ISSNLinking>
+      </MedlineJournalInfo>
+      <ChemicalList>
+        <Chemical>
+          <RegistryNumber>EC 3.1.3.16</RegistryNumber>
+          <NameOfSubstance UI="D054648">Protein Phosphatase 2</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>0</RegistryNumber>
+          <NameOfSubstance UI="D000091102">YAP-Signaling Proteins</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>0</RegistryNumber>
+          <NameOfSubstance UI="D048868">Adaptor Proteins, Signal Transducing</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>0</RegistryNumber>
+          <NameOfSubstance UI="C088374">YAP1 protein, human</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>EC 3.6.5.2</RegistryNumber>
+          <NameOfSubstance UI="D016283">Proto-Oncogene Proteins p21(ras)</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>0</RegistryNumber>
+          <NameOfSubstance UI="D014157">Transcription Factors</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>0</RegistryNumber>
+          <NameOfSubstance UI="C117307">KRAS protein, human</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>0</RegistryNumber>
+          <NameOfSubstance UI="D010750">Phosphoproteins</NameOfSubstance>
+        </Chemical>
+        <Chemical>
+          <RegistryNumber>0</RegistryNumber>
+          <NameOfSubstance UI="C512974">PPP2R2A protein, human</NameOfSubstance>
+        </Chemical>
+      </ChemicalList>
+      <CitationSubset>IM</CitationSubset>
+      <MeshHeadingList>
+        <MeshHeading>
+          <DescriptorName UI="D054648" MajorTopicYN="Y">Protein Phosphatase 2</DescriptorName>
+          <QualifierName UI="Q000378" MajorTopicYN="N">metabolism</QualifierName>
+          <QualifierName UI="Q000235" MajorTopicYN="N">genetics</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D006801" MajorTopicYN="N">Humans</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D000091102" MajorTopicYN="N">YAP-Signaling Proteins</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D000818" MajorTopicYN="N">Animals</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D048868" MajorTopicYN="Y">Adaptor Proteins, Signal Transducing</DescriptorName>
+          <QualifierName UI="Q000378" MajorTopicYN="N">metabolism</QualifierName>
+          <QualifierName UI="Q000235" MajorTopicYN="N">genetics</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D016283" MajorTopicYN="Y">Proto-Oncogene Proteins p21(ras)</DescriptorName>
+          <QualifierName UI="Q000235" MajorTopicYN="N">genetics</QualifierName>
+          <QualifierName UI="Q000378" MajorTopicYN="N">metabolism</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D051379" MajorTopicYN="N">Mice</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D014157" MajorTopicYN="Y">Transcription Factors</DescriptorName>
+          <QualifierName UI="Q000378" MajorTopicYN="N">metabolism</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D010190" MajorTopicYN="Y">Pancreatic Neoplasms</DescriptorName>
+          <QualifierName UI="Q000473" MajorTopicYN="N">pathology</QualifierName>
+          <QualifierName UI="Q000235" MajorTopicYN="N">genetics</QualifierName>
+          <QualifierName UI="Q000378" MajorTopicYN="N">metabolism</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D010750" MajorTopicYN="Y">Phosphoproteins</DescriptorName>
+          <QualifierName UI="Q000378" MajorTopicYN="N">metabolism</QualifierName>
+          <QualifierName UI="Q000235" MajorTopicYN="N">genetics</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D002471" MajorTopicYN="Y">Cell Transformation, Neoplastic</DescriptorName>
+          <QualifierName UI="Q000235" MajorTopicYN="N">genetics</QualifierName>
+          <QualifierName UI="Q000378" MajorTopicYN="N">metabolism</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D063646" MajorTopicYN="Y">Carcinogenesis</DescriptorName>
+          <QualifierName UI="Q000235" MajorTopicYN="N">genetics</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D049109" MajorTopicYN="N">Cell Proliferation</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D045744" MajorTopicYN="N">Cell Line, Tumor</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D002465" MajorTopicYN="N">Cell Movement</DescriptorName>
+          <QualifierName UI="Q000235" MajorTopicYN="N">genetics</QualifierName>
+        </MeshHeading>
+      </MeshHeadingList>
+    </MedlineCitation>
+    <PubmedData>
+      <History>
+        <PubMedPubDate PubStatus="received">
+          <Year>2024</Year>
+          <Month>11</Month>
+          <Day>24</Day>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="accepted">
+          <Year>2025</Year>
+          <Month>06</Month>
+          <Day>11</Day>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="revised">
+          <Year>2025</Year>
+          <Month>05</Month>
+          <Day>13</Day>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="medline">
+          <Year>2025</Year>
+          <Month>8</Month>
+          <Day>31</Day>
+          <Hour>20</Hour>
+          <Minute>2</Minute>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="pubmed">
+          <Year>2025</Year>
+          <Month>6</Month>
+          <Day>27</Day>
+          <Hour>0</Hour>
+          <Minute>28</Minute>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="entrez">
+          <Year>2025</Year>
+          <Month>6</Month>
+          <Day>26</Day>
+          <Hour>23</Hour>
+          <Minute>18</Minute>
+        </PubMedPubDate>
+      </History>
+      <PublicationStatus>ppublish</PublicationStatus>
+      <ArticleIdList>
+        <ArticleId IdType="pubmed">40571777</ArticleId>
+        <ArticleId IdType="doi">10.1038/s41388-025-03477-y</ArticleId>
+        <ArticleId IdType="pii">10.1038/s41388-025-03477-y</ArticleId>
+      </ArticleIdList>
+      <ReferenceList>
+        <Reference>
+          <Citation>Hanahan D. Hallmarks of cancer: new dimensions. Cancer Discov. 2022;12:31–46.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">35022204</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>Gnoni A, Licchetta A, Scarpa A, Azzariti A, Brunetti AE, Simone G, et al. Carcinogenesis of pancreatic adenocarcinoma: precursor lesions. International J Mol Sci. 2013;14:19731–62.</Citation>
+        </Reference>
+      </ReferenceList>
+    </PubmedData>
+  </PubmedArticle>
+<PubmedArticle>
+    <MedlineCitation Status="MEDLINE" IndexingMethod="Automated" Owner="NLM">
+      <PMID Version="1">40571748</PMID>
+      <DateCompleted>
+        <Year>2026</Year>
+        <Month>01</Month>
+        <Day>29</Day>
+      </DateCompleted>
+      <DateRevised>
+        <Year>2026</Year>
+        <Month>01</Month>
+        <Day>29</Day>
+      </DateRevised>
+      <Article PubModel="Print-Electronic">
+        <Journal>
+          <ISSN IssnType="Electronic">1615-6692</ISSN>
+          <JournalIssue CitedMedium="Internet">
+            <Volume>51</Volume>
+            <Issue>1</Issue>
+            <PubDate>
+              <Year>2026</Year>
+              <Month>Feb</Month>
+            </PubDate>
+          </JournalIssue>
+          <Title>Herz</Title>
+          <ISOAbbreviation>Herz</ISOAbbreviation>
+        </Journal>
+        <ArticleTitle>[Palliative care and change in treatment goals for heart failure in the outpatient sector : A survey among office-based physicians in Germany on the current state of healthcare provision].</ArticleTitle>
+        <Pagination>
+          <MedlinePgn>45-55</MedlinePgn>
+        </Pagination>
+        <ELocationID EIdType="doi" ValidYN="Y">10.1007/s00059-025-05325-x</ELocationID>
+        <Abstract>
+          <AbstractText Label="BACKGROUND" NlmCategory="BACKGROUND">Palliative care is a crucial part of the holistic management of advanced heart failure; however, it remains unclear how palliative care is currently provided in the outpatient sector in Germany.</AbstractText>
+          <AbstractText Label="METHODS" NlmCategory="METHODS">We conducted a survey among office-based cardiologists and general practitioners (GPs) in Germany on the current provision of palliative care for people with advanced heart failure.</AbstractText>
+          <AbstractText Label="RESULTS" NlmCategory="RESULTS">A total of 235 individuals participated in the study.</AbstractText>
+          <AbstractText Label="CONCLUSION" NlmCategory="CONCLUSIONS">Only few office-based physicians in Germany regularly refer patients with advanced heart failure to specialized palliative care services.</AbstractText>
+          <CopyrightInformation>© 2025. The Author(s).</CopyrightInformation>
+        </Abstract>
+        <AuthorList CompleteYN="Y">
+          <Author ValidYN="Y">
+            <LastName>Blum</LastName>
+            <ForeName>Moritz</ForeName>
+            <Initials>M</Initials>
+            <AffiliationInfo>
+              <Affiliation>Klinik für Thorax‑, Herz- und Gefäßchirurgie, Deutsches Herzzentrum der Charité (DHZC) - Medical Heart Center of Charité and German Heart Institute Berlin, Berlin, Deutschland.</Affiliation>
+            </AffiliationInfo>
+            <AffiliationInfo>
+              <Affiliation>Charité - Universitätsmedizin Berlin, corporate member of Freie Universität Berlin and Humboldt-Universität zu Berlin, Berlin, Deutschland.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Weber-Krüger</LastName>
+            <ForeName>Mark</ForeName>
+            <Initials>M</Initials>
+            <AffiliationInfo>
+              <Affiliation>Klinik für Palliativmedizin, Universitätsmedizin Göttingen, Göttingen, Deutschland.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Abdul-Khaliq</LastName>
+            <ForeName>Hashim</ForeName>
+            <Initials>H</Initials>
+            <AffiliationInfo>
+              <Affiliation>Klinik für Kinderkardiologie, Universitätsklinikum des Saarlandes, Homburg (Saar), Deutschland.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Alt-Epping</LastName>
+            <ForeName>Bernd</ForeName>
+            <Initials>B</Initials>
+            <AffiliationInfo>
+              <Affiliation>Klinik für Palliativmedizin, Universitätsklinikum Heidelberg, Heidelberg, Deutschland.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Dittrich</LastName>
+            <ForeName>Marc</ForeName>
+            <Initials>M</Initials>
+            <AffiliationInfo>
+              <Affiliation>Klinik für Innere Medizin 2, Universitätsklinikum Regensburg, Regensburg, Deutschland.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Henking</LastName>
+            <ForeName>Tanja</ForeName>
+            <Initials>T</Initials>
+            <AffiliationInfo>
+              <Affiliation>Professur für Gesundheits- und Medizinrecht und Strafrecht, Technische Hochschule Würzburg-Schweinfurt, Würzburg, Deutschland.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Neitzke</LastName>
+            <ForeName>Gerald</ForeName>
+            <Initials>G</Initials>
+            <AffiliationInfo>
+              <Affiliation>Institut für Ethik, Geschichte und Philosophie der Medizin, Medizinische Hochschule Hannover, Hannover, Deutschland.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Rittger</LastName>
+            <ForeName>Harald</ForeName>
+            <Initials>H</Initials>
+            <AffiliationInfo>
+              <Affiliation>Klinik für Herz- und Lungenerkrankungen, Klinikum Fürth, Fürth, Deutschland.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Stanze</LastName>
+            <ForeName>Henrikje</ForeName>
+            <Initials>H</Initials>
+            <AffiliationInfo>
+              <Affiliation>Professur für Pflegewissenschaft und Palliative Care, Hochschule Bremen, Bremen, Deutschland.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Knappe</LastName>
+            <ForeName>Dorit</ForeName>
+            <Initials>D</Initials>
+            <AffiliationInfo>
+              <Affiliation>Klinik für Kardiologie und internistische Intensivmedizin, Asklepios Klinikum St. Georg, Hamburg, Deutschland.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Witte</LastName>
+            <ForeName>Klaus K</ForeName>
+            <Initials>KK</Initials>
+            <AffiliationInfo>
+              <Affiliation>Leeds Institute of Cardiovascular and Metabolic Medicine, University of Leeds, Leeds, Großbritannien.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Dutzmann</LastName>
+            <ForeName>Jochen</ForeName>
+            <Initials>J</Initials>
+            <Identifier Source="ORCID">http://orcid.org/0000-0003-1406-2221</Identifier>
+            <AffiliationInfo>
+              <Affiliation>Klinik für Innere Medizin III (Kardiologie, Angiologie und Internistische Intensivmedizin), Universitätsklinikum Halle (Saale), Ernst-Grube-Str. 40, 06120, Halle (Saale), Deutschland. jochen.dutzmann@uk-halle.de.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Goss</LastName>
+            <ForeName>Franz</ForeName>
+            <Initials>F</Initials>
+            <AffiliationInfo>
+              <Affiliation>Bundesverband Niedergelassener Kardiologen e. V., München, Deutschland.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+        </AuthorList>
+        <Language>ger</Language>
+        <GrantList CompleteYN="Y">
+          <Grant>
+            <GrantID>Junior Clinician Scientist Program</GrantID>
+            <Agency>Berlin Institute of Health</Agency>
+            <Country/>
+          </Grant>
+        </GrantList>
+        <PublicationTypeList>
+          <PublicationType UI="D004740">English Abstract</PublicationType>
+          <PublicationType UI="D016428">Journal Article</PublicationType>
+        </PublicationTypeList>
+        <VernacularTitle>Palliative Versorgung und Therapiezieländerung bei Herzinsuffizienz im ambulanten Bereich : Eine Umfrage zur aktuellen Versorgungswirklichkeit unter niedergelassenen Ärzt:innen in Deutschland.</VernacularTitle>
+        <ArticleDate DateType="Electronic">
+          <Year>2025</Year>
+          <Month>06</Month>
+          <Day>26</Day>
+        </ArticleDate>
+      </Article>
+      <MedlineJournalInfo>
+        <Country>Germany</Country>
+        <MedlineTA>Herz</MedlineTA>
+        <NlmUniqueID>7801231</NlmUniqueID>
+        <ISSNLinking>0340-9937</ISSNLinking>
+      </MedlineJournalInfo>
+      <CitationSubset>IM</CitationSubset>
+      <MeshHeadingList>
+        <MeshHeading>
+          <DescriptorName UI="D005858" MajorTopicYN="N" Type="Geographic">Germany</DescriptorName>
+          <QualifierName UI="Q000453" MajorTopicYN="N">epidemiology</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D006333" MajorTopicYN="Y">Heart Failure</DescriptorName>
+          <QualifierName UI="Q000628" MajorTopicYN="N">therapy</QualifierName>
+          <QualifierName UI="Q000453" MajorTopicYN="N">epidemiology</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D010166" MajorTopicYN="Y">Palliative Care</DescriptorName>
+          <QualifierName UI="Q000706" MajorTopicYN="N">statistics &amp; numerical data</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D006801" MajorTopicYN="N">Humans</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D000553" MajorTopicYN="Y">Ambulatory Care</DescriptorName>
+          <QualifierName UI="Q000706" MajorTopicYN="N">statistics &amp; numerical data</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D010818" MajorTopicYN="Y">Practice Patterns, Physicians'</DescriptorName>
+          <QualifierName UI="Q000706" MajorTopicYN="N">statistics &amp; numerical data</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D008297" MajorTopicYN="N">Male</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D005260" MajorTopicYN="N">Female</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D000072096" MajorTopicYN="Y">Cardiologists</DescriptorName>
+          <QualifierName UI="Q000706" MajorTopicYN="N">statistics &amp; numerical data</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D008875" MajorTopicYN="N">Middle Aged</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D015995" MajorTopicYN="N">Prevalence</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D010347" MajorTopicYN="Y">Patient Care Planning</DescriptorName>
+          <QualifierName UI="Q000706" MajorTopicYN="N">statistics &amp; numerical data</QualifierName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D001291" MajorTopicYN="N">Attitude of Health Personnel</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D019538" MajorTopicYN="N">Health Care Surveys</DescriptorName>
+        </MeshHeading>
+      </MeshHeadingList>
+      <OtherAbstract Type="Publisher" Language="ger">
+        <AbstractText Label="ZUSAMMENFASSUNG" NlmCategory="UNASSIGNED">HINTERGRUND: Palliative Versorgung ist Teil der ganzheitlichen Behandlung bei fortgeschrittener Herzinsuffizienz.</AbstractText>
+        <AbstractText Label="METHODE" NlmCategory="METHODS">Wir führten eine Umfrage zur aktuellen palliativen Versorgungspraxis bei fortgeschrittener Herzinsuffizienz unter niedergelassenen Kardiolog:innen und Hausärzt:innen in Deutschland durch.</AbstractText>
+        <AbstractText Label="ERGEBNISSE" NlmCategory="UNASSIGNED">An der Studie nahmen 235 Personen teil.</AbstractText>
+        <AbstractText Label="KONKLUSION" NlmCategory="UNASSIGNED">Nur wenige Niedergelassene in Deutschland überweisen ihre Patient:innen mit fortgeschrittener Herzinsuffizienz an spezialisierte palliativmedizinische Versorgungsstrukturen.</AbstractText>
+      </OtherAbstract>
+      <KeywordList Owner="NOTNLM">
+        <Keyword MajorTopicYN="N">General practitioners</Keyword>
+        <Keyword MajorTopicYN="N">Heart failure</Keyword>
+        <Keyword MajorTopicYN="N">Office-based cardiologists</Keyword>
+        <Keyword MajorTopicYN="N">Outpatient care</Keyword>
+        <Keyword MajorTopicYN="N">Palliative medicine</Keyword>
+      </KeywordList>
+    </MedlineCitation>
+    <PubmedData>
+      <History>
+        <PubMedPubDate PubStatus="received">
+          <Year>2025</Year>
+          <Month>03</Month>
+          <Day>19</Day>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="accepted">
+          <Year>2025</Year>
+          <Month>05</Month>
+          <Day>18</Day>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="revised">
+          <Year>2025</Year>
+          <Month>04</Month>
+          <Day>18</Day>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="pubmed">
+          <Year>2025</Year>
+          <Month>6</Month>
+          <Day>27</Day>
+          <Hour>0</Hour>
+          <Minute>28</Minute>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="medline">
+          <Year>2025</Year>
+          <Month>6</Month>
+          <Day>27</Day>
+          <Hour>0</Hour>
+          <Minute>28</Minute>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="entrez">
+          <Year>2025</Year>
+          <Month>6</Month>
+          <Day>26</Day>
+          <Hour>23</Hour>
+          <Minute>17</Minute>
+        </PubMedPubDate>
+      </History>
+      <PublicationStatus>ppublish</PublicationStatus>
+      <ArticleIdList>
+        <ArticleId IdType="pubmed">40571748</ArticleId>
+        <ArticleId IdType="doi">10.1007/s00059-025-05325-x</ArticleId>
+        <ArticleId IdType="pii">10.1007/s00059-025-05325-x</ArticleId>
+      </ArticleIdList>
+      <ReferenceList>
+        <Title>Literatur</Title>
+        <Reference>
+          <Citation>Ferrell BR, Twaddle ML, Melnick A, Meier DE (2018) National Consensus Project Clinical Practice Guidelines for Quality Palliative Care Guidelines, 4th Edition. J Palliat Med 21:1684–1689. https://doi.org/10.1089/jpm.2018.0431</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="doi">10.1089/jpm.2018.0431</ArticleId>
+            <ArticleId IdType="pubmed">30179523</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>World Health Organization (2020) Palliative care. https://www.who.int/news-room/fact-sheets/detail/palliative-care</Citation>
+        </Reference>
+      </ReferenceList>
+    </PubmedData>
+  </PubmedArticle>
+<PubmedArticle>
+    <MedlineCitation Status="PubMed-not-MEDLINE" Owner="NLM">
+      <PMID Version="1">42438767</PMID>
+      <DateCompleted>
+        <Year>2026</Year>
+        <Month>07</Month>
+        <Day>13</Day>
+      </DateCompleted>
+      <DateRevised>
+        <Year>2026</Year>
+        <Month>09</Month>
+        <Day>26</Day>
+      </DateRevised>
+      <Article PubModel="Electronic-eCollection">
+        <Journal>
+          <ISSN IssnType="Electronic">2659-6636</ISSN>
+          <JournalIssue CitedMedium="Internet">
+            <Volume>8</Volume>
+            <Issue>3</Issue>
+            <PubDate>
+              <MedlineDate>2026 Jul-Sep</MedlineDate>
+            </PubDate>
+          </JournalIssue>
+          <Title>Open respiratory archives</Title>
+          <ISOAbbreviation>Open Respir Arch</ISOAbbreviation>
+        </Journal>
+        <ArticleTitle>Evidence Update for Tezepelumab to Treat Severe Uncontrolled Asthma, Corticosteroid-dependent Asthma, Chronic Rhinosinusitis With Nasal Polyposis, and Chronic Obstructive Pulmonary Disease. 2nd Barcelona Respiratory Network report.</ArticleTitle>
+        <Pagination>
+          <MedlinePgn>100638</MedlinePgn>
+        </Pagination>
+        <ELocationID EIdType="doi" ValidYN="Y">10.1016/j.opresp.2026.100638</ELocationID>
+        <Abstract>
+          <AbstractText>Tezepelumab is a human monoclonal antibody directed against thymic stromal lymphopoietin that inhibits initiation of the type 2 inflammatory cascade.</AbstractText>
+          <CopyrightInformation>© 2026 Published by Elsevier España, S.L.U. on behalf of Sociedad Española de Neumología y Cirugía Torácica (SEPAR).</CopyrightInformation>
+        </Abstract>
+        <AuthorList CompleteYN="Y">
+          <Author ValidYN="Y">
+            <LastName>Plaza</LastName>
+            <ForeName>Vicente</ForeName>
+            <Initials>V</Initials>
+            <AffiliationInfo>
+              <Affiliation>Pneumology and Allergy Department, Hospital de la Santa Creu i Sant Pau, Institut de Recerca Sant Pau (IR Sant Pau), Department of Medicine, Universitat Autònoma de Barcelona, Barcelona, Spain.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Ausin</LastName>
+            <ForeName>Pilar</ForeName>
+            <Initials>P</Initials>
+            <AffiliationInfo>
+              <Affiliation>Hospital del Mar, Barcelona, Spain.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Crespo-Lessmann</LastName>
+            <ForeName>Astrid</ForeName>
+            <Initials>A</Initials>
+            <AffiliationInfo>
+              <Affiliation>Pneumology and Allergy Department, Hospital de la Santa Creu i Sant Pau, Institut de Recerca Sant Pau (IR Sant Pau), Department of Medicine, Universitat Autònoma de Barcelona, Barcelona, Spain.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Muñoz-Esquerre</LastName>
+            <ForeName>Mariana</ForeName>
+            <Initials>M</Initials>
+            <AffiliationInfo>
+              <Affiliation>Hospital Universitari de Bellvitge (L'Hospitalet de Llobregat, Barcelona), Universitat de Barcelona, Spain.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+          <Author ValidYN="Y">
+            <LastName>Ojanguren</LastName>
+            <ForeName>Íñigo</ForeName>
+            <Initials>Í</Initials>
+            <AffiliationInfo>
+              <Affiliation>Hospital de la Vall d'Hebron, Barcelona, Universitat Autònoma de Barcelona, Spain.</Affiliation>
+            </AffiliationInfo>
+          </Author>
+        </AuthorList>
+        <Language>eng</Language>
+        <PublicationTypeList>
+          <PublicationType UI="D016428">Journal Article</PublicationType>
+          <PublicationType UI="D016454">Review</PublicationType>
+        </PublicationTypeList>
+        <ArticleDate DateType="Electronic">
+          <Year>2026</Year>
+          <Month>05</Month>
+          <Day>23</Day>
+        </ArticleDate>
+      </Article>
+      <MedlineJournalInfo>
+        <Country>Spain</Country>
+        <MedlineTA>Open Respir Arch</MedlineTA>
+        <NlmUniqueID>9918591885806676</NlmUniqueID>
+        <ISSNLinking>2659-6636</ISSNLinking>
+      </MedlineJournalInfo>
+      <OtherAbstract Type="Publisher" Language="spa">
+        <AbstractText>Tezepelumab es un anticuerpo monoclonal humano dirigido frente a la linfopoyetina del estroma tímico, inhibiendo el inicio de la cascada inflamatoria tipo 2.</AbstractText>
+      </OtherAbstract>
+      <KeywordList Owner="NOTNLM">
+        <Keyword MajorTopicYN="N">Asthma phenotypes</Keyword>
+        <Keyword MajorTopicYN="N">Severe uncontrolled asthma</Keyword>
+        <Keyword MajorTopicYN="N">Tezepelumab</Keyword>
+      </KeywordList>
+    </MedlineCitation>
+    <PubmedData>
+      <History>
+        <PubMedPubDate PubStatus="received">
+          <Year>2026</Year>
+          <Month>04</Month>
+          <Day>23</Day>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="accepted">
+          <Year>2026</Year>
+          <Month>05</Month>
+          <Day>20</Day>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="medline">
+          <Year>2026</Year>
+          <Month>7</Month>
+          <Day>13</Day>
+          <Hour>6</Hour>
+          <Minute>33</Minute>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="pubmed">
+          <Year>2026</Year>
+          <Month>7</Month>
+          <Day>13</Day>
+          <Hour>6</Hour>
+          <Minute>32</Minute>
+        </PubMedPubDate>
+        <PubMedPubDate PubStatus="entrez">
+          <Year>2026</Year>
+          <Month>7</Month>
+          <Day>13</Day>
+          <Hour>3</Hour>
+          <Minute>47</Minute>
+        </PubMedPubDate>
+      </History>
+      <PublicationStatus>epublish</PublicationStatus>
+      <ArticleIdList>
+        <ArticleId IdType="pubmed">42438767</ArticleId>
+        <ArticleId IdType="doi">10.1016/j.opresp.2026.100638</ArticleId>
+        <ArticleId IdType="pii">S2659-6636(26)00102-5</ArticleId>
+        <ArticleId IdType="pmc">PMC13356708</ArticleId>
+      </ArticleIdList>
+      <ReferenceList>
+        <Reference>
+          <Citation>Eur Respir J. 2021 Dec 31;59(1):</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">34049943</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>J Appl Physiol (1985). 2000 Mar;88(3):1043-50</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">10710402</ArticleId>
+          </ArticleIdList>
+        </Reference>
+      </ReferenceList>
+    </PubmedData>
+  </PubmedArticle>
+<DeleteCitation>
+<PMID Version="1">40571777</PMID>
+<PMID Version="1">12345678</PMID>
+</DeleteCitation>
+</PubmedArticleSet>
