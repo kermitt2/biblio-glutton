@@ -56,7 +56,7 @@ or the service refuses to start: set `elastic.allowCredentialsOverHttp: true` fo
 has security on but TLS off, such as a local one. Credentials in the host URL are not read.
 
 To install an Elasticsearch node with Docker or Docker Compose, see
-[Install Elasticsearch](Install.md#install-elasticsearch).
+[Install Elasticsearch](Elasticsearch.md).
 
 ### Build the embedded LMDB databases
 
