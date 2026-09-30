@@ -17,6 +17,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.net.URL;
 
@@ -64,7 +65,14 @@ public class LoadHALCommand extends ConfiguredCommand<LookupConfiguration> {
 
         ElasticSearchIndexer.getInstance(configuration).setupIndex(true);
 
-        halLookup.loadFromHALAPI(meter, counterInvalidRecords, counterIndexedRecords, counterFailedIndexedRecords);
+        boolean complete = true;
+        try {
+            halLookup.loadFromHALAPI(meter, counterInvalidRecords, counterIndexedRecords, counterFailedIndexedRecords);
+        } catch (IOException e) {
+            // what was harvested is kept and indexed below; the exit code says it is not all of it
+            complete = false;
+            LOGGER.error("The HAL harvest stopped before the end of the archive", e);
+        }
 
         // the bulks still in flight would be lost by the exit below
         LOGGER.info("Waiting for the last records to be indexed...");
@@ -79,6 +87,12 @@ public class LoadHALCommand extends ConfiguredCommand<LookupConfiguration> {
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
 
+        if (!complete) {
+            LOGGER.error("The HAL load is incomplete: the HAL API stopped answering, see the error above. "
+                    + "The records harvested so far are stored. Run the command again to harvest the "
+                    + "archive from its start, which overwrites them.");
+            System.exit(1);
+        }
         System.exit(0);
     }
 }

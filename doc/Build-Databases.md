@@ -255,7 +255,14 @@ Launch the following command and go grab a lunch:
 ./gradlew hal 
 ```
 
-HAL archive contains around 3.5M records, with curated metadadata. Note that the batch loading is using high volume, so it can take a couple of minutes before the metrics start indicating counts and measurements above 0.  
+HAL archive contains around 4.7M records (September 2026), with curated metadadata. Note that the batch loading is using high volume, so it can take a couple of minutes before the metrics start indicating counts and measurements above 0.  
+
+The archive is harvested through the HAL API page by page, 2,000 records at a time. A connection
+that drops on the way, or a change of network, does not end the harvest: the page that did not
+come through is asked for again, with a growing pause, for about a quarter of an hour. If the API
+stays out of reach for longer, the command stops with an error and a non-zero exit code, and the
+records harvested until then are stored and indexed. The harvest does not resume: running the
+command again starts from the beginning of the archive and overwrites the records already there.
 
 #### OA via OpenAlex
 

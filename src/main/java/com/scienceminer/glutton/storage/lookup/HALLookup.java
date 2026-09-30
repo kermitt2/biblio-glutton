@@ -109,10 +109,14 @@ public class HALLookup {
         dbDoiToHal = this.environment.openDbi(NAME_DOI2HAL, DbiFlags.MDB_CREATE);
     }
 
+    /**
+     * @throws IOException when the harvest did not reach the end of the archive. What was
+     *         harvested until then is stored.
+     */
     public void loadFromHALAPI(Meter meterValidRecord, 
                             Counter counterInvalidRecords, 
                             Counter counterIndexedRecords, 
-                            Counter counterFailedIndexedRecords) {
+                            Counter counterFailedIndexedRecords) throws IOException {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counter = new AtomicInteger(0);
 
