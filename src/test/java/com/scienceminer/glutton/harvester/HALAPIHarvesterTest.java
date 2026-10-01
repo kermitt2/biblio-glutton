@@ -5,13 +5,16 @@ import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.scienceminer.glutton.storage.LoadProgress;
 import com.scienceminer.glutton.storage.lookup.HALLookup;
 import com.scienceminer.glutton.storage.lookup.TransactionWrapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,6 +53,9 @@ public class HALAPIHarvesterTest {
     private interface Answer {
         void to(HttpExchange exchange) throws IOException;
     }
+
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
 
     private HttpServer server;
     private HALAPIHarvester target;
@@ -282,5 +288,66 @@ public class HALAPIHarvesterTest {
 
         verify(lookup);
         assertThat(metrics.meter("stored").getCount(), is(2L));
+    }
+
+    // ---------------------------------------------------------------- carried on by another run
+
+    @Test
+    public void fetchAllDocuments_shouldWriteDownTheCursorItReached() throws Exception {
+        LoadProgress progress = LoadProgress.open(folder.getRoot(), "hal", false);
+        progress.setIntervalMs(0);
+        script.add(page(2, "A"));
+        script.add(page(1, "B"));
+        script.add(page(0, "B"));
+        // each page is committed and handed over for indexing before its cursor is written down
+        HALLookup lookup = lookupExpecting(3, 2, 2);
+        MetricRegistry metrics = new MetricRegistry();
+
+        target.fetchAllDocuments(lookup, metrics.meter("stored"), invalid,
+                metrics.counter("indexed"), metrics.counter("notIndexed"), progress);
+
+        verify(lookup);
+        assertThat(metrics.meter("stored").getCount(), is(3L));
+        assertThat(LoadProgress.open(folder.getRoot(), "hal", false).getCursor(), is("B"));
+    }
+
+    @Test
+    public void fetchAllDocuments_shouldCarryOnFromTheCursorOfAnEarlierRun() throws Exception {
+        LoadProgress earlier = LoadProgress.open(folder.getRoot(), "hal", false);
+        earlier.reached("A");
+        earlier.finish(false);
+
+        script.add(page(1, "B"));
+        script.add(page(0, "B"));
+        HALLookup lookup = lookupExpecting(1, 1, 1);
+        MetricRegistry metrics = new MetricRegistry();
+
+        target.fetchAllDocuments(lookup, metrics.meter("stored"), invalid,
+                metrics.counter("indexed"), metrics.counter("notIndexed"),
+                LoadProgress.open(folder.getRoot(), "hal", false));
+
+        verify(lookup);
+        // the first page of the archive is not asked for again
+        assertThat(cursorsAsked, contains("A", "B"));
+    }
+
+    @Test
+    public void fetchAllDocuments_shouldLeaveTheCursorItGaveUpAt() throws Exception {
+        LoadProgress progress = LoadProgress.open(folder.getRoot(), "hal", false);
+        script.add(page(2, "A"));
+        afterTheScript = status(503);
+        HALLookup lookup = lookupExpecting(2, 1, 1);
+        MetricRegistry metrics = new MetricRegistry();
+
+        try {
+            target.fetchAllDocuments(lookup, metrics.meter("stored"), invalid,
+                    metrics.counter("indexed"), metrics.counter("notIndexed"), progress);
+            fail("a harvest cut short must not end as a complete one");
+        } catch (IOException expected) {
+            // what the command does next: wait for the index, flush, and end the run as incomplete
+            progress.finish(false);
+        }
+
+        assertThat(LoadProgress.open(folder.getRoot(), "hal", false).getCursor(), is("A"));
     }
 }

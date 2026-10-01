@@ -150,6 +150,7 @@ class StubS3Server implements AutoCloseable {
             return;
         }
         exchange.getResponseHeaders().set("Content-Length", String.valueOf(content.length));
+        exchange.getResponseHeaders().set("ETag", "\"etag\"");
         exchange.sendResponseHeaders(200, -1);
     }
 

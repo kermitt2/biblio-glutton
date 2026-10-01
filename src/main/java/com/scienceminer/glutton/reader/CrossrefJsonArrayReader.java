@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -30,6 +31,10 @@ public class CrossrefJsonArrayReader extends CrossrefJsonReader {
         this.configuration = configuration;
     }
 
+    /**
+     * @throws UncheckedIOException when the file cannot be read or is not JSON. It used to be
+     *         logged and the file passed over, which left a load that looked complete without it.
+     */
     public void load(InputStream input, Counter counterInvalidRecords, Consumer<JsonNode> closure) {
         final JsonNode jsonMap = fromJson(input);
         if (jsonMap != null && jsonMap.get("items") != null) {
@@ -53,11 +58,8 @@ public class CrossrefJsonArrayReader extends CrossrefJsonReader {
             mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
             mapper.configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, false);
             return mapper.readTree(inputLine);
-        } catch (JsonGenerationException | JsonMappingException e) {
-            LOGGER.error("The input cannot be deserialised. ", e);
         } catch (IOException e) {
-            LOGGER.error("Some serious error when deserialize the JSON object", e);
+            throw new UncheckedIOException("The file could not be read as a JSON array of records", e);
         }
-        return null;
     }
 }

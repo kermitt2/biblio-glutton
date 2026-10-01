@@ -107,9 +107,10 @@ public class InputLocation implements Closeable {
         try {
             // a key that names an object is that object; anything else is read as a prefix
             if (!parsed.getKey().isEmpty() && !parsed.getKey().endsWith("/")) {
-                long size = s3.sizeOf(parsed);
-                if (size >= 0) {
-                    return new InputLocation(location, List.of(new S3DataSource(s3, parsed, size)), s3);
+                S3Support.ObjectInfo info = s3.infoOf(parsed);
+                if (info != null) {
+                    return new InputLocation(location,
+                            List.of(new S3DataSource(s3, parsed, info.size, info.etag)), s3);
                 }
             }
 
@@ -118,7 +119,8 @@ public class InputLocation implements Closeable {
                     .filter(object -> accepts(object.key(), acceptedSuffixes))
                     .sorted(Comparator.comparing(object -> object.key()))
                     .forEach(object -> sources.add(
-                            new S3DataSource(s3, parsed.withKey(object.key()), object.size())));
+                            new S3DataSource(s3, parsed.withKey(object.key()), object.size(),
+                                    object.eTag())));
 
             if (sources.isEmpty()) {
                 throw new IllegalArgumentException("Nothing to read at '" + location

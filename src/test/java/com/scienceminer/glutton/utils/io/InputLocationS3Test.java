@@ -83,6 +83,23 @@ public class InputLocationS3Test {
     }
 
     @Test
+    public void source_shouldHaveTheSameFingerprintNamedOnItsOwnOrFoundUnderAPrefix() throws IOException {
+        // a load carried on by another run knows its files by name and fingerprint, whether the
+        // run was given the folder or the file
+        s3Server.put("works/part_0000.jsonl", bytes("abcdefghij"));
+
+        String underAPrefix;
+        try (InputLocation input = InputLocation.open("s3://" + StubS3Server.BUCKET + "/works/", settings)) {
+            underAPrefix = input.getSingle().fingerprint();
+        }
+        try (InputLocation input = InputLocation.open(
+                "s3://" + StubS3Server.BUCKET + "/works/part_0000.jsonl", settings)) {
+            assertThat(input.getSingle().fingerprint(), is(underAPrefix));
+            assertThat(underAPrefix, is("10-etag"));
+        }
+    }
+
+    @Test
     public void source_shouldReadTheWholeObject() throws IOException {
         String content = repeat("0123456789", 5000);
         s3Server.put("works/part_0000.jsonl", bytes(content));

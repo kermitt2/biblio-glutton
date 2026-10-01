@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -171,20 +172,34 @@ public class S3Support implements Closeable {
         });
     }
 
-    /** The object's size, or -1 when there is no such key. */
-    public long sizeOf(S3Location location) {
+    /** The size and the tag of an object. */
+    public static final class ObjectInfo {
+        public final long size;
+        public final String etag;
+
+        ObjectInfo(long size, String etag) {
+            this.size = size;
+            this.etag = etag;
+        }
+    }
+
+    /** The object's size and tag, or null when there is no such key. */
+    public ObjectInfo infoOf(S3Location location) {
         HeadObjectRequest request = HeadObjectRequest.builder()
                 .bucket(location.getBucket())
                 .key(location.getKey())
                 .build();
         try {
-            return call(s3 -> s3.headObject(request).contentLength());
+            return call(s3 -> {
+                HeadObjectResponse head = s3.headObject(request);
+                return new ObjectInfo(head.contentLength(), head.eTag());
+            });
         } catch (NoSuchKeyException e) {
-            return -1;
+            return null;
         } catch (S3Exception e) {
             // some buckets allow GET but not HEAD; let the read itself decide
             LOGGER.debug("Could not HEAD " + location + ", continuing without a size", e);
-            return -1;
+            return null;
         }
     }
 

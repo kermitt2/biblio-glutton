@@ -10,11 +10,13 @@ class S3DataSource implements DataSource {
     private final S3Support s3;
     private final S3Location location;
     private final long size;
+    private final String etag;
 
-    S3DataSource(S3Support s3, S3Location location, long size) {
+    S3DataSource(S3Support s3, S3Location location, long size, String etag) {
         this.s3 = s3;
         this.location = location;
         this.size = size;
+        this.etag = etag;
     }
 
     @Override
@@ -25,6 +27,12 @@ class S3DataSource implements DataSource {
     @Override
     public long size() {
         return size;
+    }
+
+    @Override
+    public String fingerprint() {
+        // the tag comes in quotes, from a listing as from the object itself
+        return (etag == null) ? Long.toString(size) : size + "-" + etag.replace("\"", "");
     }
 
     @Override

@@ -90,7 +90,7 @@ public class LoadOpenAlexCommandTest {
     }
 
     @Test
-    public void describeNotRead_shouldListTheFoldersLeftToLoad() {
+    public void describeNotRead_shouldListTheFoldersNotReadInFull() {
         List<DataSource> sources = Arrays.asList(
                 named(WORKS + "updated_date=2026-09-21/part_0000.gz"),
                 named(WORKS + "updated_date=2026-09-21/part_0001.gz"),
@@ -105,7 +105,7 @@ public class LoadOpenAlexCommandTest {
                 WORKS + "updated_date=2026-09-22/part_0000.gz"));
 
         assertThat(description.split("\\R"), is(new String[] {
-                "3 of 5 file(s) were not read, in 2 folder(s). Load again, as the input, each of:",
+                "3 of 5 file(s) were not read, in 2 folder(s):",
                 "  " + WORKS + "updated_date=2026-09-22/ (2 of 2 file(s) not read)",
                 "  " + WORKS + "updated_date=2026-09-23/ (1 of 1 file(s) not read)" }));
     }

@@ -11,6 +11,7 @@ import com.scienceminer.glutton.harvester.HALAPIHarvester;
 import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.exception.ServiceOverloadedException;
 import com.scienceminer.glutton.serialization.BiblioSerializer;
+import com.scienceminer.glutton.storage.LoadProgress;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.indexing.*;
 import com.scienceminer.glutton.utils.BinarySerialiser;
@@ -116,13 +117,14 @@ public class HALLookup {
     public void loadFromHALAPI(Meter meterValidRecord, 
                             Counter counterInvalidRecords, 
                             Counter counterIndexedRecords, 
-                            Counter counterFailedIndexedRecords) throws IOException {
+                            Counter counterFailedIndexedRecords,
+                            LoadProgress progress) throws IOException {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counter = new AtomicInteger(0);
 
         HALAPIHarvester harvester = new HALAPIHarvester(transactionWrapper);
         harvester.fetchAllDocuments(this, meterValidRecord, counterInvalidRecords, 
-            counterIndexedRecords, counterFailedIndexedRecords);
+            counterIndexedRecords, counterFailedIndexedRecords, progress);
         ElasticSearchIndexer.getInstance(configuration).refreshIndex(configuration.getElastic().getIndex());
     }
 

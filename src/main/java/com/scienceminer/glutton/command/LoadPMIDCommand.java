@@ -4,6 +4,7 @@ import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.reader.PmidReader;
+import com.scienceminer.glutton.storage.LoadProgress;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.storage.lookup.PMIdsLookup;
 import io.dropwizard.core.cli.ConfiguredCommand;
@@ -43,6 +44,7 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
                 .type(String.class)
                 .required(false)
                 .help("A local copy of PMID_PMCID_DOI.csv.gz, to be used instead of downloading it");
+        ResumeOption.addTo(subparser);
     }
 
     @Override
@@ -82,11 +84,31 @@ public class LoadPMIDCommand extends ConfiguredCommand<LookupConfiguration> {
         long start = System.nanoTime();
         
         PMIdsLookup pmidLookup = PMIdsLookup.getInstance(storageEnvFactory);
+
+        // a run that did not complete is carried on: the storage is flushed before any progress
+        // is written down. The mapping is known by its size alone, since a copy downloaded again
+        // is the same file with another date.
+        LoadProgress progress = LoadProgress.open(
+                new File(configuration.getStorage(), PMIdsLookup.ENV_NAME), "pmid",
+                ResumeOption.isFresh(namespace));
+        progress.setDurability(() -> {
+            storageEnvFactory.syncAll();
+            return true;
+        });
+        LoadProgress.Unit unit = progress.unit("PMID_PMCID_DOI.csv.gz",
+                Long.toString(Files.size(Paths.get(pmidMappingPath))));
+        if (unit.getStoredEarlier() > 0) {
+            LOGGER.info("Carrying on after the " + unit.getStoredEarlier() + " record(s) an earlier run stored");
+        }
+
         InputStream inputStreampmidMapping = Files.newInputStream(Paths.get(pmidMappingPath));
         if (pmidMappingPath.endsWith(".gz")) {
             inputStreampmidMapping = new GZIPInputStream(inputStreampmidMapping);
         }
-        pmidLookup.loadFromFile(inputStreampmidMapping, new PmidReader(), metrics.meter("pmidLookup"));
+        pmidLookup.loadFromFile(inputStreampmidMapping, new PmidReader(), metrics.meter("pmidLookup"), unit);
+        unit.finished();
+        // a file that cannot be read ends the command above, with the progress left for the next run
+        progress.finish(true);
         LOGGER.info("PubMed lookup loaded " + pmidLookup.getSize() + " records. ");
 
         LOGGER.info("Cleaning downloaded resource files");

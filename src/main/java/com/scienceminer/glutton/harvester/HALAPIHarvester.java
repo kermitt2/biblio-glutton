@@ -18,6 +18,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
+import com.scienceminer.glutton.storage.LoadProgress;
 import com.scienceminer.glutton.storage.lookup.TransactionWrapper;
 import com.scienceminer.glutton.storage.lookup.HALLookup;
 
@@ -36,6 +37,10 @@ import org.slf4j.LoggerFactory;
  * a growing pause, which is safe since a cursor can be asked any number of times. If the API
  * stays away for longer than that, the harvest stops with an error, and never as if the end of
  * the archive had been reached.
+ *
+ * The cursor reached is written down every so often, once the pages before it are stored and
+ * indexed, and a harvest started again carries on from it: the cursor of the API is the place in
+ * the archive after a given document, not a session of the server, so it holds across runs.
  **/
 public class HALAPIHarvester extends Harvester {
     private static final Logger LOGGER = LoggerFactory.getLogger(HALAPIHarvester.class);
@@ -88,8 +93,26 @@ public class HALAPIHarvester extends Harvester {
                                 Counter counterInvalidRecords, 
                                 Counter counterIndexedRecords, 
                                 Counter counterFailedIndexedRecords) throws IOException {
+        fetchAllDocuments(halLookup, meterValidRecord, counterInvalidRecords, counterIndexedRecords,
+                counterFailedIndexedRecords, null);
+    }
+
+    /**
+     * @param progress where the cursor reached is written down, and read from by a harvest that
+     *        carries on from an earlier one; null to harvest the whole archive and keep no trace
+     */
+    public void fetchAllDocuments(HALLookup halLookup, 
+                                Meter meterValidRecord, 
+                                Counter counterInvalidRecords, 
+                                Counter counterIndexedRecords, 
+                                Counter counterFailedIndexedRecords,
+                                LoadProgress progress) throws IOException {
         this.halLookup = halLookup;
         String cursorMark = "*";
+        if (progress != null && progress.getCursor() != null) {
+            cursorMark = progress.getCursor();
+            LOGGER.info("Carrying on the harvest from the cursor an earlier run reached, " + cursorMark);
+        }
         int toStore = 0;
         int toIndex = 0;
         List<Biblio> documents = null;
@@ -127,6 +150,21 @@ public class HALAPIHarvester extends Harvester {
                     break;
                 }
                 cursorMark = page.nextCursorMark;
+
+                if (progress != null && progress.isDue()) {
+                    // everything before the cursor is committed and handed over for indexing
+                    // before the cursor is written down
+                    halLookup.commitTransactions(transactionWrapper);
+                    meterValidRecord.mark(toStore);
+                    toStore = 0;
+                    if (toIndex > 0) {
+                        halLookup.indexDocuments(documents, true, counterIndexedRecords, counterFailedIndexedRecords);
+                        toIndex = 0;
+                        documents = null;
+                    }
+                    progress.reached(cursorMark);
+                    progress.checkpoint();
+                }
             }
         } finally {
             // last batch, also when the harvest is given up: what was fetched is kept
@@ -136,6 +174,11 @@ public class HALAPIHarvester extends Harvester {
             }
             if (toIndex > 0) {
                 halLookup.indexDocuments(documents, true, counterIndexedRecords, counterFailedIndexedRecords);
+            }
+            // the pages before this cursor are all stored; written down by the caller once they
+            // are safe, so that a harvest given up carries on from here rather than a minute back
+            if (progress != null && !"*".equals(cursorMark)) {
+                progress.reached(cursorMark);
             }
         }
     }
