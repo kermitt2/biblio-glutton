@@ -1,6 +1,7 @@
 package com.scienceminer.glutton.utils.io;
 
 import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 
 /** A {@link DataSource} over a single S3 object, resumed across connection failures. */
@@ -27,7 +28,7 @@ class S3DataSource implements DataSource {
     }
 
     @Override
-    public InputStream open() {
+    public InputStream open() throws IOException {
         // the decompressors read in small chunks; buffering keeps that off the socket
         return new BufferedInputStream(new ResumableS3InputStream(s3, location, size),
                 InputLocation.BUFFER_SIZE);

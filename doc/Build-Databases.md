@@ -85,6 +85,8 @@ A location naming a single object reads that object; one naming a prefix reads e
 
 Long transfers are resumed rather than restarted: if a connection drops part way through an object, the read continues from the last byte received with a ranged request. A response that ends early is treated the same way, so a truncated download cannot quietly pass for a complete file.
 
+A network that goes away altogether (a change of wifi, a laptop that sleeps, a router that restarts) is waited for: the object is asked for again after a pause that grows from 2 seconds to a minute, whether it was being opened or resumed, and it is given up only after `s3.maxRetries` requests in a row brought nothing, about a quarter of an hour with the default of 20. Raise `maxRetries` under `s3:` in `config/glutton.yml` for a connection that may be away longer; each retry beyond the fifth adds a minute.
+
 #### Compression of the stored records
 
 The metadata records (Crossref, HAL) are compressed before being written to LMDB, and since 0.4.0 the compression is Zstandard with a dictionary trained on Crossref records. Such records are short (about 2 KB once the reference list is dropped) and all alike, and a dictionary gives the compressor the vocabulary they share (field names, publisher and journal names, date layouts) that a single record is too short to learn on its own. Measured on 8,864 random Crossref records held out from the dictionary training, with the dictionary that ships in the jar (values in bytes per record, speeds on one core):
@@ -292,8 +294,22 @@ Next to the works files, the snapshot folder holds `manifest.json` and `deleted_
 are left out: the second lists the works OpenAlex removed by their OpenAlex identifier, which is
 not stored here, and a work that was removed is simply absent from a fresh snapshot.
 
-Expect this to take hours: the works entity of the snapshot is around 620 GB compressed, holding
-510 million records of which about 105 million are Open Access with a DOI.
+Expect this to take hours: the works entity of the snapshot is around 660 GB compressed and holds
+476 million records (snapshot of September 2026). Only the works with a DOI and a PDF link are
+stored, and they are not spread evenly: the folders of the most recent dates are the largest and
+hold most of them, so the count of links grows slowly for the first half of the load.
+
+A file that cannot be read is reported when it fails and the others are still read. If the bucket
+stays out of reach for longer than the reading waits for it (see above), the files not started
+yet are left unread, and the run ends with the list of the folders that were not read in full and
+a failure. The load does not resume by itself, but each folder of that list can be given as the
+input of another run, which is much shorter than reading the whole snapshot again:
+
+```sh
+./gradlew openalex -Pinput=s3://openalex/data/jsonl/works/updated_date=2026-09-22/
+```
+
+Loading a file or a folder a second time is harmless: the same links are written over themselves.
 
 ##### Keeping the links current
 

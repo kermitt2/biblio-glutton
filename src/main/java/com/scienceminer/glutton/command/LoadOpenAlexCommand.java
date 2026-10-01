@@ -10,6 +10,7 @@ import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.storage.lookup.OALookup;
 import com.scienceminer.glutton.utils.io.DataSource;
 import com.scienceminer.glutton.utils.io.InputLocation;
+import com.scienceminer.glutton.utils.io.InputUnreachableException;
 import com.scienceminer.glutton.utils.openalex.OpenAlexClient;
 import com.scienceminer.glutton.utils.openalex.OpenAlexResponse;
 import io.dropwizard.core.cli.ConfiguredCommand;
@@ -26,7 +27,9 @@ import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -36,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -150,7 +154,8 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
 
         if (!complete) {
             throw new IllegalStateException("The OpenAlex load did not finish cleanly. Whatever "
-                    + "was read has been stored, but the data is incomplete. See the errors above.");
+                    + "was read has been stored, but the data is incomplete. See the errors above "
+                    + "for what is left to load.");
         }
     }
 
@@ -174,6 +179,11 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
      * snapshot holds around 510 million of them, so one thread would spend most of a day just
      * tokenising. The files are independent, so they are parsed in parallel and the results are
      * funnelled through one queue to a single writing thread, which is what LMDB requires.
+     *
+     * A file that fails is reported when it fails and the others are still read. When the input
+     * itself stays out of reach (the network is away for longer than the reading waits for it),
+     * the files not started yet are left alone: each would wait as long to fail the same way.
+     * What was not read is listed at the end by folder, so that it can be loaded on its own.
      *
      * @return true when every file was read without error
      */
@@ -202,6 +212,9 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
             // full queue and the load would hang instead of failing
             AtomicReference<Throwable> writerFailure = new AtomicReference<>();
 
+            AtomicBoolean outOfReach = new AtomicBoolean();
+            List<String> notRead = Collections.synchronizedList(new ArrayList<>());
+
             Thread writer = startWriter(oaLookup, meter, queue, writerFailure);
             ExecutorService parsers = Executors.newFixedThreadPool(Math.max(1, threads));
             List<Future<?>> tasks = new ArrayList<>();
@@ -209,12 +222,29 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
             try {
                 for (DataSource dataSource : sources) {
                     tasks.add(parsers.submit(() -> {
+                        if (outOfReach.get()) {
+                            notRead.add(dataSource.name());
+                            return null;
+                        }
                         try {
                             parse(dataSource, queue, recordsFound, writerFailure);
                         } catch (Exception e) {
-                            // the file name is what tells a broken part from a file that is
-                            // not a works file at all
-                            throw new IOException("Could not read " + dataSource.name(), e);
+                            notRead.add(dataSource.name());
+                            counterFailedFiles.inc();
+                            if (isOutOfReach(e)) {
+                                // said in one line: the retries have logged the rest already
+                                LOGGER.error("Could not read " + dataSource.name() + ": "
+                                        + e.getMessage());
+                                if (outOfReach.compareAndSet(false, true)) {
+                                    LOGGER.error("The input stays out of reach, so the files not "
+                                            + "started yet are left unread");
+                                }
+                            } else {
+                                // the file name is what tells a broken part from a file that is
+                                // not a works file at all
+                                LOGGER.error("Could not read " + dataSource.name(), e);
+                            }
+                            return null;
                         }
                         long done = filesDone.incrementAndGet();
                         LOGGER.info("Read " + done + "/" + sources.size() + " file(s), "
@@ -225,21 +255,16 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
                 }
                 parsers.shutdown();
 
-                int failures = 0;
                 for (Future<?> task : tasks) {
-                    try {
-                        task.get();
-                    } catch (Exception e) {
-                        failures++;
-                        counterFailedFiles.inc();
-                        LOGGER.error("Failed to read one of the snapshot files", e.getCause() == null
-                                ? e : e.getCause());
-                    }
+                    task.get();
                 }
 
-                LOGGER.info("Read " + sources.size() + " file(s), stored "
-                        + recordsFound.get() + " open access link(s), " + failures + " file(s) failed");
-                return failures == 0;
+                LOGGER.info("Read " + filesDone.get() + " of " + sources.size() + " file(s), stored "
+                        + recordsFound.get() + " open access link(s)");
+                if (!notRead.isEmpty()) {
+                    LOGGER.error(describeNotRead(sources, notRead));
+                }
+                return notRead.isEmpty();
             } finally {
                 parsers.shutdownNow();
                 stopWriter(queue, writer);
@@ -274,6 +299,51 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
                     + " file(s) found is a works file");
         }
         return works;
+    }
+
+    /** Whether a failure is the input staying out of reach, rather than a file that is wrong. */
+    static boolean isOutOfReach(Throwable failure) {
+        for (Throwable t = failure; t != null; t = (t.getCause() == t) ? null : t.getCause()) {
+            if (t instanceof InputUnreachableException) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * What was not read, by folder, each with how many of its files are missing. A snapshot is
+     * laid out in one folder per date, and a folder can be given as the input of another run, so
+     * this is what finishes the load without reading everything again.
+     */
+    static String describeNotRead(List<DataSource> sources, List<String> notRead) {
+        Map<String, Integer> filesByFolder = new LinkedHashMap<>();
+        for (DataSource source : sources) {
+            filesByFolder.merge(folderOf(source.name()), 1, Integer::sum);
+        }
+        Map<String, Integer> notReadByFolder = new HashMap<>();
+        for (String name : notRead) {
+            notReadByFolder.merge(folderOf(name), 1, Integer::sum);
+        }
+
+        StringBuilder description = new StringBuilder();
+        description.append(notRead.size()).append(" of ").append(sources.size())
+                .append(" file(s) were not read, in ").append(notReadByFolder.size())
+                .append(" folder(s). Load again, as the input, each of:");
+        // in the order the files were listed, which for a snapshot is by date
+        for (Map.Entry<String, Integer> folder : filesByFolder.entrySet()) {
+            Integer missing = notReadByFolder.get(folder.getKey());
+            if (missing != null) {
+                description.append(System.lineSeparator()).append("  ").append(folder.getKey())
+                        .append(" (").append(missing).append(" of ").append(folder.getValue())
+                        .append(" file(s) not read)");
+            }
+        }
+        return description.toString();
+    }
+
+    private static String folderOf(String name) {
+        return name.substring(0, Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
     }
 
     static boolean isWorksFile(String name) {

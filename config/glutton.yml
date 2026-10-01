@@ -133,8 +133,10 @@ s3:
   # endpoint and path style access are for MinIO and the other S3-compatible stores
   # endpoint: "http://localhost:9000"
   # pathStyleAccess: false
-  # a stream cut short by a network hiccup is resumed with a ranged re-request, this many times
-  maxRetries: 5
+  # an object that cannot be opened, or a stream cut short, is asked for again this many times in
+  # a row before the file is given up, after pauses growing from 2 seconds to a minute: 20 is
+  # about a quarter of an hour without a network. Raise it for a connection that goes away longer
+  maxRetries: 20
 
 openAlex:
   # Neither of these is needed to load the snapshot, which is CC0 and needs no account:

@@ -474,8 +474,9 @@ public class LookupConfiguration extends Configuration {
         // null means "decide from the credentials chain", see S3Support#credentialsProvider
         private Boolean anonymous;
         private boolean pathStyleAccess = false;
-        // a stream cut short by a network hiccup is resumed with a ranged re-request
-        private int maxRetries = 5;
+        // an object that cannot be opened, or a stream cut short, is asked for again this many
+        // times in a row, after pauses growing to a minute: about a quarter of an hour in all
+        private int maxRetries = 20;
 
         public String getRegion() {
             return region;

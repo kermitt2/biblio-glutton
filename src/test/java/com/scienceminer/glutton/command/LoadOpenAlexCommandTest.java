@@ -1,10 +1,13 @@
 package com.scienceminer.glutton.command;
 
 import com.scienceminer.glutton.utils.io.DataSource;
+import com.scienceminer.glutton.utils.io.InputUnreachableException;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -75,5 +78,35 @@ public class LoadOpenAlexCommandTest {
     public void worksFilesOf_shouldRefuseAFolderWithNoWorksFile() {
         LoadOpenAlexCommand.worksFilesOf(List.of(
                 named(WORKS + "deleted_ids.csv.gz"), named(WORKS + "manifest.json")));
+    }
+
+    @Test
+    public void isOutOfReach_shouldTellANetworkThatIsAwayFromAFileThatIsWrong() {
+        IOException away = new InputUnreachableException("Giving up on part_0000.gz", null);
+        assertThat(LoadOpenAlexCommand.isOutOfReach(away), is(true));
+        // the decompression and the parser may wrap it on the way up
+        assertThat(LoadOpenAlexCommand.isOutOfReach(new IllegalStateException(new IOException(away))), is(true));
+        assertThat(LoadOpenAlexCommand.isOutOfReach(new IOException("Not in GZIP format")), is(false));
+    }
+
+    @Test
+    public void describeNotRead_shouldListTheFoldersLeftToLoad() {
+        List<DataSource> sources = Arrays.asList(
+                named(WORKS + "updated_date=2026-09-21/part_0000.gz"),
+                named(WORKS + "updated_date=2026-09-21/part_0001.gz"),
+                named(WORKS + "updated_date=2026-09-22/part_0000.gz"),
+                named(WORKS + "updated_date=2026-09-22/part_0001.gz"),
+                named(WORKS + "updated_date=2026-09-23/part_0000.gz"));
+
+        // in the order the threads gave up, not the order of the snapshot
+        String description = LoadOpenAlexCommand.describeNotRead(sources, Arrays.asList(
+                WORKS + "updated_date=2026-09-23/part_0000.gz",
+                WORKS + "updated_date=2026-09-22/part_0001.gz",
+                WORKS + "updated_date=2026-09-22/part_0000.gz"));
+
+        assertThat(description.split("\\R"), is(new String[] {
+                "3 of 5 file(s) were not read, in 2 folder(s). Load again, as the input, each of:",
+                "  " + WORKS + "updated_date=2026-09-22/ (2 of 2 file(s) not read)",
+                "  " + WORKS + "updated_date=2026-09-23/ (1 of 1 file(s) not read)" }));
     }
 }
