@@ -21,3 +21,4 @@ nav:
     - 'Frequently asked Questions': 'Frequently-asked-questions.md'
   - Benchmarking:
     - 'Matching': 'Benchmarking.md'
+    - 'Load testing': 'Load-testing.md'
