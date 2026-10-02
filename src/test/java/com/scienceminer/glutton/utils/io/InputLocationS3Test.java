@@ -22,6 +22,7 @@ public class InputLocationS3Test {
 
     private StubS3Server s3Server;
     private LookupConfiguration.S3 settings;
+    private long firstPauseMs;
 
     @Before
     public void setUp() throws IOException {
@@ -32,10 +33,15 @@ public class InputLocationS3Test {
         settings.setPathStyleAccess(true);
         settings.setAnonymous(true);
         settings.setRegion("us-east-1");
+
+        // the pauses between two requests for the same object, seconds in a real load
+        firstPauseMs = ResumableS3InputStream.firstPauseMs;
+        ResumableS3InputStream.firstPauseMs = 1;
     }
 
     @After
     public void tearDown() {
+        ResumableS3InputStream.firstPauseMs = firstPauseMs;
         s3Server.close();
     }
 
@@ -73,6 +79,23 @@ public class InputLocationS3Test {
             assertThat(input.getSources(), hasSize(1));
             assertThat(input.getSingle().size(), is(7L));
             assertThat(read(input.getSingle().open()), is("payload"));
+        }
+    }
+
+    @Test
+    public void source_shouldHaveTheSameFingerprintNamedOnItsOwnOrFoundUnderAPrefix() throws IOException {
+        // a load carried on by another run knows its files by name and fingerprint, whether the
+        // run was given the folder or the file
+        s3Server.put("works/part_0000.jsonl", bytes("abcdefghij"));
+
+        String underAPrefix;
+        try (InputLocation input = InputLocation.open("s3://" + StubS3Server.BUCKET + "/works/", settings)) {
+            underAPrefix = input.getSingle().fingerprint();
+        }
+        try (InputLocation input = InputLocation.open(
+                "s3://" + StubS3Server.BUCKET + "/works/part_0000.jsonl", settings)) {
+            assertThat(input.getSingle().fingerprint(), is(underAPrefix));
+            assertThat(underAPrefix, is("10-etag"));
         }
     }
 
@@ -118,6 +141,71 @@ public class InputLocationS3Test {
             org.junit.Assert.fail("expected the truncated read to fail rather than return early");
         } catch (IOException expected) {
             assertThat(expected.getMessage().contains("Giving up"), is(true));
+        }
+    }
+
+    @Test
+    public void source_shouldOpenAnObjectTheStoreRefusedAtFirst() throws IOException {
+        // the load of the whole OpenAlex snapshot lost 831 files to this: the network went away
+        // and each file failed on the request that opens it, which was made only once
+        String content = repeat("abcdefghij", 5000);
+        s3Server.put("works/part_0000.jsonl", bytes(content));
+
+        try (InputLocation input = InputLocation.open(
+                "s3://" + StubS3Server.BUCKET + "/works/part_0000.jsonl", settings)) {
+            // more than the client makes on its own for one call
+            s3Server.failNextGets(8, 503);
+            assertThat(read(input.getSingle().open()), is(content));
+        }
+
+        assertThat(s3Server.failedGetCount(), is(8));
+    }
+
+    @Test
+    public void source_shouldResumeThroughAStoreThatIsAwayForAWhile() throws IOException {
+        // the connection is cut and the store does not answer right away either
+        String content = repeat("abcdefghij", 5000);
+        s3Server.put("works/part_0000.jsonl", bytes(content));
+        s3Server.truncateNextGetAfter(1234);
+
+        try (InputLocation input = InputLocation.open(
+                "s3://" + StubS3Server.BUCKET + "/works/part_0000.jsonl", settings)) {
+            InputStream stream = input.getSingle().open();
+            s3Server.failNextGets(8, 503);
+            assertThat(read(stream), is(content));
+        }
+
+        assertThat(s3Server.failedGetCount(), is(8));
+    }
+
+    @Test
+    public void source_shouldSayTheStoreIsOutOfReachOnceTheRetriesAreExhausted() throws IOException {
+        settings.setMaxRetries(2);
+        s3Server.put("works/part_0000.jsonl", bytes("abcdefghij"));
+
+        try (InputLocation input = InputLocation.open(
+                "s3://" + StubS3Server.BUCKET + "/works/part_0000.jsonl", settings)) {
+            // nothing listens any more, as when the network is away
+            s3Server.close();
+            input.getSingle().open();
+            org.junit.Assert.fail("expected the open to fail");
+        } catch (InputUnreachableException expected) {
+            assertThat(expected.getMessage(), expected.getMessage().contains("after 2 retries"), is(true));
+        }
+    }
+
+    @Test
+    public void source_shouldNotAskAgainForAnObjectThatIsNotThere() throws IOException {
+        s3Server.put("works/part_0000.jsonl", bytes("abcdefghij"));
+
+        try (InputLocation input = InputLocation.open(
+                "s3://" + StubS3Server.BUCKET + "/works/part_0000.jsonl", settings)) {
+            s3Server.remove("works/part_0000.jsonl");
+            input.getSingle().open();
+            org.junit.Assert.fail("expected the open to fail");
+        } catch (IOException expected) {
+            assertThat(expected instanceof InputUnreachableException, is(false));
+            assertThat(expected.getMessage(), expected.getMessage().contains("Could not open"), is(true));
         }
     }
 

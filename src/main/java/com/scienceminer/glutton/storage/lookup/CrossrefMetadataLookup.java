@@ -9,8 +9,10 @@ import com.scienceminer.glutton.exception.ServiceOverloadedException;
 import com.scienceminer.glutton.reader.CrossrefJsonReader;
 import com.scienceminer.glutton.indexing.ElasticSearchIndexer;
 import com.scienceminer.glutton.indexing.ElasticSearchAsyncIndexer;
+import com.scienceminer.glutton.storage.LoadProgress;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.utils.BinarySerialiser;
+import com.scienceminer.glutton.utils.CompressionType;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.lmdbjava.*;
@@ -57,6 +59,8 @@ public class CrossrefMetadataLookup {
     private final int batchIndexingSize;
 
     private LookupConfiguration configuration;
+    private final CompressionType compression;
+    private final int compressionLevel;
 
     // this date keeps track of the latest indexed date of the metadata database
     private LocalDateTime lastIndexed = null; 
@@ -85,6 +89,8 @@ public class CrossrefMetadataLookup {
         configuration = storageEnvFactory.getConfiguration();
         batchStoringSize = configuration.getStoringBatchSize();
         batchIndexingSize = configuration.getIndexingBatchSize();
+        compression = configuration.getCompression();
+        compressionLevel = configuration.getCompressionLevel();
         dbCrossrefJson = this.environment.openDbi(NAME_CROSSREF_JSON, DbiFlags.MDB_CREATE);
     }
 
@@ -94,38 +100,67 @@ public class CrossrefMetadataLookup {
                             Counter counterInvalidRecords, 
                             Counter counterIndexedRecords,
                             Counter counterFailedIndexedRecords) {
+        loadFromFile(is, reader, meterValidRecord, counterInvalidRecords, counterIndexedRecords,
+                counterFailedIndexedRecords, LoadProgress.untracked());
+    }
+
+    /**
+     * @param unit the progress of the load through this file: the records an earlier run stored
+     *        are passed over, and how far this one is gets written down every so often
+     */
+    public void loadFromFile(InputStream is, 
+                            CrossrefJsonReader reader, 
+                            Meter meterValidRecord, 
+                            Counter counterInvalidRecords, 
+                            Counter counterIndexedRecords,
+                            Counter counterFailedIndexedRecords,
+                            LoadProgress.Unit unit) {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counterStoring = new AtomicInteger(0);
         final AtomicInteger counterIndexing = new AtomicInteger(0);
         final List<JsonNode> documents = new ArrayList<>();
 
-        reader.load(is, counterInvalidRecords, crossrefData -> {
-            if (counterStoring.get() == batchStoringSize) {
-                transactionWrapper.tx.commit();
-                transactionWrapper.tx.close();
-                transactionWrapper.tx = environment.txnWrite();
-                counterStoring.set(0);
-            }
-            if (counterIndexing.get() == batchIndexingSize) {
-                indexDocuments(documents, true, counterIndexedRecords, counterFailedIndexedRecords);
-                counterIndexing.set(0);
-                documents.clear();
-            }
+        try {
+            reader.load(is, counterInvalidRecords, crossrefData -> {
+                if (unit.skip()) {
+                    return;
+                }
+                if (counterStoring.get() == batchStoringSize) {
+                    transactionWrapper.tx.commit();
+                    transactionWrapper.tx.close();
+                    if (unit.isDue()) {
+                        // everything stored so far is committed, and handed over for indexing
+                        indexDocuments(documents, true, counterIndexedRecords, counterFailedIndexedRecords);
+                        counterIndexing.set(0);
+                        documents.clear();
+                        unit.checkpoint();
+                    }
+                    transactionWrapper.tx = environment.txnWrite();
+                    counterStoring.set(0);
+                }
+                if (counterIndexing.get() == batchIndexingSize) {
+                    indexDocuments(documents, true, counterIndexedRecords, counterFailedIndexedRecords);
+                    counterIndexing.set(0);
+                    documents.clear();
+                }
 
-            String key = lowerCase(crossrefData.get("DOI").asText());
-            String crossrefDataJsonString = crossrefData.toString();
-            store(key, crossrefDataJsonString, dbCrossrefJson, transactionWrapper.tx);
-            meterValidRecord.mark();
-            documents.add(crossrefData);
-            counterStoring.incrementAndGet();
-            counterIndexing.incrementAndGet();
-        });
+                String key = lowerCase(crossrefData.get("DOI").asText());
+                String crossrefDataJsonString = crossrefData.toString();
+                store(key, crossrefDataJsonString, dbCrossrefJson, transactionWrapper.tx);
+                meterValidRecord.mark();
+                documents.add(crossrefData);
+                counterStoring.incrementAndGet();
+                counterIndexing.incrementAndGet();
+                unit.stored();
+            });
+        } finally {
+            // last batch, also when the file could not be read to its end: what was stored is
+            // kept, and the transaction must not be left open for the next file to wait on
+            transactionWrapper.tx.commit();
+            transactionWrapper.tx.close();
 
-        // last batch
-        transactionWrapper.tx.commit();
-        transactionWrapper.tx.close();
-
-        indexDocuments(documents, true, counterIndexedRecords, counterFailedIndexedRecords);
+            indexDocuments(documents, true, counterIndexedRecords, counterFailedIndexedRecords);
+        }
 
         // finally refresh the index
         ElasticSearchIndexer.getInstance(configuration).refreshIndex(configuration.getElastic().getIndex());
@@ -135,7 +170,7 @@ public class CrossrefMetadataLookup {
         try {
             final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
             keyBuffer.put(BinarySerialiser.serialize(key)).flip();
-            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(value);
+            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(value, compression, compressionLevel);
             final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
             valBuffer.put(serializedValue).flip();
             db.put(tx, keyBuffer, valBuffer);
@@ -262,7 +297,7 @@ public class CrossrefMetadataLookup {
         try {
             final ByteBuffer keyBuffer = allocateDirect(environment.getMaxKeySize());
             keyBuffer.put(BinarySerialiser.serialize("last-indexed-date")).flip();
-            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(this.lastIndexed);
+            final byte[] serializedValue = BinarySerialiser.serializeAndCompress(this.lastIndexed, compression, compressionLevel);
             final ByteBuffer valBuffer = allocateDirect(serializedValue.length);
             valBuffer.put(serializedValue).flip();
             dbCrossrefJson.put(transactionWrapper.tx, keyBuffer, valBuffer);

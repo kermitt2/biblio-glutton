@@ -6,6 +6,7 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 
 import com.scienceminer.glutton.configuration.LookupConfiguration;
+import com.scienceminer.glutton.storage.LoadProgress;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.storage.lookup.HALLookup;
 import com.scienceminer.glutton.indexing.ElasticSearchAsyncIndexer;
@@ -17,6 +18,8 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.net.URL;
 
@@ -35,6 +38,7 @@ public class LoadHALCommand extends ConfiguredCommand<LookupConfiguration> {
     @Override
     public void configure(Subparser subparser) {
         super.configure(subparser);
+        ResumeOption.addTo(subparser);
     }
 
     @Override
@@ -62,14 +66,52 @@ public class LoadHALCommand extends ConfiguredCommand<LookupConfiguration> {
         final Counter counterIndexedRecords = metrics.counter("HAL_indexed_records");
         final Counter counterFailedIndexedRecords = metrics.counter("HAL_failed_indexed_records");
 
-        ElasticSearchIndexer.getInstance(configuration).setupIndex(true);
+        ElasticSearchIndexer indexer = ElasticSearchIndexer.getInstance(configuration);
+        boolean indexWasThere = indexer.indexExists(configuration.getElastic().getIndex());
+        indexer.setupIndex(true);
 
-        halLookup.loadFromHALAPI(meter, counterInvalidRecords, counterIndexedRecords, counterFailedIndexedRecords);
+        LoadProgress progress = LoadProgress.open(
+                new File(configuration.getStorage(), HALLookup.ENV_NAME), "hal",
+                ResumeOption.isFresh(namespace));
+        if (progress.hasEarlierRun() && !indexWasThere) {
+            LOGGER.warn("The search index was not there any more, while an earlier run left records harvested: "
+                    + "they are in the storage but not in the index. Rebuild the index from the storage "
+                    + "with the index command once this load is done, or start over with --fresh");
+        }
+
+        // a cursor is written down once Elasticsearch took the records before it and the storage
+        // is on disk
+        ElasticSearchAsyncIndexer asyncIndexer = ElasticSearchAsyncIndexer.getInstance(configuration);
+        final long notSentBefore = asyncIndexer.getRecordsNotSent();
+        progress.setDurability(() -> {
+            asyncIndexer.awaitPending();
+            if (asyncIndexer.getRecordsNotSent() > notSentBefore) {
+                return false;
+            }
+            storageEnvFactory.syncAll();
+            return true;
+        });
+
+        boolean complete = true;
+        try {
+            halLookup.loadFromHALAPI(meter, counterInvalidRecords, counterIndexedRecords,
+                    counterFailedIndexedRecords, progress);
+        } catch (IOException e) {
+            // what was harvested is kept and indexed below; the exit code says it is not all of it
+            complete = false;
+            LOGGER.error("The HAL harvest stopped before the end of the archive", e);
+        }
 
         // the bulks still in flight would be lost by the exit below
         LOGGER.info("Waiting for the last records to be indexed...");
-        ElasticSearchAsyncIndexer.getInstance(configuration).awaitPending();
+        asyncIndexer.awaitPending();
         ElasticSearchIndexer.getInstance(configuration).refreshIndex(configuration.getElastic().getIndex());
+        long notSent = asyncIndexer.getRecordsNotSent() - notSentBefore;
+        if (notSent > 0) {
+            complete = false;
+            LOGGER.error(notSent + " record(s) were not taken by Elasticsearch");
+        }
+        progress.finish(complete);
 
         LOGGER.info("HAL loaded " + halLookup.getSize() + " records. ");
         LOGGER.info("HAL records indexed: " + counterIndexedRecords.getCount()
@@ -79,6 +121,11 @@ public class LoadHALCommand extends ConfiguredCommand<LookupConfiguration> {
         LOGGER.info("Finished in " +
                 TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
 
+        if (!complete) {
+            LOGGER.error("The HAL load is incomplete, see the error above. The records harvested so far "
+                    + "are stored. Run the same command again: it carries on from the cursor it reached.");
+            System.exit(1);
+        }
         System.exit(0);
     }
 }

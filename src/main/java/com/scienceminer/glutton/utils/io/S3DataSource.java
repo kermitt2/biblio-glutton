@@ -1,6 +1,7 @@
 package com.scienceminer.glutton.utils.io;
 
 import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 
 /** A {@link DataSource} over a single S3 object, resumed across connection failures. */
@@ -9,11 +10,13 @@ class S3DataSource implements DataSource {
     private final S3Support s3;
     private final S3Location location;
     private final long size;
+    private final String etag;
 
-    S3DataSource(S3Support s3, S3Location location, long size) {
+    S3DataSource(S3Support s3, S3Location location, long size, String etag) {
         this.s3 = s3;
         this.location = location;
         this.size = size;
+        this.etag = etag;
     }
 
     @Override
@@ -27,7 +30,13 @@ class S3DataSource implements DataSource {
     }
 
     @Override
-    public InputStream open() {
+    public String fingerprint() {
+        // the tag comes in quotes, from a listing as from the object itself
+        return (etag == null) ? Long.toString(size) : size + "-" + etag.replace("\"", "");
+    }
+
+    @Override
+    public InputStream open() throws IOException {
         // the decompressors read in small chunks; buffering keeps that off the socket
         return new BufferedInputStream(new ResumableS3InputStream(s3, location, size),
                 InputLocation.BUFFER_SIZE);

@@ -4,6 +4,7 @@ import com.codahale.metrics.Meter;
 import com.scienceminer.glutton.data.PmidData;
 import com.scienceminer.glutton.exception.ServiceOverloadedException;
 import com.scienceminer.glutton.reader.PmidReader;
+import com.scienceminer.glutton.storage.LoadProgress;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.utils.BinarySerialiser;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -75,35 +76,55 @@ public class PMIdsLookup {
     }
 
     public void loadFromFile(InputStream is, PmidReader reader, Meter metric) {
+        loadFromFile(is, reader, metric, LoadProgress.untracked());
+    }
+
+    /**
+     * @param unit the progress of the load through this file: the records an earlier run stored
+     *        are passed over, and how far this one is gets written down every so often
+     */
+    public void loadFromFile(InputStream is, PmidReader reader, Meter metric, LoadProgress.Unit unit) {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counter = new AtomicInteger(0);
 
-        reader.load(is, pmidData -> {
-                if (counter.get() == batchSize) {
-                    transactionWrapper.tx.commit();
-                    transactionWrapper.tx.close();
-                    transactionWrapper.tx = environment.txnWrite();
-                    counter.set(0);
-                }
+        try {
+            reader.load(is, pmidData -> {
+                    if (unit.skip()) {
+                        return;
+                    }
+                    if (counter.get() == batchSize) {
+                        transactionWrapper.tx.commit();
+                        transactionWrapper.tx.close();
+                        if (unit.isDue()) {
+                            unit.checkpoint();
+                        }
+                        transactionWrapper.tx = environment.txnWrite();
+                        counter.set(0);
+                    }
 
-                if (isNotBlank(pmidData.getDoi())) {
-                    store(dbDoiToIds, lowerCase(pmidData.getDoi()), pmidData, transactionWrapper.tx);
-                }
+                    if (isNotBlank(pmidData.getDoi())) {
+                        store(dbDoiToIds, lowerCase(pmidData.getDoi()), pmidData, transactionWrapper.tx);
+                    }
 
-                if (isNotBlank(pmidData.getPmid())) {
-                    store(dbPmidToIds, pmidData.getPmid(), pmidData, transactionWrapper.tx);
-                }
+                    if (isNotBlank(pmidData.getPmid())) {
+                        store(dbPmidToIds, pmidData.getPmid(), pmidData, transactionWrapper.tx);
+                    }
 
-                if (isNotBlank(pmidData.getPmcid())) {
-                    store(dbPmcToIds, pmidData.getPmcid(), pmidData, transactionWrapper.tx);
-                }
+                    if (isNotBlank(pmidData.getPmcid())) {
+                        store(dbPmcToIds, pmidData.getPmcid(), pmidData, transactionWrapper.tx);
+                    }
 
-                metric.mark();
-                counter.incrementAndGet();
-            }
-        );
-        transactionWrapper.tx.commit();
-        transactionWrapper.tx.close();
+                    metric.mark();
+                    counter.incrementAndGet();
+                    unit.stored();
+                }
+            );
+        } finally {
+            // also when the file could not be read to its end: what was stored is kept, and
+            // the transaction is not left open
+            transactionWrapper.tx.commit();
+            transactionWrapper.tx.close();
+        }
 
         LOGGER.info("Cross checking number of records processed:: " + metric.getCount());
     }
