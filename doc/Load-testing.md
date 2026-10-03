@@ -129,3 +129,6 @@ went through the requests more than once, since a record asked for a second time
   repeat before reading anything into a difference of that size.
 - **Requests without an answer** (refused, cut, timed out) are counted in `errors` and are not in
   the times. A level with errors is marked with `!` too.
+- **Answers that hold another record.** One answer in 20 to a lookup by DOI is checked against
+  the DOI asked for (`--verify-every`). When some differ, the run says how many and lists the
+  first 20, each with what was asked for and what came back; they are kept in the JSON file too.

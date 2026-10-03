@@ -43,6 +43,9 @@ HIST_GROWTH = 1.01
 HIST_SIZE = 2048
 _LOG_GROWTH = math.log(HIST_GROWTH)
 
+# how many of the answers that did not hold the record asked for are kept, to be looked at
+MISMATCHES_KEPT = 20
+
 # above this share of one core, a worker process is close to what Python lets it send
 CLIENT_BUSY = 0.70
 
@@ -217,6 +220,7 @@ def client_thread(target, requests, counter, start_wall, warmup, duration, timeo
     statuses = {}
     count = errors = received = verified = expected = 0
     total_ms = max_ms = 0.0
+    mismatches = []
     connection = None
     size = len(requests)
 
@@ -268,15 +272,21 @@ def client_thread(target, requests, counter, start_wall, warmup, duration, timeo
         if status == 200 and verify_every and sent % verify_every == 0:
             verified += 1
             try:
-                if str(json.loads(body).get("DOI", "")).lower() == doi.lower():
-                    expected += 1
+                answered = json.loads(body).get("DOI")
             except ValueError:
-                pass
+                answered = "(an answer that is not JSON)"
+            if answered is None:
+                answered = "(an answer without a DOI)"
+            if str(answered).lower() == doi.lower():
+                expected += 1
+            elif len(mismatches) < MISMATCHES_KEPT:
+                mismatches.append([doi, str(answered)])
 
     if connection is not None:
         connection.close()
     result.update(histogram=histogram, per_second=per_second, statuses=statuses, count=count, errors=errors,
-                  received=received, verified=verified, expected=expected, total_ms=total_ms, max_ms=max_ms)
+                  received=received, verified=verified, expected=expected, total_ms=total_ms, max_ms=max_ms,
+                  mismatches=mismatches)
 
 
 def worker_main(index, processes, settings, pipe):
@@ -394,6 +404,7 @@ def run_stage(workers, workload, connections, args):
     statuses = {}
     totals = dict(count=0, errors=0, received=0, verified=0, expected=0, total_ms=0.0)
     max_ms = 0.0
+    mismatches = []
     for answer in answers:
         for thread in answer["threads"]:
             for index, count in enumerate(thread["histogram"]):
@@ -406,6 +417,9 @@ def run_stage(workers, workload, connections, args):
             for key in totals:
                 totals[key] += thread[key]
             max_ms = max(max_ms, thread["max_ms"])
+            for mismatch in thread["mismatches"]:
+                if mismatch not in mismatches and len(mismatches) < MISMATCHES_KEPT:
+                    mismatches.append(mismatch)
 
     count = totals["count"]
     latency = {name: percentile(histogram, count, share)
@@ -424,6 +438,8 @@ def run_stage(workers, workload, connections, args):
         "mb_per_s": totals["received"] / args.duration / 1e6,
         "verified": totals["verified"],
         "expected": totals["expected"],
+        # [asked for, answered] for the first answers that held another record
+        "mismatches": mismatches,
         "client_cpu": max(answer["cpu"] for answer in answers),
         "issued": sum(answer["issued"] for answer in answers),
         # answers per second from the start of the stage, the warm-up included
@@ -567,6 +583,15 @@ def notes(report, workload):
         if wrong:
             print("  ! %d of the %d answers checked did not hold the record asked for"
                   % (wrong, sum(stage["verified"] for stage in stages)))
+            shown = []
+            for stage in stages:
+                for mismatch in stage.get("mismatches", []):
+                    if mismatch not in shown:
+                        shown.append(mismatch)
+            for asked, answered in shown[:MISMATCHES_KEPT]:
+                print("      asked for %s, got %s" % (asked, answered))
+            if wrong > len(shown):
+                print("      (the first %d different ones are shown, and kept in the JSON file)" % len(shown))
     if stages and stages[-1]["passes"] > 1:
         print("  . the requests were gone through %.1f times, which only matters for a run on a cold cache: "
               "a record asked for a second time is in memory" % stages[-1]["passes"])
