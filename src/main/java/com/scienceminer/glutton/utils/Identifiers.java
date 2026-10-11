@@ -35,6 +35,10 @@ public final class Identifiers {
     };
 
     private static final Pattern DOI = Pattern.compile("10\\.\\d{4,9}/\\S+");
+    private static final String[] ROR_PREFIXES = { "https://ror.org/", "http://ror.org/", "ror.org/", "ror:" };
+    // a leading 0, six characters of Crockford's base 32 (no i, l, o or u), two check digits
+    private static final Pattern ROR = Pattern.compile("0[0-9a-hj-km-np-tv-z]{6}[0-9]{2}");
+    private static final Pattern GRID = Pattern.compile("grid\\.\\d+\\.[0-9a-f]+");
     private static final Pattern DIGITS = Pattern.compile("\\d{1,12}");
     private static final Pattern PMC = Pattern.compile("(?i)PMC\\d{1,12}");
     // a collection prefix (hal, tel, cea, in2p3, halshs, sic, mem, ijn... there are dozens), a
@@ -54,6 +58,24 @@ public final class Identifiers {
             throw refused("DOI", value, "a DOI looks like 10.1234/abc");
         }
         return doi;
+    }
+
+    /** The ROR identifier proper, nine lower-case characters, also read out of its ror.org URL. */
+    public static String rorId(String value) {
+        String rorId = stripPrefix(clean(value, "ROR ID").toLowerCase(Locale.ROOT), ROR_PREFIXES);
+        if (!ROR.matcher(rorId).matches()) {
+            throw refused("ROR ID", value, "a ROR ID looks like 02d439m40 or https://ror.org/02d439m40");
+        }
+        return rorId;
+    }
+
+    /** The GRID identifier in lower case, such as grid.1088.1, also read out of its grid.ac URL. */
+    public static String gridId(String value) {
+        String gridId = fromUrlOrValue(clean(value, "GRID ID"), GRID, true);
+        if (gridId == null) {
+            throw refused("GRID ID", value, "a GRID ID looks like grid.1088.1");
+        }
+        return gridId;
     }
 
     /** The PMID as digits, without a {@code PMID:} prefix. */

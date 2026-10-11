@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dct="http://purl.org/dc/terms/" xmlns:skos="http://www.w3.org/2004/02/skos/core#" xmlns:skosxl="http://www.w3.org/2008/05/skos-xl#" xmlns:svf="http://data.crossref.org/fundingdata/xml/schema/grant/grant-1.2/" xmlns:fref="http://data.crossref.org/fundingdata/terms">
+   <fref:registry>
+      <dct:created>2026-08-13</dct:created>
+      <dct:creator>Crossref</dct:creator>
+   </fref:registry>
+   <skos:ConceptScheme rdf:about="http://data.crossref.org/fundingdata/vocabulary/SciValFunders">
+      <dct:title>SciVal Funding Bodies</dct:title>
+      <skos:hasTopConcept rdf:resource="http://dx.doi.org/10.13039/100000001" />
+   </skos:ConceptScheme>
+   <skos:Concept rdf:about="http://dx.doi.org/10.13039/100000001">
+      <skos:inScheme rdf:resource="http://data.crossref.org/fundingdata/vocabulary/SciValFunders" />
+      <skosxl:prefLabel>
+         <skosxl:Label rdf:about="http://data.crossref.org/fundingdata/vocabulary/Label-1">
+            <skosxl:literalForm xml:lang="en">National Science Foundation</skosxl:literalForm>
+         </skosxl:Label>
+      </skosxl:prefLabel>
+      <skosxl:altLabel>
+         <skosxl:Label rdf:about="http://data.crossref.org/fundingdata/vocabulary/Label-2">
+            <skosxl:literalForm xml:lang="en">NSF</skosxl:literalForm>
+            <fref:usageFlag rdf:resource="http://data.crossref.org/fundingdata/vocabulary/acronym" />
+         </skosxl:Label>
+      </skosxl:altLabel>
+      <skosxl:altLabel>
+         <skosxl:Label rdf:about="http://data.crossref.org/fundingdata/vocabulary/Label-3">
+            <skosxl:literalForm xml:lang="en">U.S. National Science Foundation</skosxl:literalForm>
+         </skosxl:Label>
+      </skosxl:altLabel>
+      <skos:narrower rdf:resource="http://dx.doi.org/10.13039/100000084" />
+      <dct:modified>2026-03-31T15:55:58.0</dct:modified>
+      <svf:fundingBodyType>gov</svf:fundingBodyType>
+      <svf:region>Americas</svf:region>
+      <svf:country rdf:resource="http://sws.geonames.org/6252001/" />
+      <schema:address xmlns:schema="https://none.schema.org/">
+         <schema:postalAddress>
+            <schema:addressCountry>usa</schema:addressCountry>
+         </schema:postalAddress>
+      </schema:address>
+      <svf:state rdf:resource="http://sws.geonames.org/4361885/" />
+      <svf:fundingBodySubType>National government</svf:fundingBodySubType>
+   </skos:Concept>
+   <skos:Concept rdf:about="http://dx.doi.org/10.13039/100000084">
+      <skosxl:prefLabel>
+         <skosxl:Label rdf:about="http://data.crossref.org/fundingdata/vocabulary/Label-4">
+            <skosxl:literalForm xml:lang="en">Directorate for Engineering</skosxl:literalForm>
+         </skosxl:Label>
+      </skosxl:prefLabel>
+      <skos:broader rdf:resource="http://dx.doi.org/10.13039/100000001" />
+      <svf:fundingBodyType>gov</svf:fundingBodyType>
+      <svf:region>Americas</svf:region>
+      <schema:address xmlns:schema="https://none.schema.org/">
+         <schema:postalAddress>
+            <schema:addressCountry>usa</schema:addressCountry>
+         </schema:postalAddress>
+      </schema:address>
+      <svf:fundingBodySubType>Federal/National Government</svf:fundingBodySubType>
+   </skos:Concept>
+   <skos:Concept rdf:about="http://dx.doi.org/10.13039/100006642">
+      <skosxl:prefLabel>
+         <skosxl:Label rdf:about="http://data.crossref.org/fundingdata/vocabulary/Label-5">
+            <skosxl:literalForm xml:lang="en">A funder that was renamed</skosxl:literalForm>
+         </skosxl:Label>
+      </skosxl:prefLabel>
+      <fref:status rdf:resource="http://data.crossref.org/fundingdata/vocabulary/Inactive" />
+      <svf:renamedAs rdf:resource="http://dx.doi.org/10.13039/100000001" />
+      <svf:fundingBodyType>pri</svf:fundingBodyType>
+      <svf:region>Europe</svf:region>
+      <schema:address xmlns:schema="https://none.schema.org/">
+         <schema:postalAddress>
+            <schema:addressCountry>fra</schema:addressCountry>
+         </schema:postalAddress>
+      </schema:address>
+      <svf:fundingBodySubType>Trusts, charities, foundations (both public and private)</svf:fundingBodySubType>
+   </skos:Concept>
+   <skos:Concept rdf:about="http://dx.doi.org/10.13039/100012345">
+      <skosxl:prefLabel>
+         <skosxl:Label rdf:about="http://data.crossref.org/fundingdata/vocabulary/Label-6">
+            <skosxl:literalForm xml:lang="en">A deprecated duplicate</skosxl:literalForm>
+         </skosxl:Label>
+      </skosxl:prefLabel>
+      <fref:status rdf:resource="http://data.crossref.org/fundingdata/vocabulary/Deprecated" />
+      <dct:isReplacedBy rdf:resource="http://dx.doi.org/10.13039/100000084" />
+      <svf:fundingBodyType>gov</svf:fundingBodyType>
+      <svf:region>Americas</svf:region>
+      <schema:address xmlns:schema="https://none.schema.org/">
+         <schema:postalAddress>
+            <schema:addressCountry>usa</schema:addressCountry>
+         </schema:postalAddress>
+      </schema:address>
+      <svf:fundingBodySubType>Federal/National Government</svf:fundingBodySubType>
+   </skos:Concept>
+</rdf:RDF>

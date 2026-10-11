@@ -7,7 +7,9 @@ import com.google.gson.JsonParser;
 import com.rockymadden.stringmetric.similarity.RatcliffObershelpMetric;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.data.IstexData;
+import com.scienceminer.glutton.data.FunderData;
 import com.scienceminer.glutton.data.MatchingDocument;
+import com.scienceminer.glutton.data.RorData;
 import com.scienceminer.glutton.data.PmidData;
 import com.scienceminer.glutton.exception.NotFoundException;
 import com.scienceminer.glutton.storage.lookup.*;
@@ -43,6 +45,8 @@ public class LookupEngine {
     private MetadataMatching metadataMatching = null;
     private PMIdsLookup pmidLookup = null;
     private HALLookup halLookup = null;
+    private FunderLookup funderLookup = null;
+    private RorLookup rorLookup = null;
 
     // DOI matching regex from GROBID
     public static Pattern DOIPattern = Pattern.compile("\"DOI\"\\s?:\\s?\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
@@ -63,6 +67,8 @@ public class LookupEngine {
         this.crossrefMetadataLookup = CrossrefMetadataLookup.getInstance(storageFactory);
         this.halLookup = HALLookup.getInstance(storageFactory);
         this.pmidLookup = PMIdsLookup.getInstance(storageFactory);
+        this.funderLookup = FunderLookup.getInstance(storageFactory);
+        this.rorLookup = RorLookup.getInstance(storageFactory);
         this.metadataMatching = 
             MetadataMatching.getInstance(storageFactory.getConfiguration(), crossrefMetadataLookup, halLookup);
     }
@@ -417,6 +423,53 @@ public class LookupEngine {
         }
 
         return outputData;
+    }
+
+    /**
+     * The funder of the Crossref Open Funder Registry with this DOI, with the identifiers of the
+     * organization of ROR that records the DOI (ROR, GRID, ISNI, Wikidata) when there is one.
+     */
+    public FunderData retrieveFunderByDoi(String doi) {
+        doi = Identifiers.doi(doi);
+        FunderData funder = funderLookup.retrieveByDoi(doi);
+        if (funder == null) {
+            throw new NotFoundException("No funder with DOI " + doi + " in the Open Funder Registry");
+        }
+        RorData organization = (rorLookup == null) ? null : rorLookup.retrieveByFunderDoi(doi);
+        if (organization != null) {
+            funder.addIdentifiersOf(organization);
+        }
+        return funder;
+    }
+
+    /** The organization of ROR with this identifier. */
+    public RorData retrieveOrganizationByRorId(String rorId) {
+        rorId = Identifiers.rorId(rorId);
+        RorData organization = rorLookup.retrieveByRorId(rorId);
+        if (organization == null) {
+            throw new NotFoundException("No organization with ROR ID " + rorId);
+        }
+        return organization;
+    }
+
+    /** The organization of ROR that records this Crossref funder DOI as its FundRef identifier. */
+    public RorData retrieveOrganizationByFunderDoi(String doi) {
+        doi = Identifiers.doi(doi);
+        RorData organization = rorLookup.retrieveByFunderDoi(doi);
+        if (organization == null) {
+            throw new NotFoundException("No organization in ROR for the funder DOI " + doi);
+        }
+        return organization;
+    }
+
+    /** The organization of ROR that had this GRID identifier. */
+    public RorData retrieveOrganizationByGridId(String gridId) {
+        gridId = Identifiers.gridId(gridId);
+        RorData organization = rorLookup.retrieveByGridId(gridId);
+        if (organization == null) {
+            throw new NotFoundException("No organization in ROR for the GRID ID " + gridId);
+        }
+        return organization;
     }
 
     public String retrieveByPmid(String pmid, String firstAuthor, String atitle, String year) {
@@ -1041,5 +1094,13 @@ public class LookupEngine {
 
     public void setGrobidClient(GrobidClient grobidClient) {
         this.grobidClient = grobidClient;
+    }
+
+    public void setFunderLookup(FunderLookup funderLookup) {
+        this.funderLookup = funderLookup;
+    }
+
+    public void setRorLookup(RorLookup rorLookup) {
+        this.rorLookup = rorLookup;
     }
 }

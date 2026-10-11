@@ -18,7 +18,11 @@ To set-up a functional biblio-glutton server, resources need to be loaded follow
 
 6) (Very optional) Loading the ISTEX ID mapping as embedded LMDB
 
-It is possible to only load HAL archive metadata, skipping entirely CrossRef, but the service will be much more limited - so we suggest to always start with CrossRef. It is also possible to skip HAL archive resources. Step 4) is fast and we suggest to also always include it.  
+7) (Optional) Loading the Crossref Open Funder Registry as embedded LMDB
+
+8) (Optional) Loading the ROR (Research Organization Registry) as embedded LMDB
+
+It is possible to only load HAL archive metadata, skipping entirely CrossRef, but the service will be much more limited - so we suggest to always start with CrossRef. It is also possible to skip HAL archive resources. Step 4) is fast and we suggest to also always include it.
 
 ### Resources
 
@@ -41,7 +45,11 @@ Without Metadata Plus subscription, it's possible to use the Academic Torrents C
 
 * optionally, but recommended, Open Access links to aggregate with the bibliographical metadata, from the [OpenAlex snapshot](https://help.openalex.org/access/snapshot). It is CC0, needs no account, and does not have to be downloaded first, see [OA via OpenAlex](#oa-via-openalex) below. 
 
-* optionally, usually not required, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see below. 
+* optionally, usually not required, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see below.
+
+* optionally, the [Crossref Open Funder Registry](https://gitlab.com/crossref/open_funder_registry) `registry.rdf` file for funder metadata lookup by funder DOI.
+
+* optionally, the [ROR (Research Organization Registry)](https://ror.org/) data dump from [Zenodo](https://zenodo.org/communities/ror-data), providing organization metadata with linkage to Crossref funder DOIs via FundRef IDs. ROR can also be configured for automatic monthly updates.
 
 The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for blocking via text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
 
@@ -408,4 +416,91 @@ Example:
 ./gradlew istex -Pinput=istexIds.all.gz 
 ```
 
-**Note:** see the [FAQ](Frequently-asked-questions.md) on how to create this mapping file `istexIds.all.gz`. 
+**Note:** see the [FAQ](Frequently-asked-questions.md) on how to create this mapping file `istexIds.all.gz`.
+
+#### Crossref Open Funder Registry
+
+The [Crossref Open Funder Registry](https://gitlab.com/crossref/open_funder_registry) is the list
+of the funders Crossref records give under `funder[].DOI`: for each funder DOI (`10.13039/...`),
+its name and alternative names, country and region, type of funding body, status, and its place
+in a hierarchy of funders (around 45,700 funders in 2026). Crossref has stopped adding funders to
+it in favour of ROR, below, but the DOIs stay in use in Crossref records.
+
+Download `registry.rdf` (about 90 MB) and load it:
+
+```sh
+wget https://gitlab.com/crossref/open_funder_registry/-/raw/main/registry.rdf
+./gradlew funder_registry -Pinput=/path/to/registry.rdf
+```
+
+The load writes into the `storage` of `config/glutton.yml` (add the same `-Pconfig=` as the
+service when it runs with another configuration), takes seconds, and ends with the count, `Funder
+registry loaded: 45739 funder(s) read`. A service already running sees the funders at once;
+`GET /service/data` shows them under `Funder Registry size (LMDB)`. Every funder is written over
+the one already stored, so a newer registry is loaded the same way, or by the service itself every
+month (see [Monthly updates](#monthly-updates) under ROR). The funders are then served by
+`GET /service/lookup/funder?doi=...`, see the [REST API](API.md#funders-and-research-organizations).
+
+#### ROR (Research Organization Registry)
+
+[ROR](https://ror.org/) is the open registry of research organizations (about 145,000 in 2026),
+which Crossref now uses in place of its funder registry. Each organization comes with its names,
+country, types, status, website, its relationships to other organizations, and its identifiers
+elsewhere, among which the FundRef identifier, that is the Crossref funder DOI: this is the bridge
+from a funder in a Crossref record to the organization in ROR. About a sixth of the organizations
+carry one.
+
+ROR publishes a data dump about once a month on [Zenodo](https://zenodo.org/communities/ror-data).
+Each release is a record with one zip of about 40 MB, named after the release
+(`v2.14-2026-10-06-ror-data.zip`), holding the organizations as JSON (schema v2) and as CSV. Take
+the zip of the most recent record from that page, or let the Zenodo API name it:
+
+```sh
+curl -s "https://zenodo.org/api/records?communities=ror-data&sort=mostrecent&size=1" \
+  | python3 -c 'import json,sys; print([f["links"]["self"] for f in json.load(sys.stdin)["hits"]["hits"][0]["files"] if f["key"].endswith(".zip")][0])' \
+  | xargs curl -L -o ror-data.zip
+```
+
+Then load the zip as it is (or the JSON file alone, unzipped):
+
+```sh
+./gradlew ror -Pinput=/absolute/path/to/ror-data.zip
+```
+
+The load writes into the `storage` of `config/glutton.yml`, like every other load; a service run
+with another configuration file needs the same `-Pconfig=/path/to/that.yml` on the load, or it
+reads a storage the load did not fill. The load takes well under a minute and ends with the count:
+
+```
+ROR loaded: 144717 organization(s) read, {ror_gridToRor=103678, ror_fundrefToRor=29950, ror_rorId=144717} stored
+```
+
+A service already running sees the organizations as soon as the load ends, no restart needed, and
+`GET /service/data` shows them under `ROR size (LMDB)`. A load that cannot read its file ends with
+an error instead, and stores nothing: the dumps up to v1.x hold the organizations in two schemas,
+in two JSON files, of which the schema v2 one (`..._schema_v2.json`) is read, and a schema v1 file
+given on its own is refused. Every organization is written over the one already stored, so a newer
+dump is loaded the same way.
+
+The organizations are then served by `GET /service/lookup/ror?id=...`, by ROR identifier, Crossref
+funder DOI or GRID identifier, see the [REST API](API.md#funders-and-research-organizations).
+
+##### Monthly updates
+
+The service can follow both registries by itself: with the `registries` block of
+`config/glutton.yml` enabled, it downloads the latest ROR dump from Zenodo and the current
+`registry.rdf` from Crossref's GitLab, and loads each over the records stored, at 04:00 on the
+given day of each month, while it keeps answering.
+
+```yaml
+registries:
+  updateEnabled: true
+  updateDayOfMonth: 15
+  dumpPath: data/registries
+```
+
+The downloads go under `dumpPath` and are removed once loaded. The two registries are updated
+one after the other, each on its own: an update that fails (Zenodo, GitLab or the network away,
+a file that cannot be read) leaves that registry as it was, says so in the log, and is attempted
+again the next month. Crossref is retiring the funder registry in favour of ROR, so its file may
+one day stop changing or move; the funders last loaded then stay served.

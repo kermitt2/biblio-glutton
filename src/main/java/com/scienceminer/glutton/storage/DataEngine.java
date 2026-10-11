@@ -1,6 +1,8 @@
 package com.scienceminer.glutton.storage;
 
+import com.scienceminer.glutton.data.FunderData;
 import com.scienceminer.glutton.data.IstexData;
+import com.scienceminer.glutton.data.RorData;
 import com.scienceminer.glutton.data.PmidData;
 import com.scienceminer.glutton.storage.lookup.*;
 import org.apache.commons.lang3.tuple.Pair;
@@ -19,6 +21,8 @@ public class DataEngine {
     private MetadataMatching metadataMatching = null;
     private PMIdsLookup pmidLookup = null;
     private HALLookup halLookup = null;
+    private FunderLookup funderLookup = null;
+    private RorLookup rorLookup = null;
 
     public static Pattern DOIPattern = Pattern.compile("\"DOI\":\"(10\\.\\d{4,5}\\/[^\"\\s]+[^;,.\\s])\"");
 
@@ -31,8 +35,10 @@ public class DataEngine {
         this.crossrefMetadataLookup = CrossrefMetadataLookup.getInstance(storageFactory);
         this.pmidLookup = PMIdsLookup.getInstance(storageFactory);
         this.halLookup = HALLookup.getInstance(storageFactory);
-        this.metadataMatching = 
+        this.metadataMatching =
             MetadataMatching.getInstance(storageFactory.getConfiguration(), crossrefMetadataLookup, halLookup);
+        this.funderLookup = FunderLookup.getInstance(storageFactory);
+        this.rorLookup = RorLookup.getInstance(storageFactory);
     }
 
 
@@ -45,6 +51,9 @@ public class DataEngine {
         returnMap.put("PMID size (LMDB)", String.valueOf(pmidLookup.getSize()));
         returnMap.put("ISTEX size (LMDB)", String.valueOf(istexLookup.getSize()));
         returnMap.put("DOI OA size (LMDB)", String.valueOf(oaDoiLookup.getSize()));
+        returnMap.put("Funder Registry size (LMDB)", String.valueOf(funderLookup.getSize()));
+
+        returnMap.put("ROR size (LMDB)", String.valueOf(rorLookup.getSize()));
 
         return returnMap;
     }
@@ -72,6 +81,14 @@ public class DataEngine {
 
     public List<Pair<String, IstexData>> retrieveIstexRecords_istexToIds(Integer total) {
         return istexLookup.retrieveList_istexToIds(total);
+    }
+
+    public List<Pair<String, FunderData>> retrieveFunders(Integer total) {
+        return funderLookup.retrieveList(total);
+    }
+
+    public List<Pair<String, RorData>> retrieveOrganizations(Integer total) {
+        return rorLookup.retrieveList(total);
     }
 
     public List<Pair<String, String>> retrieveCrossrefRecords(Integer total) {

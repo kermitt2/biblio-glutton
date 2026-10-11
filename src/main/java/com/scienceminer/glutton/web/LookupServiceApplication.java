@@ -12,7 +12,10 @@ import com.scienceminer.glutton.web.module.NotFoundExceptionMapper;
 import com.scienceminer.glutton.web.module.ServiceExceptionMapper;
 import com.scienceminer.glutton.web.module.ServiceOverloadedExceptionMapper;
 import com.scienceminer.glutton.utils.crossrefclient.IncrementalLoaderTask;
+import com.scienceminer.glutton.utils.RegistriesUpdateTask;
 import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
+import com.scienceminer.glutton.storage.lookup.FunderLookup;
+import com.scienceminer.glutton.storage.lookup.RorLookup;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 
 import io.dropwizard.forms.MultiPartBundle;
@@ -175,6 +178,43 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         new ElasticsearchWatchdog(healthCheck::elasticsearchStatus).start();
 
         scheduleDailyUpdate(configuration, storageEnvFactory);
+        scheduleRegistriesUpdate(configuration, storageEnvFactory);
+    }
+
+    /**
+     * The monthly update of the registries (ROR and the Crossref Open Funder Registry), when
+     * {@code registries.updateEnabled} is set: on the configured day of each month at 04:00, the
+     * next run scheduled after each run so that months of any length are followed.
+     */
+    private void scheduleRegistriesUpdate(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) {
+        LookupConfiguration.Registries registries = configuration.getRegistries();
+        if (registries == null || !registries.isUpdateEnabled()) {
+            return;
+        }
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1, runnable -> {
+            Thread thread = new Thread(runnable, "registries-monthly-update");
+            thread.setDaemon(true);
+            return thread;
+        });
+        RegistriesUpdateTask task = new RegistriesUpdateTask(RorLookup.getInstance(storageEnvFactory),
+                FunderLookup.getInstance(storageEnvFactory), new File(registries.getDumpPath()));
+        scheduleNextRegistriesUpdate(executor, task, ZoneId.of(configuration.getTimeZone()), registries.getUpdateDayOfMonth());
+    }
+
+    private void scheduleNextRegistriesUpdate(ScheduledExecutorService executor, RegistriesUpdateTask task, ZoneId zone, int dayOfMonth) {
+        ZonedDateTime now = ZonedDateTime.now(zone);
+        ZonedDateTime next = RegistriesUpdateTask.nextRun(now, dayOfMonth);
+        LOGGER.info("Monthly update of ROR and the funder registry scheduled for day " + dayOfMonth + " at 04:00 " + zone
+                + ", next on " + next.toLocalDate());
+        executor.schedule(() -> {
+            try {
+                task.run();
+            } catch (RuntimeException e) {
+                // an exception escaping the task would silently cancel every run after it
+                LOGGER.error("The monthly update of the registries failed, it will be attempted again next month", e);
+            }
+            scheduleNextRegistriesUpdate(executor, task, zone, dayOfMonth);
+        }, Duration.between(now, next).getSeconds(), TimeUnit.SECONDS);
     }
 
     /*private List<? extends Module> getGuiceModules() {
@@ -258,6 +298,8 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         bootstrap.addCommand(new IndexCommand());
         bootstrap.addCommand(new HALAuditCommand());
         bootstrap.addCommand(new LoadOpenAlexCommand());
+        bootstrap.addCommand(new LoadFunderRegistryCommand());
+        bootstrap.addCommand(new LoadRorCommand());
     }
 
     public static void main(String... args) throws Exception {
