@@ -4,7 +4,9 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
+import com.scienceminer.glutton.data.FunderData;
 import com.scienceminer.glutton.data.IstexData;
+import com.scienceminer.glutton.data.RorData;
 import com.scienceminer.glutton.data.PmidData;
 import com.scienceminer.glutton.storage.DataEngine;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
@@ -74,6 +76,20 @@ public class DataController {
     @Path("/oa")
     public List<Pair<String, String>> getOaUrlByMetadata(@QueryParam("total") Integer total) {
         return storage.retrieveOaUrl(total);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/funder")
+    public List<Pair<String, FunderData>> getFunders(@QueryParam("total") Integer total) {
+        return storage.retrieveFunders(total);
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/ror")
+    public List<Pair<String, RorData>> getOrganizations(@QueryParam("total") Integer total) {
+        return storage.retrieveOrganizations(total);
     }
 
     @GET

@@ -176,4 +176,28 @@ public class IdentifiersTest {
         ServiceException e = refused(() -> Identifiers.text("title", "much too long", 10));
         assertThat(e.getMessage(), containsString("title"));
     }
+
+    @Test
+    public void rorId_shouldTakeTheIdentifierOutOfItsUrlAndFoldItsCase() {
+        assertThat(Identifiers.rorId("02d439m40"), is("02d439m40"));
+        assertThat(Identifiers.rorId("https://ror.org/02D439M40"), is("02d439m40"));
+        assertThat(Identifiers.rorId("ror:021nxhr62"), is("021nxhr62"));
+    }
+
+    @Test
+    public void rorId_shouldRefuseWhatIsNotOne() {
+        refused(() -> Identifiers.rorId("grid.1088.1"));
+        refused(() -> Identifiers.rorId("10.13039/100000001"));
+        // i, l, o and u are not in the alphabet of a ROR ID
+        refused(() -> Identifiers.rorId("0il0ou000"));
+        refused(() -> Identifiers.rorId(""));
+    }
+
+    @Test
+    public void gridId_shouldTakeTheIdentifierOutOfItsUrlAndFoldItsCase() {
+        assertThat(Identifiers.gridId("grid.1088.1"), is("grid.1088.1"));
+        assertThat(Identifiers.gridId("GRID.431093.C"), is("grid.431093.c"));
+        assertThat(Identifiers.gridId("https://www.grid.ac/institutes/grid.1088.1"), is("grid.1088.1"));
+        refused(() -> Identifiers.gridId("1088.1"));
+    }
 }

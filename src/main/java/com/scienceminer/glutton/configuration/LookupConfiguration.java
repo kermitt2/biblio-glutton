@@ -543,7 +543,7 @@ public class LookupConfiguration extends Configuration {
 
     public static class Ror {
         private boolean updateEnabled = false;
-        private int updateDayOfMonth = 1;
+        private int updateDayOfMonth = 15;
         private String dumpPath = "data/ror";
 
         public boolean isUpdateEnabled() {

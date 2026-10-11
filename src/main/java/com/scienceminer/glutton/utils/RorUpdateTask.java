@@ -1,129 +1,120 @@
 package com.scienceminer.glutton.utils;
 
-import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scienceminer.glutton.reader.RorJsonReader;
 import com.scienceminer.glutton.storage.lookup.RorLookup;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.time.ZonedDateTime;
 
 /**
- * Scheduled task to download and load the latest ROR data dump from Zenodo.
- * Queries the Zenodo API for the most recent ROR release, downloads the zip,
- * extracts the JSON, and reloads the LMDB database.
+ * Downloads the latest ROR data dump from Zenodo and loads it over the organizations stored.
+ * Run by the service once a month when {@code ror.updateEnabled} is set; ROR publishes a dump
+ * about once a month, and a load writes every organization over itself, so the storage simply
+ * follows the registry.
  */
 public class RorUpdateTask implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RorUpdateTask.class);
 
-    private static final String ZENODO_API_URL =
-            "https://zenodo.org/api/records?communities=ror-data&sort=mostrecent&size=1";
+    static final String ZENODO_API_URL = "https://zenodo.org/api/records?communities=ror-data&sort=mostrecent&size=1";
+
+    private static final int CONNECT_TIMEOUT_MS = 30000;
+    private static final int READ_TIMEOUT_MS = 600000;
 
     private final RorLookup rorLookup;
-    private final String dumpPath;
+    private final File dumpDirectory;
+    private final String apiUrl;
 
-    public RorUpdateTask(RorLookup rorLookup, String dumpPath) {
-        this.rorLookup = rorLookup;
-        this.dumpPath = dumpPath;
+    public RorUpdateTask(RorLookup rorLookup, File dumpDirectory) {
+        this(rorLookup, dumpDirectory, ZENODO_API_URL);
     }
 
+    /** With another place than Zenodo to ask for the latest dump, for the tests. */
+    public RorUpdateTask(RorLookup rorLookup, File dumpDirectory, String apiUrl) {
+        this.rorLookup = rorLookup;
+        this.dumpDirectory = dumpDirectory;
+        this.apiUrl = apiUrl;
+    }
+
+    /**
+     * When the update runs next: at 04:00 on the given day of the month (the last day of a month
+     * too short for it), the next time that comes after now.
+     */
+    public static ZonedDateTime nextRun(ZonedDateTime now, int dayOfMonth) {
+        ZonedDateTime candidate = now.withDayOfMonth(Math.min(dayOfMonth, now.toLocalDate().lengthOfMonth()))
+                .withHour(4).withMinute(0).withSecond(0).withNano(0);
+        if (!candidate.isAfter(now)) {
+            ZonedDateTime nextMonth = now.plusMonths(1);
+            candidate = nextMonth.withDayOfMonth(Math.min(dayOfMonth, nextMonth.toLocalDate().lengthOfMonth()))
+                    .withHour(4).withMinute(0).withSecond(0).withNano(0);
+        }
+        return candidate;
+    }
+
+    /** @throws IllegalStateException when the dump could not be found, downloaded or loaded */
     @Override
     public void run() {
-        LOGGER.info("Starting scheduled ROR update...");
+        LOGGER.info("Updating the Research Organization Registry from Zenodo");
         Path tempDir = null;
         try {
-            // 1. Query Zenodo API for latest ROR release
-            String downloadUrl = getLatestDownloadUrl();
-            if (downloadUrl == null) {
-                LOGGER.error("Could not find download URL for latest ROR dump");
-                return;
-            }
-            LOGGER.info("Latest ROR dump URL: " + downloadUrl);
-
-            // 2. Download zip to temp directory
-            tempDir = Files.createTempDirectory(new File(dumpPath).toPath(), "ror-update-");
+            Files.createDirectories(dumpDirectory.toPath());
+            String downloadUrl = latestDumpUrl();
+            tempDir = Files.createTempDirectory(dumpDirectory.toPath(), "ror-update-");
             File zipFile = new File(tempDir.toFile(), "ror-data.zip");
-            LOGGER.info("Downloading ROR dump to " + zipFile.getAbsolutePath());
-            FileUtils.copyURLToFile(new URL(downloadUrl), zipFile, 30000, 120000);
-            LOGGER.info("Download complete: " + zipFile.length() + " bytes");
+            LOGGER.info("Downloading " + downloadUrl);
+            FileUtils.copyURLToFile(new URL(downloadUrl), zipFile, CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS);
+            LOGGER.info("Downloaded " + zipFile.length() / (1024 * 1024) + " MB, loading");
 
-            // 3. Extract JSON from zip and load
-            try (InputStream zipStream = Files.newInputStream(zipFile.toPath())) {
-                ZipInputStream zis = new ZipInputStream(zipStream);
-                ZipEntry entry;
-                boolean found = false;
-                while ((entry = zis.getNextEntry()) != null) {
-                    String name = entry.getName();
-                    if (name.endsWith(".json") && name.contains("ror-data")) {
-                        LOGGER.info("Loading ROR data from zip entry: " + name);
-
-                        MetricRegistry metrics = new MetricRegistry();
-                        Meter meter = metrics.meter("rorUpdateMeter");
-                        rorLookup.loadFromFile(zis, meter);
-
-                        LOGGER.info("ROR update complete. Loaded " + rorLookup.getSize() + " records.");
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    LOGGER.error("No ROR JSON file found in the downloaded zip");
-                }
+            MetricRegistry metrics = new MetricRegistry();
+            try (InputStream input = RorJsonReader.openDump(zipFile)) {
+                rorLookup.loadFromFile(input, metrics.meter("ror_update_storing"));
             }
-        } catch (Exception e) {
-            LOGGER.error("Error during scheduled ROR update", e);
+            LOGGER.info("ROR updated: " + metrics.meter("ror_update_storing").getCount()
+                    + " organization(s) read, " + rorLookup.getSize() + " stored");
+        } catch (IOException e) {
+            throw new IllegalStateException("The ROR update did not complete; the organizations stored are as they were", e);
         } finally {
-            // 4. Cleanup temp directory
             if (tempDir != null) {
-                try {
-                    FileUtils.deleteDirectory(tempDir.toFile());
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to clean up temp directory: " + tempDir, e);
-                }
+                FileUtils.deleteQuietly(tempDir.toFile());
             }
         }
     }
 
-    private String getLatestDownloadUrl() {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode response = mapper.readTree(new URL(ZENODO_API_URL));
-
-            JsonNode hits = response.get("hits");
-            if (hits == null) return null;
-
-            JsonNode hitsArray = hits.get("hits");
-            if (hitsArray == null || !hitsArray.isArray() || hitsArray.size() == 0) return null;
-
-            JsonNode latestRecord = hitsArray.get(0);
-            JsonNode files = latestRecord.get("files");
-            if (files == null || !files.isArray()) return null;
-
-            for (JsonNode file : files) {
-                JsonNode keyNode = file.get("key");
-                if (keyNode != null && keyNode.asText().endsWith(".zip")) {
-                    JsonNode linksNode = file.get("links");
-                    if (linksNode != null) {
-                        JsonNode selfNode = linksNode.get("self");
-                        if (selfNode != null) {
-                            return selfNode.asText();
-                        }
-                    }
+    /** The URL of the zip of the most recent ROR release on Zenodo. */
+    String latestDumpUrl() throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) new URL(apiUrl).openConnection();
+        connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        connection.setReadTimeout(CONNECT_TIMEOUT_MS);
+        connection.setRequestProperty("Accept", "application/json");
+        try (InputStream in = connection.getInputStream()) {
+            JsonNode response = new ObjectMapper().readTree(in);
+            JsonNode hits = response.path("hits").path("hits");
+            if (!hits.isArray() || hits.size() == 0) {
+                throw new IOException("Zenodo lists no release of the ROR data");
+            }
+            for (JsonNode file : hits.get(0).path("files")) {
+                String key = file.path("key").asText();
+                String url = file.path("links").path("self").asText(null);
+                if (key.endsWith(".zip") && url != null) {
+                    return url;
                 }
             }
-        } catch (Exception e) {
-            LOGGER.error("Error querying Zenodo API for latest ROR dump", e);
+            throw new IOException("The latest ROR release on Zenodo (" + hits.get(0).path("metadata").path("title").asText()
+                    + ") has no zip file");
+        } finally {
+            connection.disconnect();
         }
-        return null;
     }
 }

@@ -1,6 +1,7 @@
 package com.scienceminer.glutton.command;
 
 import com.codahale.metrics.ConsoleReporter;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
@@ -12,58 +13,62 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Load the Crossref Open Funder Registry from the registry.rdf file.
+ * Loads the Crossref Open Funder Registry from its {@code registry.rdf} file. A load takes
+ * seconds, and writes over the funders already stored, so it is simply run again for a newer
+ * registry.
  */
 public class LoadFunderRegistryCommand extends ConfiguredCommand<LookupConfiguration> {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadFunderRegistryCommand.class);
 
     public static final String FUNDER_REGISTRY_SOURCE = "funderRegistrySource";
 
     public LoadFunderRegistryCommand() {
-        super("funder_registry", "Prepare the funder registry database");
+        super("funder_registry", "Load the Crossref Open Funder Registry");
     }
 
     @Override
     public void configure(Subparser subparser) {
         super.configure(subparser);
-
         subparser.addArgument("--input")
                 .dest(FUNDER_REGISTRY_SOURCE)
                 .type(String.class)
                 .required(true)
-                .help("The path to the source file for the funder registry (registry.rdf)");
+                .help("The registry.rdf file of the Crossref Open Funder Registry");
     }
 
     @Override
     protected void run(Bootstrap bootstrap, Namespace namespace, LookupConfiguration configuration) throws Exception {
-
         final MetricRegistry metrics = new MetricRegistry();
-
         ConsoleReporter reporter = ConsoleReporter.forRegistry(metrics)
                 .convertRatesTo(TimeUnit.SECONDS)
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
                 .build();
-
         reporter.start(15, TimeUnit.SECONDS);
 
-        final String funderRegistryFilePath = namespace.get(FUNDER_REGISTRY_SOURCE);
-        LOGGER.info("Preparing the system. Loading data for funder registry from " + funderRegistryFilePath);
+        final String path = namespace.get(FUNDER_REGISTRY_SOURCE);
+        LOGGER.info("Loading the Crossref Open Funder Registry from " + path);
 
-        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration);
+        StorageEnvFactory storageEnvFactory = new StorageEnvFactory(configuration, true);
+        FunderLookup funderLookup = FunderLookup.getInstance(storageEnvFactory);
+        Meter meter = metrics.meter("funder_storing");
 
         long start = System.nanoTime();
-        FunderLookup funderLookup = new FunderLookup(storageEnvFactory);
-        InputStream inputStream = Files.newInputStream(Paths.get(funderRegistryFilePath));
-        funderLookup.loadFromFile(inputStream, metrics.meter("funderRegistryLookup"));
-        LOGGER.info("Funder lookup (doi -> funder data) loaded " + funderLookup.getSize() + " records. ");
+        // a file that cannot be read as the registry ends the command with an error
+        try (InputStream input = new BufferedInputStream(Files.newInputStream(Paths.get(path)))) {
+            funderLookup.loadFromFile(input, meter);
+        }
+        storageEnvFactory.syncAll();
 
-        LOGGER.info("Finished in " +
-                TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
+        LOGGER.info("Funder registry loaded: " + meter.getCount() + " funder(s) read, " + funderLookup.getSize() + " stored");
+        LOGGER.info("Finished in " + TimeUnit.SECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + " s");
+        reporter.stop();
     }
 }

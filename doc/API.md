@@ -78,6 +78,38 @@ For convenience, in case you are only interested by the Open Access URL for a bi
     - `GET host:port/service/oa_istex?pmc=PMC` return the best Open Accss PDF url and ISTEX PDF url for a given PMC ID
     - `GET host:port/service/oa_istex?pii=PII` return the best Open Accss PDF url and ISTEX PDF url for a given PII ID
 
+## Funders and research organizations
+
+When the [Crossref Open Funder Registry](Build-Databases.md#crossref-open-funder-registry) and
+[ROR](Build-Databases.md#ror-research-organization-registry) are loaded, the service also answers
+about funders and organizations. These are records of their own, not bibliographical records.
+
+- A funder of the Open Funder Registry, by its DOI (the `funder[].DOI` of a Crossref record):
+
+    - `GET host:port/service/lookup/funder?doi=10.13039/100000001`
+
+  The answer gives the name and alternative names, the country and region, the type of funding
+  body, the status (`Active`, `Inactive` or `Deprecated`), the broader and narrower funders, and
+  for a funder that was renamed or replaced the DOI that took its place (`replacedByDois`).
+
+- An organization of ROR, by its ROR identifier, by the Crossref funder DOI it records, or by its
+  former GRID identifier:
+
+    - `GET host:port/service/lookup/ror?id=021nxhr62` (`https://ror.org/021nxhr62` works too)
+    - `GET host:port/service/lookup/ror?doi=10.13039/100000001`
+    - `GET host:port/service/lookup/ror?grid=grid.431093.c`
+
+  The answer gives the name and other names, country, types, status, year of establishment,
+  website, the related organizations (`relationships`) and the identifiers of the organization
+  elsewhere: FundRef (`fundrefIds`, the part of the Crossref funder DOI after `10.13039/`), GRID,
+  ISNI and Wikidata. About a sixth of the organizations in ROR carry a FundRef identifier, so an
+  organization is not found for every funder DOI.
+
+An identifier that is not one is refused with a `400`; a funder or organization that is not in the
+registry answers `404`. `GET host:port/service/data/funder?total=N` and
+`GET host:port/service/data/ror?total=N` give the first records stored, to see what the load has
+put there.
+
 ## Health
 
 - `GET host:port/service/health` says whether the service can answer, as JSON: `200` when the
@@ -112,6 +144,21 @@ matching queries (by metadata or by raw citation) are answered with `503` rather
 record that is not found and a service that cannot search are told apart. The same report is
 served by Dropwizard on the admin port as `host:adminport/healthcheck`, and the log says when
 Elasticsearch goes away and when it is back.
+
+## cURL examples (funders and organizations)
+
+- A funder by its DOI, and the ROR organization for the same funder:
+
+```sh
+curl "http://localhost:8080/service/lookup/funder?doi=10.13039/100000001"
+curl "http://localhost:8080/service/lookup/ror?doi=10.13039/100000001"
+```
+
+- An organization by its ROR identifier:
+
+```sh
+curl "http://localhost:8080/service/lookup/ror?id=https://ror.org/021nxhr62"
+```
 
 ## cURL examples
 

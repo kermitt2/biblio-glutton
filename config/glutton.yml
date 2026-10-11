@@ -151,13 +151,15 @@ openAlex:
   # --since relies on needs a paid plan. See https://openalex.org/pricing
   apiKey:
 
-# ROR (Research Organization Registry) settings
-# Data is loaded via: ./gradlew ror -Pinput=/path/to/ror-data.zip
-# Enable automatic monthly updates by setting updateEnabled to true
-#ror:
-#  updateEnabled: false
-#  updateDayOfMonth: 1
-#  dumpPath: data/ror
+# The Research Organization Registry (ROR), loaded with ./gradlew ror -Pinput=/path/to/ror-data.zip
+# (see the documentation). ROR publishes a new dump about once a month. With updateEnabled, the
+# service downloads the latest one from Zenodo and loads it over the organizations stored, at 04:00
+# on the given day of each month.
+ror:
+  updateEnabled: false
+  updateDayOfMonth: 15
+  # where the dump is downloaded to before it is loaded (about 40 MB, removed afterwards)
+  dumpPath: data/ror
 
 # CORS parameters 
 corsAllowedOrigins: "*"

@@ -1,10 +1,16 @@
 package com.scienceminer.glutton.data;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+/** A funder of the Crossref Open Funder Registry, as served by the funder lookup. */
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class FunderData implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private String doi;
     private String name;
@@ -16,6 +22,8 @@ public class FunderData implements Serializable {
     private String status = "Active";
     private List<String> broaderDois;
     private List<String> narrowerDois;
+    // for a funder renamed or replaced, the DOI of the funder that took its place
+    private List<String> replacedByDois;
 
     public String getDoi() {
         return doi;
@@ -118,6 +126,21 @@ public class FunderData implements Serializable {
         this.narrowerDois.add(doi);
     }
 
+    public List<String> getReplacedByDois() {
+        return replacedByDois;
+    }
+
+    public void setReplacedByDois(List<String> replacedByDois) {
+        this.replacedByDois = replacedByDois;
+    }
+
+    public void addReplacedByDoi(String doi) {
+        if (this.replacedByDois == null) {
+            this.replacedByDois = new ArrayList<>();
+        }
+        this.replacedByDois.add(doi);
+    }
+
     @Override
     public String toString() {
         return "FunderData{" +
@@ -131,6 +154,7 @@ public class FunderData implements Serializable {
                 ", status='" + status + '\'' +
                 ", broaderDois=" + broaderDois +
                 ", narrowerDois=" + narrowerDois +
+                ", replacedByDois=" + replacedByDois +
                 '}';
     }
 }

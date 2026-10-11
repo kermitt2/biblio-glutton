@@ -4,7 +4,9 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
+import com.scienceminer.glutton.data.FunderData;
 import com.scienceminer.glutton.data.MatchingDocument;
+import com.scienceminer.glutton.data.RorData;
 import com.scienceminer.glutton.exception.NotFoundException;
 import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.storage.LookupEngine;
@@ -603,6 +605,41 @@ public class LookupController {
     @Path("/istexid/{istexid}")
     public String getByIstexid(@PathParam("istexid") String istexid) {
         return lookupEngine.retrieveByIstexid(istexid, null, null, null);
+    }
+
+    /**
+     * A funder of the Crossref Open Funder Registry, by its DOI. As a query parameter rather than
+     * in the path: a funder DOI has a slash in it.
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/funder")
+    public FunderData getFunder(@QueryParam("doi") String doi) {
+        if (isBlank(doi)) {
+            throw new ServiceException(400, "The funder lookup needs a doi parameter, the DOI of the funder (10.13039/...).");
+        }
+        return lookupEngine.retrieveFunderByDoi(doi);
+    }
+
+    /**
+     * An organization of the Research Organization Registry, by its ROR identifier, by the
+     * Crossref funder DOI it records, or by its former GRID identifier.
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/ror")
+    public RorData getOrganization(@QueryParam("id") String id, @QueryParam("doi") String doi,
+                                   @QueryParam("grid") String grid) {
+        if (isNotBlank(id)) {
+            return lookupEngine.retrieveOrganizationByRorId(id);
+        }
+        if (isNotBlank(doi)) {
+            return lookupEngine.retrieveOrganizationByFunderDoi(doi);
+        }
+        if (isNotBlank(grid)) {
+            return lookupEngine.retrieveOrganizationByGridId(grid);
+        }
+        throw new ServiceException(400, "The ROR lookup needs one of id (a ROR ID), doi (a Crossref funder DOI) or grid (a GRID ID).");
     }
 
     protected void setLookupEngine(LookupEngine lookupEngine) {

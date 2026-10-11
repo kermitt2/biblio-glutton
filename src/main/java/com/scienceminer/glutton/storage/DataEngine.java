@@ -1,6 +1,8 @@
 package com.scienceminer.glutton.storage;
 
+import com.scienceminer.glutton.data.FunderData;
 import com.scienceminer.glutton.data.IstexData;
+import com.scienceminer.glutton.data.RorData;
 import com.scienceminer.glutton.data.PmidData;
 import com.scienceminer.glutton.storage.lookup.*;
 import org.apache.commons.lang3.tuple.Pair;
@@ -35,8 +37,8 @@ public class DataEngine {
         this.halLookup = HALLookup.getInstance(storageFactory);
         this.metadataMatching =
             MetadataMatching.getInstance(storageFactory.getConfiguration(), crossrefMetadataLookup, halLookup);
-        this.funderLookup = new FunderLookup(storageFactory);
-        this.rorLookup = new RorLookup(storageFactory);
+        this.funderLookup = FunderLookup.getInstance(storageFactory);
+        this.rorLookup = RorLookup.getInstance(storageFactory);
     }
 
 
@@ -79,6 +81,14 @@ public class DataEngine {
 
     public List<Pair<String, IstexData>> retrieveIstexRecords_istexToIds(Integer total) {
         return istexLookup.retrieveList_istexToIds(total);
+    }
+
+    public List<Pair<String, FunderData>> retrieveFunders(Integer total) {
+        return funderLookup.retrieveList(total);
+    }
+
+    public List<Pair<String, RorData>> retrieveOrganizations(Integer total) {
+        return rorLookup.retrieveList(total);
     }
 
     public List<Pair<String, String>> retrieveCrossrefRecords(Integer total) {

@@ -420,35 +420,51 @@ Example:
 
 #### Crossref Open Funder Registry
 
-The [Crossref Open Funder Registry](https://gitlab.com/crossref/open_funder_registry) maps funder DOIs (`10.13039/...`) to funder metadata (name, alternate names, country, type, hierarchical relationships). The registry contains around 45,000 funders. Note that Crossref is deprecating the Funder Registry in favor of ROR (see below).
+The [Crossref Open Funder Registry](https://gitlab.com/crossref/open_funder_registry) is the list
+of the funders Crossref records give under `funder[].DOI`: for each funder DOI (`10.13039/...`),
+its name and alternative names, country and region, type of funding body, status, and its place
+in a hierarchy of funders (around 45,700 funders in 2026). Crossref has stopped adding funders to
+it in favour of ROR, below, but the DOIs stay in use in Crossref records.
 
-Download the `registry.rdf` file from the GitLab repository:
+Download `registry.rdf` (about 90 MB) and load it:
 
 ```sh
 wget https://gitlab.com/crossref/open_funder_registry/-/raw/main/registry.rdf
-```
-
-Then load:
-
-```sh
 ./gradlew funder_registry -Pinput=/path/to/registry.rdf
 ```
 
+The load takes seconds and writes every funder over the one already stored, so a newer registry
+is loaded the same way. The funders are then served by
+`GET /service/lookup/funder?doi=...`, see the [REST API](API.md#funders-and-research-organizations).
+
 #### ROR (Research Organization Registry)
 
-[ROR](https://ror.org/) is a community-led registry of research organizations (~122,000 entries), intended as the successor to the Crossref Open Funder Registry. ROR records include external identifiers mapping to FundRef (Crossref funder DOIs), GRID, ISNI, and Wikidata, providing a direct bridge to Crossref metadata.
+[ROR](https://ror.org/) is the open registry of research organizations (about 145,000 in 2026),
+which Crossref now uses in place of its funder registry. Each organization comes with its names,
+country, types, status, website, its relationships to other organizations, and its identifiers
+elsewhere, among which the FundRef identifier, that is the Crossref funder DOI: this is the bridge
+from a funder in a Crossref record to the organization in ROR. About a sixth of the organizations
+carry one.
 
-Download the latest ROR data dump from [Zenodo](https://zenodo.org/communities/ror-data) (available as a zip file containing JSON and CSV):
+ROR publishes a data dump about once a month on [Zenodo](https://zenodo.org/communities/ror-data),
+a zip of about 40 MB holding the organizations as JSON (schema v2) and as CSV. Load the zip as it
+is, or the JSON file alone:
 
 ```sh
-./gradlew ror -Pinput=/path/to/ror-data.zip
+./gradlew ror -Pinput=/path/to/v2.14-2026-10-06-ror-data.zip
 ```
 
-The command supports both `.zip` and `.json` input files.
+The load takes well under a minute and writes every organization over the one already stored. The dumps
+up to v1.x hold the organizations in two schemas, in two JSON files; the schema v2 one
+(`..._schema_v2.json`) is the one read, and a schema v1 file given on its own is refused. The
+organizations are then served by `GET /service/lookup/ror?id=...`, by ROR identifier, Crossref
+funder DOI or GRID identifier, see the [REST API](API.md#funders-and-research-organizations).
 
-##### Automatic monthly updates
+##### Monthly updates
 
-ROR releases new dumps approximately monthly. To enable automatic updates, add the following to your `glutton.yml`:
+The service can follow the registry by itself: with the `ror` block of `config/glutton.yml`
+enabled, it downloads the latest dump from Zenodo and loads it, at 04:00 on the given day of each
+month, while it keeps answering.
 
 ```yaml
 ror:
@@ -457,4 +473,6 @@ ror:
   dumpPath: data/ror
 ```
 
-When enabled, the service will automatically download the latest ROR dump from Zenodo and reload the database on the specified day of each month.
+The dump is downloaded under `dumpPath` and removed once loaded. An update that fails (Zenodo or
+the network away, a dump that cannot be read) leaves the organizations as they were, says so in
+the log, and is attempted again the next month.

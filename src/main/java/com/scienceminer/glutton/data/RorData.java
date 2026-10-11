@@ -1,10 +1,16 @@
 package com.scienceminer.glutton.data;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+/** An organization of the Research Organization Registry (ROR), as served by the ROR lookup. */
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class RorData implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private String rorId;
     private String name;
@@ -174,7 +180,11 @@ public class RorData implements Serializable {
                 '}';
     }
 
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     public static class RorRelationship implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
         private String type;
         private String rorId;
         private String label;

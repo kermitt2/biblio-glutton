@@ -180,40 +180,38 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         scheduleRorUpdate(configuration, storageEnvFactory);
     }
 
+    /**
+     * The monthly ROR update, when {@code ror.updateEnabled} is set: on the configured day of each
+     * month at 04:00, the next run scheduled after each run so that months of any length are
+     * followed.
+     */
     private void scheduleRorUpdate(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) {
         LookupConfiguration.Ror rorConfig = configuration.getRor();
         if (rorConfig == null || !rorConfig.isUpdateEnabled()) {
-            LOGGER.info("ROR scheduled update is disabled");
             return;
         }
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1, runnable -> {
+            Thread thread = new Thread(runnable, "ror-monthly-update");
+            thread.setDaemon(true);
+            return thread;
+        });
+        RorUpdateTask task = new RorUpdateTask(RorLookup.getInstance(storageEnvFactory), new File(rorConfig.getDumpPath()));
+        scheduleNextRorUpdate(executor, task, ZoneId.of(configuration.getTimeZone()), rorConfig.getUpdateDayOfMonth());
+    }
 
-        RorLookup rorLookup = new RorLookup(storageEnvFactory);
-        String dumpPath = rorConfig.getDumpPath();
-        if (dumpPath == null) {
-            dumpPath = "data/ror";
-        }
-        File dumpDir = new File(dumpPath);
-        if (!dumpDir.exists()) {
-            dumpDir.mkdirs();
-        }
-
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of(configuration.getTimeZone()));
-        int targetDay = rorConfig.getUpdateDayOfMonth();
-        ZonedDateTime nextRun = now.withDayOfMonth(Math.min(targetDay, now.toLocalDate().lengthOfMonth()))
-                                   .withHour(4).withMinute(0).withSecond(0);
-        if (now.compareTo(nextRun) > 0) {
-            nextRun = nextRun.plusMonths(1);
-            nextRun = nextRun.withDayOfMonth(Math.min(targetDay, nextRun.toLocalDate().lengthOfMonth()));
-        }
-
-        Duration duration = Duration.between(now, nextRun);
-        long initialDelay = duration.getSeconds();
-        long period = TimeUnit.DAYS.toSeconds(30);
-
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        Runnable task = new RorUpdateTask(rorLookup, dumpDir.getAbsolutePath());
-        executor.scheduleAtFixedRate(task, initialDelay, period, TimeUnit.SECONDS);
-        LOGGER.info("ROR scheduled update enabled, next run in " + (initialDelay / 3600) + " hours");
+    private void scheduleNextRorUpdate(ScheduledExecutorService executor, RorUpdateTask task, ZoneId zone, int dayOfMonth) {
+        ZonedDateTime now = ZonedDateTime.now(zone);
+        ZonedDateTime next = RorUpdateTask.nextRun(now, dayOfMonth);
+        LOGGER.info("Monthly ROR update scheduled for day " + dayOfMonth + " at 04:00 " + zone + ", next on " + next.toLocalDate());
+        executor.schedule(() -> {
+            try {
+                task.run();
+            } catch (RuntimeException e) {
+                // an exception escaping the task would silently cancel every run after it
+                LOGGER.error("The monthly ROR update failed, it will be attempted again next month", e);
+            }
+            scheduleNextRorUpdate(executor, task, zone, dayOfMonth);
+        }, Duration.between(now, next).getSeconds(), TimeUnit.SECONDS);
     }
 
     /*private List<? extends Module> getGuiceModules() {
