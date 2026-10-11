@@ -425,7 +425,7 @@ public class LookupController {
                 }
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("PII ID: " + pii + "did not matched or did not pass post validation");
+                LOGGER.warn("PII ID: " + pii + " did not matched or did not pass post validation");
                 throw new ServiceException(404, messagesSb.toString());
             }
         }
@@ -442,7 +442,7 @@ public class LookupController {
 
             } catch (NotFoundException e) {
                 messagesSb.append(e.getMessage());
-                LOGGER.warn("ISTEX ID " + istexid + "did not matched or did not pass post validation");
+                LOGGER.warn("ISTEX ID: " + istexid + " did not matched or did not pass post validation");
                 throw new ServiceException(404, messagesSb.toString());
             }
         }
