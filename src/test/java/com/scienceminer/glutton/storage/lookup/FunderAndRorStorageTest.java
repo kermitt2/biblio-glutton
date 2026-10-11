@@ -108,6 +108,24 @@ public class FunderAndRorStorageTest {
     }
 
     @Test
+    public void engine_shouldGiveAFunderTheIdentifiersOfItsOrganizationInRor() throws IOException {
+        FunderData nsf = engine.retrieveFunderByDoi("10.13039/100000001");
+        assertThat(nsf.getRorId(), is("021nxhr62"));
+        assertThat(nsf.getGridId(), is("grid.431093.c"));
+        assertThat(nsf.getIsni(), is("0000 0001 2220 2231"));
+        assertThat(nsf.getWikidataId(), is("Q304878"));
+        String json = new ObjectMapper().writeValueAsString(nsf);
+        assertThat(json, containsString("\"rorId\":\"021nxhr62\""));
+
+        // a funder ROR does not know stays as the registry has it
+        FunderData engineering = engine.retrieveFunderByDoi("10.13039/100000084");
+        assertThat(engineering.getRorId(), is(nullValue()));
+        assertThat(new ObjectMapper().writeValueAsString(engineering), not(containsString("rorId")));
+        // and what the storage holds carries none of these
+        assertThat(funderLookup.retrieveByDoi("10.13039/100000001").getRorId(), is(nullValue()));
+    }
+
+    @Test
     public void engine_shouldSayWhenThereIsNoSuchRecord() {
         try {
             engine.retrieveFunderByDoi("10.13039/999999999");

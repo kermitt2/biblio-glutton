@@ -90,7 +90,9 @@ about funders and organizations. These are records of their own, not bibliograph
 
   The answer gives the name and alternative names, the country and region, the type of funding
   body, the status (`Active`, `Inactive` or `Deprecated`), the broader and narrower funders, and
-  for a funder that was renamed or replaced the DOI that took its place (`replacedByDois`).
+  for a funder that was renamed or replaced the DOI that took its place (`replacedByDois`). When
+  ROR is loaded and an organization there records the funder DOI, the answer also carries the
+  identifiers of the funder elsewhere: `rorId`, `gridId`, `isni` and `wikidataId`.
 
 - An organization of ROR, by its ROR identifier, by the Crossref funder DOI it records, or by its
   former GRID identifier:

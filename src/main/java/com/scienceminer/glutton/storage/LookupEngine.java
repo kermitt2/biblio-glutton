@@ -425,12 +425,19 @@ public class LookupEngine {
         return outputData;
     }
 
-    /** The funder of the Crossref Open Funder Registry with this DOI. */
+    /**
+     * The funder of the Crossref Open Funder Registry with this DOI, with the identifiers of the
+     * organization of ROR that records the DOI (ROR, GRID, ISNI, Wikidata) when there is one.
+     */
     public FunderData retrieveFunderByDoi(String doi) {
         doi = Identifiers.doi(doi);
         FunderData funder = funderLookup.retrieveByDoi(doi);
         if (funder == null) {
             throw new NotFoundException("No funder with DOI " + doi + " in the Open Funder Registry");
+        }
+        RorData organization = (rorLookup == null) ? null : rorLookup.retrieveByFunderDoi(doi);
+        if (organization != null) {
+            funder.addIdentifiersOf(organization);
         }
         return funder;
     }

@@ -25,6 +25,13 @@ public class FunderData implements Serializable {
     // for a funder renamed or replaced, the DOI of the funder that took its place
     private List<String> replacedByDois;
 
+    // the identifiers of the funder elsewhere, taken from the organization of ROR that records its
+    // DOI when the funder is served; not stored, the registry does not have them
+    private transient String rorId;
+    private transient String gridId;
+    private transient String isni;
+    private transient String wikidataId;
+
     public String getDoi() {
         return doi;
     }
@@ -139,6 +146,46 @@ public class FunderData implements Serializable {
             this.replacedByDois = new ArrayList<>();
         }
         this.replacedByDois.add(doi);
+    }
+
+    public String getRorId() {
+        return rorId;
+    }
+
+    public void setRorId(String rorId) {
+        this.rorId = rorId;
+    }
+
+    public String getGridId() {
+        return gridId;
+    }
+
+    public void setGridId(String gridId) {
+        this.gridId = gridId;
+    }
+
+    public String getIsni() {
+        return isni;
+    }
+
+    public void setIsni(String isni) {
+        this.isni = isni;
+    }
+
+    public String getWikidataId() {
+        return wikidataId;
+    }
+
+    public void setWikidataId(String wikidataId) {
+        this.wikidataId = wikidataId;
+    }
+
+    /** Takes on the identifiers of the organization of ROR this funder is. */
+    public void addIdentifiersOf(RorData organization) {
+        this.rorId = organization.getRorId();
+        this.gridId = organization.getGridId();
+        this.isni = organization.getIsni();
+        this.wikidataId = organization.getWikidataId();
     }
 
     @Override
