@@ -5,12 +5,16 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /** An organization of the Research Organization Registry (ROR), as served by the ROR lookup. */
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class RorData implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
+    /** The prefix of every Crossref funder DOI; ROR records only what follows it. */
+    public static final String FUNDER_DOI_PREFIX = "10.13039/";
 
     private String rorId;
     private String name;
@@ -111,6 +115,28 @@ public class RorData implements Serializable {
             this.fundrefIds = new ArrayList<>();
         }
         this.fundrefIds.add(fundrefId);
+    }
+
+    /**
+     * The Crossref funder DOIs of the organization, made from its FundRef identifiers: what a
+     * Crossref record gives under {@code funder[].DOI}. Null when it has none. Derived, not
+     * stored.
+     */
+    public List<String> getFunderDois() {
+        if (fundrefIds == null || fundrefIds.isEmpty()) {
+            return null;
+        }
+        List<String> dois = new ArrayList<>(fundrefIds.size());
+        for (String fundrefId : fundrefIds) {
+            dois.add(funderDoiOf(fundrefId));
+        }
+        return dois;
+    }
+
+    /** The Crossref funder DOI of a FundRef identifier as ROR records it (100000001), or already a DOI. */
+    public static String funderDoiOf(String fundrefId) {
+        String id = fundrefId.trim().toLowerCase(Locale.ROOT);
+        return id.startsWith(FUNDER_DOI_PREFIX) ? id : FUNDER_DOI_PREFIX + id;
     }
 
     public String getGridId() {

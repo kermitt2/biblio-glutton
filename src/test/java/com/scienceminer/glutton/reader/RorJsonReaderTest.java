@@ -58,6 +58,7 @@ public class RorJsonReaderTest {
         assertThat(nsf.getStatus(), is("active"));
         assertThat(nsf.getEstablished(), is(1950));
         assertThat(nsf.getFundrefIds(), contains("100000001"));
+        assertThat(nsf.getFunderDois(), contains("10.13039/100000001"));
         assertThat(nsf.getGridId(), is("grid.431093.c"));
         // no preferred ISNI: the one there is
         assertThat(nsf.getIsni(), is("0000 0001 2220 2231"));
@@ -71,6 +72,7 @@ public class RorJsonReaderTest {
         RorData withdrawn = organizations.get(1);
         assertThat(withdrawn.getStatus(), is("withdrawn"));
         assertThat(withdrawn.getFundrefIds(), is(nullValue()));
+        assertThat(withdrawn.getFunderDois(), is(nullValue()));
         assertThat(withdrawn.getRelationships(), is(nullValue()));
     }
 

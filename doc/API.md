@@ -100,10 +100,11 @@ about funders and organizations. These are records of their own, not bibliograph
     - `GET host:port/service/lookup/ror?grid=grid.431093.c`
 
   The answer gives the name and other names, country, types, status, year of establishment,
-  website, the related organizations (`relationships`) and the identifiers of the organization
-  elsewhere: FundRef (`fundrefIds`, the part of the Crossref funder DOI after `10.13039/`), GRID,
-  ISNI and Wikidata. About a sixth of the organizations in ROR carry a FundRef identifier, so an
-  organization is not found for every funder DOI.
+  website, the related organizations (`relationships`), the Crossref funder DOIs of the
+  organization (`funderDois`, what a Crossref record gives under `funder[].DOI`) and its
+  identifiers elsewhere: FundRef (`fundrefIds`, the funder DOIs without their `10.13039/`), GRID,
+  ISNI and Wikidata. About a sixth of the organizations in ROR carry a funder DOI, so an
+  organization is not found for every funder DOI, and most organizations have no `funderDois`.
 
 An identifier that is not one is refused with a `400`; a funder or organization that is not in the
 registry answers `404`. `GET host:port/service/data/funder?total=N` and

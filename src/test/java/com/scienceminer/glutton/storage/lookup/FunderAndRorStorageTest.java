@@ -139,6 +139,10 @@ public class FunderAndRorStorageTest {
         assertThat(json, containsString("\"rorId\":\"02d439m40\""));
         assertThat(json, containsString("\"gridId\":\"grid.1088.1\""));
         assertThat(json, not(containsString("fundrefIds")));
+        assertThat(json, not(containsString("funderDois")));
+
+        String nsf = new ObjectMapper().writeValueAsString(rorLookup.retrieveByRorId("021nxhr62"));
+        assertThat(nsf, containsString("\"funderDois\":[\"10.13039/100000001\"]"));
         assertThat(json, not(containsString("relationships")));
 
         String funder = new ObjectMapper().writeValueAsString(funderLookup.retrieveByDoi("10.13039/100006642"));

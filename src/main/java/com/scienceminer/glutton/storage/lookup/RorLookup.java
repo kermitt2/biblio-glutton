@@ -47,9 +47,6 @@ public class RorLookup {
     public static final String NAME_FUNDREF_TO_ROR = "ror_fundrefToRor";
     public static final String NAME_GRID_TO_ROR = "ror_gridToRor";
 
-    /** The prefix of every Crossref funder DOI; ROR records the part after it. */
-    public static final String FUNDER_DOI_PREFIX = "10.13039/";
-
     private static final int DEFAULT_MAX_SIZE_LIST = 100;
 
     private static volatile RorLookup instance;
@@ -179,7 +176,7 @@ public class RorLookup {
                 if (organization.getFundrefIds() != null) {
                     for (String fundrefId : organization.getFundrefIds()) {
                         if (isNotBlank(fundrefId)) {
-                            store(funderDoiOf(fundrefId), rorId, dbFundrefToRor, transactionWrapper.tx);
+                            store(RorData.funderDoiOf(fundrefId), rorId, dbFundrefToRor, transactionWrapper.tx);
                         }
                     }
                 }
@@ -193,12 +190,6 @@ public class RorLookup {
             transactionWrapper.tx.commit();
             transactionWrapper.tx.close();
         }
-    }
-
-    /** The Crossref funder DOI of a FundRef identifier as ROR records it: 100000001, or already a DOI. */
-    static String funderDoiOf(String fundrefId) {
-        String id = lowerCase(fundrefId.trim());
-        return id.startsWith(FUNDER_DOI_PREFIX) ? id : FUNDER_DOI_PREFIX + id;
     }
 
     private void store(String key, Object value, Dbi<ByteBuffer> db, Txn<ByteBuffer> tx) {
