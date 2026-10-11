@@ -19,4 +19,5 @@
 <h3>Benchmarking</h3>
 
 * [Reference resolutions](Benchmarking.md)
+* [Load testing](Load-testing.md)
 

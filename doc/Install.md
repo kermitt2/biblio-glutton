@@ -33,6 +33,12 @@ After installing all or a selection of bibliographical databases, the bibliograp
 
 The following describes how to build and start the bibliographical service. 
 
+### Install Elasticsearch
+
+The matching needs an Elasticsearch node; the lookups by identifier work without one. See
+[Elasticsearch](Elasticsearch.md) for installing one with Docker or Docker Compose and for
+connecting biblio-glutton to it, with or without a password and HTTPS.
+
 ### Build the service
 
 You need **Java JDK 21 (LTS)** installed for building and running the tool. The Gradle wrapper is configured with a Java 21 toolchain — if your default `java` is older, the [Foojay toolchain resolver](https://github.com/gradle/foojay-toolchains) will automatically download and provision a JDK 21 on first build. To install Java 21 manually, use [SDKMAN!](https://sdkman.io) or [Eclipse Temurin](https://adoptium.net/temurin/releases/?version=21).
@@ -138,3 +144,11 @@ because the database inside it is named after Unpaywall as well. Reload the link
 then delete the old `unpayWall` directory under your storage path. Nothing else in the storage is
 affected, so Crossref, PubMed, HAL and ISTEX do not need reloading. The service says so on start
 if it finds the old directory next to an empty new one.
+
+The Crossref and HAL records are now compressed with Zstandard and a dictionary instead of snappy,
+which makes them about a third of the size (see [Compression of the stored
+records](Build-Databases.md#compression-of-the-stored-records)). A database written by 0.3 is read
+as before, and the daily updates simply write the new format next to the old records, so nothing
+needs to be done. The existing records keep their old size though: to get the smaller database,
+reload the Crossref dump (and HAL) with 0.4.0. Setting `compression: snappy` in `config/glutton.yml`
+keeps writing the 0.3 format instead.

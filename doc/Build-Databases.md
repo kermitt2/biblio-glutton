@@ -45,7 +45,7 @@ Without Metadata Plus subscription, it's possible to use the Academic Torrents C
 
 The bibliographical matching service uses a combination of high performance embedded databases (LMDB), for fast look-up and cache, and Elasticsearch for blocking via text-based search. As Elasticsearch is much slower than embedded databases, it is used only when absolutely required. 
 
-The databases and elasticsearch index must first be built from the resource files. The full service needs around 300 GB of space for building these index and it is necessary to use SSD for best performance.
+The databases and elasticsearch index must first be built from the resource files. The full service needs around 300 GB of space for building these index (less with the record compression introduced in 0.4.0, see [below](#compression-of-the-stored-records)) and it is necessary to use SSD for best performance.
 
 The Elasticsearch node is given by `elastic.host` in `config/glutton.yml`, with the scheme when
 the cluster is behind TLS (`https://elastic.example.org:9200`). A cluster with security on, which
@@ -54,6 +54,9 @@ is the default since Elasticsearch 8, needs credentials: give a user and passwor
 every request by the loading commands and by the service alike, so the host has to be `https://`
 or the service refuses to start: set `elastic.allowCredentialsOverHttp: true` for a cluster that
 has security on but TLS off, such as a local one. Credentials in the host URL are not read.
+
+To install an Elasticsearch node with Docker or Docker Compose, see
+[Install Elasticsearch](Elasticsearch.md).
 
 ### Build the embedded LMDB databases
 
@@ -69,6 +72,51 @@ the load, which a database rebuilt from a download does not need; a crash of the
 alone loses nothing. Everything is flushed when the command exits, and the service opens the result
 as any other database.
 
+#### Carrying on a load that stopped
+
+A loading command that stopped before its end (the machine was restarted, the network stayed away,
+the command was interrupted) carries on when it is run again, with the same arguments:
+
+```sh
+./gradlew crossref -Pinput=/path/to/crossref/dump/     # stopped half way
+./gradlew crossref -Pinput=/path/to/crossref/dump/     # reads what is missing
+```
+
+This goes for every load: `crossref`, `openalex`, `hal`, `pmid` and `istex`. What a load has done
+is written down as it goes in a small text file in the directory of the database it fills, such as
+`crossref/crossref-load.progress` under the `storage` path; nothing is added to the databases.
+It holds, depending on the load:
+
+- the files read to their end (for a Crossref archive in one `.tar.gz`, its entries), which the
+  next run passes over without opening them;
+- how many records of the file it stopped in are stored, which the next run reads past without
+  storing or indexing them again (`crossref`, `pmid`, `istex`; an OpenAlex file is read again
+  from its start);
+- for the HAL harvest, the cursor it reached.
+
+A file is known by its name and by its size and date (its tag in S3), so a new dump under the same
+file names is read in full.
+
+Progress is written down once a minute, after the storage was flushed to disk and, for the loads
+that feed it, Elasticsearch confirmed the records. A run therefore loads again what the one before
+did in its last minute, which writes the same records over themselves. If Elasticsearch stops
+taking records during a load, nothing more is written down by that run, and the next one starts
+again from the last point where everything was confirmed.
+
+The file is removed when the load completes, so a command run again after a complete load loads
+everything again, as before. To start an unfinished load over rather than carry it on, add
+`-Pfresh=true` (`--fresh` on the command itself):
+
+```sh
+./gradlew crossref -Pinput=/path/to/crossref/dump/ -Pfresh=true
+```
+
+Two things the progress file cannot know. If a database directory is deleted, its progress goes
+with it, but the search index does not: when `crossref` or `hal` carries on a load and finds the
+index gone, it says so, and the records loaded earlier have to be put back with `./gradlew index`.
+And a setting changed between two runs (the compression, the Crossref fields to ignore) only
+applies to what the second run loads; start over if that matters.
+
 #### Reading the input from S3
 
 Every `-Pinput=` below takes a local file, a local directory, or an `s3://` location, so a dump can be read straight out of a bucket instead of being downloaded first:
@@ -81,6 +129,32 @@ Every `-Pinput=` below takes a local file, a local directory, or an `s3://` loca
 A location naming a single object reads that object; one naming a prefix reads every file underneath it, in key order. Credentials come from the standard AWS chain (environment variables, `~/.aws`, instance role), and unsigned access is used as a fallback when that chain finds nothing, or when what it finds is refused -- which is what public buckets such as the OpenAlex snapshot need. Set them explicitly, point at a MinIO endpoint, or turn the fallback off under `s3:` in `config/glutton.yml`.
 
 Long transfers are resumed rather than restarted: if a connection drops part way through an object, the read continues from the last byte received with a ranged request. A response that ends early is treated the same way, so a truncated download cannot quietly pass for a complete file.
+
+A network that goes away altogether (a change of wifi, a laptop that sleeps, a router that restarts) is waited for: the object is asked for again after a pause that grows from 2 seconds to a minute, whether it was being opened or resumed, and it is given up only after `s3.maxRetries` requests in a row brought nothing, about a quarter of an hour with the default of 20. Raise `maxRetries` under `s3:` in `config/glutton.yml` for a connection that may be away longer; each retry beyond the fifth adds a minute.
+
+#### Compression of the stored records
+
+The metadata records (Crossref, HAL) are compressed before being written to LMDB, and since 0.4.0 the compression is Zstandard with a dictionary trained on Crossref records. Such records are short (about 2 KB once the reference list is dropped) and all alike, and a dictionary gives the compressor the vocabulary they share (field names, publisher and journal names, date layouts) that a single record is too short to learn on its own. Measured on 8,864 random Crossref records held out from the dictionary training, with the dictionary that ships in the jar (values in bytes per record, speeds on one core):
+
+| compression | bytes per record | vs snappy | compress MB/s | decompress MB/s | decompress per record |
+|---|---|---|---|---|---|
+| none | 2265 | - | - | - | - |
+| snappy (format up to 0.3) | 1266 | 100% | 349 | 673 | 3.2 us |
+| lz4 | 1234 | 97% | 341 | 1358 | 1.6 us |
+| lz4 hc level 9 | 1182 | 93% | 66 | 1472 | 1.5 us |
+| deflate level 6 | 876 | 69% | 33 | 141 | 15.3 us |
+| zstd level 3, no dictionary | 932 | 74% | 91 | 296 | 7.3 us |
+| zstd level 19, no dictionary | 903 | 71% | 2 | 310 | 7.0 us |
+| **zstd level 3, 110 KB dictionary (default)** | **411** | **32%** | **172** | **576** | **3.8 us** |
+| zstd level 6, 110 KB dictionary | 377 | 30% | 44 | 598 | 3.6 us |
+| zstd level 9, 110 KB dictionary | 360 | 28% | 26 | 623 | 3.5 us |
+| zstd level 19, 110 KB dictionary | 340 | 27% | 2 | 640 | 3.4 us |
+
+The dictionary size matters less than having one: 16 KB already gives 446 bytes per record, 256 KB gives 398; the shipped dictionary is the 110 KB zstd recommends.
+
+Compared with the snappy compression used up to 0.3, the records take a third of the space and read back just as fast. The LMDB file of a Crossref database loaded this way is about 40% the size of the same database loaded with snappy (measured with `./gradlew crossref` on 28,495 records: 40 MB against 98 MB); the file shrinks less than the records do because the per-page overhead of LMDB is the same in both cases. Through the running service, against an Elasticsearch 8.19 node on the same machine, a lookup by DOI takes the same 1.1 ms median on either storage, and a matching query by title and first author the same 11 ms: the decompression is not where the time goes. Zstandard without a dictionary is not worth it for records this size: it only saves a quarter and decompresses twice as slowly, and LZ4 saves nothing over snappy. Higher zstd levels shave off a few more percent while making the load several times slower, which is why the default level is 3; a full Crossref load is bound by parsing, not by compression, at that level.
+
+The setting is `compression` in `config/glutton.yml` (`zstd`, the default, or `snappy`), with `compressionLevel` for the zstd level. It only decides what gets written: every stored record says which format it is in, so a database built with one setting keeps working, and keeps receiving daily updates, after the setting changes. A database loaded by 0.3 therefore does not need to be reloaded, but it will not shrink until it is (see [Upgrading from 0.3](Install.md#upgrading-from-03)).
 
 #### Build the data loader 
 
@@ -169,6 +243,10 @@ the storage: once Elasticsearch is healthy again, `./gradlew index` rebuilds the
 The loading commands wait for the last bulks before they exit, so the two counters are final in
 the summary printed at the end. 
 
+A load in which a file could not be read, or in which Elasticsearch did not take records because
+it was away or too busy, ends with an error and a non-zero exit code. Run the same command again:
+it loads what is missing (see "Carrying on a load that stopped" above).
+
 #### CrossRef metadata gap coverage
 
 Once the main Crossref metadata snapshot has been loaded, the metadata and index will be updated daily automatically via the Crossref web API. However, there is always a gap of coverage between the last day covered by the used large snapshot image and the start of the daily update. 
@@ -228,7 +306,15 @@ Launch the following command and go grab a lunch:
 ./gradlew hal 
 ```
 
-HAL archive contains around 3.5M records, with curated metadadata. Note that the batch loading is using high volume, so it can take a couple of minutes before the metrics start indicating counts and measurements above 0.  
+HAL archive contains around 4.7M records (September 2026), with curated metadadata. Note that the batch loading is using high volume, so it can take a couple of minutes before the metrics start indicating counts and measurements above 0.  
+
+The archive is harvested through the HAL API page by page, 2,000 records at a time. A connection
+that drops on the way, or a change of network, does not end the harvest: the page that did not
+come through is asked for again, with a growing pause, for about a quarter of an hour. If the API
+stays out of reach for longer, the command stops with an error and a non-zero exit code, and the
+records harvested until then are stored and indexed. Running the command again carries on from
+the cursor the harvest reached, rather than from the beginning of the archive; add `-Pfresh=true`
+to harvest everything again.
 
 #### OA via OpenAlex
 
@@ -248,12 +334,33 @@ A local copy works just as well, whether it is one file or a directory of them:
 
 Only the DOI and the best Open Access PDF link are kept; the rest of each record is skipped
 without being loaded into memory. Files are parsed in parallel and written by a single thread,
-which is what LMDB requires. Add `--threads` to change how many are parsed at once (the default
-is 4, or fewer on a smaller machine) -- throughput scales close to linearly with it, and parsing,
-not the network, is the limit.
+which is what LMDB requires. With a bucket as input, each of these threads downloads its own file,
+so the reading from S3 is parallel too. Add `-Pthreads=8` to change how many files are read at
+once (the default is 4, or fewer on a smaller machine) -- throughput scales close to linearly with
+it, and parsing, not the network, is the limit. The first files of the snapshot are tiny, so the
+log shows them one after the other; the parallel reading shows once the large ones are reached.
 
-Expect this to take hours: the works entity of the snapshot is around 620 GB compressed, holding
-510 million records of which about 105 million are Open Access with a DOI.
+Next to the works files, the snapshot folder holds `manifest.json` and `deleted_ids.csv.gz`. Both
+are left out: the second lists the works OpenAlex removed by their OpenAlex identifier, which is
+not stored here, and a work that was removed is simply absent from a fresh snapshot.
+
+Expect this to take hours: the works entity of the snapshot is around 660 GB compressed and holds
+476 million records (snapshot of September 2026). Only the works with a DOI and a PDF link are
+stored, and they are not spread evenly: the folders of the most recent dates are the largest and
+hold most of them, so the count of links grows slowly for the first half of the load.
+
+A file that cannot be read is reported when it fails and the others are still read. If the bucket
+stays out of reach for longer than the reading waits for it (see above), the files not started
+yet are left unread, and the run ends with the list of the folders that were not read in full and
+a failure. Run the same command again: the files already read are passed over and only the
+missing ones are read.
+
+A single folder of the snapshot can also be loaded on its own, by giving it as the input. Loading
+a file or a folder a second time is harmless: the same links are written over themselves.
+
+```sh
+./gradlew openalex -Pinput=s3://openalex/data/jsonl/works/updated_date=2026-09-22/
+```
 
 ##### Keeping the links current
 

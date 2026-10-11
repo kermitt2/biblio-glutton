@@ -119,6 +119,7 @@ dependencies {
         exclude group: 'org.apache.felix', module: 'maven-bundle-plugin'
     }
     implementation "org.xerial.snappy:snappy-java:${snappyVersion}"
+    implementation "com.github.luben:zstd-jni:${zstdJniVersion}"
 
     // S3 access for the ingestion inputs (see utils/io/InputLocation). The AWS BOM keeps the
     // SDK's own modules in step with each other. Only the sync S3 client is needed: the async
@@ -218,19 +219,22 @@ def gluttonCommand = { String taskName, String group, List<String> commandArgs, 
     }
 }
 
+// A load that did not complete carries on when its task is run again; -Pfresh=true starts it over.
+def freshArg = (project.hasProperty('fresh') && project.property('fresh').toString() != 'false') ? ['--fresh'] : []
+
 gluttonCommand('server', 'service', ['server', getArg('config', 'config/glutton.yml')],
         'Start the biblio-glutton lookup/matching REST service')
-gluttonCommand('crossref', 'data', ['crossref', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
+gluttonCommand('crossref', 'data', ['crossref', '--input', getArg('input', '')] + freshArg + [getArg('config', 'config/glutton.yml')],
         'Load a Crossref dump into the local storage')
 gluttonCommand('gap_crossref', 'data', ['gap_crossref', getArg('config', 'config/glutton.yml')],
         'Fill the gap between the local Crossref data and the Crossref REST API')
-gluttonCommand('hal', 'data', ['hal', getArg('config', 'config/glutton.yml')],
+gluttonCommand('hal', 'data', ['hal'] + freshArg + [getArg('config', 'config/glutton.yml')],
         'Harvest and load HAL metadata')
-gluttonCommand('pmid', 'service', ['pmid'] + (project.hasProperty('input') ? ['--input', getArg('input', '')] : []) + [getArg('config', 'config/glutton.yml')],
+gluttonCommand('pmid', 'service', ['pmid'] + (project.hasProperty('input') ? ['--input', getArg('input', '')] : []) + freshArg + [getArg('config', 'config/glutton.yml')],
         'Load the PMID/PMC/DOI mapping')
-gluttonCommand('istex', 'data', ['istex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
+gluttonCommand('istex', 'data', ['istex', '--input', getArg('input', '')] + freshArg + [getArg('config', 'config/glutton.yml')],
         'Load the ISTEX identifier mapping')
-gluttonCommand('openalex', 'data', ['openalex', '--input', getArg('input', ''), getArg('config', 'config/glutton.yml')],
+gluttonCommand('openalex', 'data', ['openalex', '--input', getArg('input', '')] + (project.hasProperty('threads') ? ['--threads', getArg('threads', '')] : []) + freshArg + [getArg('config', 'config/glutton.yml')],
         'Load the OpenAlex open access links from a works snapshot, local or in S3')
 gluttonCommand('openalex_update', 'data', ['openalex', '--since', getArg('since', ''), getArg('config', 'config/glutton.yml')],
         'Top up the OpenAlex open access links from the API since -Psince=YYYY-MM-DD (needs a paid OpenAlex plan)')

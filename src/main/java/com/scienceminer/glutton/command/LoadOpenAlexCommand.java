@@ -6,10 +6,12 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.reader.OpenAlexReader;
+import com.scienceminer.glutton.storage.LoadProgress;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.storage.lookup.OALookup;
 import com.scienceminer.glutton.utils.io.DataSource;
 import com.scienceminer.glutton.utils.io.InputLocation;
+import com.scienceminer.glutton.utils.io.InputUnreachableException;
 import com.scienceminer.glutton.utils.openalex.OpenAlexClient;
 import com.scienceminer.glutton.utils.openalex.OpenAlexResponse;
 import io.dropwizard.core.cli.ConfiguredCommand;
@@ -21,12 +23,17 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -34,6 +41,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -71,6 +79,13 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
 
     private static final Pair<String, String> END_OF_INPUT = new ImmutablePair<>(null, null);
 
+    /**
+     * Told apart from a DOI by being this very object: what a parser puts on the queue, with the
+     * name of the file, once it has read it to its end. The writer then knows that every link of
+     * that file went through it.
+     */
+    private static final String FILE_READ = new String("file read");
+
     public LoadOpenAlexCommand() {
         super("openalex", "Load the OpenAlex open access links");
     }
@@ -100,6 +115,7 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
                 .required(false)
                 .help("Number of snapshot files parsed in parallel. Defaults to "
                         + defaultThreads() + " on this machine.");
+        ResumeOption.addTo(subparser);
     }
 
     private static int defaultThreads() {
@@ -133,8 +149,17 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
         boolean complete;
         if (isNotBlank(source)) {
             Integer threads = namespace.getInt(OPENALEX_THREADS);
+            // a run that did not complete is carried on: the storage is flushed before any file
+            // is written down as read
+            LoadProgress progress = LoadProgress.open(
+                    new File(configuration.getStorage(), OALookup.ENV_NAME), "openalex",
+                    ResumeOption.isFresh(namespace));
+            progress.setDurability(() -> {
+                storageEnvFactory.syncAll();
+                return true;
+            });
             complete = loadSnapshot(source, configuration, oaLookup, metrics,
-                    (threads == null) ? defaultThreads() : threads);
+                    (threads == null) ? defaultThreads() : threads, progress);
         } else {
             complete = loadFromApi(parseSince(since), configuration, oaLookup, metrics);
         }
@@ -148,7 +173,8 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
 
         if (!complete) {
             throw new IllegalStateException("The OpenAlex load did not finish cleanly. Whatever "
-                    + "was read has been stored, but the data is incomplete. See the errors above.");
+                    + "was read has been stored, but the data is incomplete. See the errors above. "
+                    + "Run the same command again: it carries on with the files that are missing.");
         }
     }
 
@@ -173,10 +199,19 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
      * tokenising. The files are independent, so they are parsed in parallel and the results are
      * funnelled through one queue to a single writing thread, which is what LMDB requires.
      *
+     * A file that fails is reported when it fails and the others are still read. When the input
+     * itself stays out of reach (the network is away for longer than the reading waits for it),
+     * the files not started yet are left alone: each would wait as long to fail the same way.
+     * What was not read is listed at the end by folder.
+     *
+     * The files read to their end are written down as the load goes, and passed over by a run
+     * of the same command after this one stopped, whatever stopped it.
+     *
      * @return true when every file was read without error
      */
     private boolean loadSnapshot(String location, LookupConfiguration configuration,
-                                 OALookup oaLookup, MetricRegistry metrics, int threads)
+                                 OALookup oaLookup, MetricRegistry metrics, int threads,
+                                 LoadProgress progress)
             throws Exception {
 
         final Meter meter = metrics.meter("openAlex_storing");
@@ -188,26 +223,70 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
         try (InputLocation input = InputLocation.open(location, configuration.getS3(),
                 ".gz", ".jsonl", ".json")) {
 
-            List<DataSource> sources = input.getSources();
-            long totalSize = input.getTotalSize();
-            LOGGER.info("About to read " + sources.size() + " file(s)"
+            List<DataSource> sources = worksFilesOf(input.getSources());
+
+            // the files an earlier run read to their end are left out
+            Map<String, LoadProgress.Unit> units = new HashMap<>();
+            List<DataSource> toRead = new ArrayList<>();
+            for (DataSource source : sources) {
+                LoadProgress.Unit unit = progress.unit(source.name(), source.fingerprint());
+                if (!unit.isDone()) {
+                    units.put(source.name(), unit);
+                    toRead.add(source);
+                }
+            }
+            int readEarlier = sources.size() - toRead.size();
+            if (readEarlier > 0) {
+                LOGGER.info(readEarlier + " of " + sources.size()
+                        + " file(s) are passed over: an earlier run loaded them");
+            }
+
+            long totalSize = totalSizeOf(toRead);
+            LOGGER.info("About to read " + toRead.size() + " file(s)"
                     + ((totalSize < 0) ? "" : ", " + (totalSize / (1024 * 1024)) + " MB compressed"));
 
             BlockingQueue<Pair<String, String>> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
-            AtomicLong filesDone = new AtomicLong();
+            AtomicLong filesDone = new AtomicLong(readEarlier);
             AtomicLong recordsFound = new AtomicLong();
             // if the writer dies the queue stops draining, so every producer would block on a
             // full queue and the load would hang instead of failing
             AtomicReference<Throwable> writerFailure = new AtomicReference<>();
 
-            Thread writer = startWriter(oaLookup, meter, queue, writerFailure);
+            AtomicBoolean outOfReach = new AtomicBoolean();
+            List<String> notRead = Collections.synchronizedList(new ArrayList<>());
+
+            Thread writer = startWriter(oaLookup, meter, queue, writerFailure, progress, units);
             ExecutorService parsers = Executors.newFixedThreadPool(Math.max(1, threads));
             List<Future<?>> tasks = new ArrayList<>();
+            boolean complete = false;
 
             try {
-                for (DataSource dataSource : sources) {
+                for (DataSource dataSource : toRead) {
                     tasks.add(parsers.submit(() -> {
-                        parse(dataSource, queue, recordsFound, writerFailure);
+                        if (outOfReach.get()) {
+                            notRead.add(dataSource.name());
+                            return null;
+                        }
+                        try {
+                            parse(dataSource, queue, recordsFound, writerFailure);
+                        } catch (Exception e) {
+                            notRead.add(dataSource.name());
+                            counterFailedFiles.inc();
+                            if (isOutOfReach(e)) {
+                                // said in one line: the retries have logged the rest already
+                                LOGGER.error("Could not read " + dataSource.name() + ": "
+                                        + e.getMessage());
+                                if (outOfReach.compareAndSet(false, true)) {
+                                    LOGGER.error("The input stays out of reach, so the files not "
+                                            + "started yet are left unread");
+                                }
+                            } else {
+                                // the file name is what tells a broken part from a file that is
+                                // not a works file at all
+                                LOGGER.error("Could not read " + dataSource.name(), e);
+                            }
+                            return null;
+                        }
                         long done = filesDone.incrementAndGet();
                         LOGGER.info("Read " + done + "/" + sources.size() + " file(s), "
                                 + recordsFound.get() + " open access link(s) so far ("
@@ -217,21 +296,17 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
                 }
                 parsers.shutdown();
 
-                int failures = 0;
                 for (Future<?> task : tasks) {
-                    try {
-                        task.get();
-                    } catch (Exception e) {
-                        failures++;
-                        counterFailedFiles.inc();
-                        LOGGER.error("Failed to read one of the snapshot files", e.getCause() == null
-                                ? e : e.getCause());
-                    }
+                    task.get();
                 }
 
-                LOGGER.info("Read " + sources.size() + " file(s), stored "
-                        + recordsFound.get() + " open access link(s), " + failures + " file(s) failed");
-                return failures == 0;
+                LOGGER.info("Read " + filesDone.get() + " of " + sources.size() + " file(s), stored "
+                        + recordsFound.get() + " open access link(s)");
+                if (!notRead.isEmpty()) {
+                    LOGGER.error(describeNotRead(sources, notRead));
+                }
+                complete = notRead.isEmpty();
+                return complete;
             } finally {
                 parsers.shutdownNow();
                 stopWriter(queue, writer);
@@ -239,19 +314,122 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
                     LOGGER.error("The storing thread failed, so the load is incomplete",
                             writerFailure.get());
                 }
+                // the writer has committed everything it was given by now
+                progress.finish(complete && writerFailure.get() == null);
             }
         }
     }
 
+    /**
+     * The files of a snapshot folder that hold works. OpenAlex keeps two other files next to the
+     * parts, {@code manifest.json} (the list of the parts) and {@code deleted_ids.csv.gz} (the
+     * works it removed, by OpenAlex identifier), and both end like a part does. A file named on
+     * its own is read whatever it is called.
+     */
+    static List<DataSource> worksFilesOf(List<DataSource> sources) {
+        if (sources.size() <= 1) {
+            return sources;
+        }
+        List<DataSource> works = new ArrayList<>();
+        for (DataSource source : sources) {
+            if (isWorksFile(source.name())) {
+                works.add(source);
+            } else {
+                LOGGER.info("Skipping " + source.name() + ", which is not a works file");
+            }
+        }
+        if (works.isEmpty()) {
+            throw new IllegalArgumentException("None of the " + sources.size()
+                    + " file(s) found is a works file");
+        }
+        return works;
+    }
+
+    /** Whether a failure is the input staying out of reach, rather than a file that is wrong. */
+    static boolean isOutOfReach(Throwable failure) {
+        for (Throwable t = failure; t != null; t = (t.getCause() == t) ? null : t.getCause()) {
+            if (t instanceof InputUnreachableException) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * What was not read, by folder, each with how many of its files are missing. A snapshot is
+     * laid out in one folder per date, so this says how recent the works left out are.
+     */
+    static String describeNotRead(List<DataSource> sources, List<String> notRead) {
+        Map<String, Integer> filesByFolder = new LinkedHashMap<>();
+        for (DataSource source : sources) {
+            filesByFolder.merge(folderOf(source.name()), 1, Integer::sum);
+        }
+        Map<String, Integer> notReadByFolder = new HashMap<>();
+        for (String name : notRead) {
+            notReadByFolder.merge(folderOf(name), 1, Integer::sum);
+        }
+
+        StringBuilder description = new StringBuilder();
+        description.append(notRead.size()).append(" of ").append(sources.size())
+                .append(" file(s) were not read, in ").append(notReadByFolder.size())
+                .append(" folder(s):");
+        // in the order the files were listed, which for a snapshot is by date
+        for (Map.Entry<String, Integer> folder : filesByFolder.entrySet()) {
+            Integer missing = notReadByFolder.get(folder.getKey());
+            if (missing != null) {
+                description.append(System.lineSeparator()).append("  ").append(folder.getKey())
+                        .append(" (").append(missing).append(" of ").append(folder.getValue())
+                        .append(" file(s) not read)");
+            }
+        }
+        return description.toString();
+    }
+
+    private static String folderOf(String name) {
+        return name.substring(0, Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
+    }
+
+    static boolean isWorksFile(String name) {
+        String fileName = name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1)
+                .toLowerCase(Locale.ROOT);
+        return !fileName.equals("manifest.json") && !fileName.equals("manifest")
+                && !fileName.endsWith(".csv.gz") && !fileName.endsWith(".csv");
+    }
+
+    /** Total size of the files, or -1 when any of them does not report one. */
+    private static long totalSizeOf(List<DataSource> sources) {
+        long total = 0;
+        for (DataSource source : sources) {
+            if (source.size() < 0) {
+                return -1;
+            }
+            total += source.size();
+        }
+        return total;
+    }
+
     private Thread startWriter(OALookup oaLookup, Meter meter,
                                BlockingQueue<Pair<String, String>> queue,
-                               AtomicReference<Throwable> writerFailure) {
+                               AtomicReference<Throwable> writerFailure,
+                               LoadProgress progress, Map<String, LoadProgress.Unit> units) {
         Thread writer = new Thread(() -> {
             try (OALookup.Writer session = oaLookup.openWriter(meter)) {
                 while (true) {
                     Pair<String, String> record = queue.take();
                     if (record == END_OF_INPUT) {
                         return;
+                    }
+                    if (record.getLeft() == FILE_READ) {
+                        // every link of that file came before this on the queue
+                        if (session.getFailed() > 0) {
+                            progress.stop("some links could not be written to the storage");
+                        }
+                        units.get(record.getRight()).finished();
+                        if (progress.isDue()) {
+                            session.flush();
+                            progress.checkpoint();
+                        }
+                        continue;
                     }
                     session.put(record.getLeft(), record.getRight());
                 }
@@ -287,23 +465,32 @@ public class LoadOpenAlexCommand extends ConfiguredCommand<LookupConfiguration> 
         OpenAlexReader reader = new OpenAlexReader();
         try (InputStream stream = dataSource.openDecompressed()) {
             reader.load(stream, record -> {
-                try {
-                    // offer rather than put, so a writer that has died is noticed instead of
-                    // leaving this thread parked on a queue that will never drain
-                    while (!queue.offer(record, POLL_MS, TimeUnit.MILLISECONDS)) {
-                        if (writerFailure.get() != null) {
-                            throw new IllegalStateException("Stopped reading "
-                                    + dataSource.name() + ": the storing thread failed",
-                                    writerFailure.get());
-                        }
-                    }
-                    recordsFound.incrementAndGet();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new IllegalStateException("Interrupted while reading "
-                            + dataSource.name(), e);
-                }
+                hand(record, dataSource, queue, writerFailure);
+                recordsFound.incrementAndGet();
             });
+        }
+        // read to its end: the writer is told, in line behind the links of the file
+        hand(new ImmutablePair<>(FILE_READ, dataSource.name()), dataSource, queue, writerFailure);
+    }
+
+    /** Puts one entry on the queue of the writer, for as long as there is a writer. */
+    private void hand(Pair<String, String> entry, DataSource dataSource,
+                      BlockingQueue<Pair<String, String>> queue,
+                      AtomicReference<Throwable> writerFailure) {
+        try {
+            // offer rather than put, so a writer that has died is noticed instead of
+            // leaving this thread parked on a queue that will never drain
+            while (!queue.offer(entry, POLL_MS, TimeUnit.MILLISECONDS)) {
+                if (writerFailure.get() != null) {
+                    throw new IllegalStateException("Stopped reading "
+                            + dataSource.name() + ": the storing thread failed",
+                            writerFailure.get());
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while reading "
+                    + dataSource.name(), e);
         }
     }
 

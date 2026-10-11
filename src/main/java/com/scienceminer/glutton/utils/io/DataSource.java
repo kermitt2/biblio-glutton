@@ -18,6 +18,15 @@ public interface DataSource {
     /** Size in bytes, or -1 when the backend does not report one. */
     long size();
 
+    /**
+     * What tells this content from another one under the same name: the size, and the date or the
+     * tag of the last change when the backend has one. A load that is run again uses it to know
+     * the files it has already read.
+     */
+    default String fingerprint() {
+        return Long.toString(size());
+    }
+
     /** The bytes as stored. */
     InputStream open() throws IOException;
 

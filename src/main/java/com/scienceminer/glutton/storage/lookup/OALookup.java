@@ -190,6 +190,13 @@ public class OALookup {
             stored++;
         }
 
+        /** Commits what was put so far, for a caller that is about to write down its progress. */
+        public void flush() {
+            commit();
+            transactionWrapper.tx = environment.txnWrite();
+            inBatch = 0;
+        }
+
         public long getFailed() {
             return failed;
         }

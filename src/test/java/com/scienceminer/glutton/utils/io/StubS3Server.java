@@ -29,6 +29,11 @@ class StubS3Server implements AutoCloseable {
     /** When > 0, the next GET without a Range stops after this many bytes, mid-response. */
     private volatile int truncateNextGetAfter;
 
+    /** How many of the next GETs are answered with {@link #failingStatus} instead of the object. */
+    private final AtomicInteger getsToFail = new AtomicInteger();
+    private volatile int failingStatus;
+    private final AtomicInteger failedGetCount = new AtomicInteger();
+
     /** Refuses any request that carries an Authorization header, as a bucket does for a bad key. */
     private volatile boolean rejectSignedRequests;
 
@@ -56,6 +61,20 @@ class StubS3Server implements AutoCloseable {
 
     void truncateNextGetAfter(int bytes) {
         this.truncateNextGetAfter = bytes;
+    }
+
+    /** Answers the next GETs with this status, the way a store does when it is overloaded. */
+    void failNextGets(int count, int status) {
+        this.failingStatus = status;
+        this.getsToFail.set(count);
+    }
+
+    int failedGetCount() {
+        return failedGetCount.get();
+    }
+
+    void remove(String key) {
+        objects.remove(key);
     }
 
     void rejectSignedRequests() {
@@ -131,10 +150,20 @@ class StubS3Server implements AutoCloseable {
             return;
         }
         exchange.getResponseHeaders().set("Content-Length", String.valueOf(content.length));
+        exchange.getResponseHeaders().set("ETag", "\"etag\"");
         exchange.sendResponseHeaders(200, -1);
     }
 
     private void handleGet(HttpExchange exchange) throws IOException {
+        if (getsToFail.getAndUpdate(left -> Math.max(0, left - 1)) > 0) {
+            failedGetCount.incrementAndGet();
+            byte[] error = ("<?xml version=\"1.0\"?><Error><Code>SlowDown</Code>"
+                    + "<Message>try again</Message></Error>").getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(failingStatus, error.length);
+            exchange.getResponseBody().write(error);
+            return;
+        }
+
         byte[] content = objects.get(keyOf(exchange));
         if (content == null) {
             byte[] error = ("<?xml version=\"1.0\"?><Error><Code>NoSuchKey</Code>"

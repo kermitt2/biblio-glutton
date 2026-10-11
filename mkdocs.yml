@@ -15,8 +15,10 @@ nav:
     - 'Licence': 'License.md'
   - User manual:
     - 'Install': 'Install.md'
+    - 'Elasticsearch': 'Elasticsearch.md'
     - 'Databases': 'Build-Databases'
     - 'REST API': 'API.md'
     - 'Frequently asked Questions': 'Frequently-asked-questions.md'
   - Benchmarking:
     - 'Matching': 'Benchmarking.md'
+    - 'Load testing': 'Load-testing.md'

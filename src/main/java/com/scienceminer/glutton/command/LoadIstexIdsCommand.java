@@ -4,6 +4,7 @@ import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.scienceminer.glutton.configuration.LookupConfiguration;
 import com.scienceminer.glutton.reader.IstexIdsReader;
+import com.scienceminer.glutton.storage.LoadProgress;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.storage.lookup.IstexIdsLookup;
 import com.scienceminer.glutton.utils.io.DataSource;
@@ -15,6 +16,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -46,6 +48,7 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
                 .required(true)
                 .help("Location of the ISTEX mapping (istex.all): a local file, a local "
                         + "directory, or an s3:// location");
+        ResumeOption.addTo(subparser);
 
         /*subparser.addArgument("--additional")
                 .dest(ISTEX_SOURCE_ADDITIONAL)
@@ -73,17 +76,39 @@ public class LoadIstexIdsCommand extends ConfiguredCommand<LookupConfiguration> 
 
         LOGGER.info("Preparing the system. Loading data for Istex from " + istexFilePath);
 
+        // a run that did not complete is carried on: the storage is flushed before any progress
+        // is written down
+        LoadProgress progress = LoadProgress.open(
+                new File(configuration.getStorage(), IstexIdsLookup.ENV_NAME), "istex",
+                ResumeOption.isFresh(namespace));
+        progress.setDurability(() -> {
+            storageEnvFactory.syncAll();
+            return true;
+        });
+
         // Istex IDs
         try (InputLocation input = InputLocation.open(istexFilePath, configuration.getS3(),
                 ".gz", ".all", ".json")) {
             for (DataSource dataSource : input.getSources()) {
-                LOGGER.info("Reading " + dataSource.name());
+                LoadProgress.Unit unit = progress.unit(dataSource.name(), dataSource.fingerprint());
+                if (unit.isDone()) {
+                    LOGGER.info("Passing over " + dataSource.name() + ": an earlier run loaded it");
+                    continue;
+                }
+                LOGGER.info("Reading " + dataSource.name() + ((unit.getStoredEarlier() == 0) ? ""
+                        : ", after the " + unit.getStoredEarlier() + " record(s) an earlier run stored"));
                 try (InputStream inputStreamIstexIds = dataSource.openDecompressed()) {
                     istexLookup.loadFromFile(inputStreamIstexIds, new IstexIdsReader(),
-                            metrics.meter("istexLookup"));
+                            metrics.meter("istexLookup"), unit);
+                }
+                unit.finished();
+                if (progress.isDue()) {
+                    progress.checkpoint();
                 }
             }
         }
+        // a file that cannot be read ends the command above, with the progress left for the next run
+        progress.finish(true);
         LOGGER.info("Istex lookup loaded " + istexLookup.getSize() + " records. ");
 
         /*final String istexAdditionalFilePath = namespace.get(ISTEX_SOURCE_ADDITIONAL);

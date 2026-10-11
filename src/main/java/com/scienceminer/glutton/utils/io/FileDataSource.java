@@ -30,6 +30,15 @@ class FileDataSource implements DataSource {
     }
 
     @Override
+    public String fingerprint() {
+        try {
+            return Files.size(path) + "-" + Files.getLastModifiedTime(path).toMillis();
+        } catch (IOException e) {
+            return Long.toString(size());
+        }
+    }
+
+    @Override
     public InputStream open() throws IOException {
         return new BufferedInputStream(Files.newInputStream(path), InputLocation.BUFFER_SIZE);
     }

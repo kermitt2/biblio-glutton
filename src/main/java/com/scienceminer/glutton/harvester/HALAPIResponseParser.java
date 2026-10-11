@@ -38,7 +38,6 @@ public class HALAPIResponseParser {
     private final static String source = Harvester.Source.HAL.getName();
 
     private SAXParserFactory spf;
-    private String currentCursor;
     private ObjectMapper objectMapper;
 
     public HALAPIResponseParser() {
@@ -52,48 +51,62 @@ public class HALAPIResponseParser {
         objectMapper = new ObjectMapper();
     }
 
-    /*
-    ** Collectes Biblio objects from the inputStream, and saves the metadata.
-    */
-    public List<Biblio> getGrabbedObjects(InputStream in, Counter counterInvalidRecords) {
-        List<Biblio> biblioobjs = new ArrayList<Biblio>();
-        try {
-            JsonNode rootNode = objectMapper.readTree(in);
-            JsonNode jsonNode = rootNode.get("response");
-            if (jsonNode != null && (!jsonNode.isMissingNode())) {
-                JsonNode docsNode = jsonNode.get("docs");
-                if (docsNode != null && (!docsNode.isMissingNode()) && docsNode.isArray() && ((ArrayNode)docsNode).size() > 0) {
-                    Iterator<JsonNode> docIter = ((ArrayNode)docsNode).elements();
-                    while (docIter.hasNext()) {
-                        JsonNode docNode = docIter.next();
-                        JsonNode teiNode = docNode.get("label_xml");
-                        if (teiNode != null && (!teiNode.isMissingNode())) {
-                            String tei = teiNode.asText();
-                            Biblio biblio = processRecord(tei);
-                            if (biblio != null) {
-                                biblioobjs.add(biblio);
-                            } else {
-                                counterInvalidRecords.inc();
-                            }
-                        }
-                    }
-                }
-            } else {
-                logger.warn("Response without any documents, continuing harvesting...");
-            }
+    /** One page of the answer of the HAL API. */
+    public static class Page {
+        /** The records of the page that could be parsed. */
+        public final List<Biblio> records;
+        /** How many documents the page held, parsed or not. */
+        public final int documents;
+        /** The cursor to ask the next page with. The same as the one asked with on the last page. */
+        public final String nextCursorMark;
 
-            JsonNode cursorNode = rootNode.get("nextCursorMark");
-            if (cursorNode != null && (!cursorNode.isMissingNode()))
-                this.currentCursor = cursorNode.asText();
-            else
-                this.currentCursor = null;
-        } catch(JsonProcessingException e) {
-            logger.error("failed to parse JSON response from HAL web API", e);
-        } catch(IOException e) {
-            logger.error("failed to read JSON response from HAL web API", e);
+        Page(List<Biblio> records, int documents, String nextCursorMark) {
+            this.records = records;
+            this.documents = documents;
+            this.nextCursorMark = nextCursorMark;
+        }
+    }
+
+    /**
+     * Reads one page of the answer of the HAL API.
+     *
+     * An answer that cannot be read to its end, that is not the JSON expected, or that carries an
+     * error in place of the documents is a failure, and is thrown as one. Returning an empty page
+     * for it would be read by the harvester as the end of the archive.
+     */
+    public Page readPage(InputStream in, Counter counterInvalidRecords) throws IOException {
+        JsonNode rootNode = objectMapper.readTree(in);
+        if (rootNode == null || !rootNode.isObject()) {
+            throw new IOException("The HAL API gave an empty answer");
         }
 
-        return biblioobjs;
+        JsonNode errorNode = rootNode.get("error");
+        if (errorNode != null) {
+            // the API answers a request it refuses with HTTP 200 and this
+            throw new IOException("The HAL API answered with an error: " + errorNode.path("msg").asText(errorNode.toString()));
+        }
+
+        JsonNode docsNode = rootNode.path("response").path("docs");
+        JsonNode cursorNode = rootNode.get("nextCursorMark");
+        if (!docsNode.isArray() || cursorNode == null || cursorNode.isNull()) {
+            throw new IOException("The HAL API gave an answer without documents or without a cursor");
+        }
+
+        List<Biblio> biblioobjs = new ArrayList<Biblio>();
+        for (JsonNode docNode : docsNode) {
+            JsonNode teiNode = docNode.get("label_xml");
+            if (teiNode != null && (!teiNode.isMissingNode())) {
+                String tei = teiNode.asText();
+                Biblio biblio = processRecord(tei);
+                if (biblio != null) {
+                    biblioobjs.add(biblio);
+                } else {
+                    counterInvalidRecords.inc();
+                }
+            }
+        }
+
+        return new Page(biblioobjs, docsNode.size(), cursorNode.asText());
     }
 
     public Biblio processRecord(String tei) {
@@ -116,10 +129,6 @@ public class HALAPIResponseParser {
         } 
         
         return biblioObj;
-    }
-
-    public String getNextCursorMark() {
-        return this.currentCursor;
     }
 
 }

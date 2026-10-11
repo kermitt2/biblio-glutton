@@ -5,6 +5,7 @@ import com.google.inject.servlet.ServletScopes;
 import com.scienceminer.glutton.data.IstexData;
 import com.scienceminer.glutton.exception.ServiceOverloadedException;
 import com.scienceminer.glutton.reader.IstexIdsReader;
+import com.scienceminer.glutton.storage.LoadProgress;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 import com.scienceminer.glutton.utils.BinarySerialiser;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -59,43 +60,63 @@ public class IstexIdsLookup {
     }
 
     public void loadFromFile(InputStream is, IstexIdsReader reader, Meter metric) {
+        loadFromFile(is, reader, metric, LoadProgress.untracked());
+    }
+
+    /**
+     * @param unit the progress of the load through this file: the records an earlier run stored
+     *        are passed over, and how far this one is gets written down every so often
+     */
+    public void loadFromFile(InputStream is, IstexIdsReader reader, Meter metric, LoadProgress.Unit unit) {
         final TransactionWrapper transactionWrapper = new TransactionWrapper(environment.txnWrite());
         final AtomicInteger counter = new AtomicInteger(0);
 
-        reader.load(is, istexData -> {
-                    if (counter.get() == batchSize) {
-                        transactionWrapper.tx.commit();
-                        transactionWrapper.tx.close();
-                        transactionWrapper.tx = environment.txnWrite();
-                        counter.set(0);
-                    }
-
-                    //unwrapping list of dois   doi -> ids
-                    for (String doi : istexData.getDoi()) {
-                        if (isNotBlank(doi)) {
-                            store(dbDoiToIds, lowerCase(doi), istexData, transactionWrapper.tx);
+        try {
+            reader.load(is, istexData -> {
+                        if (unit.skip()) {
+                            return;
                         }
-                    }
-
-                    // unwrapping list of pii    pii -> ids
-                    for (String pii : istexData.getPii()) {
-                        if (isNotBlank(pii)) {
-                            store(dbPiiToIds, lowerCase(pii), istexData, transactionWrapper.tx);
+                        if (counter.get() == batchSize) {
+                            transactionWrapper.tx.commit();
+                            transactionWrapper.tx.close();
+                            if (unit.isDue()) {
+                                unit.checkpoint();
+                            }
+                            transactionWrapper.tx = environment.txnWrite();
+                            counter.set(0);
                         }
+
+                        //unwrapping list of dois   doi -> ids
+                        for (String doi : istexData.getDoi()) {
+                            if (isNotBlank(doi)) {
+                                store(dbDoiToIds, lowerCase(doi), istexData, transactionWrapper.tx);
+                            }
+                        }
+
+                        // unwrapping list of pii    pii -> ids
+                        for (String pii : istexData.getPii()) {
+                            if (isNotBlank(pii)) {
+                                store(dbPiiToIds, lowerCase(pii), istexData, transactionWrapper.tx);
+                            }
+                        }
+
+                        // istex id -> ids (no need to unwrap)
+                        if (isNotBlank(istexData.getIstexId())) {
+                            store(dbIstexToIds, istexData.getIstexId(), istexData, transactionWrapper.tx);
+
+                        }
+
+                        metric.mark();
+                        counter.incrementAndGet();
+                        unit.stored();
                     }
-
-                    // istex id -> ids (no need to unwrap)
-                    if (isNotBlank(istexData.getIstexId())) {
-                        store(dbIstexToIds, istexData.getIstexId(), istexData, transactionWrapper.tx);
-
-                    }
-
-                    metric.mark();
-                    counter.incrementAndGet();
-                }
-        );
-        transactionWrapper.tx.commit();
-        transactionWrapper.tx.close();
+            );
+        } finally {
+            // also when the file could not be read to its end: what was stored is kept, and
+            // the transaction is not left open
+            transactionWrapper.tx.commit();
+            transactionWrapper.tx.close();
+        }
 
         LOGGER.info("Cross checking number of records processed: " + metric.getCount());
     }
