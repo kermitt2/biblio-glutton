@@ -437,7 +437,8 @@ The load writes into the `storage` of `config/glutton.yml` (add the same `-Pconf
 service when it runs with another configuration), takes seconds, and ends with the count, `Funder
 registry loaded: 45739 funder(s) read`. A service already running sees the funders at once;
 `GET /service/data` shows them under `Funder Registry size (LMDB)`. Every funder is written over
-the one already stored, so a newer registry is loaded the same way. The funders are then served by
+the one already stored, so a newer registry is loaded the same way, or by the service itself every
+month (see [Monthly updates](#monthly-updates) under ROR). The funders are then served by
 `GET /service/lookup/funder?doi=...`, see the [REST API](API.md#funders-and-research-organizations).
 
 #### ROR (Research Organization Registry)
@@ -486,17 +487,20 @@ funder DOI or GRID identifier, see the [REST API](API.md#funders-and-research-or
 
 ##### Monthly updates
 
-The service can follow the registry by itself: with the `ror` block of `config/glutton.yml`
-enabled, it downloads the latest dump from Zenodo and loads it, at 04:00 on the given day of each
-month, while it keeps answering.
+The service can follow both registries by itself: with the `registries` block of
+`config/glutton.yml` enabled, it downloads the latest ROR dump from Zenodo and the current
+`registry.rdf` from Crossref's GitLab, and loads each over the records stored, at 04:00 on the
+given day of each month, while it keeps answering.
 
 ```yaml
-ror:
+registries:
   updateEnabled: true
   updateDayOfMonth: 15
-  dumpPath: data/ror
+  dumpPath: data/registries
 ```
 
-The dump is downloaded under `dumpPath` and removed once loaded. An update that fails (Zenodo or
-the network away, a dump that cannot be read) leaves the organizations as they were, says so in
-the log, and is attempted again the next month.
+The downloads go under `dumpPath` and are removed once loaded. The two registries are updated
+one after the other, each on its own: an update that fails (Zenodo, GitLab or the network away,
+a file that cannot be read) leaves that registry as it was, says so in the log, and is attempted
+again the next month. Crossref is retiring the funder registry in favour of ROR, so its file may
+one day stop changing or move; the funders last loaded then stay served.

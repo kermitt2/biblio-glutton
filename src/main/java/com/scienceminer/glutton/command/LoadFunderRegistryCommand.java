@@ -22,7 +22,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Loads the Crossref Open Funder Registry from its {@code registry.rdf} file. A load takes
  * seconds, and writes over the funders already stored, so it is simply run again for a newer
- * registry.
+ * registry; the service can also do that by itself every month, see the {@code registries} block
+ * of the configuration.
  */
 public class LoadFunderRegistryCommand extends ConfiguredCommand<LookupConfiguration> {
 

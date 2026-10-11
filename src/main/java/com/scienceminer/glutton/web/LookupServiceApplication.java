@@ -12,8 +12,9 @@ import com.scienceminer.glutton.web.module.NotFoundExceptionMapper;
 import com.scienceminer.glutton.web.module.ServiceExceptionMapper;
 import com.scienceminer.glutton.web.module.ServiceOverloadedExceptionMapper;
 import com.scienceminer.glutton.utils.crossrefclient.IncrementalLoaderTask;
-import com.scienceminer.glutton.utils.RorUpdateTask;
+import com.scienceminer.glutton.utils.RegistriesUpdateTask;
 import com.scienceminer.glutton.storage.lookup.CrossrefMetadataLookup;
+import com.scienceminer.glutton.storage.lookup.FunderLookup;
 import com.scienceminer.glutton.storage.lookup.RorLookup;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
 
@@ -177,40 +178,42 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         new ElasticsearchWatchdog(healthCheck::elasticsearchStatus).start();
 
         scheduleDailyUpdate(configuration, storageEnvFactory);
-        scheduleRorUpdate(configuration, storageEnvFactory);
+        scheduleRegistriesUpdate(configuration, storageEnvFactory);
     }
 
     /**
-     * The monthly ROR update, when {@code ror.updateEnabled} is set: on the configured day of each
-     * month at 04:00, the next run scheduled after each run so that months of any length are
-     * followed.
+     * The monthly update of the registries (ROR and the Crossref Open Funder Registry), when
+     * {@code registries.updateEnabled} is set: on the configured day of each month at 04:00, the
+     * next run scheduled after each run so that months of any length are followed.
      */
-    private void scheduleRorUpdate(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) {
-        LookupConfiguration.Ror rorConfig = configuration.getRor();
-        if (rorConfig == null || !rorConfig.isUpdateEnabled()) {
+    private void scheduleRegistriesUpdate(LookupConfiguration configuration, StorageEnvFactory storageEnvFactory) {
+        LookupConfiguration.Registries registries = configuration.getRegistries();
+        if (registries == null || !registries.isUpdateEnabled()) {
             return;
         }
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1, runnable -> {
-            Thread thread = new Thread(runnable, "ror-monthly-update");
+            Thread thread = new Thread(runnable, "registries-monthly-update");
             thread.setDaemon(true);
             return thread;
         });
-        RorUpdateTask task = new RorUpdateTask(RorLookup.getInstance(storageEnvFactory), new File(rorConfig.getDumpPath()));
-        scheduleNextRorUpdate(executor, task, ZoneId.of(configuration.getTimeZone()), rorConfig.getUpdateDayOfMonth());
+        RegistriesUpdateTask task = new RegistriesUpdateTask(RorLookup.getInstance(storageEnvFactory),
+                FunderLookup.getInstance(storageEnvFactory), new File(registries.getDumpPath()));
+        scheduleNextRegistriesUpdate(executor, task, ZoneId.of(configuration.getTimeZone()), registries.getUpdateDayOfMonth());
     }
 
-    private void scheduleNextRorUpdate(ScheduledExecutorService executor, RorUpdateTask task, ZoneId zone, int dayOfMonth) {
+    private void scheduleNextRegistriesUpdate(ScheduledExecutorService executor, RegistriesUpdateTask task, ZoneId zone, int dayOfMonth) {
         ZonedDateTime now = ZonedDateTime.now(zone);
-        ZonedDateTime next = RorUpdateTask.nextRun(now, dayOfMonth);
-        LOGGER.info("Monthly ROR update scheduled for day " + dayOfMonth + " at 04:00 " + zone + ", next on " + next.toLocalDate());
+        ZonedDateTime next = RegistriesUpdateTask.nextRun(now, dayOfMonth);
+        LOGGER.info("Monthly update of ROR and the funder registry scheduled for day " + dayOfMonth + " at 04:00 " + zone
+                + ", next on " + next.toLocalDate());
         executor.schedule(() -> {
             try {
                 task.run();
             } catch (RuntimeException e) {
                 // an exception escaping the task would silently cancel every run after it
-                LOGGER.error("The monthly ROR update failed, it will be attempted again next month", e);
+                LOGGER.error("The monthly update of the registries failed, it will be attempted again next month", e);
             }
-            scheduleNextRorUpdate(executor, task, zone, dayOfMonth);
+            scheduleNextRegistriesUpdate(executor, task, zone, dayOfMonth);
         }, Duration.between(now, next).getSeconds(), TimeUnit.SECONDS);
     }
 

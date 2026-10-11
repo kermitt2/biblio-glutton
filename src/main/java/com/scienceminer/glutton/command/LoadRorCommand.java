@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * Loads the Research Organization Registry (ROR) from a data dump as published on Zenodo, the
  * zip or the JSON file in it. A load takes well under a minute and writes over the organizations
  * already stored, so it is simply run again for a newer dump; the service can also do that by
- * itself every month, see the {@code ror} block of the configuration.
+ * itself every month, see the {@code registries} block of the configuration.
  */
 public class LoadRorCommand extends ConfiguredCommand<LookupConfiguration> {
 

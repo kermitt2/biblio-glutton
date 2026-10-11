@@ -151,15 +151,16 @@ openAlex:
   # --since relies on needs a paid plan. See https://openalex.org/pricing
   apiKey:
 
-# The Research Organization Registry (ROR), loaded with ./gradlew ror -Pinput=/path/to/ror-data.zip
-# (see the documentation). ROR publishes a new dump about once a month. With updateEnabled, the
-# service downloads the latest one from Zenodo and loads it over the organizations stored, at 04:00
-# on the given day of each month.
-ror:
+# The registries of organizations and funders: ROR (./gradlew ror -Pinput=/path/to/ror-data.zip) and
+# the Crossref Open Funder Registry (./gradlew funder_registry -Pinput=/path/to/registry.rdf), see
+# the documentation. With updateEnabled, the service downloads the latest of each (ROR from Zenodo,
+# the registry from Crossref's GitLab) and loads it over the records stored, at 04:00 on the given
+# day of each month.
+registries:
   updateEnabled: false
   updateDayOfMonth: 15
-  # where the dump is downloaded to before it is loaded (about 40 MB, removed afterwards)
-  dumpPath: data/ror
+  # where the downloads go before they are loaded (about 130 MB, removed afterwards)
+  dumpPath: data/registries
 
 # CORS parameters 
 corsAllowedOrigins: "*"

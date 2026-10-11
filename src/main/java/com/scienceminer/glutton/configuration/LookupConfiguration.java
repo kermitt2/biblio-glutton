@@ -54,7 +54,7 @@ public class LookupConfiguration extends Configuration {
 
     private S3 s3 = new S3();
 
-    private Ror ror;
+    private Registries registries;
 
     private String grobidHost;
 
@@ -144,8 +144,8 @@ public class LookupConfiguration extends Configuration {
         this.s3 = s3;
     }
 
-    public Ror getRor() {
-        return ror;
+    public Registries getRegistries() {
+        return registries;
     }
 
     public int getStoringBatchSize() {
@@ -541,10 +541,15 @@ public class LookupConfiguration extends Configuration {
         }
     }
 
-    public static class Ror {
+    /**
+     * The monthly update of the registries, ROR and the Crossref Open Funder Registry: whether the
+     * service downloads and loads them by itself, on which day of the month, and where it puts
+     * the downloads meanwhile.
+     */
+    public static class Registries {
         private boolean updateEnabled = false;
         private int updateDayOfMonth = 15;
-        private String dumpPath = "data/ror";
+        private String dumpPath = "data/registries";
 
         public boolean isUpdateEnabled() {
             return updateEnabled;

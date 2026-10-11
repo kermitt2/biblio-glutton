@@ -9,7 +9,7 @@ import com.scienceminer.glutton.exception.NotFoundException;
 import com.scienceminer.glutton.exception.ServiceException;
 import com.scienceminer.glutton.storage.LookupEngine;
 import com.scienceminer.glutton.storage.StorageEnvFactory;
-import com.scienceminer.glutton.utils.RorUpdateTask;
+import com.scienceminer.glutton.utils.RegistriesUpdateTask;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -170,8 +170,9 @@ public class FunderAndRorStorageTest {
     }
 
     @Test
-    public void update_shouldDownloadTheLatestDumpAndLoadItOverTheStorage() throws Exception {
-        // a stand-in for Zenodo: the API answer names a zip, the zip holds a dump of one organization
+    public void update_shouldDownloadBothRegistriesAndLoadThemOverTheStorage() throws Exception {
+        // a stand-in for Zenodo and GitLab: the API answer names a zip, the zip holds a dump of one
+        // organization, and the registry file holds one funder
         ByteArrayOutputStream zipBytes = new ByteArrayOutputStream();
         try (ZipOutputStream out = new ZipOutputStream(zipBytes)) {
             out.putNextEntry(new ZipEntry("v2.15-2026-11-03-ror-data.json"));
@@ -180,6 +181,13 @@ public class FunderAndRorStorageTest {
                     .getBytes(StandardCharsets.UTF_8));
             out.closeEntry();
         }
+        byte[] registry = ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                + "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" xmlns:skos=\"http://www.w3.org/2004/02/skos/core#\" "
+                + "xmlns:skosxl=\"http://www.w3.org/2008/05/skos-xl#\">"
+                + "<skos:Concept rdf:about=\"http://dx.doi.org/10.13039/100000084\"><skosxl:prefLabel><skosxl:Label>"
+                + "<skosxl:literalForm xml:lang=\"en\">Directorate for Engineering, renamed</skosxl:literalForm>"
+                + "</skosxl:Label></skosxl:prefLabel></skos:Concept></rdf:RDF>").getBytes(StandardCharsets.UTF_8);
+
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         String base = "http://127.0.0.1:" + server.getAddress().getPort();
         server.createContext("/api/records", exchange -> {
@@ -196,17 +204,34 @@ public class FunderAndRorStorageTest {
             exchange.getResponseBody().write(zipBytes.toByteArray());
             exchange.close();
         });
+        server.createContext("/registry.rdf", exchange -> {
+            exchange.sendResponseHeaders(200, registry.length);
+            exchange.getResponseBody().write(registry);
+            exchange.close();
+        });
         server.start();
         try {
-            File dumpDirectory = new File(folder.getRoot(), "ror-dumps");
-            new RorUpdateTask(rorLookup, dumpDirectory, base + "/api/records").run();
+            File dumpDirectory = new File(folder.getRoot(), "registries");
+            new RegistriesUpdateTask(rorLookup, funderLookup, dumpDirectory, base + "/api/records", base + "/registry.rdf").run();
 
             assertThat(rorLookup.retrieveByRorId("02d439m40").getName(), is("UMHRI, renamed"));
-            // the other organization is still there, and the download was cleaned up
+            assertThat(funderLookup.retrieveByDoi("10.13039/100000084").getName(), is("Directorate for Engineering, renamed"));
+            // the other records are still there, and the downloads were cleaned up
             assertThat(rorLookup.retrieveByRorId("021nxhr62").getName(), is("National Science Foundation"));
+            assertThat(funderLookup.retrieveByDoi("10.13039/100000001").getName(), is("National Science Foundation"));
             assertThat(dumpDirectory.list().length, is(0));
         } finally {
             server.stop(0);
         }
+    }
+
+    @Test
+    public void update_shouldLeaveARegistryAsItWasWhenItsSourceIsAway() throws Exception {
+        // nothing listens here: both downloads fail, the task says so and throws nothing
+        File dumpDirectory = new File(folder.getRoot(), "registries-away");
+        new RegistriesUpdateTask(rorLookup, funderLookup, dumpDirectory, "http://127.0.0.1:9/api/records", "http://127.0.0.1:9/registry.rdf").run();
+
+        assertThat(rorLookup.getSize().get(RorLookup.NAME_ROR_ID), is(2L));
+        assertThat(funderLookup.getSize().get(FunderLookup.NAME_DOI_FUNDER), is(4L));
     }
 }
