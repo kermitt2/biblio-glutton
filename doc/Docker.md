@@ -7,12 +7,20 @@ in each of them without its configuration file being edited.
 
 ### The image
 
+The image is published on the GitHub Container Registry, for `linux/amd64` and `linux/arm64`
+(Apple Silicon included):
+
 ```sh
-docker build -t biblio-glutton .
+docker pull ghcr.io/kermitt2/biblio-glutton:latest     # master
+docker pull ghcr.io/kermitt2/biblio-glutton:0.4.1      # a release
 ```
 
-The build compiles the service with Gradle inside the image, so it needs neither Java nor Gradle
-on the machine. The image runs the service by default, on port 8080 (8081 for the admin port),
+It can also be built from the checkout, which needs neither Java nor Gradle on the machine, the
+service being compiled with Gradle inside the image:
+
+```sh
+docker build -t biblio-glutton .
+``` The image runs the service by default, on port 8080 (8081 for the admin port),
 with its storage in `/data/db`:
 
 ```sh
@@ -72,6 +80,10 @@ machine itself only, and the service talks to them over the network of the conta
 why it may send the password over plain HTTP there. On Linux, Elasticsearch needs
 `vm.max_map_count` raised on the host, see [Elasticsearch](Elasticsearch.md).
 
+Compose builds the image of the service from the checkout. To take the published one instead,
+set `GLUTTON_IMAGE=ghcr.io/kermitt2/biblio-glutton:latest` in `.env` and run
+`docker compose pull glutton` before `docker compose up -d`.
+
 The databases are under `./data/db`, the index in the volume `esdata`. To load them, put the
 dumps under `./data` (or give an `s3://` location) and run the loading commands in the
 container; each of them carries on where it stopped when it is run again (see
@@ -93,6 +105,19 @@ with them missing, then every month.
 Memory: Elasticsearch takes `ES_JAVA_OPTS` (4 GB by default) plus about as much again for its
 file cache, the service `GLUTTON_JAVA_OPTS`, and the operating system caches the LMDB databases
 with whatever is left, which is what makes the lookups fast.
+
+### The image on GitHub
+
+The workflow `.github/workflows/docker.yml` builds the image for every pull request and checks
+that it starts and answers, without publishing anything. On a push to master it publishes
+`:latest` and `:sha-<commit>`, and on a tag such as `0.4.1` the image of that name as well, for
+both platforms. Documentation-only changes do not trigger it; it can also be run by hand from the
+Actions tab.
+
+The image goes to `ghcr.io/<owner of the repository>/biblio-glutton` with the token GitHub gives
+the workflow, so nothing is to be configured; a fork publishes under its own name. A package
+published for the first time is private: make it public once in the settings of the package, on
+GitHub, for `docker pull` to work without logging in.
 
 ### Hugging Face Space
 

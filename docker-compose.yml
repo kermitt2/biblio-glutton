@@ -10,7 +10,9 @@
 services:
   glutton:
     build: .
-    image: biblio-glutton:${GLUTTON_VERSION:-0.4.0}
+    # built from this checkout; GLUTTON_IMAGE=ghcr.io/kermitt2/biblio-glutton:latest in .env, then
+    # docker compose pull glutton, takes the published image instead
+    image: ${GLUTTON_IMAGE:-biblio-glutton:0.4.0}
     restart: unless-stopped
     depends_on:
       elasticsearch:
