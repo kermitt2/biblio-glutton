@@ -20,6 +20,8 @@ import com.scienceminer.glutton.storage.StorageEnvFactory;
 
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.core.Application;
+import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
+import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
 
@@ -196,9 +198,27 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
             thread.setDaemon(true);
             return thread;
         });
-        RegistriesUpdateTask task = new RegistriesUpdateTask(RorLookup.getInstance(storageEnvFactory),
-                FunderLookup.getInstance(storageEnvFactory), new File(registries.getDumpPath()));
-        scheduleNextRegistriesUpdate(executor, task, ZoneId.of(configuration.getTimeZone()), registries.getUpdateDayOfMonth());
+        RorLookup rorLookup = RorLookup.getInstance(storageEnvFactory);
+        FunderLookup funderLookup = FunderLookup.getInstance(storageEnvFactory);
+        RegistriesUpdateTask task = new RegistriesUpdateTask(rorLookup, funderLookup, new File(registries.getDumpPath()));
+        ZoneId zone = ZoneId.of(configuration.getTimeZone());
+        int dayOfMonth = registries.getUpdateDayOfMonth();
+        if (rorLookup.getSize().getOrDefault(RorLookup.NAME_ROR_ID, 0L) == 0
+                || funderLookup.getSize().getOrDefault(FunderLookup.NAME_DOI_FUNDER, 0L) == 0) {
+            // updates are wanted but a registry was never loaded here (a new storage, a container
+            // started afresh): no reason to wait for the day of the month
+            LOGGER.info("A registry is empty, so ROR and the funder registry are loaded now, then every month");
+            executor.execute(() -> {
+                try {
+                    task.run();
+                } catch (RuntimeException e) {
+                    LOGGER.error("Loading the registries failed, they will be attempted again on the day of the month", e);
+                }
+                scheduleNextRegistriesUpdate(executor, task, zone, dayOfMonth);
+            });
+            return;
+        }
+        scheduleNextRegistriesUpdate(executor, task, zone, dayOfMonth);
     }
 
     private void scheduleNextRegistriesUpdate(ScheduledExecutorService executor, RegistriesUpdateTask task, ZoneId zone, int dayOfMonth) {
@@ -287,6 +307,11 @@ public final class LookupServiceApplication extends Application<LookupConfigurat
         GuiceBundle guiceBundle = GuiceBundle.builder()
             .modules(getGuiceModules())
             .build();
+
+        // ${NAME:-default} in the configuration is the environment variable NAME, or the default:
+        // what lets one Docker image run anywhere without its configuration file being edited
+        bootstrap.setConfigurationSourceProvider(new SubstitutingSourceProvider(
+                bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor(false)));
 
         bootstrap.addBundle(guiceBundle);
         bootstrap.addBundle(new MultiPartBundle());

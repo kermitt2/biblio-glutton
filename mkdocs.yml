@@ -16,6 +16,7 @@ nav:
   - User manual:
     - 'Install': 'Install.md'
     - 'Elasticsearch': 'Elasticsearch.md'
+    - 'Docker': 'Docker.md'
     - 'Databases': 'Build-Databases'
     - 'REST API': 'API.md'
     - 'Frequently asked Questions': 'Frequently-asked-questions.md'
