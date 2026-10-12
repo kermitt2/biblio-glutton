@@ -10,8 +10,8 @@
 services:
   glutton:
     build: .
-    # built from this checkout; GLUTTON_IMAGE=ghcr.io/kermitt2/biblio-glutton:latest in .env, then
-    # docker compose pull glutton, takes the published image instead
+    # built from this checkout; GLUTTON_IMAGE=lfoppiano/biblio-glutton-lookup:latest in .env, then
+    # docker compose pull glutton, takes the image published on Docker Hub instead
     image: ${GLUTTON_IMAGE:-biblio-glutton:0.4.0}
     restart: unless-stopped
     depends_on:

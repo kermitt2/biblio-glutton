@@ -7,12 +7,12 @@ in each of them without its configuration file being edited.
 
 ### The image
 
-The image is published on the GitHub Container Registry, for `linux/amd64` and `linux/arm64`
-(Apple Silicon included):
+The image is published on [Docker Hub](https://hub.docker.com/r/lfoppiano/biblio-glutton-lookup),
+for `linux/amd64` and `linux/arm64` (Apple Silicon included):
 
 ```sh
-docker pull ghcr.io/kermitt2/biblio-glutton:latest     # master
-docker pull ghcr.io/kermitt2/biblio-glutton:0.4.1      # a release
+docker pull lfoppiano/biblio-glutton-lookup:latest     # master
+docker pull lfoppiano/biblio-glutton-lookup:0.4.1      # a release
 ```
 
 It can also be built from the checkout, which needs neither Java nor Gradle on the machine, the
@@ -81,7 +81,7 @@ why it may send the password over plain HTTP there. On Linux, Elasticsearch need
 `vm.max_map_count` raised on the host, see [Elasticsearch](Elasticsearch.md).
 
 Compose builds the image of the service from the checkout. To take the published one instead,
-set `GLUTTON_IMAGE=ghcr.io/kermitt2/biblio-glutton:latest` in `.env` and run
+set `GLUTTON_IMAGE=lfoppiano/biblio-glutton-lookup:latest` in `.env` and run
 `docker compose pull glutton` before `docker compose up -d`.
 
 The databases are under `./data/db`, the index in the volume `esdata`. To load them, put the
@@ -106,18 +106,25 @@ Memory: Elasticsearch takes `ES_JAVA_OPTS` (4 GB by default) plus about as much 
 file cache, the service `GLUTTON_JAVA_OPTS`, and the operating system caches the LMDB databases
 with whatever is left, which is what makes the lookups fast.
 
-### The image on GitHub
+### Publishing the image
 
-The workflow `.github/workflows/docker.yml` builds the image for every pull request and checks
-that it starts and answers, without publishing anything. On a push to master it publishes
-`:latest` and `:sha-<commit>`, and on a tag such as `0.4.1` the image of that name as well, for
-both platforms. Documentation-only changes do not trigger it; it can also be run by hand from the
-Actions tab.
+The workflow `.github/workflows/docker.yml` builds the image for every pull request, for
+`linux/amd64` and `linux/arm64` each on a GitHub runner of that architecture, and checks that it
+starts and answers, without publishing anything. On a push to master it publishes `:latest` and
+`:sha-<commit>` on Docker Hub, and on a tag such as `0.4.1` the image of that name as well, one
+tag covering both platforms. Documentation-only changes do not trigger it; it can also be run by
+hand from the Actions tab.
 
-The image goes to `ghcr.io/<owner of the repository>/biblio-glutton` with the token GitHub gives
-the workflow, so nothing is to be configured; a fork publishes under its own name. A package
-published for the first time is private: make it public once in the settings of the package, on
-GitHub, for `docker pull` to work without logging in.
+Publishing needs, in the settings of the repository on GitHub (Secrets and variables, Actions):
+
+- the secret `DOCKERHUB_USERNAME`, the Docker Hub account that publishes;
+- the secret `DOCKERHUB_TOKEN`, an access token of that account with write access (Docker Hub,
+  Account settings, Personal access tokens);
+- optionally the variable `DOCKERHUB_REPOSITORY`, to publish under another name than
+  `lfoppiano/biblio-glutton-lookup`; the account must be allowed to push there.
+
+Without the two secrets, the builds and checks still run, and the publishing step stops saying
+what is missing.
 
 ### Hugging Face Space
 
