@@ -35,17 +35,25 @@ validation:
 
 plugins:
     - search
+    - redirects:
+        redirect_maps:
+          'Build-Databases.md': 'Set-up-storage.md'
 nav:
   - Home: 'index.md'
+  - Getting Started:
+    - 'Install and run': 'Install.md'
+    - 'Elasticsearch': 'Elasticsearch.md'
+    - 'Troubleshooting and FAQ': 'Frequently-asked-questions.md'
+  - Upgrading:
+    - 'Upgrade guide': 'Upgrading.md'
+  - User Guide:
+    - 'Set up the storage': 'Set-up-storage.md'
+    - 'REST API': 'API.md'
+    - 'Configuration': 'Configuration.md'
   - About:
     - 'Introduction': 'Introduction.md'
+    - 'How it works': 'Architecture.md'
     - 'License': 'License.md'
-  - User manual:
-    - 'Install': 'Install.md'
-    - 'Elasticsearch': 'Elasticsearch.md'
-    - 'Databases': 'Build-Databases.md'
-    - 'REST API': 'API.md'
-    - 'Frequently asked Questions': 'Frequently-asked-questions.md'
   - Benchmarking:
-    - 'Matching': 'Benchmarking.md'
+    - 'Matching accuracy': 'Benchmarking.md'
     - 'Load testing': 'Load-testing.md'

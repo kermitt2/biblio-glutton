@@ -17,7 +17,7 @@ There are three ways to set the node up, from the simplest to the most protected
 | [Password and HTTPS](#with-a-password-and-https) | a node reached over a network, and what the Elastic guide sets up by default | the `https://` host, user and password, plus a Java truststore |
 
 Whatever the setup, the index is not to be created by hand: the loading commands create it, with
-its mapping, the first time they run (see [Build the databases](Build-Databases.md)).
+its mapping, the first time they run (see [Set up the storage](Set-up-storage.md)).
 
 ### Without security
 

@@ -3,7 +3,7 @@
 `scripts/loadtest/glutton_loadtest.py` sends lookups to a running service over many connections at
 once and reports the rate it sustains and how long the answers take. It is meant to compare
 storages, the snappy records of 0.3 against the zstd records of 0.4 (see
-[Compression of the stored records](Build-Databases.md)), and to repeat the comparison on another
+[Compression of the stored records](Set-up-storage.md)), and to repeat the comparison on another
 machine. It only needs Python 3.9 or later, with nothing to install.
 
 ### What can be compared

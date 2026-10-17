@@ -1,4 +1,4 @@
-## Building the bibliographical data look-up and matching databases
+## Set up the storage
 
 The loading of bibliographical metadata records and their indexing in the search cluster is done in one step. 
 
@@ -162,7 +162,7 @@ The dictionary size matters less than having one: 16 KB already gives 446 bytes 
 
 Compared with the snappy compression used up to 0.3, the records take a third of the space and read back just as fast. The LMDB file of a Crossref database loaded this way is about 40% the size of the same database loaded with snappy (measured with `./gradlew crossref` on 28,495 records: 40 MB against 98 MB); the file shrinks less than the records do because the per-page overhead of LMDB is the same in both cases. Through the running service, against an Elasticsearch 8.19 node on the same machine, a lookup by DOI takes the same 1.1 ms median on either storage, and a matching query by title and first author the same 11 ms: the decompression is not where the time goes. Zstandard without a dictionary is not worth it for records this size: it only saves a quarter and decompresses twice as slowly, and LZ4 saves nothing over snappy. Higher zstd levels shave off a few more percent while making the load several times slower, which is why the default level is 3; a full Crossref load is bound by parsing, not by compression, at that level.
 
-The setting is `compression` in `config/glutton.yml` (`zstd`, the default, or `snappy`), with `compressionLevel` for the zstd level. It only decides what gets written: every stored record says which format it is in, so a database built with one setting keeps working, and keeps receiving daily updates, after the setting changes. A database loaded by 0.3 therefore does not need to be reloaded, but it will not shrink until it is (see [Upgrading from 0.3](Install.md#upgrading-from-03)).
+The setting is `compression` in `config/glutton.yml` (`zstd`, the default, or `snappy`), with `compressionLevel` for the zstd level. It only decides what gets written: every stored record says which format it is in, so a database built with one setting keeps working, and keeps receiving daily updates, after the setting changes. A database loaded by 0.3 therefore does not need to be reloaded, but it will not shrink until it is (see [Upgrading from 0.3](Upgrading.md#upgrading-from-03)).
 
 #### Build the data loader 
 
@@ -416,7 +416,32 @@ Example:
 ./gradlew istex -Pinput=istexIds.all.gz 
 ```
 
-**Note:** see the [FAQ](Frequently-asked-questions.md) on how to create this mapping file `istexIds.all.gz`.
+##### Creating the ISTEX mapping file
+
+If you don't know what ISTEX is, you can safely skip this section.
+For creating a dump of all ISTEX identifiers associated with existing identifiers (DOI, ark, PII), use the node.js script as follow:
+
+* install:
+
+```sh
+cd scripts
+npm install requestretry
+```
+
+* Generate the json dump:
+
+```sh
+node dump-istexid-and-other-ids.js > istexIds.all
+```
+
+Be sure to have a good internet bandwidth for ensuring a high rate usage of the ISTEX REST API.
+
+You can then move the json dump (e.g. `istexIds.all`) to the Istex data path indicated in the file `config/glutton.yaml` (by default `data/istex/`). 
+
+##### ISTEX to PubMed mapping
+
+The mapping adds PudMed information (in particular MeSH classes) to ISTEX entries. 
+See the instructions [here](pubmed-glutton/Readme.md)
 
 #### Crossref Open Funder Registry
 

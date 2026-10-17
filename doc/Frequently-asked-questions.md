@@ -1,4 +1,4 @@
-## Frequently asked questions
+## Troubleshooting and FAQ
 
 ### How to cite this work?
 
@@ -17,32 +17,34 @@ If you want to cite this work, please refer to the present GitHub project, toget
 
 Note: `biblio-glutton` is spelled all lower case. 
 
-### How can I add ISTEX identifier mapping?
+## Troubleshooting
 
-If you don't know what ISTEX is, you can safely skip this section.
-For creating a dump of all ISTEX identifiers associated with existing identifiers (DOI, ark, PII), use the node.js script as follow:
+### The matching answers 503 (Elasticsearch index issues)
 
-* install:
-
-```sh
-cd scripts
-npm install requestretry
+It might happens that logs from Grobid show messages with error 503: 
+```
+INFO  [2024-08-30 12:50:17,897] org.grobid.core.utilities.Consolidation: Consolidation service returns error (503) : Service Unavailable
+```
+corresponding to the following error on the biblio-glutton side: 
+```
+35.175.72.198 - - [30/Aug/2024:12:21:13 +0000] "GET /service/lookup?parseReference=false&atitle=Latent+Dirichlet+Allocation&firstAuthor=Blei HTTP/1.1" 503 0 "-" "Apache-HttpClient/4.5.3 (Java/17.0.11)" 1710
 ```
 
-* Generate the json dump:
-
-```sh
-node dump-istexid-and-other-ids.js > istexIds.all
+This is biblio-glutton saying it cannot reach Elasticsearch, or that the index is not there. Ask
+the service itself what it sees:
+```
+curl http://localhost:8080/service/health
+```
+The answer says which of the storage and Elasticsearch is the problem and why (see [Health](API.md#health)),
+and the biblio-glutton log has a line starting with `ELASTICSEARCH IS NOT AVAILABLE` from the
+moment it went away. The lookups by identifier keep working from the storage meanwhile:
+```
+curl http://localhost:8080/service/lookup?doi=10.1371/journal.pone.0265361
+```
+while the direct matching queries answer 503 until Elasticsearch is back:
+```
+curl http://localhost:8080/service/lookup?parseReference=false&atitle=Latent+Dirichlet+Allocation&firstAuthor=Blei
 ```
 
-Be sure to have a good internet bandwidth for ensuring a high rate usage of the ISTEX REST API.
-
-You can then move the json dump (e.g. `istexIds.all`) to the Istex data path indicated in the file `config/glutton.yaml` (by default `data/istex/`). 
-
-### ISTEX to PubMed mapping
-
-The mapping adds PudMed information (in particular MeSH classes) to ISTEX entries. 
-See the instructions [here](pubmed-glutton/Readme.md)
-
-
-
+NOTE that code 404 or 400 are normal and should not be considered as an error: 404 is a record that
+was not found, 400 a query without enough to search with.

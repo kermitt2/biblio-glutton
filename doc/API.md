@@ -80,8 +80,8 @@ For convenience, in case you are only interested by the Open Access URL for a bi
 
 ## Funders and research organizations
 
-When the [Crossref Open Funder Registry](Build-Databases.md#crossref-open-funder-registry) and
-[ROR](Build-Databases.md#ror-research-organization-registry) are loaded, the service also answers
+When the [Crossref Open Funder Registry](Set-up-storage.md#crossref-open-funder-registry) and
+[ROR](Set-up-storage.md#ror-research-organization-registry) are loaded, the service also answers
 about funders and organizations. These are records of their own, not bibliographical records.
 
 - A funder of the Open Funder Registry, by its DOI (the `funder[].DOI` of a Crossref record):
