@@ -11,6 +11,8 @@ funder and research organization lookups.
 
 * [Elasticsearch](Elasticsearch.md) — set up the node the matching needs, with or without security
 
+* [Docker](Docker.md) — the image, Docker Compose with Elasticsearch and Grobid, and a Hugging Face Space
+
 * [Troubleshooting and FAQ](Frequently-asked-questions.md) — common issues and how to cite biblio-glutton
 
 ## Upgrading

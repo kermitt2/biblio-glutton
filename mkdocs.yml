@@ -43,6 +43,7 @@ nav:
   - Getting Started:
     - 'Install and run': 'Install.md'
     - 'Elasticsearch': 'Elasticsearch.md'
+    - 'Docker': 'Docker.md'
     - 'Troubleshooting and FAQ': 'Frequently-asked-questions.md'
   - Upgrading:
     - 'Upgrade guide': 'Upgrading.md'

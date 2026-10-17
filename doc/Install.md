@@ -14,6 +14,11 @@ The matching needs an Elasticsearch node; the lookups by identifier work without
 [Elasticsearch](Elasticsearch.md) for installing one with Docker or Docker Compose and for
 connecting biblio-glutton to it, with or without a password and HTTPS.
 
+### Docker
+
+The service, its loading commands, Elasticsearch and Grobid also run with Docker Compose, and the
+funder and organization lookups as a Hugging Face Space: see [Docker](Docker.md).
+
 ### Build the service
 
 You need **Java JDK 21 (LTS)** installed for building and running the tool. The Gradle wrapper is configured with a Java 21 toolchain — if your default `java` is older, the [Foojay toolchain resolver](https://github.com/gradle/foojay-toolchains) will automatically download and provision a JDK 21 on first build. To install Java 21 manually, use [SDKMAN!](https://sdkman.io) or [Eclipse Temurin](https://adoptium.net/temurin/releases/?version=21).

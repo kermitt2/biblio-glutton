@@ -1,0 +1,74 @@
+# biblio-glutton with Elasticsearch and Grobid, see doc/Docker.md.
+#
+#   cp .env.example .env          # and set ELASTIC_PASSWORD in it
+#   docker compose up -d          # Elasticsearch, Grobid and the service
+#   docker compose run --rm glutton crossref --input /data/dumps/crossref/    # a load
+#
+# Everything the service stores is under ./data (the LMDB databases in ./data/db), and the
+# Elasticsearch index in the volume esdata.
+
+services:
+  glutton:
+    build: .
+    # built from this checkout, again at each up or run (the layers are cached) so that it is never
+    # older than the code; GLUTTON_IMAGE=lfoppiano/biblio-glutton-lookup:latest and
+    # GLUTTON_PULL_POLICY=always in .env take the image published on Docker Hub instead
+    image: ${GLUTTON_IMAGE:-biblio-glutton:0.4.0}
+    pull_policy: ${GLUTTON_PULL_POLICY:-build}
+    restart: unless-stopped
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      JAVA_OPTS: ${GLUTTON_JAVA_OPTS:--Xmx4g}
+      ELASTIC_HOST: elasticsearch:9200
+      ELASTIC_USERNAME: elastic
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:?set ELASTIC_PASSWORD in .env}
+      # the password goes over the network of the containers only, see doc/Docker.md
+      ELASTIC_ALLOW_CREDENTIALS_OVER_HTTP: "true"
+      GROBID_HOST: http://grobid:8070/api
+      REGISTRIES_UPDATE_ENABLED: ${REGISTRIES_UPDATE_ENABLED:-false}
+    volumes:
+      - ./data:/data
+    ports:
+      - "${GLUTTON_PORT:-8080}:8080"
+      - "127.0.0.1:8081:8081"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.19.4}
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      xpack.ml.enabled: "false"
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:?set ELASTIC_PASSWORD in .env}
+      ES_JAVA_OPTS: ${ES_JAVA_OPTS:--Xms4g -Xmx4g}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    # reachable from this machine only, for curl; the service talks to it inside the network
+    ports:
+      - "127.0.0.1:9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs -u elastic:$$ELASTIC_PASSWORD http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  grobid:
+    # the CRF models: small and fast enough for parsing references; for the deep learning ones,
+    # use grobid/grobid:0.9.1-full (about 15 GB, a GPU helps)
+    image: grobid/grobid:${GROBID_VERSION:-0.9.1-crf}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8070:8070"
+
+volumes:
+  esdata:

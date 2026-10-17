@@ -6,21 +6,21 @@ The loading of bibliographical metadata records and their indexing in the search
 
 To set-up a functional biblio-glutton server, resources need to be loaded following these steps: 
 
-1) Loading and indexing of a Crossref full metadata dump as embedded LMDB
+1) [Loading and indexing of a Crossref full metadata dump](#crossref-metadata) as embedded LMDB
 
-2) Loading and indexing for the coverage gap between the Crossref dump and the current day (updates are then realized automatically daily as the service is up and running) in the embedded LMDB
+2) [Loading and indexing for the coverage gap](#crossref-metadata-gap-coverage) between the Crossref dump and the current day (updates are then realized automatically daily as the service is up and running) in the embedded LMDB
 
-3) (Optional) Loading and indexing of HAL archive metadata
+3) (Optional) [Loading and indexing of HAL archive metadata](#hal-archive)
 
-4) (Optional) Loading the DOI to PMID and PMC ID mapping (as embedded LMDB)
+4) (Optional) [Loading the DOI to PMID and PMC ID mapping](#pmid-and-pmc-id) (as embedded LMDB)
 
-5) (Optional) Loading the Open Access information from an OpenAlex snapshot as embedded LMDB
+5) (Optional) [Loading the Open Access information from an OpenAlex snapshot](#oa-via-openalex) as embedded LMDB
 
-6) (Very optional) Loading the ISTEX ID mapping as embedded LMDB (only of use to ISTEX users)
+6) (Very optional) [Loading the ISTEX ID mapping](#istex) as embedded LMDB (only of use to ISTEX users)
 
-7) (Optional) Loading the Crossref Open Funder Registry as embedded LMDB
+7) (Optional) [Loading the Crossref Open Funder Registry](#crossref-open-funder-registry) as embedded LMDB
 
-8) (Optional) Loading the ROR (Research Organization Registry) as embedded LMDB
+8) (Optional) [Loading the ROR (Research Organization Registry)](#ror-research-organization-registry) as embedded LMDB
 
 It is possible to only load HAL archive metadata, skipping entirely Crossref, but the service will be much more limited - so we suggest to always start with Crossref. It is also possible to skip HAL archive resources. Step 4) is fast and we suggest to also always include it.
 

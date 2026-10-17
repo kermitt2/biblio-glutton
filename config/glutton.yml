@@ -1,8 +1,11 @@
 version: 0.4.0
 
+# Any value written ${NAME:-default} below is taken from the environment variable NAME when it is
+# set, and is the default otherwise; the Docker image sets them (see doc/Docker.md).
+
 # where the compiled metadata are stored, it takes more than 200GB for all Crossref, OpenAlex, PubMed and ISTEX mappings, 
 # this is a single location for all compiled resources  
-storage: data/db
+storage: ${GLUTTON_STORAGE:-data/db}
 #storage: /media/lopez/data/glutton-data/data/db
 
 # Compression of the metadata records (Crossref, HAL) stored in LMDB:
@@ -24,7 +27,7 @@ indexingBatchSize: 10000
 blockSize: 4
 
 # Grobid server URL
-grobidHost: http://localhost:8070/api
+grobidHost: ${GROBID_HOST:-http://localhost:8070/api}
 
 timeZone: UTC
 # the day hour for lauching the automatic daily incremental update, format is HH:MM
@@ -43,20 +46,20 @@ searchEngine: elasticSearch
 # a node of the ElasticSearch cluster to be used and a name for the main index
 elastic:
   #host: localhost:9200
-  host: 0.0.0.0:9200
+  host: ${ELASTIC_HOST:-0.0.0.0:9200}
   #host: 192.168.1.30:9200
   # with TLS on the cluster, give the scheme: https://elastic.example.org:9200
-  index: glutton
+  index: ${ELASTIC_INDEX:-glutton}
   maxConnections: 20
   # credentials, for a cluster with security on (the default since Elasticsearch 8): either a
   # user and password, or an API key (as given by the create API key call, base64 form). Do not
   # put them in the host URL, the client does not read them there. They go with every request,
   # so the host must be https:// - unless the next setting says a plain http cluster is meant
   # (a local one with TLS turned off, say)
-  #username: elastic
-  #password: changeme
-  #apiKey:
-  #allowCredentialsOverHttp: false
+  username: ${ELASTIC_USERNAME:-}
+  password: ${ELASTIC_PASSWORD:-}
+  apiKey: ${ELASTIC_API_KEY:-}
+  allowCredentialsOverHttp: ${ELASTIC_ALLOW_CREDENTIALS_OVER_HTTP:-false}
   # for the loading and update commands: seconds to wait for a connection and for the answer to a
   # bulk of records. Elasticsearch takes more than the default 30s for a full bulk when it is busy,
   # and a bulk that times out is retried, so keep this generous
@@ -157,10 +160,10 @@ openAlex:
 # the registry from Crossref's GitLab) and loads it over the records stored, at 04:00 on the given
 # day of each month.
 registries:
-  updateEnabled: false
+  updateEnabled: ${REGISTRIES_UPDATE_ENABLED:-false}
   updateDayOfMonth: 15
   # where the downloads go before they are loaded (about 130 MB, removed afterwards)
-  dumpPath: data/registries
+  dumpPath: ${REGISTRIES_DUMP_PATH:-data/registries}
 
 # CORS parameters 
 corsAllowedOrigins: "*"
@@ -175,10 +178,10 @@ server:
   type: default
   applicationConnectors:
   - type: http
-    port: 8080
+    port: ${GLUTTON_PORT:-8080}
   adminConnectors:
   - type: http
-    port: 8081
+    port: ${GLUTTON_ADMIN_PORT:-8081}
   registerDefaultExceptionMappers: false
   maxThreads: 2048
   # note: `maxQueuedRequests` was removed in Dropwizard 5 (Jetty 12); the application-level

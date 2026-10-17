@@ -27,3 +27,6 @@ build
 **/package-lock.json
 data/db/*
 pubmed-glutton/*
+
+# the secrets of docker compose
+.env

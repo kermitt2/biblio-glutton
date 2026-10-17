@@ -1,0 +1,197 @@
+# Builds the Docker image of biblio-glutton for linux/amd64 and linux/arm64, each on a runner of
+# its own architecture, checks that it starts, and publishes it on Docker Hub as
+# lfoppiano/biblio-glutton-lookup (see doc/Docker.md).
+#
+#   pull request      publish :latest-develop (nothing from a fork, which has no access to the
+#                     secrets)
+#   push to master    publish :latest-develop and :latest
+#   tag 0.4.1         publish :0.4.1
+#   by hand           Actions > Docker image > Run workflow, publishes :latest-develop
+#
+# No tag per commit: each would keep an image on Docker Hub.
+#
+# Both platforms are built and checked before anything is published, and each tag covers both:
+# each platform is pushed by digest, and the last job joins the two digests under the tags. The
+# arm64 runner (ubuntu-24.04-arm) is free for public repositories.
+#
+# Publishing needs two secrets of the repository, DOCKERHUB_USERNAME_LFOPPIANO and
+# DOCKERHUB_TOKEN_LFOPPIANO (an access token of Docker Hub with write access), and the variable
+# DOCKERHUB_REPOSITORY to publish under another name than lfoppiano/biblio-glutton-lookup.
+
+name: Docker image
+
+on:
+  push:
+    branches: [master]
+    tags: ['[0-9]*']
+    paths-ignore: ['doc/**', '**/*.md', 'mkdocs.yml', 'readthedocs.yml', 'scripts/**']
+  pull_request:
+    paths-ignore: ['doc/**', '**/*.md', 'mkdocs.yml', 'readthedocs.yml', 'scripts/**']
+  workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: ${{ vars.DOCKERHUB_REPOSITORY || 'lfoppiano/biblio-glutton-lookup' }}
+  # a pull request from a fork has no access to the secrets: it is built and checked only
+  PUBLISH: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+  # the summary of a run is the one of the publish job: none of each build, nor its build record
+  DOCKER_BUILD_SUMMARY: false
+  DOCKER_BUILD_RECORD_UPLOAD: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build for ${{ matrix.platform }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          load: true
+          tags: biblio-glutton:test
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,scope=${{ matrix.arch }},mode=max
+
+      - name: Check that the image starts and answers
+        run: |
+          docker run --rm biblio-glutton:test --help | grep -q crossref
+          docker run -d --name glutton -p 8080:8080 -e JAVA_OPTS=-Xmx1g biblio-glutton:test
+          for i in $(seq 1 60); do
+            if curl -fs http://localhost:8080/service/data > data.json; then break; fi
+            sleep 2
+          done
+          cat data.json; echo
+          grep -q '"ROR size (LMDB)"' data.json
+          # a lookup goes through the storage: an unknown funder is a 404, not an error
+          test "$(curl -s -o /dev/null -w '%{http_code}' 'http://localhost:8080/service/lookup/funder?doi=10.13039/100012950')" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' 'http://localhost:8080/service/lookup/ror?id=not-an-id')" = 400
+
+      - name: Logs of the service
+        if: always()
+        run: docker logs glutton 2>&1 | tail -100 || true
+
+      - name: Docker Hub credentials are set
+        if: env.PUBLISH == 'true'
+        env:
+          USERNAME: ${{ secrets.DOCKERHUB_USERNAME_LFOPPIANO }}
+          TOKEN: ${{ secrets.DOCKERHUB_TOKEN_LFOPPIANO }}
+        run: |
+          if [ -z "$USERNAME" ] || [ -z "$TOKEN" ]; then
+            echo "::error::Set the secrets DOCKERHUB_USERNAME_LFOPPIANO and DOCKERHUB_TOKEN_LFOPPIANO of the repository to publish on Docker Hub"
+            exit 1
+          fi
+
+      - if: env.PUBLISH == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME_LFOPPIANO }}
+          password: ${{ secrets.DOCKERHUB_TOKEN_LFOPPIANO }}
+
+      - name: Push ${{ matrix.platform }} by digest
+        if: env.PUBLISH == 'true'
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=Apache-2.0
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.arch }}
+
+      - name: Keep the digest for the last job
+        if: env.PUBLISH == 'true'
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.push.outputs.digest }}"
+          # with the platform and the size of the image once pulled, for the summary
+          echo "${{ matrix.platform }} $(docker image inspect --format '{{.Size}}' biblio-glutton:test)" \
+            > "/tmp/digests/${digest#sha256:}"
+
+      - if: env.PUBLISH == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Image names and tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: latest=false
+          tags: |
+            type=raw,value=latest-develop,enable=${{ github.ref_type != 'tag' }}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=tag
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME_LFOPPIANO }}
+          password: ${{ secrets.DOCKERHUB_TOKEN_LFOPPIANO }}
+
+      - name: One tag for both platforms
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf "$IMAGE@sha256:%s " *)
+
+      - name: What was published
+        working-directory: /tmp/digests
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          index=$(docker buildx imagetools inspect --raw "$IMAGE:$VERSION")
+          {
+            jq -r '.tags[] | "- `" + . + "`"' <<< "$DOCKER_METADATA_OUTPUT_JSON"
+            echo
+            echo "| Platform | Download | On disk |"
+            echo "|---|---|---|"
+            for f in *; do
+              read -r platform size < "$f"
+              digest=$(jq -r --arg os "${platform%/*}" --arg arch "${platform#*/}" \
+                '[.manifests[] | select(.platform.os == $os and .platform.architecture == $arch)][0].digest' <<< "$index")
+              download=$(docker buildx imagetools inspect --raw "$IMAGE@$digest" | jq '[.layers[].size] | add')
+              echo "| $platform | $(numfmt --to=iec-i --suffix=B "$download") | $(numfmt --to=iec-i --suffix=B "$size") |"
+            done
+          } | tee -a "$GITHUB_STEP_SUMMARY"

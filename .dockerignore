@@ -1,3 +1,17 @@
+# what the image is built from: the Gradle build, src/main, config and docker/
 .git
+.gradle
+build
 data
-logs/*
+logs
+doc
+test
+src/test
+scripts
+web-extension
+pubmed-glutton
+deploy
+**/__pycache__
+*.md
+!README.md
+.env
