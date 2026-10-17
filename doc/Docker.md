@@ -88,8 +88,9 @@ why it may send the password over plain HTTP there. On Linux, Elasticsearch need
 Compose builds the image of the service from the checkout, at each `up` and `run`, so that it
 always runs the code of the checkout (the build reuses its cache when nothing changed). To take
 the published image instead, set in `.env`
-`GLUTTON_IMAGE=lfoppiano/biblio-glutton-lookup:latest` and `GLUTTON_PULL_POLICY=always` (or
-`missing`, to pull it only when it is not there yet).
+`GLUTTON_IMAGE=lfoppiano/biblio-glutton-lookup:latest` and `GLUTTON_PULL_POLICY=always`. With a
+release in place of `latest`, such as `:0.4.1`, `GLUTTON_PULL_POLICY=missing` pulls it once only
+(Compose pulls a `latest` image again whatever the policy).
 
 The databases are under `./data/db`, the index in the volume `esdata`. To load them, put the
 dumps under `./data` (or give an `s3://` location) and run the loading commands in the
