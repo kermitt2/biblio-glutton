@@ -60,4 +60,4 @@ If you contribute to this project, you agree to share your contribution followin
 
 ## Presentations
 
-- Crossref 2026 annual meeting and board election, 22 October 2026: *biblio-glutton: fast, local reference matching on Crossref data*, Luca Foppiano (ScienciaLAB). [Slides (PDF)](doc/presentations/2026-10-crossref-annual-meeting/LucaFoppiano-biblio-glutton-slides.pdf), [slides (PowerPoint)](doc/presentations/2026-10-crossref-annual-meeting/LucaFoppiano-biblio-glutton-slides.pptx), [poster (PDF)](doc/presentations/2026-10-crossref-annual-meeting/LucaFoppiano-biblio-glutton-poster.pdf)
+- Crossref 2026 annual meeting and board election, 22 October 2026: *biblio-glutton: fast, local reference matching on Crossref data*, Luca Foppiano (ScienciaLAB). [Slides (PDF)](doc/presentations/2026-10-crossref-annual-meeting/LucaFoppiano-biblio-glutton-slides.pdf), [poster (PDF)](doc/presentations/2026-10-crossref-annual-meeting/LucaFoppiano-biblio-glutton-poster.pdf)
