@@ -37,7 +37,7 @@ env:
   IMAGE: ${{ vars.DOCKERHUB_REPOSITORY || 'lfoppiano/biblio-glutton-lookup' }}
   # a pull request from a fork has no access to the secrets: it is built and checked only
   PUBLISH: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-  # no build summary nor build record artifact for each of the four builds
+  # the summary of a run is the one of the publish job: none of each build, nor its build record
   DOCKER_BUILD_SUMMARY: false
   DOCKER_BUILD_RECORD_UPLOAD: false
 
@@ -126,7 +126,9 @@ jobs:
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.push.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
+          # with the platform and the size of the image once pulled, for the summary
+          echo "${{ matrix.platform }} $(docker image inspect --format '{{.Size}}' biblio-glutton:test)" \
+            > "/tmp/digests/${digest#sha256:}"
 
       - if: env.PUBLISH == 'true'
         uses: actions/upload-artifact@v4
@@ -174,5 +176,22 @@ jobs:
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf "$IMAGE@sha256:%s " *)
 
-      - name: Check what was published
-        run: docker buildx imagetools inspect "$IMAGE:${{ steps.meta.outputs.version }}"
+      - name: What was published
+        working-directory: /tmp/digests
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          index=$(docker buildx imagetools inspect --raw "$IMAGE:$VERSION")
+          {
+            jq -r '.tags[] | "- `" + . + "`"' <<< "$DOCKER_METADATA_OUTPUT_JSON"
+            echo
+            echo "| Platform | Download | On disk |"
+            echo "|---|---|---|"
+            for f in *; do
+              read -r platform size < "$f"
+              digest=$(jq -r --arg os "${platform%/*}" --arg arch "${platform#*/}" \
+                '[.manifests[] | select(.platform.os == $os and .platform.architecture == $arch)][0].digest' <<< "$index")
+              download=$(docker buildx imagetools inspect --raw "$IMAGE@$digest" | jq '[.layers[].size] | add')
+              echo "| $platform | $(numfmt --to=iec-i --suffix=B "$download") | $(numfmt --to=iec-i --suffix=B "$size") |"
+            done
+          } | tee -a "$GITHUB_STEP_SUMMARY"
