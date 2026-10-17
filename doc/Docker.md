@@ -152,8 +152,6 @@ deploy/huggingface/push-space.sh <user-or-org>/biblio-glutton            # a pri
 deploy/huggingface/push-space.sh <user-or-org>/biblio-glutton --public
 ```
 
-Without `--public`, an existing Space keeps its visibility; with it, the Space is made public.
-
 The build takes some ten minutes, and the first start about one more for the registries. The
 Space then answers, for instance, `https://<user-or-org>-biblio-glutton.hf.space/service/lookup/ror?id=02kvxyf05`.
 The environment variables above can be changed in the settings of the Space.
