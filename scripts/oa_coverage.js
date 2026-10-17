@@ -11,8 +11,6 @@ var service = "/service/oa?doi="
 /**
  *  usage: 
  *
- *  > npm install
- *
  *  > node oa_coverage -istex ../data/istex/istexIds.all.gz
  *  > node oa_coverage -dump ../data/istex/dois.gz
  *  > node oa_coverage -pmc ../data/pmc/PMID_PMCID_DOI.csv.gz
