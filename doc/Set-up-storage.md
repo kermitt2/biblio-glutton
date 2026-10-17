@@ -438,18 +438,18 @@ left out of the mapping.
 
 ##### Creating the ISTEX mapping file
 
-The mapping file is harvested from the ISTEX API with a node.js script. Install its dependencies
-(the versions given in `scripts/package.json`) and run it:
+The mapping file is harvested from the ISTEX API with a bash script, which needs `curl` and `jq`:
 
 ```sh
-cd scripts
-npm install
-node dump-istexid-and-other-ids.js > istexIds.all
-gzip istexIds.all
+scripts/dump-istex-ids.sh | gzip > istexIds.all.gz
 ```
 
-The ISTEX API holds around 33 million documents (October 2026) and the script asks for them 1,000
-at a time, so the harvest makes some 33,000 requests: a good internet bandwidth helps.
+It writes one line per ISTEX document with a DOI, and says on the error output how far it got
+every 100,000 documents. The ISTEX API holds around 33 million documents (October 2026) and the
+script asks for them 1,000 at a time; at the 3,000 documents per second seen then, the harvest
+takes about three hours. A request that fails is tried again for up to four minutes. If it still
+fails, the script stops with an error: the API is read with a scroll that cannot be resumed, so run
+it again from the start.
 
 ##### Loading the mapping
 

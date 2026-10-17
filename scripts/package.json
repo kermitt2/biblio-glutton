@@ -1,8 +1,8 @@
 {
   "name": "scripts",
   "version": "1.0.0",
-  "description": "Crawl ISTEX identifiers with DOI, PII and PMIDs",
-  "main": "dump-istexid-and-other-ids.js",
+  "description": "Crawl the ISTEX metadata",
+  "main": "dump-istexid-metadata.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
