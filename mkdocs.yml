@@ -13,6 +13,7 @@ nav:
   - About:
     - 'Introduction': 'Introduction.md'
     - 'Licence': 'License.md'
+    - 'Presentations': 'presentations/index.md'
   - User manual:
     - 'Install': 'Install.md'
     - 'Elasticsearch': 'Elasticsearch.md'

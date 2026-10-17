@@ -6,6 +6,8 @@
 
 * [License](License.md)
 
+* [Presentations](presentations/index.md)
+
 <h3>User manual</h3>
 
 * [Install](Install.md)
