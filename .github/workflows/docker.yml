@@ -37,6 +37,9 @@ env:
   IMAGE: ${{ vars.DOCKERHUB_REPOSITORY || 'lfoppiano/biblio-glutton-lookup' }}
   # a pull request from a fork has no access to the secrets: it is built and checked only
   PUBLISH: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+  # no build summary nor build record artifact for each of the four builds
+  DOCKER_BUILD_SUMMARY: false
+  DOCKER_BUILD_RECORD_UPLOAD: false
 
 jobs:
   build:
