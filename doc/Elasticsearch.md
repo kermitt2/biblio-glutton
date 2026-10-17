@@ -17,7 +17,7 @@ There are three ways to set the node up, from the simplest to the most protected
 | [Password and HTTPS](#with-a-password-and-https) | a node reached over a network, and what the Elastic guide sets up by default | the `https://` host, user and password, plus a Java truststore |
 
 Whatever the setup, the index is not to be created by hand: the loading commands create it, with
-its mapping, the first time they run (see [Build the databases](Build-Databases.md)).
+its mapping, the first time they run (see [Set up the storage](Set-up-storage.md)).
 
 ### Without security
 
@@ -200,7 +200,7 @@ copy and not from an empty truststore: one that holds the Elasticsearch certific
 the HTTPS calls to Crossref and OpenAlex fail.
 
 Set the variable in the shell the Gradle commands are run from. It is needed by every command that
-talks to Elasticsearch (`server`, `crossref`, `gap_crossref`, `index`):
+talks to Elasticsearch (`server`, `crossref`, `gap_crossref`, `hal`, `hal_audit`, `index`):
 
 ```sh
 export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=$PWD/config/truststore.jks -Djavax.net.ssl.trustStorePassword=changeit"
@@ -217,7 +217,8 @@ elastic:
 ```
 
 - Give the host by a name the certificate was issued for. `localhost` is one of them; `0.0.0.0` or
-  an address of the machine are not, and are refused.
+  an address of the machine are not, and are refused. The shipped `config/glutton.yml` has
+  `0.0.0.0:9200`: change it.
 - `allowCredentialsOverHttp` is for plain HTTP only, leave it out.
 - The enrollment token and the Kibana steps of the Elastic guide are not needed.
 
