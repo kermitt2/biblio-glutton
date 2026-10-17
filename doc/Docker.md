@@ -128,8 +128,8 @@ it can also be run by hand from the Actions tab.
 
 Publishing needs, in the settings of the repository on GitHub (Secrets and variables, Actions):
 
-- the secret `DOCKERHUB_LFOPPIANO_USERNAME`, the Docker Hub account that publishes;
-- the secret `DOCKERHUB_LFOPPIANO_TOKEN`, an access token of that account with write access
+- the secret `DOCKERHUB_USERNAME_LFOPPIANO`, the Docker Hub account that publishes;
+- the secret `DOCKERHUB_TOKEN_LFOPPIANO`, an access token of that account with write access
   (Docker Hub, Account settings, Personal access tokens);
 - optionally the variable `DOCKERHUB_REPOSITORY`, to publish under another name than
   `lfoppiano/biblio-glutton-lookup`; the account must be allowed to push there.

@@ -14,8 +14,8 @@
 # each platform is pushed by digest, and the last job joins the two digests under the tags. The
 # arm64 runner (ubuntu-24.04-arm) is free for public repositories.
 #
-# Publishing needs two secrets of the repository, DOCKERHUB_LFOPPIANO_USERNAME and
-# DOCKERHUB_LFOPPIANO_TOKEN (an access token of Docker Hub with write access), and the variable
+# Publishing needs two secrets of the repository, DOCKERHUB_USERNAME_LFOPPIANO and
+# DOCKERHUB_TOKEN_LFOPPIANO (an access token of Docker Hub with write access), and the variable
 # DOCKERHUB_REPOSITORY to publish under another name than lfoppiano/biblio-glutton-lookup.
 
 name: Docker image
@@ -90,19 +90,19 @@ jobs:
       - name: Docker Hub credentials are set
         if: env.PUBLISH == 'true'
         env:
-          USERNAME: ${{ secrets.DOCKERHUB_LFOPPIANO_USERNAME }}
-          TOKEN: ${{ secrets.DOCKERHUB_LFOPPIANO_TOKEN }}
+          USERNAME: ${{ secrets.DOCKERHUB_USERNAME_LFOPPIANO }}
+          TOKEN: ${{ secrets.DOCKERHUB_TOKEN_LFOPPIANO }}
         run: |
           if [ -z "$USERNAME" ] || [ -z "$TOKEN" ]; then
-            echo "::error::Set the secrets DOCKERHUB_LFOPPIANO_USERNAME and DOCKERHUB_LFOPPIANO_TOKEN of the repository to publish on Docker Hub"
+            echo "::error::Set the secrets DOCKERHUB_USERNAME_LFOPPIANO and DOCKERHUB_TOKEN_LFOPPIANO of the repository to publish on Docker Hub"
             exit 1
           fi
 
       - if: env.PUBLISH == 'true'
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_LFOPPIANO_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_LFOPPIANO_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME_LFOPPIANO }}
+          password: ${{ secrets.DOCKERHUB_TOKEN_LFOPPIANO }}
 
       - name: Push ${{ matrix.platform }} by digest
         if: env.PUBLISH == 'true'
@@ -161,8 +161,8 @@ jobs:
 
       - uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_LFOPPIANO_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_LFOPPIANO_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME_LFOPPIANO }}
+          password: ${{ secrets.DOCKERHUB_TOKEN_LFOPPIANO }}
 
       - name: One tag for both platforms
         working-directory: /tmp/digests
