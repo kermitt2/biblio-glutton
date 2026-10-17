@@ -35,6 +35,8 @@ funder and research organization lookups.
 
 * [License](License.md) — authors, contact and license
 
+* [Presentations](presentations/index.md) — talks and posters about biblio-glutton
+
 ## Benchmarking
 
 * [Matching accuracy](Benchmarking.md) — evaluation of the bibliographical reference matching

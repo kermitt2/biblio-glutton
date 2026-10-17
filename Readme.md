@@ -57,3 +57,7 @@ If you want to cite this work, please refer to the present GitHub project, toget
 Distributed under [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0). 
 
 If you contribute to this project, you agree to share your contribution following this license. 
+
+## Presentations
+
+- Crossref 2026 annual meeting and board election, 22 October 2026: *biblio-glutton: fast, local reference matching on Crossref data*, Luca Foppiano (ScienciaLAB). [Slides (PDF)](doc/presentations/2026-10-crossref-annual-meeting/LucaFoppiano-biblio-glutton-slides.pdf), [poster (PDF)](doc/presentations/2026-10-crossref-annual-meeting/LucaFoppiano-biblio-glutton-poster.pdf)
