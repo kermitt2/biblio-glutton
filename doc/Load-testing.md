@@ -3,7 +3,7 @@
 `scripts/loadtest/glutton_loadtest.py` sends lookups to a running service over many connections at
 once and reports the rate it sustains and how long the answers take. It is meant to compare
 storages, the snappy records of 0.3 against the zstd records of 0.4 (see
-[Compression of the stored records](Build-Databases.md)), and to repeat the comparison on another
+[Compression of the stored records](Set-up-storage.md#compression-of-the-stored-records)), and to repeat the comparison on another
 machine. It only needs Python 3.9 or later, with nothing to install.
 
 ### What can be compared
@@ -121,7 +121,7 @@ went through the requests more than once, since a record asked for a second time
 
 - **The load generator is the limit.** A process of it sends a few thousand requests per second,
   and it takes processor time from the service when both are on the same machine. The `client` column
-  is the share of a core its busiest process used; above 70% the level is marked with `!`, and the
+  of the `run` output is the share of a core its busiest process used; above 70% the level is marked with `!`, and the
   service may take more than it was sent. Raise `--processes`, or better, with two machines, send
   from the one to the service on the other (`--url http://the-other:8080`, over a wired network)
   and then swap them.
