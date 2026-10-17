@@ -200,7 +200,7 @@ copy and not from an empty truststore: one that holds the Elasticsearch certific
 the HTTPS calls to Crossref and OpenAlex fail.
 
 Set the variable in the shell the Gradle commands are run from. It is needed by every command that
-talks to Elasticsearch (`server`, `crossref`, `gap_crossref`, `index`):
+talks to Elasticsearch (`server`, `crossref`, `gap_crossref`, `hal`, `hal_audit`, `index`):
 
 ```sh
 export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=$PWD/config/truststore.jks -Djavax.net.ssl.trustStorePassword=changeit"
@@ -217,7 +217,8 @@ elastic:
 ```
 
 - Give the host by a name the certificate was issued for. `localhost` is one of them; `0.0.0.0` or
-  an address of the machine are not, and are refused.
+  an address of the machine are not, and are refused. The shipped `config/glutton.yml` has
+  `0.0.0.0:9200`: change it.
 - `allowCredentialsOverHttp` is for plain HTTP only, leave it out.
 - The enrollment token and the Kibana steps of the Elastic guide are not needed.
 

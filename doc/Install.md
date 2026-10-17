@@ -1,11 +1,12 @@
-## The bibliographical look-up and matching REST API
+## Install and run
 
+A biblio-glutton instance is the service, its storage (embedded LMDB databases) and an
+Elasticsearch index for the matching. The storage and the index are filled by the loading commands,
+see [Set up the storage](Set-up-storage.md); the service answers from whatever has been loaded, so
+it can be started after loading all or only a selection of the resources.
 
-The first step to deploy a biblio-glutton instance is to to create the bibliographical databases and search index, see the page [Build-Databases](Set-up-storage.md) for detailed explanation. 
-
-After installing all or a selection of bibliographical databases, the bibliographical REST API can be started. 
-
-The following describes how to build and start the bibliographical service. 
+The following describes how to build and start the service. How the parts fit together is
+described in [How it works](Architecture.md).
 
 ### Install Elasticsearch
 
@@ -27,7 +28,9 @@ You need **Java JDK 21 (LTS)** installed for building and running the tool. The 
 ./gradlew server
 ```
 
-The service will use the default project configuration located under `biblio-glutton/config/glutton.yml`. To select a configuration file in another location use the additional parameter `-Pconfig=/other/path/glutton.yml` as follow: 
+`./gradlew run` does the same.
+
+The service will use the default project configuration located under `config/glutton.yml` (see [Configuration](Configuration.md)). To select a configuration file in another location use the additional parameter `-Pconfig=/other/path/glutton.yml` as follow: 
 
 ```sh
 ./gradlew server -Pconfig=/other/path/glutton.yml
@@ -35,20 +38,29 @@ The service will use the default project configuration located under `biblio-glu
 
 To check if it works, you can view a report of the data used by the service at `host:port/service/data`. For instance:
 
-> curl localhost:8080/service/data
+```sh
+curl localhost:8080/service/data
+```
 
 ```json
 {
-  "ISTEX size (LMDB)": "{istex_doi2ids=0, istex_istex2ids=0, istex_pii2ids=0}",
-  "Crossref metadata stored size": "{crossref_Jsondoc=149817829}",
-  "Crossref metadata indexed size (elastic)": "{glutton=149812959}",
+  "Crossref metadata stored size (LMDB)": "{crossref_Jsondoc=149817829}",
   "HAL Metadata stored size (LMDB)": "{hal_Jsondoc=3780904}",
+  "Total metadata indexed size (elastic)": "{glutton=153598733}",
   "PMID size (LMDB)": "{pmid_doi2ids=946688, pmid_pmc2ids=850087, pmid_pmid2ids=1287533}",
-  "DOI OA size (LMDB)": "{openAccess_doiOAUrl=0}"
+  "ISTEX size (LMDB)": "{istex_doi2ids=0, istex_istex2ids=0, istex_pii2ids=0}",
+  "DOI OA size (LMDB)": "{openAccess_doiOAUrl=0}",
+  "Funder Registry size (LMDB)": "{funder_doiFunder=45739}",
+  "ROR size (LMDB)": "{ror_gridToRor=103678, ror_fundrefToRor=29950, ror_rorId=144717}"
 }
 ```
 
-Each item represent a data storage. By default they are LMDB storage and their databases (e.g. for PMID there are three databases `pmid_doi2ids` which stored the lookup from doi to PMID, etc..) except for `Total Metadata indexed size` which measure the records indexed in Elasticsearch (the name, like in this case `glutton` is the configured index name). 
+Each item is a part of the storage with the number of records in each of its databases (for
+instance, PMID has three databases: `pmid_doi2ids` holds the lookup from a DOI to the PMID and PMC
+ID, and so on), except `Total metadata indexed size (elastic)`, which is the number of records in
+the Elasticsearch index (`glutton` is the configured index name). A resource that was not loaded
+shows `0`. `GET /service/health` says in addition whether Elasticsearch can be reached, see
+[Health](API.md#health).
 
 ### Start optional additional GROBID service
 
@@ -58,6 +70,6 @@ biblio-glutton takes advantage of GROBID for parsing raw bibliographical referen
 
 * Start the service as documented [here](https://grobid.readthedocs.io/en/latest/Grobid-service/). You can change the `port` used by GROBID when starting the docker container, or by updating the service config file under `grobid/grobid-home/config/grobid.yaml`.
 
-* Update if necessary the host and port information of GROBID in the biblio-glutton config file under `biblio-glutton/config/glutton.yml` (parameter `grobidHost`).
+* Update if necessary the host and port information of GROBID in the biblio-glutton config file under `config/glutton.yml` (parameter `grobidHost`).
 
-While GROBID is not required for running biblio-glutton, in particular if it is used only for bibliographical look-up, it is strongly recommended for performing bibliographical record matching. And vice-vera, configuration the biblio-glutton service for Grobid will provide high quality consolidation services to resolve the bibliographical references automatically extracted by Grobid. 
+While GROBID is not required for running biblio-glutton, in particular if it is used only for bibliographical look-up, it is strongly recommended for performing bibliographical record matching. And vice-versa, configuring biblio-glutton as the consolidation service of Grobid will provide high quality consolidation services to resolve the bibliographical references automatically extracted by Grobid. 
