@@ -1,22 +1,49 @@
 site_name: biblio-glutton Documentation
 repo_url: https://github.com/kermitt2/biblio-glutton/
 repo_name: GitHub
-theme: readthedocs
+
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
 site_description: Documentation for biblio-glutton
 docs_dir: doc
+
+extra_javascript:
+  - readthedocs.js
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+
+validation:
+  anchors: warn
+
 plugins:
     - search
-theme:
-    name: readthedocs
 nav:
   - Home: 'index.md'
   - About:
     - 'Introduction': 'Introduction.md'
-    - 'Licence': 'License.md'
+    - 'License': 'License.md'
   - User manual:
     - 'Install': 'Install.md'
     - 'Elasticsearch': 'Elasticsearch.md'
-    - 'Databases': 'Build-Databases'
+    - 'Databases': 'Build-Databases.md'
     - 'REST API': 'API.md'
     - 'Frequently asked Questions': 'Frequently-asked-questions.md'
   - Benchmarking:
