@@ -83,7 +83,7 @@ About 1 minute.
 
 1) **1 · Extract** PDFs are made for humans. GROBID recovers header, body and references as TEI XML.
 2) **2 · Match** Extraction is strong but not perfect. Each reference is looked up in **Crossref** or **biblio-glutton**.
-3) **3 · Enrich** Matched records fill gaps and fix errors: **+12% F1** on references [1].
+3) **3 · Enrich** Matched records fill gaps and fix errors: **+12% F1** on header [1].
 
 
 > [1] https://grobid.readthedocs.io/en/latest/Consolidation/
@@ -94,7 +94,7 @@ About 1 minute.
 - Extract: the header (title, authors, affiliations), the body, and the bibliography, with each reference split into fields: authors, title, journal, volume, pages, year.
 - Match: parsing alone is not enough, the text can be wrong, abbreviated or garbled. So GROBID has a consolidation step: each reference, and the header, is checked against a metadata service.
 - Out of the box that service is the public Crossref API. The alternative, the subject of this talk, is biblio-glutton, which you run yourself.
-- Enrich: the matched record confirms the fields, completes them and adds the DOI: +12% F1 on references (GROBID consolidation documentation).
+- Enrich: the matched record confirms the fields, completes them and adds the DOI: +12% F1 on the header (GROBID consolidation documentation).
 - More detail in the Crossref blog post of 6 October (link in the footer).
 -->
 
