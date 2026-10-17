@@ -1,4 +1,4 @@
-## Building the bibliographical data look-up and matching databases
+## Set up the storage
 
 The loading of bibliographical metadata records and their indexing in the search cluster is done in one step. 
 
@@ -8,7 +8,7 @@ To set-up a functional biblio-glutton server, resources need to be loaded follow
 
 1) Loading and indexing of a Crossref full metadata dump as embedded LMDB
 
-2) Loading and indexing got the coverage gap between the Crossref dump and the current day (updates are then realized automatically daily as the service is up and running) in the embedded LMDB
+2) Loading and indexing for the coverage gap between the Crossref dump and the current day (updates are then realized automatically daily as the service is up and running) in the embedded LMDB
 
 3) (Optional) Loading and indexing of HAL archive metadata
 
@@ -16,22 +16,22 @@ To set-up a functional biblio-glutton server, resources need to be loaded follow
 
 5) (Optional) Loading the Open Access information from an OpenAlex snapshot as embedded LMDB
 
-6) (Very optional) Loading the ISTEX ID mapping as embedded LMDB
+6) (Very optional) Loading the ISTEX ID mapping as embedded LMDB (only of use to ISTEX users)
 
 7) (Optional) Loading the Crossref Open Funder Registry as embedded LMDB
 
 8) (Optional) Loading the ROR (Research Organization Registry) as embedded LMDB
 
-It is possible to only load HAL archive metadata, skipping entirely CrossRef, but the service will be much more limited - so we suggest to always start with CrossRef. It is also possible to skip HAL archive resources. Step 4) is fast and we suggest to also always include it.
+It is possible to only load HAL archive metadata, skipping entirely Crossref, but the service will be much more limited - so we suggest to always start with Crossref. It is also possible to skip HAL archive resources. Step 4) is fast and we suggest to also always include it.
 
 ### Resources
 
 For building the database and index used by service, you will need these resources:
 
-* CrossRef metadata dump, available at different places:  
+* Crossref metadata dump, available at different places:  
   - strongly recommended: via the [Crossref Metadata APIs Plus](https://www.crossref.org/services/metadata-delivery/plus-service/) service for a current snapshot, or
-  - [public CrossRef dump](https://www.crossref.org/blog/2024-public-data-file-now-available-featuring-new-experimental-formats/) available with Academic Torrents (2024-05-14 for the latest version), 
-  - not recommended: Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive CrossRef [dump](https://archive.org/download/crossref_doi_dump_201909) (2019-09).   
+  - [public Crossref dump](https://www.crossref.org/blog/2024-public-data-file-now-available-featuring-new-experimental-formats/) available with Academic Torrents (2024-05-14 for the latest version), 
+  - not recommended: Internet Archive, see https://github.com/greenelab/crossref and for instance the latest Internet Archive Crossref [dump](https://archive.org/download/crossref_doi_dump_201909) (2019-09).   
   
 We recommend to use a Crossref Metadata Plus snapshot in order to have a version of the Crossref metadata without large coverage gap. With the `Crossref-Plus-API-Token`, the following command for instance will download the full snapshot for the indicated year/month: 
 
@@ -39,13 +39,13 @@ We recommend to use a Crossref Metadata Plus snapshot in order to have a version
 wget -c --header='Crossref-Plus-API-Token: Bearer __Crossref-Plus-API-Token-Here_' https://api.crossref.org/snapshots/monthly/YYYY/MM/all.json.tar.gz
 ```
 
-Without Metadata Plus subscription, it's possible to use the Academic Torrents CrossRef dumps. For instance, with the Linux command line `aria2` and a high speed internet connection (e.g. 500Mb/s), the dump can be downloaded in a few minutes. However, the coverage gap will be more important. If the difference between the release date of the public dump and the current date is important (e.g. several months), updating the older snapshot via the normal CrossRef Web API will take an enormous amount of time. 
+Without Metadata Plus subscription, it's possible to use the Academic Torrents Crossref dumps. For instance, with the Linux command line `aria2` and a high speed internet connection (e.g. 500Mb/s), the dump can be downloaded in a few minutes. However, the coverage gap will be more important. If the difference between the release date of the public dump and the current date is important (e.g. several months), updating the older snapshot via the normal Crossref Web API will take an enormous amount of time. 
 
-* DOI to PMID and PMC mapping: available at Europe PMC and regularly updated at ftp://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz, and https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_file_list.txt for license associated to full text files, both files will be automatically downloaded by biblio-glutton by default.
+* DOI to PMID and PMC mapping: available at Europe PMC and regularly updated at https://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz, downloaded automatically by biblio-glutton by default.
 
 * optionally, but recommended, Open Access links to aggregate with the bibliographical metadata, from the [OpenAlex snapshot](https://help.openalex.org/access/snapshot). It is CC0, needs no account, and does not have to be downloaded first, see [OA via OpenAlex](#oa-via-openalex) below. 
 
-* optionally, usually not required, for getting ISTEX identifier informations, you need to build the ISTEX ID mapping, see below.
+* optionally, usually not required, for getting ISTEX identifier information, you need to build the ISTEX ID mapping, see [ISTEX](#istex) below.
 
 * optionally, the [Crossref Open Funder Registry](https://gitlab.com/crossref/open_funder_registry) `registry.rdf` file for funder metadata lookup by funder DOI.
 
@@ -68,7 +68,7 @@ To install an Elasticsearch node with Docker or Docker Compose, see
 
 ### Build the embedded LMDB databases
 
-Resource dumps will be compiled in high performance LMDB databases. The system can read compressed (`gzip` or `.xz`) or plain text files (`json`), so in practice you do not need to uncompress anything.
+Resource dumps will be compiled in high performance LMDB databases. The system can read compressed (`gzip` or `.xz`) or plain text files, JSON arrays as well as one record per line (JSONL), and `.tar.gz` archives of such files (the Crossref Metadata Plus snapshot), so in practice you do not need to uncompress anything.
 
 The loading commands open the databases in a bulk-load mode: a commit does not wait for the disk.
 LMDB otherwise flushes every page a transaction touched before the commit returns, and a load whose
@@ -90,7 +90,7 @@ the command was interrupted) carries on when it is run again, with the same argu
 ./gradlew crossref -Pinput=/path/to/crossref/dump/     # reads what is missing
 ```
 
-This goes for every load: `crossref`, `openalex`, `hal`, `pmid` and `istex`. What a load has done
+This goes for every load of records: `crossref`, `openalex`, `hal`, `pmid` and `istex`. The two registries, `funder_registry` and `ror`, are loaded in seconds and simply start over, they take no `-Pfresh`. What a load has done
 is written down as it goes in a small text file in the directory of the database it fills, such as
 `crossref/crossref-load.progress` under the `storage` path; nothing is added to the databases.
 It holds, depending on the load:
@@ -162,7 +162,7 @@ The dictionary size matters less than having one: 16 KB already gives 446 bytes 
 
 Compared with the snappy compression used up to 0.3, the records take a third of the space and read back just as fast. The LMDB file of a Crossref database loaded this way is about 40% the size of the same database loaded with snappy (measured with `./gradlew crossref` on 28,495 records: 40 MB against 98 MB); the file shrinks less than the records do because the per-page overhead of LMDB is the same in both cases. Through the running service, against an Elasticsearch 8.19 node on the same machine, a lookup by DOI takes the same 1.1 ms median on either storage, and a matching query by title and first author the same 11 ms: the decompression is not where the time goes. Zstandard without a dictionary is not worth it for records this size: it only saves a quarter and decompresses twice as slowly, and LZ4 saves nothing over snappy. Higher zstd levels shave off a few more percent while making the load several times slower, which is why the default level is 3; a full Crossref load is bound by parsing, not by compression, at that level.
 
-The setting is `compression` in `config/glutton.yml` (`zstd`, the default, or `snappy`), with `compressionLevel` for the zstd level. It only decides what gets written: every stored record says which format it is in, so a database built with one setting keeps working, and keeps receiving daily updates, after the setting changes. A database loaded by 0.3 therefore does not need to be reloaded, but it will not shrink until it is (see [Upgrading from 0.3](Install.md#upgrading-from-03)).
+The setting is `compression` in `config/glutton.yml` (`zstd`, the default, or `snappy`), with `compressionLevel` for the zstd level. It only decides what gets written: every stored record says which format it is in, so a database built with one setting keeps working, and keeps receiving daily updates, after the setting changes. A database loaded by 0.3 therefore does not need to be reloaded, but it will not shrink until it is (see [Upgrading from 0.3](Upgrading.md#upgrading-from-03)).
 
 #### Build the data loader 
 
@@ -170,13 +170,13 @@ The setting is `compression` in `config/glutton.yml` (`zstd`, the default, or `s
 ./gradlew clean build
 ```
 
-All the following commands need to be launched under the project root `biblio-glutton/`. The loading of the following database can be done in parallel. The default configuration file under `biblio-glutton/config/glutton.yml` will be used. For specifying a configuration file in another location add the following argument to a task: `-Pconfig="other/config/path/glutton.yml`, for example:
+All the following commands need to be launched under the project root `biblio-glutton/`. The loading of the following databases can be done in parallel. The default configuration file `config/glutton.yml` will be used (see [Configuration](Configuration.md)). For specifying a configuration file in another location add the following argument to a task: `-Pconfig=other/config/path/glutton.yml`, for example:
 
 ```sh
 ./gradlew hal -Pconfig=new_config/glutton.yml
 ```
 
-#### CrossRef metadata
+#### Crossref metadata
 
 General command line pattern:
 
@@ -190,7 +190,7 @@ Example with Crossref Metadata Plus snapshot (path to a `.tar.gz` file which arc
 ./gradlew crossref -Pinput=../tmp/crossref_metadata_plus.tar.gz 
 ```
 
-Example with CrossRef dump Academic Torrent file (path to a repository of `*.json.gz` files):
+Example with Crossref dump Academic Torrent file (path to a repository of `*.json.gz` files):
 
 
 ```sh
@@ -203,16 +203,17 @@ Example with xz-compressed file (e.g. GreeneLab dump):
 ./gradlew crossref -Pinput=crossref-works.2019-09-09.json.xz 
 ```
 
-**Note:** By default the `abstract`, the `reference` and the original `indexed` fields included in CrossRef records are ignored to save some disk space. The `reference` field is particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the config file under `biblio-glutton/config/glutton.yml`, by editing the lines:
+**Note:** By default the `abstract`, the `reference` and the original `indexed` fields included in Crossref records are ignored to save some disk space. The `reference` field is particularly large as it lists all the citations for almost half of the DOI records. You can change the list of fields to be filtered out in the `crossref` block of `config/glutton.yml`:
+
+```yaml
+crossref:
+  ignoreCrossrefFields:
+    - reference
+    - abstract
+    - indexed
+```
 
 **Note:** Crossref records of type `component` are filtered out, because they do not correspond to a document, but to a part of document (figures, tables, etc.).
-
-```
-ignoreCrossRefFields:                                                   
-  - reference
-  - abstract
-  - indexed
-```
 
 Example loading the Crossref Metadata Plus snapshot of March 2022, loading time around 4 hours (dump files on SSD).
 
@@ -232,7 +233,7 @@ crossrefLookup
 
 On the above example, the 5,472,493 rejected records correspond to all the DOI entries of type "components" (part of document), which are filtered out. 
 
-As a February 2024, we have for example 146,808,255 accepted crossref records and 8,015,190 rejected component records (last indexed date in dump file is 2024-02-02).
+As of February 2024, we have for example 146,808,255 accepted crossref records and 8,015,190 rejected component records (last indexed date in dump file is 2024-02-02).
 
 ##### Indexing while loading
 
@@ -255,7 +256,18 @@ A load in which a file could not be read, or in which Elasticsearch did not take
 it was away or too busy, ends with an error and a non-zero exit code. Run the same command again:
 it loads what is missing (see "Carrying on a load that stopped" above).
 
-#### CrossRef metadata gap coverage
+##### Rebuilding the search index
+
+```sh
+./gradlew index
+```
+
+deletes the Elasticsearch index and builds it again from the HAL and Crossref records of the
+storage, which is left as it is. This is the way to repair an index that missed records, that was
+lost, or that is wanted on another Elasticsearch cluster, without loading the dumps again. The
+matching finds nothing until it is done, since the index is emptied first.
+
+#### Crossref metadata gap coverage
 
 Once the main Crossref metadata snapshot has been loaded, the metadata and index will be updated daily automatically via the Crossref web API. However, there is always a gap of coverage between the last day covered by the used large snapshot image and the start of the daily update. 
 
@@ -264,10 +276,10 @@ Currently new Crossref Metadata Plus snapshot are available on the 5th of every 
 Using the Crossref web API to cover the remaining gap (from the latest update day in the full snapshot to the current day) is done with the following command (still under root project `biblio-glutton/`):
 
 ```sh
-./gradlew crossref gap_crossref
+./gradlew gap_crossref
 ```
 
-Be sure to indicate in the configution file `glutton.yml` your polite usage email and/or crossref metadata plus token for using the Crossref web API. 
+Be sure to indicate in the `crossref` block of `config/glutton.yml` your polite usage email (`mailto`) and/or your Crossref Metadata Plus token (`token`) for using the Crossref web API. 
 
 This command should thus be launched only one time after the loading of a full Crossref snapshot, it will resync the current metadata and index to the current day, and the daily update will then ensure everything remain in sync with the reference Crossref metadata as long the service is up and running. 
 
@@ -288,7 +300,7 @@ before; when a night was skipped or cut short it picks up from the last complete
 a week back, so a service that was down for a night does not miss a day. A database further behind
 than that is what `gap_crossref` is for.
 
-__Warning:__ If an older snapshot is used, like the CrossRef dump Academic Torrent file, the coverage gap is not a few days, but usually several months or more than one year (since Crossref has not updated the Academic Torrent dump in 2022). Using the Crossweb API to cover such a long gap will unfortunately take an enormous amount of time (more than a week) due to API usage rate limitations and is likely not a acceptable solution. In addition, the Crossref web API is not always reliable, which might cause further delays. 
+__Warning:__ If an older snapshot is used, like the Crossref dump Academic Torrent file, the coverage gap is not a few days, but usually several months or more than one year (since Crossref has not updated the Academic Torrent dump in 2022). Using the Crossref web API to cover such a long gap will unfortunately take an enormous amount of time (more than a week) due to API usage rate limitations and is likely not an acceptable solution. In addition, the Crossref web API is not always reliable, which might cause further delays. 
 
 #### PMID and PMC ID
 
@@ -314,7 +326,7 @@ Launch the following command and go grab a lunch:
 ./gradlew hal 
 ```
 
-HAL archive contains around 4.7M records (September 2026), with curated metadadata. Note that the batch loading is using high volume, so it can take a couple of minutes before the metrics start indicating counts and measurements above 0.  
+HAL archive contains around 4.7M records (September 2026), with curated metadata. Note that the batch loading is using high volume, so it can take a couple of minutes before the metrics start indicating counts and measurements above 0.  
 
 The archive is harvested through the HAL API page by page, 2,000 records at a time. A connection
 that drops on the way, or a change of network, does not end the harvest: the page that did not
@@ -323,6 +335,11 @@ stays out of reach for longer, the command stops with an error and a non-zero ex
 records harvested until then are stored and indexed. Running the command again carries on from
 the cursor the harvest reached, rather than from the beginning of the archive; add `-Pfresh=true`
 to harvest everything again.
+
+`./gradlew hal_audit` (experimental) reads the HAL records of the storage and writes two reports
+in the working directory: `duplicatedRecordsReport.txt`, the HAL records that seem to be the same
+document, and `missingDOIReport.txt`, the HAL records without a DOI that match a Crossref record.
+It needs the Elasticsearch index.
 
 #### OA via OpenAlex
 
@@ -404,19 +421,51 @@ the snapshot exists to avoid.
 
 #### ISTEX
 
-Note that ISTEX mapping is only relevant for ISTEX full text resource users, so only public research institutions in France. So you can generally skip this step. 
+[ISTEX](https://www.istex.fr/) is a collection of full texts licensed for the public research
+institutions in France, so the ISTEX mapping is only relevant for ISTEX users and you can generally
+skip this step. The mapping gives, for each ISTEX document with a DOI, its ISTEX identifier, its
+ark, its PII and, for some documents, its PMID.
+
+Once loaded:
+
+- a record can be looked up by ISTEX identifier (`istexid`) and by PII: the answer is the Crossref
+  record of the DOI of the ISTEX document, so the Crossref metadata has to be loaded as well;
+- the answers to every lookup carry `istexId`, `ark` and `pii` when the DOI is in ISTEX;
+- `oa_istex` gives the ISTEX PDF link next to the Open Access link (see [REST API](API.md)).
+
+There is no lookup by ark, which is only given in the answers. ISTEX documents without a DOI are
+left out of the mapping.
+
+##### Creating the ISTEX mapping file
+
+The mapping file is harvested from the ISTEX API with a bash script, which needs `curl` and `jq`:
 
 ```sh
-./gradlew istex -Pinput=/path/to/istex/json/file -Pconfig=path/to/config/file/glutton.yml
+scripts/dump-istex-ids.sh | gzip > istexIds.all.gz
 ```
 
-Example: 
+It writes one line per ISTEX document with a DOI, and says on the error output how far it got
+every 100,000 documents. The ISTEX API holds around 33 million documents (October 2026) and the
+script asks for them 1,000 at a time; at the 3,000 documents per second seen then, the harvest
+takes about three hours. A request that fails is tried again for up to four minutes. If it still
+fails, the script stops with an error: the API is read with a scroll that cannot be resumed, so run
+it again from the start.
+
+##### Loading the mapping
 
 ```sh
-./gradlew istex -Pinput=istexIds.all.gz 
+./gradlew istex -Pinput=/path/to/istexIds.all.gz -Pconfig=path/to/config/file/glutton.yml
 ```
 
-**Note:** see the [FAQ](Frequently-asked-questions.md) on how to create this mapping file `istexIds.all.gz`.
+Like the other loads, the input can be a file, a directory or an `s3://` location, compressed or not.
+
+!!! warning "No PubMed and MeSH mapping for ISTEX"
+    The tool that added PubMed information to the ISTEX entries, in particular the MeSH classes,
+    ([pubmed-glutton](https://github.com/kermitt2/biblio-glutton/tree/master/pubmed-glutton), kept
+    for reference) does not build against the current biblio-glutton and is not maintained. The
+    ISTEX entries therefore carry no MeSH classes. The PMID and PMC ID of a DOI are still given in
+    the answers, from the Europe PMC mapping (see [PMID and PMC ID](#pmid-and-pmc-id)), and from
+    ISTEX itself for the 4.3 million ISTEX documents that record a PMID.
 
 #### Crossref Open Funder Registry
 

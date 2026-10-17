@@ -1,24 +1,59 @@
 site_name: biblio-glutton Documentation
 repo_url: https://github.com/kermitt2/biblio-glutton/
 repo_name: GitHub
-theme: readthedocs
+
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
 site_description: Documentation for biblio-glutton
 docs_dir: doc
+
+extra_javascript:
+  - readthedocs.js
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+
+validation:
+  anchors: warn
+
 plugins:
     - search
-theme:
-    name: readthedocs
+    - redirects:
+        redirect_maps:
+          'Build-Databases.md': 'Set-up-storage.md'
 nav:
   - Home: 'index.md'
+  - Getting Started:
+    - 'Install and run': 'Install.md'
+    - 'Elasticsearch': 'Elasticsearch.md'
+    - 'Troubleshooting and FAQ': 'Frequently-asked-questions.md'
+  - Upgrading:
+    - 'Upgrade guide': 'Upgrading.md'
+  - User Guide:
+    - 'Set up the storage': 'Set-up-storage.md'
+    - 'REST API': 'API.md'
+    - 'Configuration': 'Configuration.md'
   - About:
     - 'Introduction': 'Introduction.md'
-    - 'Licence': 'License.md'
-  - User manual:
-    - 'Install': 'Install.md'
-    - 'Elasticsearch': 'Elasticsearch.md'
-    - 'Databases': 'Build-Databases'
-    - 'REST API': 'API.md'
-    - 'Frequently asked Questions': 'Frequently-asked-questions.md'
+    - 'How it works': 'Architecture.md'
+    - 'License': 'License.md'
   - Benchmarking:
-    - 'Matching': 'Benchmarking.md'
+    - 'Matching accuracy': 'Benchmarking.md'
     - 'Load testing': 'Load-testing.md'

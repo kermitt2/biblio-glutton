@@ -1,23 +1,40 @@
-<h1>biblio-glutton Documentation</h1>
+# biblio-glutton Documentation
 
-<h3>About</h3>
+biblio-glutton is a framework for scientific bibliographic information: a fast look-up of
+bibliographical records by identifier (DOI, PMID, PMC ID, HAL ID, ISTEX ID, PII), the matching of
+raw bibliographical references and partial metadata to these records, Open Access links, and
+funder and research organization lookups.
 
-* [Introduction](Introduction.md)
+## Getting Started
 
-* [License](License.md)
+* [Install and run](Install.md) — build the service, start it and check what it serves
 
-<h3>User manual</h3>
+* [Elasticsearch](Elasticsearch.md) — set up the node the matching needs, with or without security
 
-* [Install](Install.md)
+* [Troubleshooting and FAQ](Frequently-asked-questions.md) — common issues and how to cite biblio-glutton
 
-* [Bibliographical Databases](Build-Databases.md)
+## Upgrading
 
-* [REST API](API.md)
+* [Upgrade guide](Upgrading.md) — what to do when moving from an earlier version
 
-* [Frequently asked Questions)](Frequently-asked-questions.md)
+## User Guide
 
-<h3>Benchmarking</h3>
+* [Set up the storage](Set-up-storage.md) — load Crossref, the gap and daily updates, PubMed IDs, HAL, OpenAlex, ISTEX, the Funder Registry and ROR
 
-* [Reference resolutions](Benchmarking.md)
-* [Load testing](Load-testing.md)
+* [REST API](API.md) — lookups by identifier, matching by metadata or raw reference, Open Access, funders and organizations, health
 
+* [Configuration](Configuration.md) — the settings of `config/glutton.yml`
+
+## About
+
+* [Introduction](Introduction.md) — what biblio-glutton is and what it needs
+
+* [How it works](Architecture.md) — architecture and runtime figures
+
+* [License](License.md) — authors, contact and license
+
+## Benchmarking
+
+* [Matching accuracy](Benchmarking.md) — evaluation of the bibliographical reference matching
+
+* [Load testing](Load-testing.md) — measuring the throughput of a running service
