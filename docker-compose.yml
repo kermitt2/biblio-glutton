@@ -10,9 +10,11 @@
 services:
   glutton:
     build: .
-    # built from this checkout; GLUTTON_IMAGE=lfoppiano/biblio-glutton-lookup:latest in .env, then
-    # docker compose pull glutton, takes the image published on Docker Hub instead
+    # built from this checkout, again at each up or run (the layers are cached) so that it is never
+    # older than the code; GLUTTON_IMAGE=lfoppiano/biblio-glutton-lookup:latest and
+    # GLUTTON_PULL_POLICY=always in .env take the image published on Docker Hub instead
     image: ${GLUTTON_IMAGE:-biblio-glutton:0.4.0}
+    pull_policy: ${GLUTTON_PULL_POLICY:-build}
     restart: unless-stopped
     depends_on:
       elasticsearch:

@@ -4,9 +4,10 @@
 #   deploy/huggingface/push-space.sh <user-or-org>/<space-name> [--public]
 #
 # Needs the hf command (pip install -U huggingface_hub) and a token with write access
-# (hf auth login). The Space is private unless --public is given. It builds the Dockerfile of
-# this repository, from the files it needs only, with the registries (ROR and the Crossref funder
-# registry) loaded at start: see deploy/huggingface/README.md for what the Space serves.
+# (hf auth login). A new Space is private unless --public is given, which also makes an existing
+# one public. It builds the Dockerfile of this repository, from the files it needs only, with the
+# registries (ROR and the Crossref funder registry) loaded at start: see
+# deploy/huggingface/README.md for what the Space serves.
 set -e
 
 SPACE="$1"
@@ -32,6 +33,8 @@ ENV REGISTRIES_UPDATE_ENABLED=true \
 SPACE
 
 hf repos create "$SPACE" --repo-type space --space-sdk docker $VISIBILITY --exist-ok
+# the visibility given to create is ignored for a Space that exists already
+[ "$VISIBILITY" = "--no-private" ] && hf repos settings "$SPACE" --repo-type space --no-private
 hf upload "$SPACE" "$STAGE" . --repo-type space \
     --commit-message "biblio-glutton $(git describe --tags --always 2>/dev/null || echo build)"
 echo "Space: https://huggingface.co/spaces/$SPACE (building; the logs are on its page)"

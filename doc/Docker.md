@@ -20,10 +20,13 @@ service being compiled with Gradle inside the image:
 
 ```sh
 docker build -t biblio-glutton .
-``` The image runs the service by default, on port 8080 (8081 for the admin port),
-with its storage in `/data/db`:
+```
+
+The image runs the service by default, on port 8080 (8081 for the admin port), with its storage
+in `/data/db`:
 
 ```sh
+mkdir -p data
 docker run -d -p 8080:8080 -v $PWD/data:/data biblio-glutton
 ```
 
@@ -37,8 +40,9 @@ docker run --rm biblio-glutton crossref --help
 ```
 
 The service runs as the user of uid 1000, which must be able to write in the directory mounted
-on `/data`. On Linux, when your own uid is not 1000, give it that directory first:
-`mkdir -p data && sudo chown 1000 data`.
+on `/data`. Create that directory before the first `docker run`: when it is missing, Docker
+creates it owned by root, and the service cannot write in it. On Linux, when your own uid is not
+1000, give it to that uid as well: `sudo chown 1000 data`.
 
 The settings that change from one installation to another are environment variables; each falls
 back on the value of `config/glutton.yml` when it is not set:
@@ -70,7 +74,8 @@ password of Elasticsearch is in a file `.env` next to it, which is not to be com
 
 ```sh
 cp .env.example .env        # then set ELASTIC_PASSWORD in it
-mkdir -p data && sudo chown 1000 data        # on Linux, when your uid is not 1000
+mkdir -p data
+sudo chown 1000 data        # on Linux, when your uid is not 1000
 docker compose up -d
 curl http://localhost:8080/service/health
 ```
@@ -80,9 +85,11 @@ machine itself only, and the service talks to them over the network of the conta
 why it may send the password over plain HTTP there. On Linux, Elasticsearch needs
 `vm.max_map_count` raised on the host, see [Elasticsearch](Elasticsearch.md).
 
-Compose builds the image of the service from the checkout. To take the published one instead,
-set `GLUTTON_IMAGE=lfoppiano/biblio-glutton-lookup:latest` in `.env` and run
-`docker compose pull glutton` before `docker compose up -d`.
+Compose builds the image of the service from the checkout, at each `up` and `run`, so that it
+always runs the code of the checkout (the build reuses its cache when nothing changed). To take
+the published image instead, set in `.env`
+`GLUTTON_IMAGE=lfoppiano/biblio-glutton-lookup:latest` and `GLUTTON_PULL_POLICY=always` (or
+`missing`, to pull it only when it is not there yet).
 
 The databases are under `./data/db`, the index in the volume `esdata`. To load them, put the
 dumps under `./data` (or give an `s3://` location) and run the loading commands in the
@@ -144,6 +151,8 @@ the `Dockerfile` and the files the build needs, with the Space card of
 deploy/huggingface/push-space.sh <user-or-org>/biblio-glutton            # a private Space
 deploy/huggingface/push-space.sh <user-or-org>/biblio-glutton --public
 ```
+
+Without `--public`, an existing Space keeps its visibility; with it, the Space is made public.
 
 The build takes some ten minutes, and the first start about one more for the registries. The
 Space then answers, for instance, `https://<user-or-org>-biblio-glutton.hf.space/service/lookup/ror?id=02kvxyf05`.
