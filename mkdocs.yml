@@ -54,6 +54,7 @@ nav:
     - 'Introduction': 'Introduction.md'
     - 'How it works': 'Architecture.md'
     - 'License': 'License.md'
+    - 'Presentations': 'presentations/index.md'
   - Benchmarking:
     - 'Matching accuracy': 'Benchmarking.md'
     - 'Load testing': 'Load-testing.md'
