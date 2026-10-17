@@ -96,7 +96,7 @@ release in place of `latest`, such as `:0.4.1`, `GLUTTON_PULL_POLICY=missing` pu
 The databases are under `./data/db`, the index in the volume `esdata`. To load them, put the
 dumps under `./data` (or give an `s3://` location) and run the loading commands in the
 container; each of them carries on where it stopped when it is run again (see
-[Building the databases](Build-Databases.md)):
+[Set up the storage](Set-up-storage.md)):
 
 ```sh
 docker compose run --rm glutton crossref --input /data/dumps/crossref/
