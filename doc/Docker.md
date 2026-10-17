@@ -11,8 +11,9 @@ The image is published on [Docker Hub](https://hub.docker.com/r/lfoppiano/biblio
 for `linux/amd64` and `linux/arm64` (Apple Silicon included):
 
 ```sh
-docker pull lfoppiano/biblio-glutton-lookup:latest     # master
-docker pull lfoppiano/biblio-glutton-lookup:0.4.1      # a release
+docker pull lfoppiano/biblio-glutton-lookup:latest-develop     # the last push, to master or a pull request
+docker pull lfoppiano/biblio-glutton-lookup:latest             # master
+docker pull lfoppiano/biblio-glutton-lookup:0.4.1              # a release
 ```
 
 It can also be built from the checkout, which needs neither Java nor Gradle on the machine, the
@@ -118,10 +119,12 @@ with whatever is left, which is what makes the lookups fast.
 
 The workflow `.github/workflows/docker.yml` builds the image for every pull request, for
 `linux/amd64` and `linux/arm64` each on a GitHub runner of that architecture, and checks that it
-starts and answers, without publishing anything. On a push to master it publishes `:latest` and
-`:sha-<commit>` on Docker Hub, and on a tag such as `0.4.1` the image of that name as well, one
-tag covering both platforms. Documentation-only changes do not trigger it; it can also be run by
-hand from the Actions tab.
+starts and answers. It then publishes on Docker Hub `:latest-develop`, at each push to a pull
+request or to master; master also gets `:latest`, and a tag such as `0.4.1` the image of that
+name. There is no tag per commit, which would pile up images on Docker Hub. Each tag covers both
+platforms. A pull request from a fork is built and
+checked only, as it has no access to the secrets. Documentation-only changes do not trigger it;
+it can also be run by hand from the Actions tab.
 
 Publishing needs, in the settings of the repository on GitHub (Secrets and variables, Actions):
 

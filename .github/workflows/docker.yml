@@ -2,12 +2,16 @@
 # its own architecture, checks that it starts, and publishes it on Docker Hub as
 # lfoppiano/biblio-glutton-lookup (see doc/Docker.md).
 #
-#   pull request      build both platforms and check they start; nothing is published
-#   push to master    publish :latest and :sha-<commit>, one tag for both platforms
-#   tag 0.4.1         publish :0.4.1 as well
-#   by hand           Actions > Docker image > Run workflow
+#   pull request      publish :latest-develop (nothing from a fork, which has no access to the
+#                     secrets)
+#   push to master    publish :latest-develop and :latest
+#   tag 0.4.1         publish :0.4.1
+#   by hand           Actions > Docker image > Run workflow, publishes :latest-develop
 #
-# Each platform is pushed by digest, and the last job joins the two digests under the tags. The
+# No tag per commit: each would keep an image on Docker Hub.
+#
+# Both platforms are built and checked before anything is published, and each tag covers both:
+# each platform is pushed by digest, and the last job joins the two digests under the tags. The
 # arm64 runner (ubuntu-24.04-arm) is free for public repositories.
 #
 # Publishing needs two secrets of the repository, DOCKERHUB_USERNAME and DOCKERHUB_TOKEN (an access
@@ -31,6 +35,8 @@ concurrency:
 
 env:
   IMAGE: ${{ vars.DOCKERHUB_REPOSITORY || 'lfoppiano/biblio-glutton-lookup' }}
+  # a pull request from a fork has no access to the secrets: it is built and checked only
+  PUBLISH: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
 
 jobs:
   build:
@@ -82,7 +88,7 @@ jobs:
         run: docker logs glutton 2>&1 | tail -100 || true
 
       - name: Docker Hub credentials are set
-        if: github.event_name != 'pull_request'
+        if: env.PUBLISH == 'true'
         env:
           USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -92,14 +98,14 @@ jobs:
             exit 1
           fi
 
-      - if: github.event_name != 'pull_request'
+      - if: env.PUBLISH == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Push ${{ matrix.platform }} by digest
-        if: github.event_name != 'pull_request'
+        if: env.PUBLISH == 'true'
         id: push
         uses: docker/build-push-action@v6
         with:
@@ -113,13 +119,13 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.arch }}
 
       - name: Keep the digest for the last job
-        if: github.event_name != 'pull_request'
+        if: env.PUBLISH == 'true'
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.push.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
 
-      - if: github.event_name != 'pull_request'
+      - if: env.PUBLISH == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: digest-${{ matrix.arch }}
@@ -128,7 +134,7 @@ jobs:
           retention-days: 1
 
   publish:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     needs: build
     runs-on: ubuntu-24.04
     permissions:
@@ -147,10 +153,11 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE }}
+          flavor: latest=false
           tags: |
+            type=raw,value=latest-develop,enable=${{ github.ref_type != 'tag' }}
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=tag
-            type=sha
 
       - uses: docker/login-action@v3
         with:
